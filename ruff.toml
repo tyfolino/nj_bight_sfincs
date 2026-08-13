@@ -1,0 +1,48 @@
+# Ruff configuration for nj_coast_sfincs.
+#
+# Ruff is deliberately NOT in the pinned sfincs env (same reasoning as pytest — see
+# CLAUDE.md §3a). Install it wherever you like and point it at the repo:
+#
+#   ruff format notebooks/v1_monmouth/sfincs-nj-boundary-naccs.ipynb
+#   ruff check  notebooks/v1_monmouth/sfincs-nj-boundary-naccs.ipynb
+#
+# Ruff reads this file automatically, so neither command needs --line-length.
+# ⚠️ `ruff format .` would reformat the whole package in one commit, including modules
+# behind the frozen v1_monmouth campaign. Format the files you are editing, not the tree.
+
+line-length = 88
+
+# The toolchain lives behind symlinks into ~/nj_sandy_sfincs (CLAUDE.md §2) — that is
+# hydromt_sfincs' own source, not ours. Ruff does not descend into symlinked directories
+# today; naming them means a change in that behaviour cannot quietly enrol 1000s of
+# vendored files. `experiments/` and `data/` are gitignored run output.
+extend-exclude = ["micromamba", "hydromt_sfincs", "experiments", "data"]
+
+[lint]
+# Pinned EXPLICITLY rather than inherited. Ruff's implicit default set is not stable
+# across releases — 0.16 enables far more than the documented E4/E7/E9/F — and a lint
+# config that silently widens is one that silently starts failing on untouched code.
+#   E4/E7/E9,F  pycodestyle errors + pyflakes: the real-bug core
+#   W           pycodestyle warnings (trailing whitespace, missing final newline)
+#   I           import sorting
+#   BLE         blind `except Exception` — this repo swallows real failures in places
+#   PLW         pylint warnings, incl. subprocess-run-without-check
+select = ["E4", "E7", "E9", "F", "W", "I", "BLE", "PLW"]
+
+ignore = [
+    # Imports after statements are LOAD-BEARING here, not sloppiness:
+    #   * NJ_DOMAIN must be set before nj_sfincs is imported — domain.py keys the entire
+    #     geography registry off it, and getting this wrong is the failure mode CLAUDE.md
+    #     §1 exists to prevent.
+    #   * pyproj must be imported before hydromt_sfincs or downscale_floodmap hits a
+    #     native double-free (CLAUDE.md §4).
+    "E402",
+]
+
+[lint.isort]
+known-first-party = ["nj_sfincs"]
+
+[lint.per-file-ignores]
+# Notebooks narrate to a reader: `f"..."` with no placeholder keeps a block of prints
+# visually aligned, and a module-level name defined in an earlier cell is normal.
+"notebooks/**/*.ipynb" = ["F541"]

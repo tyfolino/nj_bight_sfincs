@@ -1,0 +1,758 @@
+# Data catalog for NJ Sandy SFINCS model.
+# Pass this single file to data_libs in the model build notebook.
+
+# ── Inlet channel burn (experiment_inlet_connectivity only) ──────────────────
+# Hand-defined inlet centerlines burned at -2 m NAVD88 (Shrewsbury, Shark R
+# Inlet, Deal Lake outlet). Added as TOP layer in the experiment build to
+# resolve the throttled 50 m inlets that show as MOTF inland misses. NoData
+# elsewhere -> a true fill (only the channel pixels override the merge).
+
+inlet_channels_burn:
+  data_type: RasterDataset
+  uri: elevation/inlet_channels_burn.tif
+  driver:
+    name: rasterio
+    options: {}
+  metadata:
+    category: topography
+    crs: 32618
+    unit: m+NAVD88
+    source: scripts/build_inlet_channels.py (hand-defined inlet polylines)
+
+# ── Elevation (SEVEN-layer merge, top → bottom) ──────────────────────────────
+# ⚠️ The numbered list below is the v1 FIVE-layer merge and is kept for its
+# per-layer rationale, but it is no longer the actual order. The live order is
+# nj_sfincs/config.DEFAULT_ELEVATION_LIST:
+#
+#   0. ehydro_nj              carve Shark River Inlet (lidar paved it)
+#   1. shrewsbury_ehydro_2015 carve the Rumson-Sea Bright bridge dam
+#   2. usace_nj_2010          1 m PRE-Sandy topobathy
+#   3. cudem_nj               3 m (1/9") topobathy
+#   4. nj_10ft_dem  zmin=.001 3 m inland land
+#   5. cudem13_nj             ~10 m (1/3") NEARSHORE OCEAN — new in v2_barnegat,
+#                             fills the strip the 1/9" product never tiled
+#   6. gmrt_nj                ~50 m offshore tail
+#
+# Also note: `cudem_nj` now resolves to the tile VRT, not a materialised clip,
+# so "re-clip if the region changes" no longer applies to it.
+#
+# datasets_dep fills NoData in order, so the FIRST entry wins everywhere it
+# has data; later entries only fill where earlier ones are NoData.
+#
+#   0. shrewsbury_ehydro_2015 — 5 m USACE eHydro channel survey, NoData OUTSIDE
+#                       the dredged Navesink+Shrewsbury channel ribbon. Sits ON
+#                       TOP so it carves the REAL channel through the
+#                       Rumson-Sea Bright bridge causeway, which the 2010
+#                       USACE + CUDEM otherwise bake in as a +1.6..+8.6 m solid
+#                       dam across the narrows (blocks tide + surge → flat
+#                       Shrewsbury gauge + Oceanport under-flood). Estuary-only
+#                       footprint, so it never touches the open-coast dune line.
+#                       See the project_bridge_dam memory.
+#   1. usace_nj_2010  — 1 m PRE-Sandy topobathy on the dune/beach/nearshore strip.
+#                       This is the physically correct surface for a Sandy
+#                       hindcast (post-storm products bake in ~$1B of beach
+#                       replenishment that didn't exist on 2012-10-29).
+#   2. cudem_nj       — 3 m topobathy fills inlets + shelf where 2010 NCMP
+#                       has NoData.  Post-Sandy 2014-2018 data, but it only
+#                       fills areas seaward of the dune line, so minimal
+#                       contamination of the surge-relevant surface. Re-clipped
+#                       2026-06-29 to the wider region so it now covers RARITAN
+#                       BAY (~-5 m mid-bay) — bay refraction needs real bathy,
+#                       not the 450 m offshore tail.
+#   3. nj_10ft_dem    — 3 m statewide LiDAR fills inland land (zmin=0.001
+#                       drops hydroflattened water surfaces so they never
+#                       overwrite real channel depths). Reaches -74.5, so it
+#                       covers the Raritan Bay shoreline land.
+#   4. gmrt_nj        — ~50 m GMRT offshore tail (was GEBCO 450 m; swapped
+#                       2026-06-29 when GEBCO's API died — GMRT is a multibeam+
+#                       GEBCO blend, float depths, fills the new offshore SE).
+#
+# Build call:
+#   setup_dep(datasets_dep=[
+#       {"elevtn": "shrewsbury_ehydro_2015"},
+#       {"elevtn": "usace_nj_2010"},
+#       {"elevtn": "cudem_nj"},
+#       {"elevtn": "nj_10ft_dem", "zmin": 0.001},
+#       {"elevtn": "gmrt_nj"},
+#   ])
+
+# USACE eHydro 2015 Shrewsbury River condition survey (NJ_14_SNR_20150902_CS),
+# the navigation-channel bathymetry for the Navesink + Shrewsbury system. PRE
+# the 2025 bridge rebuild (BlueTopo's Shrewsbury pixels are a Dec-2025 POST-
+# rebuild survey → rejected). Soundings reprojected 3424 ft → UTM18N and
+# MLLW ft → NAVD88 m via the spatially-varying NOAA VDatum offset (−0.44 S to
+# −0.84 N over the footprint), rasterised to 5 m and masked to the eHydro
+# Bathymetry_Vector coverage polygons → data ONLY in the channel ribbon.
+# Download + process: python scripts/download_ehydro_shrewsbury.py
+
+# eHydro CARVING TIER — federal channel surveys that un-pave the 2010 lidar.
+# Built by scripts/download_ehydro_nj.py; surveys chosen by scripts/audit_paved_channels.py.
+#
+# WHY IT OUTRANKS usace_nj_2010: the 2010 lidar is green (bathymetric) and returns the real bed
+# in clear shallow water — but in deep or turbid water it FAILS TO PENETRATE and returns the
+# WATER SURFACE (~0 to +2 m), which looks exactly like land. Ranked first, those returns shadow
+# CUDEM's correct bed and seal the channel shut. That is what dammed Shark River Inlet: real bed
+# -4.6 to -10.8 m, lidar +0.4 to +2.2 m, and the ENTIRE Shark estuary sat at exactly +0.00 m —
+# never flooding at all — while the ocean 1.8 km away reached +2.9 m. The controlling sill was
+# +0.57 m, ABOVE mean sea level, and its western edge was the edge of the lidar tile, not a bridge.
+#
+# SAFETY RAIL: the raster is clipped to WATER ONLY (z < -1 m). It is a carving tier, not a DEM,
+# so it can never flatten a structure — a shore-protection survey covering the Sea Bright
+# revetment reports +2.4 m there, which is clipped out, leaving the seawall intact. That matters:
+# the revetment is a knife edge in this model (storm tide lands ON it; 59-75% overtopped).
+ehydro_nj:
+  data_type: RasterDataset
+  uri: elevation/ehydro_nj.tif
+  driver:
+    name: rasterio
+    options: {}
+  metadata:
+    category: topography
+    crs: 32618
+    unit: m+NAVD88
+    source: USACE eHydro NJ_10_SRI_20150902_CS_4383_15 (Shark River Inlet, 2015-09-02 condition survey)
+    url: https://services7.arcgis.com/n1YM8pTrFmm7L4hs/arcgis/rest/services/eHydro_Survey_Data/FeatureServer
+
+# ── The SOUTHERN carving tier (2026-07-28) ───────────────────────────────────
+# ehydro_nj above is Shark River Inlet ONLY — a 2.5 x 1 km raster at 40.18N. The v2 domain
+# reaches to 39.70N, and that entire southern lobe had no channel survey in the stack. This
+# tier adds the federal navigation channels inside it: Barnegat Inlet, Manasquan Inlet, the
+# NJ Intracoastal Waterway segments, Point Pleasant Canal, Toms River, Oyster Creek.
+#
+# ⚠️ THE TRAP THIS FILE EXISTS BECAUSE OF: eHydro's XYZ sign convention varies by USACE
+# district and this domain straddles the boundary. Shark River (NY District) ships NEGATIVE
+# ELEVATIONS; every southern survey (Philadelphia District) ships POSITIVE DEPTHS below
+# MLLW. The builder DETECTS this per survey — applying the northern formula to a southern
+# file yields positive "elevations", the water-only clip drops 100% of them, and the tier
+# silently produces an EMPTY raster with no error.
+#
+# ⚠️ Consuming it needs a SUBGRID rebuild on the frozen mesh, not a fresh template build:
+# build_static copies the frozen mesh's z/mask and returns early, so a new elevation tier
+# never reaches the coarse z. Leaving z/mask alone is deliberate — the subgrid tables are
+# what the solver uses for conveyance, and the domain fingerprint stays intact so the arm
+# remains comparable to `wave-cora`.
+# Build: python scripts/build_ehydro_south.py
+ehydro_south:
+  data_type: RasterDataset
+  uri: elevation/ehydro_south.tif
+  driver:
+    name: rasterio
+    options: {}
+  metadata:
+    category: topography
+    crs: 32618
+    unit: m+NAVD88
+    source: USACE eHydro, earliest available survey per navigation feature in the v2 southern lobe
+    url: https://services7.arcgis.com/n1YM8pTrFmm7L4hs/arcgis/rest/services/eHydro_Survey_Data/FeatureServer
+
+shrewsbury_ehydro_2015:
+  data_type: RasterDataset
+  uri: elevation/shrewsbury_ehydro_2015.tif
+  driver:
+    name: rasterio
+    options: {}
+  metadata:
+    category: topography
+    crs: 32618
+    unit: m+NAVD88
+    source: USACE eHydro NJ_14_SNR_20150902_CS_4368_15 (2015-09-02 condition survey)
+    url: https://services7.arcgis.com/n1YM8pTrFmm7L4hs/arcgis/rest/services/eHydro_Survey_Data/FeatureServer
+
+# Workstream H diagnostic — widened Navesink+Shrewsbury narrows. -5 m in a ~150 m
+# band around the eHydro channel (+ a cut through the Rumson-Sea Bright causeway),
+# NoData elsewhere. Sits ON TOP (prepended to elevation_list) to over-widen the
+# channel cross-section and falsify/confirm the "eHydro ribbon too narrow" residual.
+# Built by scripts/make_narrows_dredge.py. NOT part of the premier build.
+narrows_wide_h:
+  data_type: RasterDataset
+  uri: elevation/narrows_wide_h.tif
+  driver:
+    name: rasterio
+    options: {}
+  metadata:
+    category: topography
+    crs: 32618
+    unit: m+NAVD88
+    source: derived (widened eHydro channel, Workstream H diagnostic)
+
+# 2010 USACE NCMP Topobathy LiDAR DEM — pre-Sandy 1 m topobathy.
+# Clipped tight to the model region: ~4 GB in memory (was ~20 GB at the old
+# oversized bbox, which OOMed the elevation merge). Re-clip if region changes.
+# Download: python scripts/download_pre_sandy_topobathy.py  (~109 MB on disk)
+
+usace_nj_2010:
+  data_type: RasterDataset
+  uri: elevation/usace_nj_2010_topobathy_clip.tif
+  driver:
+    name: rasterio
+    options: {}
+  metadata:
+    category: topography
+    crs: 4326
+    unit: m+NAVD88
+    source: 2010 USACE NCMP Topobathy LiDAR DEM, Atlantic Coast NJ (NOAA ID 9456)
+    url: https://noaa-nos-coastal-lidar-pds.s3.amazonaws.com/dem/USACE_NJ_DEM_2010_9456/
+
+nj_10ft_dem:
+  data_type: RasterDataset
+  uri: elevation/nj_10ft_dem.tif
+  driver:
+    name: rasterio
+    options: {}
+  metadata:
+    category: topography
+    crs: 4326
+    unit: m+NAVD88   # NJ statewide LiDAR is NAVD88 (GEOID12B); verified empirically
+                     # vs CUDEM (median nj-cudem = -0.02 m over 6530 land pts).
+    source: NJ OGIS statewide 10-ft LiDAR DEM (2014-2019), clipped to model bbox
+    url: https://registry.opendata.aws/nj-lidar/
+
+# GMRT (Global Multi-Resolution Topography) — offshore / deep-water bottom layer.
+# Replaced gebco_nj 2026-06-29: GEBCO's WCS/WMS API is dead (manual web download
+# only), and GMRT blends GEBCO + shipboard multibeam at ~50 m (vs GEBCO 450 m
+# integer-quantized → the hm0-spike cliffs). Covers the new offshore SE corner.
+# Download: python scripts/download_gmrt.py
+gmrt_nj:
+  data_type: RasterDataset
+  uri: elevation/gmrt_nj.tif
+  driver:
+    name: rasterio
+    options: {}
+  metadata:
+    category: topography
+    crs: 4326
+    unit: m+MSL
+    source: GMRT (Global Multi-Resolution Topography) GridServer, resolution=high (~50 m)
+    url: https://www.gmrt.org/services/gridserverinfo.php
+
+# NOAA NCEI 1/9 arc-second Topobathy DEM (northeast_sandy collection).
+# Merges LiDAR + NOS soundings + USACE surveys → actual inlet channel depths.
+# Datum: NAVD88 (~+0.18 m above MSL on NJ coast — apply offset if needed).
+# Download: python scripts/download_cudem.py  (~3.3 GB, ~57 tiles)
+
+cudem_nj:
+  # ⚠️ CHANGED for domain v2: this now points at the TILE VRT, not a materialised
+  # clip. The v1 repo carried `cudem_nj_clip.tif` (714 MB) cut to the v1
+  # footprint (deleted in the 2026-08-05 consolidation — the VRT supersedes it and
+  # scripts/download_cudem.py rebuilds it if ever needed);
+  # re-cutting it for v2 would have produced a ~2 GB duplicate of
+  # bytes already on disk under the shared data root. The VRT is read lazily and
+  # windowed by the region polygon, so the values reaching the merge are
+  # identical — gdal_translate -projwin never resampled anything, it only
+  # windowed. Nothing to re-clip on the next push south, either.
+  data_type: RasterDataset
+  uri: elevation/cudem_nj.vrt
+  driver:
+    name: rasterio
+    options: {}
+  metadata:
+    category: topography
+    unit: m+NAVD88
+    source: NOAA NCEI 1/9 arc-sec Topobathy DEM, northeast_sandy (2014-2018), tile VRT
+    url: https://chs.coast.noaa.gov/htdata/raster2/elevation/NCEI_ninth_Topobathy_2014_8483/
+
+# ── CUDEM 1/3 arc-second (~10 m) — NEARSHORE-OCEAN FILL, new in domain v2 ─────
+# Sits strictly BELOW cudem_nj (1/9", 3 m) and ABOVE gmrt_nj (~50 m), so it only
+# ever supplies pixels the finer product does not have.
+#
+# It exists because the 1/9" product does not tile the nearshore ocean on this
+# coast. Verified against that dataset's own authoritative urllist (942 URLs,
+# every collection): NO 1/9" tile east of -74.00 south of 40.25, and none east of
+# -73.75 anywhere here. A gap in the product, not a missed download.
+#
+# That strip is where SnapWave shoals and refracts. Leaving it to fall through to
+# a ~50 m bottom layer is the known recipe for surf-zone hm0 spikes (coarse
+# offshore bathy filling nearshore NoData). Measured complementarity at six
+# offshore probes: 1/9" empty at five of them, 1/3" present at all five, and
+# agreeing with GMRT to ~1 m — consistent with the NAVD88-vs-MSL datum offset.
+# Download: python scripts/download_cudem13.py   (8 tiles, 144 MB)
+cudem13_nj:
+  data_type: RasterDataset
+  uri: elevation/cudem13_nj.vrt
+  driver:
+    name: rasterio
+    options: {}
+  metadata:
+    category: topography
+    unit: m+NAVD88
+    source: NOAA NCEI 1/3 arc-sec Topobathy DEM (NCEI_third_Topobathy_2014_8580), northeast_sandy
+    url: https://noaa-nos-coastal-lidar-pds.s3.amazonaws.com/dem/NCEI_third_Topobathy_2014_8580/
+
+# ── Water level boundary (NOAA CO-OPS gauges) ────────────────────────────────
+# sf.water_level.create(geodataset="noaa_sandy_nj", buffer=50000)
+#
+# Replaces the prior GTSM-ERA5 forcing, which under-predicted Sandy by ~1 m at
+# the NJ-coast latitudes. Two drivers of that bias: (1) ERA5's surface stress
+# is sampled too far offshore to capture the near-shore wind setup that
+# amplified the storm tide on the NJ shelf, and (2) global tide-surge models
+# miss the local resonance in the NY Bight. Observed NOAA water levels carry
+# both signals plus astronomical tide, so they're the most defensible offshore
+# BC for a Sandy hindcast.
+#
+# Caveat: Sandy Hook gauge (8531680) failed mid-storm — only ~48 of 96 hourly
+# samples in the Oct 28-31 window. The Battery (8518750, ~5 km north) stayed
+# online and is the cleanest peak-amplitude reference for that latitude.
+#
+# Download: python scripts/download_noaa_sandy_wl.py
+
+noaa_sandy_nj:
+  data_type: GeoDataset
+  uri: gtsm/noaa_sandy_nj.nc
+  driver:
+    name: geodataset_xarray
+    options: {}
+  metadata:
+    category: ocean
+    crs: 4326
+    unit: m+NAVD88
+    source: NOAA CO-OPS hourly_height (8518750, 8531680, 8534720, 8536110), Oct 28-31 2012
+    url: https://api.tidesandcurrents.noaa.gov/api/prod/datagetter
+
+# ── RETIRED FORCINGS HAVE NO CATALOG ENTRY ───────────────────────────────────
+# noaa_sandy_nj_shblend, noaa_sandy_composite, noaa_sandy_composite_v2,
+# gtsm_sandy, gtsm_sandy_tide and fes_sandy_tide are all retired. Their .nc files
+# are kept for the record under `data/gtsm/retired_v1_monmouth/`, but they get NO
+# catalog key: a live key is an invitation to force a run with them, and the
+# point is that none of them should be used again.
+#
+#   * Both composites - superseded by noaa_sandy_phaseshift, which beats them on
+#     phase AND level simultaneously (Sandy Hook lag -0.1 vs 6.7 min; HWM bias
+#     0.302 vs 0.500). They fixed phase by INSERTING a third support node, which
+#     did not lie on the Battery->Atlantic City surge line and leaked level into
+#     the interior.
+#   * gtsm_* - GTSM's tide is ~34% under-amplitude across this whole region
+#     (x0.66 vs NOAA harmonics at six stations spanning open coast, harbour and a
+#     resonant sound), so its interior peaks are an amplitude artifact.
+#   * fes_sandy_tide / shblend - phase-reference and blend experiments, both
+#     superseded by the same phaseshift route.
+#
+# Those arms remain reproducible from `data/gtsm/retired_v1_monmouth/`, preserved
+# as the record for the sealed premier campaign. See docs/naming.md for the
+# retired-arm table and docs/campaigns/ for what each one was testing.
+
+# ── Phase-shifted boundary (2026-07-25) — SUPERSEDES both composites above. ──
+# The composites fixed the phase by INSERTING Sandy Hook as a 3rd support point. v2's claim
+# that its node "lies on the surge line" is only half true: the node is tide_SH +
+# interpolated_NTR, and while the NTR half IS the interpolant, the TIDE half is local and is
+# NOT — the node sits +0.051 m off the line at Shark River's latitude, which a barrier-overwash
+# threshold amplified x8.6 into the interior and wrecked the HWM score.
+# Root cause is pure interpolation geometry. NOAA harmonic phase vs Sandy Hook (+ = late):
+# Battery +24 min (a HARBOUR gauge), Atlantic City -18 min (real alongshore propagation).
+# Interpolating +24 -> -18 predicts +16.7 min of lag at Sandy Hook; the premier shows +17.6.
+# So: keep 2 stations, advance ONLY the Battery's TIDE to open-coast phase, leave every NTR
+# and Atlantic City untouched. Residual phase error -0.7..-3.1 min coastwide. Same stations,
+# same coordinates, same hourly grid as noaa_sandy_nj => the ONLY variable is tidal timing.
+# Build: python scripts/build_noaa_phaseshift.py
+noaa_sandy_phaseshift:
+  data_type: GeoDataset
+  uri: gtsm/noaa_sandy_phaseshift.nc
+  driver:
+    name: geodataset_xarray
+    options: {}
+  metadata:
+    category: ocean
+    crs: 4326
+    unit: m+NAVD88
+    source: NOAA CO-OPS (8518750, 8534720, 8536110), hourly; Battery tide advanced +24 min, NTR untouched
+
+# ── Open-coast tide anchors (2026-08-06) — the Battery DEMOTED to NTR donor. ──
+# phaseshift keeps the Battery as a node and corrects its phase. This drops it as a node
+# entirely: the tide is anchored on the only two open-coast NOAA stations on this coast.
+# Every intermediate station is disqualified by SITING, verified against NOAA benchmark
+# sheets rather than coordinates — Sea Bright is "SEA BRIGHT, SHREWSBURY RIVER NJ" at the
+# Rumson causeway (M2 0.496 m), Manasquan Inlet is in a Coast Guard boat basin (0.568),
+# Barnegat Inlet is published "(INSIDE)" (0.342, half open-coast), Cape May is Delaware
+# Bay (+47.6 min). There is NO clean open-coast NWLON station between Sandy Hook and
+# Atlantic City — a property of the gauge network, and the reason published studies force
+# from ADCIRC/GTSM support points instead.
+#   total_SH = tide_SH + [(1-w)*NTR_Battery + w*NTR_AC],  w = 0.1642
+#   total_AC = tide_AC + NTR_AC                        == the premier's own AC column
+# Sandy Hook's harmonic PREDICTION is complete through the storm although its gauge died
+# 10-29 23:36; only the NTR half was ever missing, and that half is the interpolable one.
+# ⚠️ NOT composite_v2, which kept the Battery as a THIRD node so its inserted node sat off
+# the Battery->AC line. Two nodes define the line themselves. The removal IS the arm.
+# ⚠️ NTR is never scaled — Raritan surge amplification is UNOBSERVED.
+# Pre-registration: docs/campaigns/2026-08_tide_anchor.md
+# Build: python scripts/build_noaa_tideanchor.py
+noaa_sandy_tideanchor:
+  data_type: GeoDataset
+  uri: gtsm/noaa_sandy_tideanchor.nc
+  driver:
+    name: geodataset_xarray
+    options: {}
+  metadata:
+    category: ocean
+    crs: 4326
+    unit: m+NAVD88
+    source: NOAA CO-OPS (8531680, 8534720), hourly; local open-coast tide + Battery->AC interpolated NTR
+
+# ── Tide-corrected GTSM-ERA5 (2026-08-06) — Parker's route, done on our coast ──
+# GTSM-ERA5 = CoDEC = **Muis et al. 2020**. These are the same thing: GTSM is the
+# Deltares model, Muis et al. are the papers that published datasets from it. We
+# already had it (retired `gtsm_sandy`).
+#
+# ⭐ WHY IT WAS UN-RETIRED. The retirement recorded "under-predicted Sandy by ~1 m".
+# That does NOT reproduce. Re-derived peak deficits: Sandy Hook -0.419, Battery
+# -0.746, Atlantic City -0.017, Cape May -0.262. The worst station is The Battery,
+# a HARBOUR gauge 26 km up the Hudson that GTSM's 2.5 km mesh cannot resolve and
+# that our ocean boundary cares least about.
+#
+# THE CORRECTION (scripts/build_gtsm_tidecorr.py):
+#   corrected = 1.2221 * (waterlevel - surge) + surge + msl_to_navd88(lat)
+# Amplitude calibrated at the only two gauges with a GTSM point within ~1 km —
+# Sandy Hook 0.814, Atlantic City 0.823, agreeing to 1% across 123 km. NO phase
+# shift (0 and -10 min is within one 10-min sample). Surge NEVER scaled.
+#
+# 🔴 THE SURGE IS NOT CORRECTABLE THE SAME WAY. Surge ratios are 0.971 (Sandy
+# Hook) and 1.147 (Atlantic City) — 18% apart and straddling 1.0, so GTSM runs
+# low in the north and HIGH in the south. A scalar cannot fix that, and the
+# residual after the tide correction IS the surge error.
+#
+# ⚠️ DENSITY IS NOT SOLVED: only 12 GTSM output points in the whole NJ/NY bight,
+# median spacing 21 km, 4 serving the v1 boundary. "2.5 km coastal resolution" is
+# the MESH, not the output spacing. This is 2 -> 4 points, not 2 -> 300.
+# ⚠️ KNOWN COST: the Raritan limb (389 of 1669 mask==2 cells) has 0% of cells
+# within 2 km of a GTSM point (median 11.1 km) and is extrapolated.
+#
+# Build: PYTHONPATH=$PWD python scripts/build_gtsm_tidecorr.py
+
+gtsm_sandy_tidecorr:
+  data_type: GeoDataset
+  uri: gtsm/gtsm_sandy_tidecorr.nc
+  driver:
+    name: geodataset_xarray
+    options: {}
+  metadata:
+    category: ocean
+    crs: 4326
+    unit: m+NAVD88
+    source: GTSM-ERA5 / CoDEC (Muis et al. 2020) v3 10-min, tidal amplitude x1.2221 vs NOAA harmonics
+
+# ── NACCS / CHS ADCIRC storm tide — the density fix ──────────────────────────
+# USACE Coastal Hazards System, NACCS validation set: ADCIRC SimB1HT, Post0,
+# storm 001 = Sandy. 401 save points downloaded; this file holds the 112 that sit
+# within 2 km of a v1_monmouth mask==2 cell AND are wet at every step. Coverage:
+# max gap 3.14 km, 90.7% of the 1669 boundary cells within 2 km — against four
+# GTSM points and two NOAA gauges.
+#
+# ⚠️ The screen lives in the FILE, not the buffer. `water_level.create` selects by
+# buffering the mask==2 line by Domain.waterlevel_buffer (100 km on v1), so an
+# unscreened file hands SFINCS all 401 points including deep interior Raritan Bay
+# ones. That buffer guards every other arm and must not be retuned for this one.
+#
+# ⚠️ PER-DOMAIN. The screened set is a function of the boundary, so v2_barnegat
+# needs its own build — and is not yet covered (43 km max gap; nothing below 40.15).
+#
+# Datum: MSL(1992) -> NAVD88 per point via NOAA VDatum, mean -0.065 m, spread
+# 0.065 m. Validated against the known -0.073 m at Sandy Hook (agreed to 0.004 m).
+# The CHS +0.155 m steric term is ALREADY in the released timeseries; not re-added.
+#
+# Build: PYTHONPATH=$PWD NJ_DOMAIN=v1_monmouth python scripts/build_naccs_boundary.py
+
+naccs_sandy_v1_monmouth:
+  data_type: GeoDataset
+  uri: gtsm/naccs_sandy_v1_monmouth.nc
+  driver:
+    name: geodataset_xarray
+    options: {}
+  metadata:
+    category: ocean
+    crs: 4326
+    unit: m+NAVD88
+    source: NACCS/CHS ADCIRC SimB1HT storm 001 (Sandy), 112 of 401 save points, MSL(1992)->NAVD88 via VDatum
+
+# The SAME 112 points, +0.115 m for secular sea-level rise (1992 MSL epoch -> 2012).
+# The two files differ by exactly that constant and nothing else, verified, so the
+# pair separates "does density help?" from "does the epoch term help?".
+#
+# Why it exists: NACCS's datum is MSL epoch 1992, and its +0.155 m steric term is
+# SEASONAL (readme: "weighted average of the seasonal adjustment values") — it carries
+# the October high, not twenty years of secular rise. NOAA monthly MSL 1991-2012 gives
+# 130 mm at Sandy Hook and 100 mm at the Battery; the uncorrected product measures
+# 0.140 m low at Sandy Hook in the quiet pre-storm window.
+# ⚠️ Measured from gauge records, NOT fitted to the model residual.
+#
+# Build: PYTHONPATH=$PWD NJ_DOMAIN=v1_monmouth python scripts/build_naccs_boundary.py --epoch-offset 0.115
+
+naccs_sandy_v1_monmouth_epoch:
+  data_type: GeoDataset
+  uri: gtsm/naccs_sandy_v1_monmouth_epoch.nc
+  driver:
+    name: geodataset_xarray
+    options: {}
+  metadata:
+    category: ocean
+    crs: 4326
+    unit: m+NAVD88
+    source: NACCS/CHS ADCIRC SimB1HT storm 001 (Sandy), 112 save points, MSL(1992)->NAVD88 via VDatum, +0.115 m epoch correction to 2012
+
+# ── In-domain tidal gauges (USGS NWIS) — PRE-STORM validation only ────────────
+# Two USGS estuary gauges INSIDE the domain (Shark River @ Belmar 40.19 south;
+# Shrewsbury @ Sea Bright 40.37 mid-north), param 72279 (NAVD88). Their uv record
+# ends ~10-29 04:00 UTC — before Sandy's peak (every permanent gauge in-domain
+# failed mid-storm) — so this is a tidal range/phase check, NOT a surge-peak check.
+# Download: python scripts/download_usgs_sandy_tidal.py
+
+usgs_sandy_tidal_nj:
+  data_type: GeoDataset
+  uri: gtsm/usgs_sandy_tidal_nj.nc
+  driver:
+    name: geodataset_xarray
+    options: {}
+  metadata:
+    category: ocean
+    crs: 4326
+    unit: m+NAVD88
+    source: USGS NWIS iv parameter 72279 (01407770 Shark R, 01407600 Shrewsbury R)
+    url: https://waterservices.usgs.gov/nwis/iv/
+
+# ── Open-coast storm-tide sensor (USGS SSS) — the only PEAK-capturing record ───
+# USGS rapid-deployment wave sensors at Monmouth Beach (40.37 N) that survived to
+# Sandy's peak. Wave sensors (high-freq, de-water in troughs): stormtide_m = 30-min
+# mean still water (vs model zs); wavemax_m = wave-crest envelope (vs highest HWMs).
+# Provisional. Download: python scripts/download_sandy_storm_tide_sensors.py
+
+sandy_storm_tide_nj:
+  data_type: GeoDataset
+  uri: gtsm/sandy_storm_tide_nj.nc
+  driver:
+    name: geodataset_xarray
+    options: {}
+  metadata:
+    category: ocean
+    crs: 4326
+    unit: m+NAVD88
+    source: USGS STN/Flood Event Viewer event 24, SSS-NJ-MON-002WV/003WV
+    url: https://stn.wim.usgs.gov/FEV/
+
+# ── FEMA MOTF Sandy storm-surge extent (spatial validation) ───────────────────
+# Binary flood mask (1=flooded, 0=dry, 255=nodata) on the domain bbox at 15 m,
+# EPSG:32618. Rendered from layer 0 of the Rutgers MOTF MapServer (the NJ
+# statewide extent is one giant polygon -> service refuses vector return; we
+# export-render to PNG instead, see scripts/download_sandy_motf_extent.py).
+# IMPORTANT: MOTF is a HWM/sensor-interpolated "bathtub" surface, sharing
+# provenance with our HWMs -> treat as extent CONSISTENCY check, not independent.
+
+sandy_motf_extent:
+  data_type: RasterDataset
+  uri: validation/sandy_motf_extent.tif
+  driver:
+    name: rasterio
+    options: {}
+  metadata:
+    category: validation
+    crs: 32618
+    source: FEMA MOTF Final Field-Verified Hurricane Sandy storm-surge extent (via Rutgers)
+    url: https://njmaps1.rad.rutgers.edu/arcgis/rest/services/CoastalFlooding/StormSurge/MapServer
+
+# ── Wave boundary (NDBC buoy, for SnapWave) ──────────────────────────────────
+# sf.snapwave_boundary.create(geodataset="ndbc_sandy_44025", buffer=100000)
+#
+# NDBC buoy 44025 (Long Island, 30 NM S of Islip) — closest open-water buoy
+# with a complete Sandy record. hs peaks ~9.6 m. Vars: hs, tp, wd, ds (ds is a
+# constant 30 deg — NDBC stdmet has no directional-spreading field).
+# The buoy is ~70 km E of the domain, beyond SnapWave's default 25 km buffer,
+# so use buffer=100000. Download: python scripts/download_ndbc_sandy_waves.py
+
+ndbc_sandy_44025:
+  data_type: GeoDataset
+  uri: waves/ndbc_sandy_44025.nc
+  driver:
+    name: geodataset_xarray
+    options: {}
+  metadata:
+    category: ocean
+    crs: 4326
+    source: NDBC buoy 44025 historical stdmet, Oct 28-31 2012
+    url: https://www.ndbc.noaa.gov/
+
+# ── Wave field for parametric setup (ERA5 reanalysis) ─────────────────────────
+# Spatially-varying replacement for the single NDBC buoy in the Stockdon cell.
+# Gridded swh/pp1d/mwd renamed to hs/tp/wd; 0.5 deg, coords time/y/x. Sampled
+# per water-level boundary support point to give an alongshore-varying setup.
+# Download: python scripts/download_era5_waves_cds.py
+
+era5_waves_nj:
+  data_type: RasterDataset
+  uri: waves/era5_waves_nj.nc
+  driver:
+    name: raster_xarray
+    options: {}
+  metadata:
+    category: ocean
+    crs: 4326
+    paper_doi: 10.24381/cds.adbb2d47
+    source: ERA5 hourly single-levels (swh, pp1d, mwd), Oct 28-31 2012
+    url: https://cds.climate.copernicus.eu/datasets/reanalysis-era5-single-levels
+
+# ── Wind + pressure forcing (ERA5) ────────────────────────────────────────────
+# setup_wind_forcing(wind="era5_nj")
+# setup_pressure_forcing(press="era5_nj")
+# File is pre-renamed to hydromt_sfincs conventions:
+#   wind10_u, wind10_v (m/s), press_msl (Pa), coords time/y/x
+
+era5_nj:
+  data_type: RasterDataset
+  uri: era5/era5_nj_sandy_2012_10_28_31.nc
+  driver:
+    name: raster_xarray
+    options: {}
+  metadata:
+    category: meteo
+    crs: 4326
+    paper_doi: 10.24381/cds.adbb2d47
+    source: ERA5 hourly single-levels (10 m winds + MSLP), Oct 28-31 2012
+    url: https://cds.climate.copernicus.eu/datasets/reanalysis-era5-single-levels
+
+# ── Rainfall (NOAA AORC v1.1) ─────────────────────────────────────────────────
+# sf.precipitation.create(precip="aorc_sandy_nj", cumulative_input=True, aggregate=False)
+# APCP_surface is kg/m^2 == mm accumulated per 1-hour interval -> cumulative_input=True.
+# Pre-clipped/renamed to hydromt conventions: var precip, coords time/y/x.
+
+aorc_sandy_nj:
+  data_type: RasterDataset
+  uri: precip/aorc_sandy_nj.nc
+  driver:
+    name: raster_xarray
+    options: {}
+  metadata:
+    category: meteo
+    crs: 4326
+    source: NOAA AORC v1.1 hourly precipitation, Oct 28-31 2012
+    url: https://registry.opendata.aws/noaa-nws-aorc/
+
+# ── River discharge (USGS NWIS) ───────────────────────────────────────────────
+# sf.discharge_points.create(geodataset="usgs_sandy_discharge", merge=False)
+# Daily-mean discharge (m3/s) at 2 domain inflows (Shark River, Navesink).
+# Point coords are the model-domain inflow cells, NOT the upstream gauge sites.
+
+usgs_sandy_discharge:
+  data_type: GeoDataset
+  uri: discharge/usgs_sandy_discharge.nc
+  driver:
+    name: geodataset_xarray
+    options: {}
+  metadata:
+    category: hydro
+    crs: 4326
+    source: USGS NWIS daily-mean discharge (00060/00003), Hurricane Sandy
+    url: https://waterservices.usgs.gov/
+
+# ── Infiltration (NRCS Curve Number) ──────────────────────────────────────────
+# sf.infiltration.create_cn(cn="cn_nj", antecedent_moisture=None)
+# CN = f(NLCD 2012 land cover, SSURGO hydrologic soil group), built by
+# scripts/build_cn_nj.py via the shipped NLCD_HSG.csv lookup. Var `cn` (CN II).
+
+cn_nj:
+  data_type: RasterDataset
+  uri: infiltration/cn_nj.nc
+  driver:
+    name: raster_xarray
+    options: {}
+  metadata:
+    category: infiltration
+    crs: 4326
+    source: NRCS Curve Number from NLCD 2012 x SSURGO HSG (USDA SDA)
+    url: https://sdmdataaccess.sc.egov.usda.gov/
+
+# ── Roughness ─────────────────────────────────────────────────────────────────
+# setup_manning_roughness(datasets_rgh=[{"lulc": "nlcd_2012"}])
+# Reclass table: hydromt_sfincs built-in NLCD_SFBD_mapping.csv
+
+nlcd_2012:
+  data_type: RasterDataset
+  uri: roughness/nlcd_2012.tif
+  driver:
+    name: rasterio
+    options: {}
+  metadata:
+    category: landuse
+    source: NLCD Annual Land Cover 2012 (USGS/MRLC)
+    url: https://www.mrlc.gov/data
+
+# ── bed-baymanning: the lagoon gets its own bed roughness ────────────────────
+# Byte-identical to nlcd_2012 EXCEPT that the 203,075 class-11 (Open Water) pixels inside
+# Barnegat Bay (182.8 km2, 3.4% of all open water in the raster) are re-coded to class 12,
+# which NLCD does not use. Paired with NLCD_CONUS_mapping_baymanning.csv = the normal table
+# plus `12 -> n = 0.035`; class 11 stays 0.020 everywhere else, so the ocean, the
+# Raritan/Sandy Hook lobe and the Shrewsbury are untouched (the north lobe is separately
+# known to be UNDER-forced, so a global bump would confound it).
+#
+# WHY: the inlet exchange is already right -- Barnegat Light's tidal range is 0.719 m
+# against 0.721 observed -- but 35 km up the lagoon Mantoloking holds 0.401 m against
+# 0.167 m and arrives 58 min EARLY. Too little dissipation, with the bathymetry already
+# correct (lagoon mean depth 1.57 m vs the published ~1.5 m; navigation channels within
+# 0.4 m of USACE soundings). 0.020 is a bare-sand number; Barnegat Bay is an SAV-dominated
+# lagoon where the published range is 0.025-0.045.
+#
+# ⚠️ Roughness feeds the SUBGRID tables, so this needs a TEMPLATE REBUILD
+# (scripts/setup_baymanning_template.py), NOT a prepare_experiment forcing swap.
+# Build: python scripts/build_bay_manning.py
+nlcd_2012_baymanning:
+  data_type: RasterDataset
+  uri: roughness/nlcd_2012_baymanning.tif
+  driver:
+    name: rasterio
+    options: {}
+  metadata:
+    category: landuse
+    source: NLCD 2012, Barnegat lagoon open water re-coded to class 12 (n = 0.035)
+
+# ── SnapWave wavemaker line ──────────────────────────────────────────────────
+# Alongshore LineString at the −5 m NAVD88 contour from CUDEM, trimmed to the
+# open-coast portion (south end of model to just south of Sandy Hook tip,
+# stopping before the spit wraps into Raritan Bay). This is the line along
+# which SnapWave injects radiation-stress forcing into SFINCS — mirrors the
+# Leijnse et al. (Carolinas / Florence) wavemaker architecture. Built by
+# scripts/build_wavemaker_line.py.
+#
+# Plan A (current): open-coast only. If Sandy Hook back-bay validation comes
+# in low after this works, switch to Plan B (also include a bay-side wavemaker
+# inside Sandy Hook Bay).
+# ⚠️ v1 EXTENT ONLY — DO NOT USE ON v2_barnegat WITHOUT REBUILDING.
+# This line spans lat 40.152..40.452, i.e. the v1 open coast. The v2_barnegat region
+# reaches down to 39.700, so as it stands the wavemaker would inject along only
+# the NORTHERN THIRD of the coast and silently leave Island Beach, the Mantoloking
+# breach zone and Barnegat Inlet unforced — a partial forcing that would look like
+# a physics result rather than a truncated input.
+#
+# It is not blocking: the premier config (snapwave_tuned) has wavemaker=False, so
+# nothing currently reads this. It is kept so the catalog key resolves and the v1
+# arms stay reproducible.
+#
+# Rebuilding is not a re-run: `scripts/build_wavemaker_line.py`, named as the
+# source in the v1 catalog, DOES NOT EXIST in either repo — the geojson outlived
+# its builder. Any wavemaker experiment on v2_barnegat needs that script written
+# first (alongshore -5 m NAVD88 contour from CUDEM, trimmed to the open coast and
+# stopped before the Sandy Hook spit wraps into Raritan Bay).
+wavemaker_nj_coast:
+  data_type: GeoDataFrame
+  uri: wavemakers/wavemaker_line.geojson
+  driver:
+    name: pyogrio
+    options: {}
+  metadata:
+    category: forcing
+    crs: 32618
+    source: scripts/build_wavemaker_line.py from CUDEM -5 m NAVD88 contour
+
+# ── CORA SWAN wave boundary (2026-07-27) ──────────────────────────────────────
+# NOT a hydromt driver entry. `cora_waves_nj.nc` is an UNSTRUCTURED point set —
+# dims (time, node) with lon/lat/depth coords on NOAA CORA's NOMAD v1e mesh — which
+# none of hydromt's RasterDataset/GeoDataset drivers describes. It is read directly
+# by nj_sfincs.model._point_wave_bnd via WaveConfig.wave_point_dataset. Recorded here
+# so its provenance sits with every other dataset's rather than only in code.
+#
+#   cora_waves_nj:
+#     uri:      waves/cora_waves_nj.nc
+#     builder:  scripts/build_cora_waves.py
+#     source:   s3://noaa-nos-cora-pds/cora_gec/native_grid/waves/zarr
+#               swan_HS / swan_TPS / swan_DIR, 2012 map files (kerchunk refs, anon S3)
+#     mesh:     NOMAD v1e   vars: hs [m], tp [s], wd [deg nautical]
+#     extent:   7,824 nodes in the v2_barnegat box (depth > 2 m, all-finite only),
+#               121 hourly steps 2012-10-27 .. 2012-11-01
+#     use:      WAVE BOUNDARY ONLY. CORA was evaluated and REJECTED as a water-level
+#               forcing source (tide late +6..+24 min, levels 0.14-0.31 m low).
+#     caveat:   vs NDBC 44025 at the buoy's own location/depth CORA is +0.49 m HIGH
+#               (peak 10.84 vs 9.65 m, RMSE 0.78 m). It is used for its SHELF
+#               TRANSFORMATION and alongshore structure, not as a height standard.

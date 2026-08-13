@@ -1,0 +1,23 @@
+name: sfincs
+channels:
+  - conda-forge
+dependencies:
+  - python=3.14
+  - hydromt
+  - hydromt_sfincs   # v2.0.0rc2 — component-based API
+  - jupyter
+  - matplotlib
+  - geopandas
+  - rasterio
+  - rioxarray
+  - xarray
+  - netcdf4
+  - pyproj
+  - cdsapi           # ERA5 winds/pressure + wave field; GTSM tide+surge (Copernicus CDS)
+  - pyTMD            # FES2014/TPXO tide prediction (phase reference; needs AVISO grids)
+  - s3fs             # NOAA AORC rainfall (AWS Open Data, Zarr)
+  - requests         # USGS / NOAA / NDBC REST downloads
+  - pip
+  - pip:
+      - nbstripout     # git clean filter — strips notebook outputs/metadata on commit
+                       # (run once per clone: python scripts/setup_nbstripout.py)

@@ -1,0 +1,46 @@
+{
+ "type": "FeatureCollection",
+ "features": [
+  {
+   "type": "Feature",
+   "properties": {
+    "note": "Expanded 2026-07-14 (WORKSTREAM L, the leak fix at its root). The SOUTHERN lobe's west edge was at x~580,650-580,915 (UTM18N) -- which CHOPPED THE NAVESINK RIVER IN HALF MID-CHANNEL at x~580,670. hydromt duly placed a free-outflow (Neumann) BC on the 5 m-deep cut face, and the model then drained 92.5% of the estuary's inflow straight out of the domain (Workstream J). The depth cut was never the problem: those cells are only ~-5 m, well inside mask_zmin=-10. It was the REGION POLYGON. West edge moved to x=577,000, which encloses BOTH tidal limits -- the Navesink's water ends at x~577,500 (Swimming River Dam, x~578,413) and the Shark River's at x~580,000 -- so the domain edge now lands on DRY LAND and there is no deep cross-section for an outflow BC to sit on. The leak cannot recur by construction. PREVIOUS NOTE: Expanded 2026-06-29. (1) WEST: an L-shaped lobe out to -74.28 across lat 40.38-40.52 brings in Raritan Bay so surge/waves refract through the bay into Sandy Hook Bay and the back estuaries (supervisor request). (2) EAST: offshore edge pushed -73.85 -> -73.45 to swallow the nearest ERA5 wave node (-73.5) and place the wave boundary in ~-35 m water (the X2 plan: input points inside real water, not outside the mesh). North nudged 40.50 -> 40.52 so the bay is enclosed at the Staten Island shore, not cut through open water. Earlier west-clip-at--74.05 OOM note is retired: now on a 128 GB box. NB: gebco_nj.tif only reaches -73.683, so the offshore extension needs a wider GEBCO re-clip at the elevation step."
+   },
+   "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+     [
+      [
+       -74.095955,
+       40.150372
+      ],
+      [
+       -73.450004,
+       40.150004
+      ],
+      [
+       -73.45,
+       40.520002
+      ],
+      [
+       -74.279994,
+       40.520002
+      ],
+      [
+       -74.280002,
+       40.380003
+      ],
+      [
+       -74.092888,
+       40.380344
+      ],
+      [
+       -74.095955,
+       40.150372
+      ]
+     ]
+    ]
+   }
+  }
+ ]
+}

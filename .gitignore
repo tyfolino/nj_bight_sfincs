@@ -1,0 +1,55 @@
+# Experiment sweep output (staged models + solver output + report). Reproducible
+# from run_experiments.py, so it is never tracked. LOCAL DIRECTORY, never a symlink:
+# the floodmap cache and the metrics CSV are WRITES, and the archive is read-only.
+experiments/
+
+# Data. Ignored wholesale, then the small SOURCE files are un-ignored below.
+# The domain definitions — the catalog, the region polygons, the refinement
+# polygons, the flux cross-sections — ARE SOURCE. Only the rasters they point at
+# are bulk. In the pre-2026-08 repos the whole of data/ was untracked, which put
+# the three files that actually define a domain outside version control.
+data/*
+!data/*/
+data/*/*
+!data/data_catalog.yml
+!data/region_*.geojson
+!data/quadtree/*.geojson
+!data/flux_crosssections.geojson
+!data/flux_crosssections.crs
+!data/roughness/*.csv
+!data/roughness/*.md
+
+# Python
+__pycache__/
+*.py[cod]
+
+# Logs
+*.log
+logs/
+# ...but keep the directory itself: hpc/*.slurm write to logs/ via `#SBATCH -e
+# logs/<job>.out`, and sbatch fails outright if the directory is absent in a fresh clone.
+!logs/.gitkeep
+
+# reports/ holds scored CSVs, which ARE tracked; the figure/animation bulk is not.
+reports/figures/
+reports/**/animations/
+
+# Toolchain — symlinks into ~/nj_sandy_sfincs (see CLAUDE.md). No trailing slash:
+# a `dir/` pattern does not match a symlink, so the trailing-slash form would leave
+# these showing as untracked forever.
+micromamba
+hydromt_sfincs
+*.sif
+*.tar
+*.tar.gz
+
+# Jupyter checkpoints (there is no notebooks/ dir yet, but the pattern is free)
+.ipynb_checkpoints/
+**/.ipynb_checkpoints/
+
+# ⚠️ .gitignore DOES NOT IGNORE ITSELF. The previous repo carried a bare
+# `.gitignore` line here, so a fresh clone got no ignore rules at all and every
+# staged model, raster and log showed up as untracked. Do not re-add it.
+
+# Papers — symlinked into the read-only archive (docs, not code). See ARCHIVE.md.
+refs
