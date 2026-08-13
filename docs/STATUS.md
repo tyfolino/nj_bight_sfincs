@@ -74,27 +74,90 @@ the run rather than after it.
 > (8518750) for the Narrows, Bergen Point West Reach (8519483) for Arthur Kill. Defensible
 > for two ~1 km cuts, unlike a 123 km gauge desert.
 
+#### 🟢 Indicatively CLEARED on all three arms, 2026-08-13 — no further download needed
+
+Sampled every 250 m along the sketched arms (`scripts/naccs_coverage_map.py`), against
+ADCIRC points only:
+
+| arm | median | max | within 2 km |
+|---|---|---|---|
+| ocean arm — Rockaway extension | 0.85 km | 1.85 km | **100%** |
+| Verrazzano Narrows cut | 0.37 km | 0.68 km | **100%** |
+| Arthur Kill cut (MOUTH) | 0.55 km | 0.87 km | **100%** |
+
+And against v1's **real** `mask==2` cells (1,669, read off the frozen mesh, measured per
+cell rather than as a polyline) — the Atlantic side v1.5 inherits unchanged: median
+**0.46 km**, max **2.77 km**, **95.5%** within 2 km.
+
+⚠️ Still not gate 1. These are the SKETCH, not `mask==2` on a mesh that does not exist, and
+they ignore the dry and depth screens — so every number is an **upper bound** on the support
+that will survive `build_naccs_boundary.py`. The gauge fallback is no longer needed on any
+arm. **No further CHS download is required for the premier.**
+
 #### 🟡 Indicative coverage, 2026-08-13 — encouraging, NOT the gate passing
 
-8 CHS zips in `data/NACCS/`, all integrity-checked, **695 unique save points** spanning
-lat 39.976–40.619, lon −74.326 to −73.877. 342 of them are from the 2026-08-13 grab, which
-was clearly aimed at the Narrows.
+9 CHS zips in `data/NACCS/`. **532 ADCIRC save points and 193 STWAVE save points**, spanning
+lat 39.976–40.619, lon −74.326 to −73.877. Regenerate with
+`python scripts/naccs_coverage_map.py` → `reports/naccs/` (CSV + map).
 
-Counted in **rough indicative lon/lat boxes I invented** — there is no region polygon yet:
+🔴 **The two products ship in the SAME zip and have DISJOINT save-point ID spaces** — zero
+collisions across the 532 and the 193, while STWAVE `SP0089` and ADCIRC `SP03584` are the
+same physical point. **Join on coordinates, never on id**, and with a tolerance: exact float
+matching reported 85 "STWAVE-only" points, 83 of which sit 0 m from an ADCIRC point and
+differ only in trailing precision. At 50 m the real figure is 2.
 
-| zone | pts | new | save-point depth (m) |
+Counted in **rough indicative lon/lat boxes** (module constants in
+`scripts/naccs_coverage_map.py`; they OVERLAP by design and are not the arms):
+
+| zone | pts | ADCIRC+STWAVE | ADCIRC only |
 |---|---|---|---|
-| Verrazzano Narrows | 52 | **52** | −1.49 … **+23.30** |
-| Arthur Kill (S half) | 23 | 2 | −1.18 … **+9.07** |
-| Raritan Bay open | 214 | 107 | −2.60 … +13.92 |
-| Lower Bay | 85 | 54 | −3.21 … +12.33 |
-| Sandy Hook → Rockaway cut | 122 | 101 | −3.21 … +12.33 |
+| Verrazzano Narrows | 27 | **27** | 0 |
+| Kill Van Kull | 0 | — | — |
+| Arthur Kill | 54 | 23 | 31 |
+| Raritan Bay | 156 | 54 | 102 |
+| Lower Bay | 85 | 62 | 23 |
+| Sandy Hook Bay | 60 | **2** | 58 |
+| Sandy Hook → Rockaway cut | 90 | 64 | 26 |
+| Atlantic shelf | 198 | **2** | 194 |
 
 ⚠️ **This is not gate 1.** The real screen is "within 2.0 km of a `mask==2` cell", which
 needs the frozen mesh, and these boxes are not the arms. Read it as: the Narrows is
-comfortably covered and **Arthur Kill is the thin arm to watch** — 23 points, only 2 of them
-new, and its maximum save-point depth is +9.07 m. Negative depths are above datum and will
-drop out on the wet/depth screens.
+comfortably covered on both products; **Arthur Kill is the thin arm to watch**; and wave
+coverage is a northern crescent — Sandy Hook Bay and the Atlantic shelf are ADCIRC-only.
+
+#### ✅ STWAVE HAS ARRIVED — and the ADCIRC-only claim was wrong
+
+The 2026-08-13 zips are **mixed**: `..._ADCIRC01_Timeseries.csv` *and*
+`..._STWAVE07_Timeseries.csv` members side by side. The earlier "ADCIRC only, zero wave
+parameters" reading came from inspecting ADCIRC-named members only, while the 695 count it
+sat beside had already swallowed STWAVE members as save points (532 + 193 − 30 new in the
+ninth zip = 695 exactly). **Per-zip verdicts on product are invalid; the product is a
+per-MEMBER fact.**
+
+STWAVE columns: `alpham`, `TM`, `Tp`, `DADD`, `UDIR`, `U`, `Hmo` — and the records are
+**30-minute**, where ADCIRC is 15-minute.
+
+✅ **`build_naccs_boundary.py` FIXED 2026-08-13 and verified on the mixed directory.**
+It selected members on `CSV/…Timeseries.csv` with no product filter and took water level
+from **hardcoded column index 9** — `ET00` water elevation in ADCIRC, **`TM` mean wave
+period in STWAVE**. It never silently corrupted (the 30-vs-15-minute step tripped the
+`times_ref` guard) but it exited blaming timestamps. Two changes:
+
+1. Members are filtered on `ADCIRC_MEMBER = "_ADCIRC01_"`, and the skipped count is
+   printed per zip so the STWAVE members are visibly excluded rather than silently.
+2. The water-level column is looked up **by code (`ET00`) in header row 1**, not by
+   position, and a member without it is a loud exit. A column-order change is now a
+   failure, not a wrong variable.
+
+Verified `--report-only --no-cache` on `v1_monmouth`: 532 unique ADCIRC points (177
+duplicate files, values agree), Sandy window 2012-10-11 12:15 → 2012-11-01 00:00 at 15 min,
+532 → 151 within 2 km → 92 kept after the dry (−23) and open-coast depth (−36) screens.
+Coverage **max gap 2.76 km, 95.6% within 2 km**, support sha16 `21f967f9798a6945` — which
+independently reproduces the 2.77 km / 95.5% measured off the mesh by
+`naccs_coverage_map.py`.
+
+⏳ STWAVE still has no reader; it needs its own, for its own column layout and 30-minute
+step. Not on the premier's path.
 
 #### Where the zips go
 
@@ -105,22 +168,224 @@ moved across (sha256-verified identical, then deleted from the archive, which wa
 The archive's NACCS dir is back to the 6 zips it held before the restart, which is what it
 should contain — those two were never part of its record.
 
-⚠️ **There is deliberately no `_sandy_parsed.npz` here.** That parse cache is keyed to
-nothing — `read_zips(use_cache=True)` would load it and never notice a new zip. If one ever
-appears and you have since downloaded more data, run with `--no-cache`.
+✅ **`_sandy_parsed.npz` is present and is SAFE.** An earlier note here claimed the parse
+cache was "keyed to nothing" and would never notice a new zip. That is wrong:
+`read_zips` stamps `st_mtime_ns` for every zip and invalidates unless both the **count and
+every mtime** match (`build_naccs_boundary.py:206-209`), so adding, re-downloading or
+touching a zip is a cache miss. `--no-cache` remains available and is still the right
+reflex after any change you are unsure about.
 
-⏳ **STWAVE is still to come.** The 2026-08-13 zips are ADCIRC water level, confirmed by the
-column check: `ET00` present, zero wave parameters (`Hs`, `Tp`, `STWAVE`, direction all
-absent). Members are named `..._ADCIRC01_Timeseries.csv`.
+⏳ **STWAVE is partially in** — 193 points against ADCIRC's 532, concentrated north of Sandy
+Hook. See the coverage table above. ⚠️ STWAVE-vs-CORA is a **deliberately withheld
+single-variable arm** (FINDINGS §1.21, and "Open, deliberately not decided" below); CORA is
+the adopted wave boundary. Completing STWAVE coverage is not on the v1.5 critical path.
 
-### Gate 2 — at least two interior gauges that survive the crest
+### 🟢 12 more HWMs are available in the target basin, and they are SAFE to add
 
-The whole claim is "Raritan Bay is COMPUTED, not forced". **If nothing inside can be
-scored, the claim is untestable.** Sandy Hook (8531680) dies mid-storm — 48 of 96 hours NaN,
-the whole back half — and cannot be the answer alone.
+Same STN query. In the Raritan Bay + Lower Bay box (−74.32…−74.00, 40.40…40.60) — the water
+v1.5 exists to test — STN holds **45** marks with an elevation against our local file's
+**33**. The **12** we do not have are all `Coastal`; by *vertical* quality, 6 Excellent
+(±0.05 ft), 3 Fair, 3 Poor.
 
-`ObsGauge.survives_crest` now records this per gauge, so the registry states it rather than
-leaving it to be rediscovered.
+⭐ **None of the 12 falls inside v1_monmouth's footprint**, so adding them **cannot** move
+the port fixture's pinned `hwm_n_scored=38`. That was the risk worth checking before
+touching `sandy_hwms.geojson` (finding 6: a changed scored-mark count invalidates a
+comparison), and it does not bite.
+
+⚠️ `hwmQualityName` is **VERTICAL** accuracy only. It says nothing about where the mark is,
+which is the uncertainty that forces the radius-and-estimator choice (finding 1). Do not
+read "6 Excellent" as 6 well-located marks.
+
+⏳ Not yet integrated: v1.5 needs its own `hwm_rules` basin classification, which does not
+exist until the domain is registered. Add the marks and the rules together.
+
+### ✅ Gate 2 — PASSED 2026-08-13. Two interior holdouts survive the crest.
+
+The whole claim is "Raritan Bay is COMPUTED, not forced". If nothing inside can be scored,
+the claim is untestable. Sandy Hook (8531680) dies mid-storm — 48 of 96 hours NaN — and
+cannot be the answer alone.
+
+**It does not have to be.** USGS deployed rapid-deployment storm-tide sensors (SSS) across
+Raritan Bay for Sandy and they all survived. Found via `Instruments/{id}/Files.json` →
+`Files/{file_id}/item` on STN event 24 — *not* the bulk `Instruments.json`, whose
+`data_files` is empty for every one of them (`download_sandy_storm_tide_sensors.py`
+already documents that quirk).
+
+Distances are to the **v1.5** arms. ⚠️ Computing them against v1's `mask==2` is wrong and
+inverts the answer: 511 of v1's 1,669 boundary cells are its north edge (lat 40.5202) and
+west edge (lon −74.28), **both of which run through Raritan Bay and both of which v1.5
+deletes**. v1.5 inherits the 1,158 Atlantic-facing cells only.
+
+| instrument | where | record | peak m NAVD88 | to nearest arm | role |
+|---|---|---|---|---|---|
+| **2255** `SSS-NJ-MID-001WL` | S Raritan Bay, NJ shore | 10-28 10:00 → 11-02 | 3.57 | 4.67 km | ✅ **holdout** |
+| **2295** `SSS-NY-RIC-004WL` | Great Kills | 10-29 07:00 → 11-01 | 4.03 | 8.85 km | ✅ **holdout** |
+| 2294 `SSS-NY-RIC-003WL` | Arthur Kill mouth | 10-28 06:00 → 11-01 | 4.88 | 1.67 km | ⚠️ forcing-adjacent |
+| 2291 `SSS-NY-RIC-001WL` | Narrows, SI side | 10-28 06:00 → 11-01 | 4.58 | 0.87 km | ⚠️ forcing-adjacent |
+| 2270 `SSS-NY-KIN-001WL` | Narrows, Brooklyn | 10-28 06:00 → 11-01 | 4.06 | 3.46 km | ~ marginal |
+| 2265 `SSS-NJ-UNI-002WL` | up Arthur Kill | 10-28 10:00 → 10-31 | 3.84 | — | out of domain |
+
+🔴 **THESE SENSORS ARE MOUNTED ABOVE NORMAL WATER. A long record is not a usable record.**
+Each has a "lowest recordable water elevation"; below it the unit reads its own floor, and
+`download_sandy_storm_tide_sensors.py` masks that to NaN. The fraction of each raw record
+actually above its floor:
+
+| inst | floor m NAVD88 | above floor | usable |
+|---|---|---|---|
+| 2255 | 1.75 | **1.9%** | ❌ **NO** — 28 six-min points, a 2 h blip at the crest |
+| 2295 | 1.97 | 13.7% | ~ 112 points, high water only |
+| 2291 | 1.28 | 19.8% | ~ 204 points |
+| 2270 | 0.62 | 48.4% | ✅ 524 points |
+| 2294 | 0.54 | 57.5% | ✅ 614 points |
+
+⚠️ **So "record starts 10-28" does NOT mean "1.5 days of pre-storm tide".** 2255 spans the
+period but was dry for 98% of it, and its 30-min still-water mean is not a water level at a
+site that only briefly floods. **2255 is not a quantitative holdout** — at best a peak bound.
+
+#### 🔴 Why 2255 is wonky — DIAGNOSED, and it is not a product error
+
+**The sensor is sited on ground that is above normal water.** CUDEM under it reads
+**+1.45 m** NAVD88 at the point and a **+1.78 m median within 150 m** — the whole
+neighbourhood is dry land at ordinary tide, which is exactly why its recordable floor is
+1.75 m and only 1.9% of the record clears it. Contrast 2294, whose 150 m median bed is
+**−0.07 m**: real water at the sensor.
+
+So 2255 is functionally **an HWM with a clock**, not a tide gauge: it answers "did water
+reach here, when, and how deep", and its 30-min still-water mean averages across a window
+that is partly *dry*, which is not a water level at all.
+
+Its NACCS counterpart node sits in **2.86 m of open bay 0.88 km away**. Open-bay level
+against shoreline overtopping depth is a category mismatch, so the +1.665 m "peak error" is
+an artefact of the pairing, not a NACCS deficiency. ⚠️ **Drop 2255 from quantitative
+scoring**; keep it only as a peak bound (water reached ≥3.57 m raw there) and score it as an
+HWM, which is what it physically is.
+
+⭐ **What IS testable: tidal HIGH WATER, not tidal RANGE.** Every sensor's troughs sit below
+its floor, so peak-to-trough range is unmeasurable everywhere. But at 2294 and 2270 the
+floors are low enough (0.54 / 0.62 m) that the tidal *peaks* clear them, and those peaks are
+resolved in both level and timing. High-water amplitude and phase are therefore available;
+full M2 range is not. ⚠️ Statistics computed on retained points are **high-water
+statistics** — the clipping is not missing-at-random.
+
+✅ **Ingested** to `data/gtsm/sandy_storm_tide_raritan.nc` via
+`download_sandy_storm_tide_sensors.py --set raritan`. Deliberately a SECOND file:
+`sandy_storm_tide_nj.nc` feeds `_SSS_SEA_BRIGHT` (2258) in the frozen v1_monmouth registry
+and the port fixture is pinned against it. Register as `ObsGauge`s when `v1_5_raritan` is.
+
+### 🟡 NACCS vs those sensors — the forcing product is good at the straits, LOW in the bay
+
+`scripts/check_naccs_vs_sensors.py` → `reports/naccs/naccs_vs_sensors.{csv,png}`.
+🔴 **A FORCING-PRODUCT diagnostic, never a model diagnostic** — no SFINCS run is involved.
+The NACCS nodes used are INTERIOR nodes that on v1.5 force nothing; they stand in for "what
+does the source product think the interior does".
+
+| inst | role | node dist | bias | RMSE | peak err | lag |
+|---|---|---|---|---|---|---|
+| 2294 | forcing-adj, 1.67 km | 0.47 km | **−0.007** | 0.168 | +0.168 | +12 min |
+| 2270 | marginal, 3.46 km | 0.24 km | −0.067 | 0.173 | +0.058 | +48 min |
+| 2291 | forcing-adj, 0.87 km | 0.29 km | −0.092 | 0.178 | +0.001 | +54 min |
+| **2295** | **holdout, 8.85 km** | 0.70 km | **−0.389** | 0.410 | **−0.350** | +18 min |
+| 2255 | unusable (n=28) | 0.88 km | +1.234 | 1.315 | +1.665 | +66 min |
+
+⭐ **The result that licenses the build: at the three places NACCS actually FORCES v1.5 —
+the ocean arm, the Narrows, the Arthur Kill mouth — it is excellent.** Bias ≤0.09 m, RMSE
+~0.17 m, tidal peaks tracked in both level and phase across the whole record.
+
+At Great Kills it runs 0.35–0.39 m low. **Do not read a mechanism into that.** It is one
+high-water-only comparison (n=112; everything below the sensor's 1.97 m floor is clipped
+away) of one model against another model. Checked and ruled out: the node is *inside* the
+harbour — bed along the 0.70 km line to it is water for 59 of 60 samples, to −9 m in the
+dredged channel — and 8 save points sit within 2.1 km, so neither density nor a land block
+explains it. **More NACCS points there would buy nothing.**
+
+🔴 **And it does not propagate.** Great Kills is **8.85 km from the nearest arm**: on v1.5 it
+is interior water that SFINCS COMPUTES. NACCS forces only the three arms, so a NACCS error
+in the middle of the bay never enters the model. Not inheriting it is exactly what moving
+the boundary out buys — under the old design, with the boundary through the bay, it would
+have been a source term.
+
+⚠️ **Pick the NACCS node by DEPTH, not distance alone.** NACCS ships save points with
+negative depth (above datum — marsh/bank). The nearest node to 2255 is at −1.25 m and read
+as a +1.7 m product error that was really a node-choice error; the script now requires
+`depth >= 0.5 m`.
+
+⏳ **The M2 amplification claim still has no direct time-series test.** The cleanest route
+does not need 2012 data at all: run the model, extract its harmonic constituents at Port
+Reading / Keasbey / South Amboy / Great Kills and compare against the NOAA published
+`harcon` values already tabulated in FINDINGS §2.
+
+---
+
+## 🔵 LIVE — Phase 5b in progress, 2026-08-13. Pick up here.
+
+### The mesh is SIZED and the geometry is DRAWN
+
+`scripts/probe_mesh_size.py` on `v1_5_raritan`: **684,842 faces, 408,729 active, ×1.25 v1
+(547,408), projected SnapWave ~3.8 h** — comfortably inside a 12 h batch. Boundary as built:
+1,396 water-level cells (ocean 1,202 / narrows 153 / arthur_kill 41), 320 outflow, all
+invariants passing. That run predates the drawn polygon below.
+
+🔴 **`data/region_v1_5_raritan_edited.geojson` IS THE REGION.** Hand-drawn in QGIS by the
+user, 2026-08-13, over Esri imagery + CUDEM: 40 vertices, valid, CCW, 2,284 km². It
+supersedes the generated `region_v1_5_raritan.geojson`.
+⚠️ **`scripts/build_region_v1_5.py` still WRITES that path and will clobber the drawn file.
+Do not run it until its write path is retired** (queued below).
+
+Validated on the drawn polygon — four water crossings, every one inside the 2 km rule, so
+**no gauge fallback is needed anywhere**:
+
+| crossing | length | nearest ADCIRC |
+|---|---|---|
+| ocean closure (isobath turn → Rockaway Pt) | 11.13 km | 0.92 km |
+| Verrazzano Narrows | 2.66 km | 0.72 km |
+| Arthur Kill mouth | 1.06 km | 0.38 km |
+| **Raritan River** | 1.79 km | 0.88 km |
+
+All five obs gauges fall INSIDE, including `sss_great_kills` — the ring goes around the
+landward side of the harbour, so the only true interior holdout survives.
+
+### ⭐ What fixed the boundary, after three wrong attempts
+
+The water-level boundary was a tangle looping through Lower Bay. **It was never the region
+outline.** `create_boundary` puts `mask==2` on the outermost active WET cells, and the
+active/inactive interface is set by `create_active(zmin=mask_zmin)` *before* the region clip.
+In Lower Bay that deactivated the dredged channels (Ambrose −27 m, Chapel Hill, Raritan
+Reach); they stay CONNECTED to the sea through the bay mouth so `_fill_inactive_holes` cannot
+reach them (finding 9, verbatim), and every channel got ringed with imposed ocean level.
+
+The fix is one declared `always_active_boxes_ll` entry over **Raritan + Lower + Sandy Hook
+Bay** — "bay water is in the domain at any depth". Ocean arm 2,398 → 1,202 cells and one
+continuous run; detached islands 25/41,478 cells → 5/169. ⚠️ Moving the closure, tightening
+the isobath and patching individual channels all failed first. Do not re-try them.
+
+### Queued, in order
+
+1. **Retire `build_region_v1_5.py`'s write path** → make it a VALIDATOR over the drawn
+   polygon (closure, CCW, crossing lengths, cut brackets). Record provenance.
+2. **Tag the 40 segments** (ocean / land / narrows / arthur_kill / raritan / inland); declare
+   the Raritan cut; **tighten all four arm boxes and their cell brackets**. ⚠️ The current
+   `arthur_kill` box runs to lon −74.280 and was silently ADOPTING THE RARITAN RIVER — 41
+   cells in two fragments passed a `[15..300]` bracket doing no work.
+3. **Raritan discharge** (user approved): add `01403060` *Raritan R below Calco Dam at Bound
+   Brook* (−74.5483, 40.5511) to `SITES` in `download_usgs_sandy_discharge.py`; inflow point
+   at the crossing midpoint (−74.2920, 40.4905). Add a `no_waterlevel_box` over the cut — an
+   imposed ocean level across a tidal river PUMPS it, the mirror of the Navesink drain.
+   ⚠️ `01403060` is a LOWER BOUND: Lawrence Brook and the South River join below it. Check
+   for a South River gauge rather than accept the deficit silently.
+4. **Re-probe, re-plot** (`scripts/plot_waterlevel_boundary.py`). Then verify Great Kills is
+   hydraulically CONNECTED (a coarse cell across the entrance would seal it — the dammed-inlet
+   failure) and that `point_zb` at 2295 is not dry (else `series_source="map"`).
+5. **Then** the three bootstrap items: `n_waterlevel_support` (from the builder's screen on
+   the real mesh), `hwm_rules` for v1.5 basins, and the fingerprint in `premier.EXPECTED`.
+   Until all three land, 5 tests stay red BY DESIGN and nothing may be frozen or run.
+
+### Two known defects I introduced, still open
+
+- **`_drop_detached_active_islands` can eat cut cells.** It cost `narrows` 229→113 and
+  `arthur_kill` 177→92 before the bay box. Keeping only the largest component is too blunt
+  near a 1 km cut.
+- **Its log line is structurally wrong**: it reports "N of them were water-level BC cells",
+  but it runs BEFORE `create_boundary`, so that count is always 0. Report bed range instead.
 
 ---
 
@@ -128,8 +393,39 @@ leaving it to be rediscovered.
 
 1. **Region polygon** — `scripts/build_region_v1_5.py`, named lon/lat vertices as module
    constants. Ring segments tagged `ocean` / `land` / `narrows` / `arthur_kill`.
-   ⚠️ Cut Arthur Kill at its **north** end (the Kill Van Kull junction) so Perth Amboy /
-   Carteret / Woodbridge stay computed — that is HWM-rich ground.
+
+   ⭐ **TWO GEOMETRY DECISIONS TAKEN 2026-08-13** — these SUPERSEDE
+   [plan_v1_5_original.md](plan_v1_5_original.md) lines 168 and 31. Indicative vertices
+   are in `scripts/naccs_coverage_map.py`; see `reports/naccs/coverage_map.png`.
+
+   **(a) Arthur Kill is cut at its MOUTH** (Perth Amboy / Ward Point), not at the Kill
+   Van Kull junction. The whole kill is OUT of the domain. The plan's north cut had **no
+   NACCS support at all** — nearest save point 9.56 km, 0% within 2 km — and would have
+   needed the 1-node Bergen Point gauge fallback. The mouth cut forces straight from
+   NACCS: nearest point **0.21–0.87 km**, 16–19 points within 2 km.
+
+   ⚠️ **What this costs, stated plainly.** It walls off the Raritan Bay ↔ Newark Bay
+   exchange, and it puts a forced level on ~1 km of the Raritan shoreline that v1.5
+   otherwise computes. That is a *much* milder version of the defect v1.5 exists to fix
+   — a dense product across a 1 km cut, not a 2-node interpolation across 123 km — but
+   it is the same kind, so say so rather than claiming the interior is wholly computed.
+   The Narrows still carries the Upper Bay + Hudson prism and stays open.
+
+   ✅ **RESOLVED against USGS STN 2026-08-13 — the mouth cut costs 8 marks.** Queried
+   `stn.wim.usgs.gov/STNServices/HWMs/FilteredHWMs.json?Event=24` (Sandy is event **24**;
+   910 marks nationally). The Arthur Kill limb — Carteret / Woodbridge / Elizabeth, box
+   (−74.30…−74.15, 40.52…40.68) — holds **8** marks in the FULL STN set. Our local file's
+   zero was indeed its lat-40.515 clip, but "HWM-rich ground" was an overstatement
+   regardless. 8 marks, on ground deliberately out of scope, is a price worth paying for
+   an arm that forces from NACCS at 0.21 km instead of needing a gauge fallback at
+   9.56 km. **Scope call, 2026-08-13: the goal is "can we force Raritan Bay correctly",
+   not the limb. Extending north is possible future work.**
+
+   **(b) The ocean arm is v1's trace extended ~3.3 km STRAIGHT north to Rockaway Point**
+   — not a diagonal across the Lower Bay mouth. Measured off the frozen mesh: v1's
+   ocean-side `mask==2` already runs at lon −73.936…−73.947 from lat 40.44 to its north
+   edge at 40.5202, and in the 40.46–40.47 band its easternmost cell is at −73.9364,
+   Rockaway Point's own longitude. The arm is a continuation, not new geometry.
 2. **Refinement** — a NEW `refinement_v1_5_raritan.geojson`. Neither existing recipe is
    usable: a refinement recipe is not portable, and a level gate written for one basin will
    refine another basin's open water to its finest level. L3/L4 on the two cuts and their

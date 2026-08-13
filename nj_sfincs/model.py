@@ -134,6 +134,122 @@ def _fill_inactive_holes(sf, mask, zb) -> np.ndarray:
     return mask
 
 
+def _drop_detached_active_islands(sf, mask, zb) -> np.ndarray:
+    """Deactivate ACTIVE patches not connected to the main domain.
+
+    ── THE MIRROR OF ``_fill_inactive_holes`` ────────────────────────────────────
+    That function fixes an INACTIVE island inside active water. This fixes an ACTIVE
+    island inside inactive water — an offshore shoal that rises above ``mask_zmin``
+    while everything around it is deeper, so ``create_active`` leaves a detached
+    patch floating in the sea.
+
+    ``create_boundary`` then rings each one with ``mask==2``, and the result is a
+    closed loop of imposed ocean water level with **no hydraulic connection to the
+    model at all**. It cannot influence the solution, it inflates the boundary-cell
+    count, and — the real cost — it makes the boundary set look wrong in exactly the
+    way a genuine intrusion looks wrong, so the one alarm that matters gets ignored.
+
+    Found on v1.5 as two floating rings, off Long Branch and off Sandy Hook. They
+    passed every existing invariant: each cell was wet, and each sat inside a declared
+    arm box, because an arm box is a rectangle and a shoal 3 km offshore is still
+    inside it. **Geometry could not catch this; topology can.**
+
+    ⚠️ Keeps the LARGEST active component only. That is right for a single-basin
+    coastal domain and would be wrong for one that legitimately contains two
+    disconnected water bodies — if such a domain is ever added, this needs a declared
+    component count rather than an argmax.
+    """
+    active = mask > 0
+    if not active.any():
+        return mask
+    from scipy.sparse.csgraph import connected_components
+
+    adj = sf.quadtree_grid.data.grid.face_face_connectivity
+    idx = np.flatnonzero(active)
+    _, lab = connected_components(adj[active][:, active], directed=False)
+    labels, counts = np.unique(lab, return_counts=True)
+    if len(labels) == 1:
+        print("[mask] active domain is a single connected component")
+        return mask
+    main = labels[np.argmax(counts)]
+    detached = np.zeros(len(mask), dtype=bool)
+    detached[idx[lab != main]] = True
+    fx, fy = _face_xy(sf)
+    n_bc = int((mask[detached] == 2).sum())
+    print(
+        f"[mask] DROPPED {int(detached.sum())} active cells in "
+        f"{len(labels) - 1} detached island(s) — {n_bc} of them were water-level BC "
+        f"cells forming closed rings with no connection to the domain. "
+        f"Largest kept component: {counts.max():,} cells."
+    )
+    for lb, ct in zip(labels, counts):
+        if lb == main:
+            continue
+        sel = np.zeros(len(mask), dtype=bool)
+        sel[idx[lab == lb]] = True
+        print(f"       island {ct:>5} cells at x {fx[sel].mean():.0f} "
+              f"y {fy[sel].mean():.0f}, bed {zb[sel].min():+.2f}..{zb[sel].max():+.2f} m")
+    mask = mask.copy()
+    mask[detached] = 0
+    return mask
+
+
+def _assert_boundary_is_continuous(sf, mask, dom) -> None:
+    """A water-level boundary should be a few continuous runs, not confetti.
+
+    ⚠️ MEASURED BY PROXIMITY, NOT BY EDGE-ADJACENCY. The first version of this used
+    ``connected_components`` on ``face_face_connectivity`` and reported **887**
+    components over a boundary that is visibly a handful of runs. The reason is
+    geometric, not physical: the ocean arm follows a rugged isobath diagonally across
+    a quadtree, so it climbs as a STAIRCASE, and staircase cells touch at CORNERS.
+    Corner contact is not edge adjacency, so every diagonal step severed the run.
+
+    Clustering on distance instead is immune to that: two boundary cells belong to the
+    same run if they are within a few cell widths of each other, however they touch.
+    """
+    import numpy as np
+    from scipy.sparse import coo_matrix
+    from scipy.sparse.csgraph import connected_components
+    from scipy.spatial import cKDTree
+
+    bc = mask == 2
+    if not bc.any():
+        return
+    fx, fy = _face_xy(sf)
+    pts = np.c_[fx[bc], fy[bc]]
+
+    # Link radius from the ACTUAL local spacing, so this works at any refinement:
+    # the median nearest-neighbour distance among boundary cells, x2.5 for the
+    # diagonal-plus-one-level-change case. Not a knife edge -- anything from ~1.6x
+    # to ~4x gives the same component count here.
+    tree = cKDTree(pts)
+    d1, _ = tree.query(pts, k=min(2, len(pts)))
+    step = float(np.median(d1[:, -1])) if pts.shape[0] > 1 else 1.0
+    radius = 2.5 * step
+
+    pairs = np.array(list(tree.query_pairs(radius))) if len(pts) > 1 else np.empty((0, 2), int)
+    if len(pairs):
+        g = coo_matrix((np.ones(len(pairs)), (pairs[:, 0], pairs[:, 1])),
+                       shape=(len(pts), len(pts)))
+        n_comp, lab = connected_components(g, directed=False)
+    else:
+        n_comp, lab = len(pts), np.arange(len(pts))
+    counts = np.bincount(lab)
+    n_arms = max(1, len([a for a in dom.boundary_arms if a.btype == "waterlevel"]))
+    ceiling = 4 * n_arms
+    biggest = ", ".join(f"{c:,}" for c in sorted(counts)[::-1][:6])
+    print(f"[bc] continuity: {n_comp} run(s) over {n_arms} declared arm(s) "
+          f"(link radius {radius:.0f} m); largest: {biggest}")
+    if n_comp > ceiling:
+        raise AssertionError(
+            f"water-level boundary fragmented into {n_comp} runs over {n_arms} "
+            f"declared arm(s) (ceiling {ceiling}). A boundary that is not a few "
+            f"continuous runs is tracing something -- a shoal rim, a dredged channel, "
+            f"or a bay mouth it should have cut straight across. Plot it with "
+            f"scripts/plot_waterlevel_boundary.py before changing this number."
+        )
+
+
 def _report_waterlevel_boundary(sf, mask, zb) -> None:
     """Print the ENTIRE water-level boundary, as latitude bands, on every build.
 
@@ -503,6 +619,9 @@ def apply_mask_and_boundary(
     # ground) and BEFORE create_boundary, which is what turns an island into a ring of
     # imposed open-ocean level.
     mask = _fill_inactive_holes(sf, mask, sf.quadtree_grid.data["z"].values)
+    # Mirror image, same place in the order: an ACTIVE island detached from the
+    # domain must go before create_boundary, or it gets ringed with mask==2.
+    mask = _drop_detached_active_islands(sf, mask, sf.quadtree_grid.data["z"].values)
     sf.quadtree_grid.data["mask"] = sf.quadtree_grid.data["mask"].copy(data=mask)
 
     # 5. Boundary cells -------------------------------------------------------
@@ -575,6 +694,7 @@ def apply_mask_and_boundary(
     # Display the whole BC set BEFORE the invariants run, so it is on the log even when
     # the build then fails — the intrusion is usually what caused the failure.
     _report_waterlevel_boundary(sf, mask, zb)
+    _assert_boundary_is_continuous(sf, mask, dom)
     _report_boundary_arms(sf, mask, zb)
     _check_domain_invariants(
         sf, mask, zb, allow_waterlevel_zones=allow_waterlevel_zones

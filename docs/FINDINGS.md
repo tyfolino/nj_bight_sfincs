@@ -324,19 +324,39 @@ it is a forcing INPUT, not a holdout. It is a **forcing-product diagnostic, and 
 practice rather than a gate** — report it alongside the incumbent interpolant's own numbers,
 never against invented thresholds.
 
-**The shape.** One ocean arm — the Atlantic contour wrapped around Sandy Hook, closing on
-Rockaway Point — plus two short forced cross-sections at Verrazzano Narrows and Arthur
-Kill. Lower Bay, Raritan Bay and Sandy Hook Bay are computed. Staten Island's south shore is
-a declared land boundary; Jamaica Bay is excluded; no NYC land in the model.
+**The shape.** One ocean arm — v1's own Atlantic trace, **extended ~3.3 km straight north
+to Rockaway Point** — plus two short forced cross-sections at Verrazzano Narrows and the
+Arthur Kill MOUTH. Lower Bay, Raritan Bay and Sandy Hook Bay are computed. Staten Island's
+south shore is a declared land boundary; Jamaica Bay is excluded; no NYC land in the model.
+⭐ The ocean arm is a CONTINUATION, not new geometry: measured off the frozen mesh, v1's
+ocean-side `mask==2` already runs at lon −73.936…−73.947 from lat 40.44 to its north edge at
+40.5202, and one band sits exactly on Rockaway Point's longitude. v1.5 keeps v1's southern
+limit (lat 40.150).
 
-**Why a wall will not do instead.** The omitted exchange is not bounded and local: the
-Narrows and Arthur Kill carry the Upper Bay + Hudson tidal prism, drawn through Raritan Bay.
-The domain must stay open there. (Contrast a small bay cross-section, where a closed wall
+⚠️ **A −10 m isobath cannot BE the ocean arm** — contoured on CUDEM over this window it is a
+**single 1,230 km path** threading the dredged channels straight into the bay. That is
+finding 9 in picture form, and it is why the published practice (Grimley et al.) *draws* the
+boundary and reports the contour as where it lands on average, not as the rule.
+
+**Why a wall will not do at the NARROWS.** The omitted exchange is not bounded and local:
+the Narrows carries the Upper Bay + Hudson tidal prism, drawn through Raritan Bay. The
+domain must stay open there. ⚠️ Nor will a DISCHARGE boundary: a tidal strait's flux is a
+*response* to the level difference across it, so prescribing Q over-determines it and kills
+the feedback that computing Raritan Bay depends on — and it destroys the audit, since Q(t)
+at the Narrows is the validation. Grimley's discharge inputs are NHD **rivers** (freshwater
+inflow), an order of magnitude or two smaller and one-way; their free-outflow termini are
+finding 10's drain. (Contrast a small bay cross-section, where a closed wall
 omits a bounded local exchange and an imposed ocean level actively pumps the lagoon — there,
 the wall is the honest choice.)
 
-**Arthur Kill is cut at its NORTH end**, at the Kill Van Kull junction, so Perth Amboy /
-Carteret / Woodbridge stay computed. That is HWM-rich ground.
+**Arthur Kill is cut at its MOUTH** (Perth Amboy / Ward Point) — the kill is OUT of the
+domain. Decided 2026-08-13; it replaces an earlier north-end cut at the Kill Van Kull
+junction, which had **zero** NACCS support within 9.56 km while the mouth has a point at
+0.21 km. ⚠️ Cutting there walls off the Raritan Bay ↔ Newark Bay exchange and puts a forced
+level on ~1 km of Raritan shoreline — a milder instance of the very defect v1.5 fixes, so
+do not claim the interior is *wholly* computed. The Narrows carries the Upper Bay + Hudson
+prism and stays open. ⚠️ The dropped rationale ("Carteret / Woodbridge are HWM-rich") is
+**untested**: our HWM file has no marks there but is clipped at lat 40.515. See STATUS.
 
 **What makes it auditable rather than asserted:** flux cross-sections just inside each arm.
 SFINCS writes `crosssection_discharge` every 10 min, so Q(t) through the Narrows is the

@@ -472,7 +472,167 @@ V1_MONMOUTH = Domain(
 # coverage at both cuts, and at least two interior gauges that survive the crest — and
 # both are recorded in docs/STATUS.md.
 
-DOMAINS: dict[str, Domain] = {d.name: d for d in (V1_MONMOUTH,)}
+# ── v1.5 interior gauges: the USGS storm-tide (SSS) water-level units ─────────────
+# Gate 2. These are what make "Raritan Bay is COMPUTED, not forced" testable at all.
+# Series live in data/gtsm/sandy_storm_tide_raritan.nc — a SEPARATE file from
+# sandy_storm_tide_nj.nc, which feeds the frozen v1_monmouth port fixture.
+#
+# 🔴 EVERY ONE IS MOUNTED ABOVE NORMAL WATER and reads its own floor below that; the
+# downloader masks those samples to NaN. `above_floor` records how much of each raw
+# record survives, because a long record is NOT a usable record here.
+#
+# ⚠️ COORDINATES ARE NUDGED into water, like `usgs_tidal_sea_bright`. The published
+# positions sit on bulkheads with a bed of +0.45..+1.26 m; each is moved 7-34 m to the
+# nearest cell at <= -1.0 m. At 25-50 m cell size that is well under one cell, so the
+# nudge is insurance, not a fix — if `point_zb` still comes back dry after the mesh is
+# built, switch that gauge to `series_source="map"` (see `usgs_tidal_shark_river`).
+_SSS_GREAT_KILLS = ObsGauge(
+    "sss_great_kills", -74.127762, 40.543441, "surge",
+    "gtsm/sandy_storm_tide_raritan.nc", "stormtide_m", 2295,
+    survives_crest=True, series_source="his",
+    note="SSS-NY-RIC-004WL. ⭐ THE interior holdout: 8.85 km from the nearest arm, so "
+    "it scores water the model COMPUTES. Floor 1.97 m NAVD88, 13.7% of the raw record "
+    "above it (n=112 six-min points) — peak-worthy, thin for tide. Observed peak "
+    "3.99 m. ⚠️ NACCS itself runs 0.35-0.39 m low here; that is a source-product fact "
+    "and does NOT enter this model, which computes this water.",
+)
+_SSS_ARTHUR_KILL = ObsGauge(
+    "sss_arthur_kill_mouth", -74.230355, 40.501682, "surge",
+    "gtsm/sandy_storm_tide_raritan.nc", "stormtide_m", 2294,
+    survives_crest=True, series_source="his",
+    note="SSS-NY-RIC-003WL. Best-covered unit of the set — floor 0.54 m, 57.5% above "
+    "(n=614), tidal peaks resolved. ⚠️ 1.67 km from the arthur_kill arm, so it is a "
+    "FORCING-ADJACENT diagnostic, not an independent holdout. Observed peak 3.81 m.",
+)
+_SSS_NARROWS_SI = ObsGauge(
+    "sss_narrows_si", -74.059676, 40.593873, "surge",
+    "gtsm/sandy_storm_tide_raritan.nc", "stormtide_m", 2291,
+    survives_crest=True, series_source="his",
+    note="SSS-NY-RIC-001WL. ⚠️ 0.87 km from the narrows arm — a forcing-product "
+    "diagnostic only, the same standing the Battery has. Floor 1.28 m, 19.8% above.",
+)
+_SSS_NARROWS_BKLN = ObsGauge(
+    "sss_narrows_bkln", -74.011806, 40.580262, "surge",
+    "gtsm/sandy_storm_tide_raritan.nc", "stormtide_m", 2270,
+    survives_crest=True, series_source="his",
+    note="SSS-NY-KIN-001WL. 3.46 km from the narrows arm — marginal. Floor 0.62 m, "
+    "48.4% above (n=524), tidal peaks resolved.",
+)
+# ⚠️ DELIBERATELY ABSENT: SSS-NJ-MID-001WL (2255), S Raritan Bay. The bed under it is
+# +1.45 m at the point and +1.78 m median within 150 m — it is sited on ground that is
+# ABOVE ordinary water, so only 1.9% of its record clears its 1.75 m floor and its
+# 30-min still-water mean averages across a partly-DRY window. It is an HWM with a
+# clock, not a gauge. Score it as an HWM (peak >= 3.57 m); a declared-but-meaningless
+# gauge looks like coverage.
+
+#: ⚠️ PROVISIONAL — registered 2026-08-13 so `scripts/probe_mesh_size.py` can measure the
+#: mesh BEFORE the subgrid is paid for. It is deliberately INCOMPLETE: no `obs_gauges`,
+#: no `hwm_rules`, no fingerprint in `premier.EXPECTED`. Those do not affect the face
+#: count, and registering them half-done would be worse than leaving them absent —
+#: a declared-but-unfed gauge looks like coverage.
+#:
+#: 🔴 DO NOT RUN AN EXPERIMENT ON THIS YET. `premier` has no fingerprint for it, so the
+#: staging guard cannot tell a correct mesh from a drifted one, which is the exact
+#: condition that once produced a full sweep of scientifically void results.
+V1_5_RARITAN = Domain(
+    name="v1_5_raritan",
+    region=DATA / "region_v1_5_raritan.geojson",
+    refinement=DATA / "quadtree" / "refinement_v1_5_raritan.geojson",
+    epsg=32618,
+    latitude=40.40,
+    mask_zmin=-10.0,
+    mesh_key="v1_5_raritan_z10",
+    obs_gauges=(_SSS_GREAT_KILLS, _SSS_ARTHUR_KILL, _SSS_NARROWS_SI, _SSS_NARROWS_BKLN,
+                _SANDY_HOOK),
+    # ── The arm whitelist. A mask==2 cell outside all three is a BUILD ERROR. ──
+    # Boxes are padded around each cut so they contain every BC cell it produces, and
+    # are DISJOINT — the ocean box stops at easting 593,125 / northing 4,490,496, well
+    # south-east of both estuary cuts.
+    boundary_arms=(
+        BoundaryArm(
+            "ocean",
+            (580_926, 4_443_729, 593_125, 4_490_496),
+            min_cells=200, max_cells=4_000,
+            why="The Atlantic side, inherited from v1 unchanged (same southern limit, "
+            "lat 40.150) and continued ~3.3 km north to close on Rockaway Point. v1's "
+            "own mask==2 already ran at lon -73.936..-73.947 up to its north edge at "
+            "40.5202, so this is a CONTINUATION, not new geometry.",
+        ),
+        BoundaryArm(
+            "narrows",
+            (577_851, 4_493_651, 583_315, 4_497_041),
+            min_cells=20, max_cells=400,
+            why="Verrazzano Narrows, ~1.9 km. Carries the Upper Bay + Hudson tidal "
+            "prism. ⚠️ Must stay a WATER-LEVEL boundary: a discharge BC over-determines "
+            "a tidal strait (its flux is a RESPONSE to the level difference across it) "
+            "and destroys the audit, since Q(t) here is the validation.",
+        ),
+        BoundaryArm(
+            "arthur_kill",
+            (561_016, 4_482_616, 564_384, 4_485_197),
+            min_cells=15, max_cells=300,
+            why="The Arthur Kill MOUTH at Perth Amboy / Ward Point, ~1.46 km. Cut here "
+            "rather than at the Kill Van Kull junction (2026-08-13): the north cut had "
+            "NO NACCS support within 9.56 km, the mouth has a point at 0.21 km. ⚠️ This "
+            "walls off the Raritan Bay <-> Newark Bay exchange and forces ~1 km of "
+            "Raritan shoreline — a milder instance of the defect v1.5 fixes, so do not "
+            "claim the interior is WHOLLY computed.",
+        ),
+    ),
+    # 🔴 THE CLOSURE CORRIDOR. ONE box, ~1.8 km wide, along the whole 11.13 km cut
+    # from the isobath's easternmost point to Rockaway Point.
+    #
+    # WHY A CORRIDOR AND NOT PER-CHANNEL PATCHES. Measured off CUDEM, **28% of the
+    # closure is deeper than mask_zmin**, in FIVE separate runs (0.19-1.31 km; the
+    # deepest reaches -27.2 m in the Ambrose Channel). `create_active` would deactivate
+    # every one, so the closure would be a dashed line rather than a cut, with the gaps
+    # sited exactly on the deepest, highest-conveyance ground. An earlier attempt boxed
+    # the two biggest runs individually; that leaves three more gaps AND gives each box
+    # its own active/inactive rim for `create_boundary` to trace. One continuous
+    # corridor yields ONE continuous boundary.
+    #
+    # `_fill_inactive_holes` cannot do this job: it fills INTERIOR holes, and these sit
+    # on the region edge (finding 9 — the topological fill and this box list are used
+    # TOGETHER, never one alone).
+    #
+    # Not a knife edge: the corridor clears the cut by ~500 m on each side, and any
+    # half-width from ~200 m to ~1 km closes the same five gaps.
+    always_active_boxes_ll=(
+        # ⭐ THE BAY. Raritan + Lower + Sandy Hook Bay, active at ANY depth.
+        #
+        # This is the fix for the tangle, and it is a STATEMENT rather than a patch:
+        # "bay water is in the domain, however deep it is." Without it `mask_zmin`
+        # deactivates the dredged channels (Ambrose to -27 m, Chapel Hill, Raritan
+        # Reach), `_fill_inactive_holes` cannot reach them because they stay CONNECTED
+        # to the sea through the bay mouth (finding 9, exactly), and `create_boundary`
+        # then rings every channel with imposed ocean level inside the water this
+        # domain exists to COMPUTE.
+        #
+        # ⚠️ Generous on purpose and safe to be so: `include_polygon` only ever ADDS
+        # active cells, land above `mask_zmin` is active already, and the region clip
+        # runs AFTER `create_active`, so anything outside the ring is removed anyway.
+        # The only cells this changes are bay water deeper than -10 m.
+        (-74.30, 40.42, -73.93, 40.60),
+        # The closure corridor, ~1.8 km wide along the 11.13 km cut. Still needed:
+        # 28% of the cut is deeper than mask_zmin and it runs east of the bay box.
+        (-73.9522, 40.4450, -73.9304, 40.5547),
+    ),
+    open_coast_max_y=4_476_000,
+    plot_window=(556_000, 596_000, 4_476_000, 4_500_000),
+    map_windows={
+        "domain": None,
+        "raritan": (556_000, 596_000, 4_476_000, 4_500_000),
+        "narrows": (574_000, 586_000, 4_490_000, 4_500_000),
+        "arthur_kill": (556_000, 570_000, 4_478_000, 4_490_000),
+        "sandy_hook": (574_000, 592_000, 4_468_000, 4_486_000),
+    },
+    waterlevel_buffer=100_000,
+    # ⚠️ Declared AFTER the builder reports its screen, never by relaxing this to fit.
+    n_waterlevel_support=None,
+)
+
+
+DOMAINS: dict[str, Domain] = {d.name: d for d in (V1_MONMOUTH, V1_5_RARITAN)}
 
 #: Until v1_5_raritan is registered the only domain is the frozen port-verification
 #: fixture. That is the safe default: anything that tries to BUILD on it is refused.

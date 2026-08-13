@@ -23,10 +23,10 @@ and a linear interpolation between two outside points **structurally cannot** pr
 interior maximum. That lobe was under-forced by construction, not by calibration error.
 
 `v1_5_raritan` relocates the boundary so Lower Bay, Raritan Bay and Sandy Hook Bay are
-**computed**: one ocean arm (the Atlantic contour wrapped around Sandy Hook, closing on
-Rockaway Point) plus two short forced cross-sections at **Verrazzano Narrows** and
-**Arthur Kill**. Staten Island's south shore is a declared land boundary; Jamaica Bay is
-excluded; no NYC land is in the model.
+**computed**: one ocean arm (v1's own Atlantic trace, extended ~3.3 km straight north to
+Rockaway Point) plus two short forced cross-sections at **Verrazzano Narrows** and the
+**Arthur Kill MOUTH**. Staten Island's south shore is a declared land boundary; Jamaica Bay
+is excluded; no NYC land is in the model. v1.5 keeps v1's southern limit, lat 40.150.
 
 🔴 **The case for it is STRUCTURAL, and must be argued that way.** The measured waves-on
 comparison that motivated the move does **not** separate the two candidate boundaries:

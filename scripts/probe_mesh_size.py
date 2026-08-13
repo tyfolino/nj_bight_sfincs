@@ -114,4 +114,8 @@ def main(out: str = "data/probe_mesh") -> int:
 
 
 if __name__ == "__main__":
-    raise SystemExit(main(*sys.argv[1:]))
+    # `--rebuild` is read straight off sys.argv inside main(), so it must NOT also be
+    # forwarded as the positional out-dir — passing both was a TypeError, which made
+    # the flag unusable with a custom output directory.
+    _args = [a for a in sys.argv[1:] if not a.startswith("--")]
+    raise SystemExit(main(*_args))

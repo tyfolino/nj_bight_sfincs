@@ -147,28 +147,51 @@ EPOCH_RISE = 0.115                       # mean of the two stations, metres
 # ──────────────────────────────────────────────────────────────────────────────
 # 1. Read the raw zips
 # ──────────────────────────────────────────────────────────────────────────────
+#: 🔴 The CHS webtool ships ADCIRC (water level) and STWAVE (waves) as separate
+#: products IN THE SAME ZIP, and their columns differ. Index 9 is `ET00` water
+#: elevation in ADCIRC and `TM` mean wave period in STWAVE — seconds that would read
+#: as metres. Select on the MEMBER NAME; a per-zip verdict on product is meaningless.
+ADCIRC_MEMBER = "_ADCIRC01_"
+#: The water-level column, by CODE. Looked up in the header rather than hardcoded,
+#: so a column-order change is a loud KeyError instead of a silent wrong variable.
+WL_CODE = "ET00"
+
+
 def _rows_for_sandy(raw: bytes):
-    """Parse one save-point CSV. Returns (sp, lat, lon, depth, times, wl).
+    """Parse one ADCIRC save-point CSV. Returns (sp, lat, lon, depth, times, wl).
 
     ⚠️ The webtool pads every CSV with NUL bytes out to a power-of-two size
     (4 MiB / 2 MiB). The content itself is complete — this is padding, not
     truncation — but a reader that does not strip it chokes on a garbage last
     record. `rstrip(b"\\x00")` before decoding.
+
+    ⚠️ The water-level column is found by its CODE in header row 2, not by position.
+    The previous hardcoded index 9 was correct for ADCIRC and silently wrong for
+    STWAVE, which is the same shape for the first nine columns.
     """
     txt = raw.rstrip(b"\x00").decode("utf-8", "replace")
     rdr = csv.reader(io.StringIO(txt))
-    for _ in range(3):                   # 3 header rows: names, codes, units
-        next(rdr)
+    next(rdr)                            # row 0: long names
+    codes = next(rdr)                    # row 1: short codes -- ET00 lives here
+    next(rdr)                            # row 2: units
+    if WL_CODE not in codes:
+        raise SystemExit(
+            f"no {WL_CODE!r} column in this member (codes: {codes}). That is the "
+            "signature of a NON-ADCIRC product; the member filter should have "
+            "excluded it."
+        )
+    icol = codes.index(WL_CODE)
+
     sp = lat = lon = depth = None
     times, wl = [], []
     for r in rdr:
-        if len(r) < 10:
+        if len(r) <= icol:
             continue
         if sp is None:
             sp, lat, lon, depth = int(r[0]), float(r[1]), float(r[2]), float(r[3])
         if r[6] == STORM_TYPE and r[5].strip() == STORM_ID:
             times.append(r[7])
-            wl.append(float(r[9]))
+            wl.append(float(r[icol]))
     if sp is None or not times:
         return None
     return sp, lat, lon, depth, np.array(times), np.array(wl, dtype="float64")
@@ -193,9 +216,12 @@ def read_zips(use_cache: bool = True) -> dict:
     pts, times_ref, ndup = {}, None, 0
     for z in zips:
         zf = zipfile.ZipFile(z)
-        members = [m for m in zf.namelist()
-                   if m.startswith("CSV/") and m.endswith("Timeseries.csv")]
-        print(f"[read] {z.name}: {len(members)} timeseries")
+        allts = [m for m in zf.namelist()
+                 if m.startswith("CSV/") and m.endswith("Timeseries.csv")]
+        members = [m for m in allts if ADCIRC_MEMBER in m]
+        skipped = len(allts) - len(members)
+        note = f", {skipped} non-ADCIRC skipped" if skipped else ""
+        print(f"[read] {z.name}: {len(members)} ADCIRC timeseries{note}")
         for m in members:
             got = _rows_for_sandy(zf.read(m))
             if got is None:

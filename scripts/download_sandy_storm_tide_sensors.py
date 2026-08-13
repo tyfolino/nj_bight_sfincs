@@ -37,7 +37,6 @@ import xarray as xr
 
 ROOT = Path(os.environ.get("NJ_ROOT", Path(__file__).resolve().parents[1]))
 OUT_DIR = ROOT / "data/gtsm"
-OUT = OUT_DIR / "sandy_storm_tide_nj.nc"
 STN = "https://stn.wim.usgs.gov/STNServices"
 FT_TO_M = 0.3048
 
@@ -56,6 +55,33 @@ INSTRUMENTS = [
     2259,  # SSS-NJ-MON-003WV  Monmouth Beach, open coast
     2260,  # SSS-NJ-OCE-001WV  Barnegat Inlet (site 7727) — v2_barnegat only
 ]
+
+# ⭐ The RARITAN set, added 2026-08-13 — Gate 2. These are the interior water-level
+# units that make "Raritan Bay is computed, not forced" testable at all.
+#
+# 🔴 They go to a SEPARATE FILE. `sandy_storm_tide_nj.nc` feeds `_SSS_SEA_BRIGHT`
+# (2258) in the FROZEN v1_monmouth registry, and `verify_port.py` is pinned against
+# metrics derived from it. Regenerating that file to append stations would put the
+# port fixture at risk for no benefit; a second file costs nothing.
+#
+# ⚠️ These are `WL` (water-level) units, not the `WV` (wave) units above. Same
+# parser, but they are sited in sheltered water rather than the surf zone, so the
+# de-watering mask matters less and the still-water mean is the whole signal.
+RARITAN_INSTRUMENTS = [
+    2255,  # SSS-NJ-MID-001WL  S Raritan Bay, NJ shore   — holdout, 4.67 km from an arm
+    2295,  # SSS-NY-RIC-004WL  Great Kills               — holdout, 8.85 km from an arm
+    2294,  # SSS-NY-RIC-003WL  Arthur Kill mouth         — forcing-adjacent, 1.67 km
+    2291,  # SSS-NY-RIC-001WL  Narrows, Staten I. side   — forcing-adjacent, 0.87 km
+    2270,  # SSS-NY-KIN-001WL  Narrows, Brooklyn side    — marginal, 3.46 km
+]
+
+PRESETS = {
+    "nj": (INSTRUMENTS, "sandy_storm_tide_nj.nc",
+           "USGS storm-tide (SSS) sensors, NJ open coast — Hurricane Sandy"),
+    "raritan": (RARITAN_INSTRUMENTS, "sandy_storm_tide_raritan.nc",
+                "USGS storm-tide (SSS) water-level sensors, Raritan / Lower Bay "
+                "— Hurricane Sandy"),
+}
 
 
 def fetch_sensor(iid: int):
@@ -96,9 +122,20 @@ def fetch_sensor(iid: int):
 
 
 def main():
-    print(f"Fetching {len(INSTRUMENTS)} USGS storm-tide sensors (NAVD88) ...")
+    import argparse
+
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--set", choices=sorted(PRESETS), default="nj",
+                    help="'nj' = the frozen v1_monmouth open-coast set (default); "
+                         "'raritan' = the interior Gate-2 water-level set")
+    args = ap.parse_args()
+    instruments, out_name, title = PRESETS[args.set]
+    out = OUT_DIR / out_name
+
+    print(f"Fetching {len(instruments)} USGS storm-tide sensors (NAVD88) "
+          f"-> {out_name} ...")
     stormtide, wavemax, lons, lats, kept = {}, {}, {}, {}, []
-    for iid in INSTRUMENTS:
+    for iid in instruments:
         res = fetch_sensor(iid)
         if res is None:
             print(f"  inst {iid}: no parseable data file"); continue
@@ -123,20 +160,24 @@ def main():
         coords={"time": st_df.index.values, "stations": kept,
                 "lon": ("stations", [lons[i] for i in kept]),
                 "lat": ("stations", [lats[i] for i in kept])},
-        attrs={"title": "USGS storm-tide (SSS) sensors, NJ open coast — Hurricane Sandy",
-               "source": f"{STN}/Instruments/{{id}}/Files (event 24, SSS-NJ-MON wave sensors)",
+        attrs={"title": title,
+               "source": f"{STN}/Instruments/{{id}}/Files (event 24). ⚠️ NOT the bulk "
+                         "Instruments.json — its data_files is empty for every one of "
+                         "these; the series live behind Files.json -> Files/{id}/item.",
                "datum": "NAVD88", "units": "m",
-               "note": "wave sensors: stormtide_m=30-min mean (still water, vs model zs); "
-                       "wavemax_m=6-min max (wave-crest envelope, vs highest HWMs). Provisional."},
+               "note": "stormtide_m=30-min mean (still water, vs model zs); "
+                       "wavemax_m=6-min max (wave-crest envelope, vs highest HWMs). "
+                       "Provisional."},
     )
     for v in ("stormtide_m", "wavemax_m"):
         ds[v].attrs.update(units="m", datum="NAVD88")
     ds["lon"].attrs.update(units="degrees_east"); ds["lat"].attrs.update(units="degrees_north")
 
     OUT_DIR.mkdir(parents=True, exist_ok=True)
-    tmp = OUT.with_suffix(OUT.suffix + ".tmp")
-    ds.to_netcdf(tmp); os.replace(tmp, OUT)
-    print(f"Wrote {OUT}  ({len(kept)} sensors)")
+    # Atomic: a truncated validation file reads back clean and scores silently wrong.
+    tmp = out.with_suffix(out.suffix + ".tmp")
+    ds.to_netcdf(tmp); os.replace(tmp, out)
+    print(f"Wrote {out}  ({len(kept)} sensors)")
 
 
 if __name__ == "__main__":
