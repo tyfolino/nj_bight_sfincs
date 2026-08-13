@@ -318,31 +318,308 @@ Reading / Keasbey / South Amboy / Great Kills and compare against the NOAA publi
 
 ## 🔵 LIVE — Phase 5b in progress, 2026-08-13. Pick up here.
 
-### The mesh is SIZED and the geometry is DRAWN
+### 🔴 READ FIRST — three boundary defects found by LOOKING at the map, 2026-08-13
 
-`scripts/probe_mesh_size.py` on `v1_5_raritan`: **684,842 faces, 408,729 active, ×1.25 v1
-(547,408), projected SnapWave ~3.8 h** — comfortably inside a 12 h batch. Boundary as built:
-1,396 water-level cells (ocean 1,202 / narrows 153 / arthur_kill 41), 320 outflow, all
-invariants passing. That run predates the drawn polygon below.
+The build reported *every invariant green* while the boundary was wrong in three places.
+All three were caught by plotting the BC set and comparing it against what the user drew —
+not by any assert. `scripts/plot_waterlevel_boundary.py <probe_dir>` after every mesh
+change; the invariants do not check that the boundary is where you MEANT it.
+
+**⚠️ A stale figure is worse than none.** The plot that exposed this was two builds old and
+its counts (ocean 1,202 / narrows 153 / arthur_kill 41 / outflow 320) belonged to the
+retired 16-vertex polygon. Regenerate before reading.
+
+#### 1. ✅ FIXED — the Narrows arm was tracing the ALWAYS-ACTIVE BOX, not the drawn cut
+
+The `narrows` arm came out as an **L**: a ~3 km limb along lat 40.6005 plus a stub of the
+real cut, **209 cells**, sitting ~670 m south of the Verrazzano Bridge the user drew the cut
+on (`v9 (-74.02941, 40.61090) → v10 (-74.05864, 40.60208)`, midpoint −74.044, 40.6065 — the
+bridge).
+
+**Cause: the bay `always_active_boxes_ll` entry ended at lat 40.60**, which is *inside* the
+Narrows approach. The Narrows is ~30 m deep, so above the box `create_active(zmin=-10)`
+deactivated the channel and `create_boundary` traced the box edge instead. Active cells in
+the corridor collapsed across it: 2,779 (below 40.60) → 887 → 336 → **0** above 40.61.
+
+**Fix: north edge 40.60 → 40.6125.** The ring's northernmost vertex is 40.61090, and the
+region clip runs after `create_active`, so extending cannot pull in anything outside the
+ring. Result: **209 → 61 cells, one continuous run, bed −29.57 m** — the real channel.
+
+#### 2. ✅ FIXED (but see 2b) — the edge was DISJOINTED: the outflow gate stopped at +2 m
+
+`create_boundary(btype="outflow", zmin=-1, zmax=2)` only made a cell free-outflow if its bed
+sat between −1 m and **+2 m**. Measured along the 21.5 km Staten Island shore, only 42% of
+edge cells fell in that window, so **209 of 411 stayed mask==1** and a cleanly-drawn
+shoreline came out as a dashed line. Bed there reaches +26 m; the inland limits reach +80 m.
+
+**Fix: `OUTFLOW_MAX_BED = 1.0e4` in `model.py` — every DRY edge cell is now outflow.**
+Safe in the only direction that has ever bitten: `zmin` is still `OUTFLOW_MAX_DEPTH`, and
+step 5c still re-seals any outflow cell landing on water, so the Navesink drain cannot
+return (`free-outflow BC on water: 0` still holds). On dry ground a Neumann face is inert
+until water reaches it, and then letting flood water leave beats ponding it against an
+artificial wall — which on SI's south shore would push water back into the Raritan lobe.
+
+| ring stretch | closed (mask 1) BEFORE | AFTER |
+|---|---|---|
+| Staten Island shore (411 edge cells) | 209 (51%) | **7 (2%)** |
+| Rockaway → Narrows (207) | 119 (70%) | **34 (16%)** |
+| NJ shore + west limit (318) | 281 (88%) | 234 (74%) |
+
+Outflow total **240 → 957**.
+
+⚠️ **The NJ/west limit stays mostly closed and that is FINE, not a fourth defect.** Those
+234 cells have median bed **+19.7 m** (max +89 m); only 12 sit below 0 m. Nine are within
+300 m of the grid's own west edge (x=559,113), where there is no neighbouring cell for
+hydromt to flag against, so SFINCS treats them as a closed wall by default. High dry inland
+ground never floods, so mask 1 vs 3 is immaterial there.
+
+#### 2b. 🔴 OPEN — the built domain EXTENDS BEYOND the drawn region (found by fixing #2)
+
+Raising the outflow gate made this visible: the boundary in the new figure runs down the
+**grid rectangle's** west and south edges, not the drawn ring. Measured on
+`data/probe_mesh_v1_5_fix2`:
+
+| mask | cells | inside the drawn region | OUTSIDE it |
+|---|---|---|---|
+| 2 waterlevel | 1,307 | 1,307 | **0** ✅ |
+| 3 outflow | 957 | 668 | **289** 🔴 |
+| 1 active interior | 426,399 | 412,258 | **14,141** 🔴 |
+
+The 14,141 sit at lon −74.30…−74.10, lat 40.15…40.50, bed **+3.7 … +58.3 m** — i.e. the
+**dry inland notch** of the L that the region clip is supposed to remove.
+
+⚠️ **PRE-EXISTING, not caused by the outflow change.** The gate only decides mask 3 vs 1;
+it cannot make a cell active. Raising it merely put 289 BC cells on ground that was already
+wrongly active, which is what made it visible. `base.region` resolves correctly to the drawn
+polygon, and the clip at `model.py` (`mask[_outside] = 0`) is applied.
+
+**Hypothesis, untested:** `_fill_inactive_holes` runs AFTER the region clip and re-activates
+the clipped notch as an "inactive island". It is the only step between the clip and
+`create_boundary` that can turn a 0 back into a 1 (`_drop_detached_active_islands` only
+removes). **Cheap test: disable the fill, re-probe, see if the 14,141 vanish.**
+
+🔴 **Do not "fix" this blind.** The mask is half the premier fingerprint, and
+`_fill_inactive_holes` exists for a documented reason (finding 9 — it is what stops
+`create_boundary` ringing scoured inlet throats with ocean level). If the fill is the cause,
+the fix is to re-apply the region clip AFTER it, not to remove it.
+
+**Impact if left:** ~3% more active cells (compute only) and a boundary that plots along the
+grid edge. All of it is dry ground +3.7 m and up that ocean water never reaches, and no
+`mask==2` cell is outside the region, so **no water-level forcing is misplaced.** It is a
+correctness/"what did I actually build" issue, not a physics error.
+
+#### 3. ⏳ OPEN — `arthur_kill` is TWO runs, and it needs a POLYGON edit (user)
+
+The arm is legitimately one cut, but the build gives **two disconnected runs**:
+
+| run | where | bed | what it is |
+|---|---|---|---|
+| 24 cells | lon −74.2617…−74.2549, lat 40.5038…40.5052 | −13.71…−1.38 | ✅ the real mouth cut (the eHydro-carved channel) |
+| 35 cells | lon −74.2501…−74.2404, lat 40.4971…40.4996 | −5.68…−3.02 | 🔴 spurious |
+
+**The ring cuts a corner across open water south of Ward Point instead of following the
+shore around it.** Vertices **v29 (−74.24054, 40.49962), v30 (−74.24734, 40.49728),
+v31 (−74.24923, 40.49817)** sit in water; `validate_region_v1_5.py` already reports segments
+28–33 as wet. Pull those three vertices NORTH onto the Tottenville/Ward Point shoreline and
+the arm becomes one run.
+
+⚠️ Do NOT "fix" this by shrinking the `arthur_kill` arm box — that would leave a 1 km closed
+wall standing across open water near Ward Point, which is worse than the current state.
+
+#### 4. ⏳ OPEN — the Raritan discharge is genuinely MISSING
+
+Correct observation: there is no discharge yet. The Raritan cut currently has its `mask==2`
+demoted and a `raritan_cut` no-waterlevel zone asserting clean, so it is a **closed wall**.
+It needs step 4 of the queue below (USGS `01403060` + an inflow point at −74.2997, 40.5090).
+
+---
+
+### ✅ The mesh is SIZED ON THE DRAWN POLYGON and every invariant is green
+
+`scripts/probe_mesh_size.py` → `data/probe_mesh_v1_5_drawn`, 2026-08-13, on the hand-drawn
+region with the eHydro tier in the stack:
+
+**698,969 faces · 428,663 active · ×1.28 v1 (547,408) · projected SnapWave ~3.8 h** —
+comfortably inside a 12 h batch. Boundary: **1,307** water-level cells, **957** outflow.
+Latest probe dir: `data/probe_mesh_v1_5_fix2` (both boundary fixes above applied).
+
+| arm | cells | runs | bracket | z range |
+|---|---|---|---|---|
+| ocean | 1,187 | 2 (1,170 + 17) | [200..4000] | −26.95 … −1.35 |
+| narrows | 61 | **1** ✅ | [20..400] | −29.57 … −1.18 |
+| arthur_kill | 59 | **2** 🔴 see defect 3 | [15..300] | −13.71 … −1.38 |
+
+⭐ **`mask==2` cells outside every declared arm are demoted** — Rockaway Inlet and the
+Raritan cut, exactly the two crossings `validate_region_v1_5.py` predicted would need it.
+The `raritan_cut` no-waterlevel zone asserts clean, so the discharge cut carries no imposed
+level.
+
+All invariants pass: no outflow BC on water · no paved-over surveyed channel · no interior
+inactive islands · **no NoData under an active cell** (the eHydro tier closed that) · no
+active cell in a land box · every `mask==2` inside exactly one arm, all wet, counts in
+range · no imposed level in a no-waterlevel zone.
+
+⚠️ `arthur_kill` at 59 cells sits in the lower third of its `[15..300]` bracket, and 35 of
+those 59 are the SPURIOUS run (defect 3). The real cut is 24 cells. Re-bracket only after
+the polygon is fixed.
+
+### The geometry as drawn
 
 🔴 **`data/region_v1_5_raritan_edited.geojson` IS THE REGION.** Hand-drawn in QGIS by the
-user, 2026-08-13, over Esri imagery + CUDEM: 40 vertices, valid, CCW, 2,284 km². It
-supersedes the generated `region_v1_5_raritan.geojson`.
-⚠️ **`scripts/build_region_v1_5.py` still WRITES that path and will clobber the drawn file.
-Do not run it until its write path is retired** (queued below).
+user, 2026-08-13, over Esri imagery + CUDEM: 40 vertices, valid, CCW, 2,281 km².
+`nj_sfincs/domain.py` now points at it (it had been left on the superseded generated
+polygon, which has been deleted).
 
-Validated on the drawn polygon — four water crossings, every one inside the 2 km rule, so
-**no gauge fallback is needed anywhere**:
+✅ **The generator is retired.** `scripts/build_region_v1_5.py` →
+`scripts/validate_region_v1_5.py`: it READS the drawn file and has no write path. Run it as
+the gate — `python scripts/validate_region_v1_5.py [--plot]`.
 
-| crossing | length | nearest ADCIRC |
-|---|---|---|
-| ocean closure (isobath turn → Rockaway Pt) | 11.13 km | 0.92 km |
-| Verrazzano Narrows | 2.66 km | 0.72 km |
-| Arthur Kill mouth | 1.06 km | 0.38 km |
-| **Raritan River** | 1.79 km | 0.88 km |
+⭐ **It declares CROSSINGS, not segment tags, and that change caught two errors.** A
+hand-drawn vertex lands where the cursor landed, so attributing a crossing to a vertex pair
+is unsound. The validator walks the ring at 50 m through the *same* elevation stack
+`build_static` reads, finds contiguous reaches below −0.5 m, and requires each to sit inside
+exactly one declared coordinate box. An undeclared wet reach is a failure — it is imposed
+ocean level somewhere nobody looked.
+
+🔴 **The crossing table below REPLACES the earlier one, which was wrong in two places.**
+"nearest ADCIRC" is now the WORST gap along the reach, and only over the **load-bearing**
+band (−10 m ≤ z < −0.5 m): where the ring runs deeper than `mask_zmin`, `create_active`
+trimmed first and the ring decides nothing.
+
+| crossing | kind | wet length | worst NACCS gap | bed source |
+|---|---|---|---|---|
+| ocean (limits + closure, one reach) | forced | 134.42 km (44.63 load-bearing) | 2.58 km | CUDEM |
+| **Rockaway Inlet** | **closed** | 2.99 km | — | CUDEM |
+| Verrazzano Narrows | forced | 1.55 km | 0.32 km | CUDEM |
+| Arthur Kill mouth | forced | 1.53 km, **2 reaches** | 0.76 km | CUDEM + **GMRT** |
+| Raritan River | **discharge** | 0.45 km | — | **GMRT** |
+
+**Error 1 — the Raritan cut was mis-located.** It was recorded as a 1.79 km segment which is
+**dry ground from end to end** (+5.8 to +22 m in both `nj_10ft_dem` and GMRT). The real
+crossing is a **0.45 km** wet reach at **lon −74.2997, lat ~40.5065–40.5115**, inside the
+*neighbouring* 2.39 km segment. ⚠️ The queued inflow point (−74.2920, 40.4905) derives from
+the wrong segment's midpoint and sits at **+8.9 m on land**; use ≈(−74.2997, 40.5090).
+
+**Error 2 — Rockaway Inlet was never listed.** The ring closes across **2.99 km of water
+reaching −10 m** between Rockaway Point and Coney Island. That is *how* "Jamaica Bay is
+excluded" is implemented, and it is fine — that prism exchanges with the ocean through this
+inlet, not with Lower Bay — but it is a third wet cut and `create_boundary` will raise
+`mask==2` along it, to be demoted. It is now declared `closed`.
+
+Also: the Arthur Kill crossing is **two** reaches spanning several segments, not the single
+1.06 km segment labelled `arthur_kill` — the ring runs through water from the Ward Point
+shore round to Perth Amboy.
 
 All five obs gauges fall INSIDE, including `sss_great_kills` — the ring goes around the
 landward side of the harbour, so the only true interior holdout survives.
+
+### ✅ RESOLVED 2026-08-13 — the two western cuts now have real soundings
+
+**Decision (user, 2026-08-13): one near-Sandy eHydro survey per cut, GMRT for the rest,
+and move on.** Built by `python scripts/download_ehydro_nj.py --set raritan` →
+`data/elevation_v1_5/ehydro_raritan_ak.tif` (5 m, UTM18N, NAVD88, **187,138 carved
+cells**), catalogued as `ehydro_raritan_ak` and now the **TOP tier** of
+`DEFAULT_ELEVATION_LIST`.
+
+| cut | survey | vs Sandy | min bed GMRT → eHydro |
+|---|---|---|---|
+| Arthur Kill mouth | `NJ_03_SWO_20140814_CS_4160_45X` | +654 d | −8.98 → **−13.56 m** |
+| Raritan River | `RR_01_RAR_20120726_CS_3844_15X` | **−95 d** | −4.94 → **−9.85 m** |
+
+⭐ **GMRT was under-cutting both channels by ~5 m.** That is the number that justifies the
+detour: a 50 m bed does not resolve a dredged channel, and both of these cuts are where the
+domain's exchange is imposed.
+
+⚠️ **Accepted, not fixed:** eHydro surveys navigation channels, so it reaches ~37% of the
+Arthur Kill cut's wet width and ~14% of the Raritan's; the flanks and the remaining
+~5.5 km² of the CUDEM hole stay on GMRT **by decision**. `validate_region_v1_5.py` now
+passes.
+
+🔴 **`data/elevation` is a symlink into the FROZEN archive and is read-only**, so the new
+tier lives in `data/elevation_v1_5/`. `download_ehydro_nj.py` grew a `--set` preset
+(`nj` | `raritan`) and now refuses to run the `nj` preset at all, since that would rewrite
+the archived tier.
+
+⚠️ Two things the build had to handle, recorded so they are not rediscovered: the two
+surveys are on **different reduction planes** (`NJ_03_SWO` on C.O.E. Mean Low Water, 3.5 ft
+below NAVD88; `RR_01_RAR` on MLLW, 2.9–3.0 ft below), so the builder now reads each survey's
+stated plane from its own header rather than assuming MLLW and querying VDatum — that
+assumption would have put ~0.17 m of systematic error into the Arthur Kill. And newer eHydro
+XYZ files ship a metadata header and a lowercase `.xyz` extension, so the reader is
+header-tolerant and the globs are case-insensitive.
+
+<details><summary>The gap this replaced (kept for the record)</summary>
+
+### ~~🔴 BLOCKER — the two western cuts have NO real bathymetry~~
+
+`validate_region_v1_5.py` fails on this, and it is a genuine data gap, not a threshold to
+relax. **CUDEM has no tile west of lon −74.25** in this latitude band — a clean vertical
+edge — so at the Arthur Kill mouth, the Perth Amboy waterfront and the Raritan River the
+merged bed falls all the way through the stack to **`gmrt_nj`, the ~50 m offshore tail**.
+Every tier above it is NoData there:
+
+| point | only tier with data |
+|---|---|
+| Arthur Kill mid-channel (−74.2599, 40.5049) | `gmrt_nj` (−8.14 m) |
+| Raritan R channel (−74.2997, 40.5090) | `gmrt_nj` (−3.15 m) |
+| Perth Amboy waterfront (−74.2650, 40.5000) | `gmrt_nj` (−0.76 m) |
+| Narrows mid-channel | ✅ `cudem_nj` (−29.47 m) |
+
+⚠️ `nj_10ft_dem` *does* cover this ground, but its `zmin: 0.001` screen is there precisely
+because it is a lidar topo product — it cannot supply a bed below the waterline, and it
+reads +9 m across the (dry) mis-located Raritan segment.
+
+🔴 **Confirmed NOT a download-script omission.** The `northeast_sandy` 1/9″ collection has no
+`w074x50` tile at `n40x50` or `n40x75` (directory listing checked; the column stops at
+`n39x75`), and the 1/3″ `NCEI_third_Topobathy` urllist has nothing north of `n40x00` in the
+w074 column either. Adding tiles to `download_cudem.py` will not fix it.
+
+**This is the elevation check that build sequence step 3 says to do before paying for the
+subgrid, and it fails.** A forced cut is where the whole domain's exchange is imposed; a
+50 m bed there sets the conveyance of the boundary the domain exists to test.
+
+#### ✅ eHydro CHECKED 2026-08-13 — it is a real partial fix, not a dead end
+
+134 surveys intersect the box (−74.34…−74.20, 40.46…40.54), **all CENAN** (New York
+district), queried from the USACE eHydro FeatureServer. Measured against the WET part of
+each cut, not the segment:
+
+| cut | wet length | best single survey | union of all |
+|---|---|---|---|
+| Arthur Kill mouth | 0.684 km | 0.282 km (41%) `NJ_03_SWO_20160426` | **0.478 km — 70%** |
+| Raritan River | 0.342 km | 0.058 km (17%) `RR_01_RAR_20140124` | **0.058 km — 17%** |
+
+⭐ **A pre-Sandy Raritan survey exists**: `RR_01_RAR_20120726_CS_3844_15X`, **95 days
+before** the storm — but it reaches only 14% of the cut.
+
+🔴 **NO pre-Sandy survey covers the Arthur Kill MOUTH, and the naming is a trap.** The
+surveys actually called *"Arthur Kill"* (`NJ_04_AKS_*`, including one from 2012-06-20) start
+at **lat 40.521 — north of our cut at 40.504** and never touch it. The mouth is covered by
+*"Seguin Pt.-Ward Pt.-Outerbridge"* (`NJ_03_SWO_*`, from 2014-08-14) and *"Perth Amboy Anch
+& 2nd Chnl"* (`NJ_02_PAA_*`, from 2013-05-02). Selecting on the channel name would have
+carved the wrong reach and reported success.
+
+**What eHydro does NOT fix.** It surveys dredged channels, so the flanks stay on GMRT. Over
+the whole CUDEM hole inside the region: **8.34 km² of water** (29% of the region's western
+water), of which eHydro footprints reach **2.88 km² (35%)** — **5.45 km² stays on GMRT**
+whatever we do.
+
+**Verdict: worth doing for the Arthur Kill** (70% of a *forced* cut, and the covered part is
+the dredged high-conveyance core that sets the exchange), **marginal for the Raritan** (17%,
+and that cut is a discharge BC, where the cross-section bed matters less). The machinery
+already exists — `download_ehydro_nj.py` is a carving tier with a water-only clip, VDatum
+MLLW→NAVD88 offset field and a mask to each survey's `Bathymetry_Vector`. Adding surveys to
+its `SURVEYS` list is the whole change.
+
+⚠️ Two things to verify before trusting the output: `EPSG_SRC = 3424` (NJ State Plane) is
+**hardcoded** and must be confirmed per survey rather than assumed; and the district sign
+convention — all of these are CENAN, the same district as the Shark River survey the script
+already handles, so the existing handling should carry, but check the sounding range.
+
+Still open as alternatives for the 5.45 km² eHydro cannot reach: NOAA NOS hydrographic
+surveys / BAG, or an NCEI CoNED NY–NJ harbor topobathy DEM.
+
+</details>
 
 ### ⭐ What fixed the boundary, after three wrong attempts
 
@@ -360,16 +637,34 @@ the isobath and patching individual channels all failed first. Do not re-try the
 
 ### Queued, in order
 
-1. **Retire `build_region_v1_5.py`'s write path** → make it a VALIDATOR over the drawn
-   polygon (closure, CCW, crossing lengths, cut brackets). Record provenance.
-2. **Tag the 40 segments** (ocean / land / narrows / arthur_kill / raritan / inland); declare
-   the Raritan cut; **tighten all four arm boxes and their cell brackets**. ⚠️ The current
+1. ✅ **DONE — `build_region_v1_5.py` retired** to `scripts/validate_region_v1_5.py`, no
+   write path, provenance recorded in the geojson's properties. The stale 16-tag `segments`
+   property was stripped from the drawn file (geometry sha verified unchanged) — those tags
+   are what produced the mis-located Raritan cut.
+2. ✅ **DONE — the bed under the two western cuts** (eHydro tier, above).
+
+2b. 🔴 **Test the hypothesis in defect 2b** (disable `_fill_inactive_holes`, re-probe,
+   see whether the 14,141 out-of-region active cells vanish). Cheap, and it decides whether
+   the built domain is the drawn domain.
+
+2c. 🔴 **THE USER'S: move ring vertices v29/v30/v31 onto the Ward Point
+   shore** so `arthur_kill` becomes one run (defect 3 above). Everything after this bakes
+   the geometry in, so do it before the freeze. Then re-run, in order:
+   `python scripts/validate_region_v1_5.py` →
+   `NJ_DOMAIN=v1_5_raritan python scripts/probe_mesh_size.py data/probe_mesh_v1_5_fix3` →
+   `NJ_DOMAIN=v1_5_raritan python scripts/plot_waterlevel_boundary.py data/probe_mesh_v1_5_fix3`
+   and LOOK at the figure before freezing.
+3. **Declare a `raritan` boundary arm** in `domain.py` (there are only three: ocean, narrows,
+   arthur_kill) and **tighten all four arm boxes and their cell brackets**. ⚠️ The current
    `arthur_kill` box runs to lon −74.280 and was silently ADOPTING THE RARITAN RIVER — 41
-   cells in two fragments passed a `[15..300]` bracket doing no work.
-3. **Raritan discharge** (user approved): add `01403060` *Raritan R below Calco Dam at Bound
+   cells in two fragments passed a `[15..300]` bracket doing no work. ⚠️ The bay
+   `always_active_box` west edge is lon −74.30, which clips the Raritan crossing at
+   −74.2993…−74.3004 almost exactly; give it slack.
+4. **Raritan discharge** (user approved): add `01403060` *Raritan R below Calco Dam at Bound
    Brook* (−74.5483, 40.5511) to `SITES` in `download_usgs_sandy_discharge.py`; inflow point
-   at the crossing midpoint (−74.2920, 40.4905). Add a `no_waterlevel_box` over the cut — an
-   imposed ocean level across a tidal river PUMPS it, the mirror of the Navesink drain.
+   ≈**(−74.2997, 40.5090)** — 🔴 **NOT** the previously queued (−74.2920, 40.4905), which is
+   +8.9 m of dry land. Add a `no_waterlevel_box` over the cut — an imposed ocean level
+   across a tidal river PUMPS it, the mirror of the Navesink drain.
    ⚠️ `01403060` is a LOWER BOUND: Lawrence Brook and the South River join below it. Check
    for a South River gauge rather than accept the deficit silently.
 4. **Re-probe, re-plot** (`scripts/plot_waterlevel_boundary.py`). Then verify Great Kills is
@@ -378,6 +673,13 @@ the isobath and patching individual channels all failed first. Do not re-try the
 5. **Then** the three bootstrap items: `n_waterlevel_support` (from the builder's screen on
    the real mesh), `hwm_rules` for v1.5 basins, and the fingerprint in `premier.EXPECTED`.
    Until all three land, 5 tests stay red BY DESIGN and nothing may be frozen or run.
+
+### ⚠️ The freeze was STARTED and DELIBERATELY KILLED, 2026-08-13
+
+`scripts/freeze_mesh.py` ran for ~4 minutes before the Narrows defect was spotted; it was
+killed and `data/frozen_mesh_v1_5_raritan_z10` deleted. **There is no frozen mesh.** Do not
+restart it until defect 3 is fixed — freezing bakes in the mask, and the fingerprint is
+computed from it.
 
 ### Two known defects I introduced, still open
 
@@ -391,8 +693,10 @@ the isobath and patching individual channels all failed first. Do not re-try the
 
 ## Then: the build sequence (Phase 5b)
 
-1. **Region polygon** — `scripts/build_region_v1_5.py`, named lon/lat vertices as module
-   constants. Ring segments tagged `ocean` / `land` / `narrows` / `arthur_kill`.
+1. ✅ **Region polygon — DONE.** Hand-drawn, not generated:
+   `data/region_v1_5_raritan_edited.geojson`, gated by `scripts/validate_region_v1_5.py`.
+   ⚠️ The "ring segments tagged ocean/land/narrows/arthur_kill" design described below was
+   tried and **abandoned** — see the crossing declarations above for why.
 
    ⭐ **TWO GEOMETRY DECISIONS TAKEN 2026-08-13** — these SUPERSEDE
    [plan_v1_5_original.md](plan_v1_5_original.md) lines 168 and 31. Indicative vertices

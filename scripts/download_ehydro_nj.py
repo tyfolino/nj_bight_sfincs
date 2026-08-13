@@ -60,6 +60,7 @@ Run:  NJ_ROOT=$PWD PYTHONPATH=$PWD micromamba/envs/sfincs/bin/python scripts/dow
 from __future__ import annotations
 
 import json
+import re
 import sys
 import time
 import urllib.request
@@ -70,16 +71,49 @@ import numpy as np
 
 ROOT = Path(__file__).resolve().parents[1]
 ELEV = ROOT / "data" / "elevation"
-EHYDRO = ELEV / "ehydro"
-RAW = EHYDRO / "raw"
 
-# Surveys to carve. Verdicts from scripts/audit_paved_channels.py (2026-07-14).
-# Shrewsbury (NJ_14_SNR_20150902_CS_4368_15) is deliberately NOT here: it already ships as
-# its own tier, `shrewsbury_ehydro_2015`, from the bridge-as-dam fix.
-SURVEYS = [
-    # id                                  channel                district
-    ("NJ_10_SRI_20150902_CS_4383_15", "Shark River Inlet", "CENAN"),
-]
+#: ⚠️ `data/elevation` is a SYMLINK into the frozen archive and is READ-ONLY. The `nj`
+#: preset below is therefore a RECORD of how `ehydro_nj.tif` was made, not something that
+#: can be re-run in place — it would have to write into the archive. Anything new goes to
+#: `data/elevation_v1_5/`, a real local directory.
+ELEV_LOCAL = ROOT / "data" / "elevation_v1_5"
+
+#: Presets: (surveys, output raster, raw-cache dir, title).
+#: A survey is (id, channel, USACE district).
+#:
+#: 🔴 SELECT SURVEYS BY FOOTPRINT, NEVER BY CHANNEL NAME. The surveys actually *called*
+#: "Arthur Kill" (`NJ_04_AKS_*`) start at lat 40.521 — NORTH of the v1.5 Arthur Kill mouth
+#: cut at 40.504 — and never touch it. The mouth is surveyed under "Seguin Pt.-Ward
+#: Pt.-Outerbridge" and "Perth Amboy Anch & 2nd Chnl". Picking on the name would have
+#: carved the wrong reach and looked like a success.
+PRESETS: dict[str, tuple] = {
+    # The frozen v1_monmouth carving tier. Verdicts from scripts/audit_paved_channels.py
+    # (2026-07-14). Shrewsbury (NJ_14_SNR_20150902_CS_4368_15) is deliberately NOT here:
+    # it ships as its own tier, `shrewsbury_ehydro_2015`, from the bridge-as-dam fix.
+    "nj": (
+        [("NJ_10_SRI_20150902_CS_4383_15", "Shark River Inlet", "CENAN")],
+        ELEV / "ehydro_nj.tif",
+        ELEV / "ehydro" / "raw",
+        "v1_monmouth open-coast carving tier (FROZEN — read-only target)",
+    ),
+    # v1.5's two western forced cuts, where CUDEM has no tile at all west of lon -74.25
+    # and the merged bed otherwise falls through to gmrt_nj (~50 m). One survey per cut,
+    # chosen as the survey NEAREST SANDY that actually reaches the cut.
+    "raritan": (
+        [
+            # +654 d. The nearest-Sandy survey whose footprint reaches the Arthur Kill
+            # MOUTH cut; covers 0.255 km of its 0.684 km wet width (37%). Perth Amboy
+            # Anch (NJ_02_PAA_20130502, +185 d) is closer in time but does not reach it.
+            ("NJ_03_SWO_20140814_CS_4160_45X", "Seguin Pt.-Ward Pt.-Outerbridge", "CENAN"),
+            # -95 d — PRE-Sandy. Covers 0.049 km of the Raritan cut's 0.342 km wet width
+            # (14%): the dredged channel only, which is where the flow is.
+            ("RR_01_RAR_20120726_CS_3844_15X", "Raritan River w/Spur Channel", "CENAN"),
+        ],
+        ELEV_LOCAL / "ehydro_raritan_ak.tif",
+        ELEV_LOCAL / "ehydro" / "raw",
+        "v1_5_raritan Arthur Kill mouth + Raritan River carving tier",
+    ),
+}
 
 ZIP_URL = ("https://ehydroprod.blob.core.usgovcloudapi.net/"
            "ehydro-surveys/{district}/{sid}.ZIP")
@@ -92,22 +126,80 @@ RES = 5.0            # output raster resolution (m) ~ the sounding spacing
 N_VDATUM = 250       # thinned VDatum query nodes per survey (cached)
 WATER_MAX = -1.0     # the carving clip: this tier only ever supplies REAL WATER
 
-RASTER_OUT = ELEV / "ehydro_nj.tif"
 NODATA = np.float32(-9999.0)
 
 
-def fetch(sid: str, district: str) -> Path:
-    RAW.mkdir(parents=True, exist_ok=True)
-    zp = RAW / f"{sid}.ZIP"
+def fetch(sid: str, district: str, raw: Path) -> Path:
+    raw.mkdir(parents=True, exist_ok=True)
+    zp = raw / f"{sid}.ZIP"
     if not zp.exists():
         url = ZIP_URL.format(district=district, sid=sid)
         print(f"  downloading {url}")
         urllib.request.urlretrieve(url, zp)
-    out = RAW / sid
+    out = raw / sid
     if not out.exists():
         with zipfile.ZipFile(zp) as z:
             z.extractall(out)
     return out
+
+
+def _one(d: Path, *exts: str) -> Path:
+    """The single member with one of these extensions, case-insensitively.
+
+    eHydro is not consistent about case (`.XYZ` vs `.xyz`) across districts and years.
+    """
+    hits = [f for f in d.iterdir()
+            if f.suffix.lower() in {e.lower() for e in exts}]
+    if len(hits) != 1:
+        raise SystemExit(f"🔴 {d.name}: expected 1 {exts} member, found {len(hits)}")
+    return hits[0]
+
+
+def read_xyz(path: Path) -> np.ndarray:
+    """Soundings from an eHydro XYZ, skipping its NOTES/BENCHMARKS/PROJECT_NAME header.
+
+    Older surveys ship a bare x/y/z triple per line; newer ones prepend a metadata block,
+    so `np.loadtxt` cannot be used directly.
+    """
+    rows = []
+    for ln in path.read_text(errors="replace").splitlines():
+        f = ln.split()
+        if len(f) < 3:
+            continue
+        try:
+            rows.append((float(f[0]), float(f[1]), float(f[2])))
+        except ValueError:
+            continue
+    if not rows:
+        raise SystemExit(f"🔴 {path.name}: no numeric soundings found")
+    return np.asarray(rows)
+
+
+def stated_offset_m(path: Path) -> float | None:
+    """The survey's OWN reduction plane, in metres NAVD88, parsed from its header.
+
+    🔴 The sounding datum is a PER-SURVEY fact and is not always MLLW. Of the two v1.5
+    surveys, `RR_01_RAR` is on MEAN LOWER LOW WATER (2.9-3.0 ft below NAVD88) while
+    `NJ_03_SWO` is on **C.O.E. MEAN LOW WATER** (3.5 ft below NAVD88) — a different plane.
+    Converting both with a VDatum MLLW query would put a systematic ~0.17 m error into the
+    Arthur Kill cut, so prefer what the survey states about its own reduction; VDatum is
+    the fallback for surveys that state nothing.
+
+    A "2.9-3.0" style range is the survey's own spatial spread and is averaged (0.03 m
+    wide here, versus the 0.39 m gradient that made the VDatum field necessary elsewhere).
+    """
+    txt = path.read_text(errors="replace")[:8000]
+    m = re.search(
+        r"PLANE OF [A-Z. ]*?MEAN LOW(?:ER LOW)? WATER (?:IS|WAS)[^0-9]*"
+        r"([0-9]+(?:\.[0-9]+)?)(?:\s*-\s*([0-9]+(?:\.[0-9]+)?))?\s*FEET\s+(BELOW|ABOVE)",
+        txt, re.I)
+    if not m:
+        return None
+    lo = float(m.group(1))
+    ft = (lo + float(m.group(2))) / 2 if m.group(2) else lo
+    if m.group(3).upper() == "BELOW":
+        ft = -ft
+    return ft * FT_TO_M
 
 
 def vdatum_offset(lon: float, lat: float) -> float:
@@ -127,11 +219,12 @@ def vdatum_offset(lon: float, lat: float) -> float:
     return tz if tz > -1000 else float("nan")
 
 
-def offset_field(sid: str, lon: np.ndarray, lat: np.ndarray) -> np.ndarray:
+def offset_field(sid: str, lon: np.ndarray, lat: np.ndarray, cache_dir: Path) -> np.ndarray:
     """Spatially-varying MLLW->NAVD88 offset (m). A single mean is NOT good enough."""
     from scipy.interpolate import griddata
 
-    cache_csv = EHYDRO / f"vdatum_{sid}.csv"
+    cache_dir.mkdir(parents=True, exist_ok=True)
+    cache_csv = cache_dir / f"vdatum_{sid}.csv"
     if cache_csv.exists():
         cache = np.loadtxt(cache_csv, delimiter=",", skiprows=1)
         print(f"    {len(cache)} cached VDatum nodes")
@@ -160,7 +253,7 @@ def offset_field(sid: str, lon: np.ndarray, lat: np.ndarray) -> np.ndarray:
     return off
 
 
-def main() -> None:
+def main(preset: str = "nj") -> None:
     import geopandas as gpd
     import pyproj
     import rasterio
@@ -168,22 +261,38 @@ def main() -> None:
     from rasterio.transform import from_origin
     from scipy.interpolate import griddata
 
+    surveys, raster_out, raw, title = PRESETS[preset]
+    print(f"[{preset}] {title}")
+    print(f"        {len(surveys)} survey(s) -> {raster_out}")
+    if preset == "nj" and raster_out.exists():
+        raise SystemExit(
+            "🔴 the 'nj' preset targets the FROZEN archive tier and would rewrite it. "
+            "It is kept as a record of how ehydro_nj.tif was built, not to be re-run."
+        )
+
     to_ll = pyproj.Transformer.from_crs(EPSG_SRC, 4326, always_xy=True)
     to_utm = pyproj.Transformer.from_crs(EPSG_SRC, EPSG_DST, always_xy=True)
 
     parts = []   # (xm, ym, z_navd88, coverage_gdf)
-    for sid, chan, district in SURVEYS:
+    for sid, chan, district in surveys:
         print(f"\n[{chan}]  {sid}")
-        d = fetch(sid, district)
-        xyz = next(d.glob("*.XYZ"))
-        gdb = next(d.glob("*.gdb"))
-        raw = np.loadtxt(xyz)
-        x_ft, y_ft, z_mllw_ft = raw[:, 0], raw[:, 1], raw[:, 2]
-        print(f"    {len(raw)} soundings; MLLW ft {z_mllw_ft.min():.1f}..{z_mllw_ft.max():.1f}")
+        d = fetch(sid, district, raw)
+        xyz = _one(d, ".xyz")
+        gdb = _one(d, ".gdb")
+        raw_pts = read_xyz(xyz)
+        x_ft, y_ft, z_mllw_ft = raw_pts[:, 0], raw_pts[:, 1], raw_pts[:, 2]
+        print(f"    {len(raw_pts)} soundings; survey-datum ft "
+              f"{z_mllw_ft.min():.1f}..{z_mllw_ft.max():.1f}")
 
         lon, lat = to_ll.transform(x_ft, y_ft)
         xm, ym = to_utm.transform(x_ft, y_ft)
-        off = offset_field(sid, np.asarray(lon), np.asarray(lat))
+        stated = stated_offset_m(xyz)
+        if stated is not None:
+            print(f"    survey states its plane at {stated:+.3f} m NAVD88 — using it")
+            off = np.full(len(z_mllw_ft), stated)
+        else:
+            print("    survey states no plane; falling back to the VDatum MLLW field")
+            off = offset_field(sid, np.asarray(lon), np.asarray(lat), raw.parent)
         z = z_mllw_ft * FT_TO_M + off
         print(f"    NAVD88 m: {z.min():.2f} .. {z.max():.2f}")
 
@@ -224,14 +333,21 @@ def main() -> None:
           f"   (dropped {n_cover - n_water} at/above the clip — structures, banks, spoil)")
 
     grid[~np.isfinite(grid)] = NODATA
+    raster_out.parent.mkdir(parents=True, exist_ok=True)
     with rasterio.open(
-        RASTER_OUT, "w", driver="GTiff", height=nrow, width=ncol, count=1,
+        raster_out, "w", driver="GTiff", height=nrow, width=ncol, count=1,
         dtype="float32", crs=EPSG_DST, transform=transform, nodata=NODATA,
         compress="DEFLATE", tiled=True, blockxsize=512, blockysize=512,
     ) as dst:
         dst.write(grid, 1)
-    print(f"\nwrote {RASTER_OUT.relative_to(ROOT)}  ({n_water} carved cells)")
+    print(f"\nwrote {raster_out.relative_to(ROOT)}  ({n_water} carved cells)")
 
 
 if __name__ == "__main__":
-    main()
+    import argparse
+
+    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    ap.add_argument("--set", choices=sorted(PRESETS), default="nj", dest="preset",
+                    help="'nj' = the frozen v1_monmouth tier (a record; cannot re-run); "
+                         "'raritan' = the v1.5 Arthur Kill mouth + Raritan River cuts")
+    main(ap.parse_args().preset)

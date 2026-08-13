@@ -41,6 +41,23 @@ SNAPWAVE_BND_RING = 5.0
 
 # A free-outflow (Neumann) BC on water deeper than this is a DRAIN, not a boundary.
 OUTFLOW_MAX_DEPTH = -1.0
+
+# ⭐ THE TOP OF THE OUTFLOW GATE. Every DRY edge cell becomes a free-outflow boundary,
+# however high it sits.
+#
+# This used to be +2 m, and that left the domain edge DISJOINTED: measured along the
+# 21.5 km Staten Island shore, only 42% of the edge cells fell in the -1..+2 m window,
+# so 209 of 411 stayed mask==1 and the boundary came out as a dashed line through ground
+# that had been drawn as one clean shoreline. The bed there runs to +26 m; the inland
+# limits run to +80 m.
+#
+# Raising it is safe in the one direction that has ever bitten: the drain. `zmin` is
+# still OUTFLOW_MAX_DEPTH, and 5c re-seals any outflow cell that lands on water, so the
+# Navesink failure mode cannot return. On genuinely dry ground a Neumann face is inert
+# until water reaches it, and when water DOES reach it, letting the flood leave is more
+# physical than ponding it against an artificial wall — which on Staten Island's south
+# shore would push water back into the Raritan Bay lobe this domain exists to measure.
+OUTFLOW_MAX_BED = 1.0e4
 # A cell the model calls (near-)land while a real survey says there is water this deep
 # beneath it has been PAVED OVER by a failed lidar return.
 PAVED_BED_LAND = -0.5
@@ -626,7 +643,9 @@ def apply_mask_and_boundary(
 
     # 5. Boundary cells -------------------------------------------------------
     sf.quadtree_mask.create_boundary(btype="waterlevel", zmax=-1, reset_bounds=True)
-    sf.quadtree_mask.create_boundary(btype="outflow", zmin=-1, zmax=2, reset_bounds=False)
+    sf.quadtree_mask.create_boundary(
+        btype="outflow", zmin=OUTFLOW_MAX_DEPTH, zmax=OUTFLOW_MAX_BED, reset_bounds=False
+    )
 
     mask = sf.quadtree_grid.data["mask"].values.copy()
     fx, fy = _face_xy(sf)

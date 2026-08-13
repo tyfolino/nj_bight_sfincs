@@ -78,9 +78,11 @@ LANDMARKS = {
 # are eyeballed from the description in docs/FINDINGS.md §2, not surveyed, not
 # snapped to an isobath, and not registered anywhere.
 #
-# The real geometry is `scripts/build_region_v1_5.py` (STATUS Phase 5b step 1), whose
-# vertices become module constants there and whose ring segments carry the
-# ocean/land/narrows/arthur_kill tags. `nj_sfincs/domain.py` owns all geography.
+# The real geometry is `data/region_v1_5_raritan_edited.geojson`, drawn by hand in QGIS
+# and gated by `scripts/validate_region_v1_5.py` (which reads it and never writes).
+# ⚠️ There is no generator any more, and crossings are no longer declared as ring-segment
+# tags — a hand-drawn vertex lands where the cursor landed, so the validator finds wet
+# reaches against the bed instead. `nj_sfincs/domain.py` owns all geography.
 # ⚠️ Do NOT import these from anywhere. If they ever start being read by the build,
 # the domain registry has been bypassed and that is the defect class premier.py exists
 # to prevent.

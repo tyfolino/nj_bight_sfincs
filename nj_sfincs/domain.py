@@ -536,7 +536,11 @@ _SSS_NARROWS_BKLN = ObsGauge(
 #: condition that once produced a full sweep of scientifically void results.
 V1_5_RARITAN = Domain(
     name="v1_5_raritan",
-    region=DATA / "region_v1_5_raritan.geojson",
+    # 🔴 THE HAND-DRAWN ring, not a generated one. Drawn in QGIS over Esri imagery +
+    # CUDEM, 2026-08-13; 40 vertices, 2,281 km². `scripts/validate_region_v1_5.py` is
+    # its gate and has NO write path — the generator that used to own this filename was
+    # retired precisely because it would have overwritten the only copy of the geometry.
+    region=DATA / "region_v1_5_raritan_edited.geojson",
     refinement=DATA / "quadtree" / "refinement_v1_5_raritan.geojson",
     epsg=32618,
     latitude=40.40,
@@ -612,10 +616,38 @@ V1_5_RARITAN = Domain(
         # active cells, land above `mask_zmin` is active already, and the region clip
         # runs AFTER `create_active`, so anything outside the ring is removed anyway.
         # The only cells this changes are bay water deeper than -10 m.
-        (-74.30, 40.42, -73.93, 40.60),
+        # 🔴 NORTH EDGE IS 40.6125, NOT 40.60, AND THAT NUMBER IS LOad-BEARING.
+        # At 40.60 this box's own north edge cut straight across the Verrazzano Narrows
+        # approach. The Narrows is ~30 m deep, so above the box `create_active(zmin=-10)`
+        # deactivated the channel, and `create_boundary` traced the BOX EDGE instead of
+        # the drawn cut: the narrows arm came out as an L — a 3 km limb sitting along
+        # lat 40.6005 plus a stub of the real cut — 209 cells instead of a clean line,
+        # ~670 m south of the Verrazzano Bridge the cut was drawn on.
+        # The ring's northernmost vertex is lat 40.61090, so 40.6125 clears it; the
+        # region clip runs AFTER create_active, so extending the box cannot pull in
+        # anything outside the drawn ring.
+        (-74.30, 40.42, -73.93, 40.6125),
         # The closure corridor, ~1.8 km wide along the 11.13 km cut. Still needed:
         # 28% of the cut is deeper than mask_zmin and it runs east of the bay box.
         (-73.9522, 40.4450, -73.9304, 40.5547),
+    ),
+    # 🔴 The Raritan River cut is a DISCHARGE boundary, so a water-level BC across it is a
+    # build-time error. An imposed ocean level across a tidal river PUMPS it — the mirror
+    # of the free-outflow face that drained the Navesink — and it would also fight the
+    # inflow. Deliberately NOT a `boundary_arms` entry: arms are where mask==2 is allowed,
+    # and here it never is. Both mechanisms are wanted (the arm whitelist demotes; this is
+    # the alarm that says the demotion still happened).
+    #
+    # ⚠️ The cut is at lon -74.2997, lat 40.5065..40.5115 — inside the segment NORTH of the
+    # 1.79 km one that was long recorded as "the Raritan cut" and is dry ground end to end.
+    no_waterlevel_boxes=(
+        NoWaterLevelBox(
+            "raritan_cut",
+            (558_700, 4_484_000, 560_500, 4_485_000),
+            why="The tidal Raritan River at the domain's west limit takes a river "
+            "discharge, never an imposed level. Stops ~300 m clear of the arthur_kill "
+            "arm box, which starts at easting 561,016.",
+        ),
     ),
     open_coast_max_y=4_476_000,
     plot_window=(556_000, 596_000, 4_476_000, 4_500_000),

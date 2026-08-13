@@ -60,6 +60,12 @@ def exp_root() -> Path:
 # active cell has NoData in the merged bed, which is what turns that from a silent hole
 # into a build error.
 DEFAULT_ELEVATION_LIST: tuple[dict, ...] = (
+    # v1.5's western cuts. CUDEM has no tile west of lon -74.25, so without this the
+    # Arthur Kill mouth and the Raritan River fall through to gmrt_nj (~50 m). Carving
+    # tier: channel only, ~37% / ~14% of each cut's wet width; the flanks stay on GMRT.
+    # ⚠️ Harmless to v1_monmouth — it is a frozen mesh with a frozen subgrid, and this
+    # raster is NoData everywhere outside the two surveyed channels.
+    {"elevation": "ehydro_raritan_ak"},
     {"elevation": "ehydro_nj"},
     {"elevation": "shrewsbury_ehydro_2015"},
     {"elevation": "usace_nj_2010"},  # 1 m PRE-Sandy topobathy (fails in deep/turbid water)
