@@ -54,12 +54,34 @@ _FORCING = [
     ("sfincs_netamuv.nc", "wind field", "era5_nj"),
     ("sfincs_netamp.nc", "pressure field", "era5_nj"),
     ("sfincs_netampr.nc", "precipitation", "aorc_sandy_nj"),
-    ("sfincs_netsrcdisfile.nc", "river discharge", "usgs_sandy_discharge"),
+    # ⚠️ DOMAIN-DEPENDENT, unlike every other row here: v1_monmouth uses the 6-point
+    # archived file, v1_5_raritan the 8-point one that adds the Raritan and Lawrence
+    # Brook. Resolved at call time so provenance names the file that was actually read.
+    ("sfincs_netsrcdisfile.nc", "river discharge", None),
 ]
+
+
+def _forcing_rows():
+    """`_FORCING` with the domain-dependent catalog keys filled in."""
+    from . import domain as _domain
+
+    key = _domain.active().discharge_geodataset
+    return [(f, d, k if k is not None else key) for f, d, k in _FORCING]
+
+
+def _validation_rows():
+    """`_VALIDATION` with the domain-dependent HWM file filled in."""
+    from . import domain as _domain
+
+    rel = _domain.active().hwm_geojson
+    hwm = f"{rel.parent.name}/{rel.name}"
+    return [(f if f is not None else hwm, d) for f, d in _VALIDATION]
+
 
 #: validation targets — these are what any score in this project is measured against
 _VALIDATION = [
-    ("validation/sandy_hwms.geojson", "USGS high-water marks"),
+    # domain-dependent, like the discharge row above — filled in by _validation_rows()
+    (None, "USGS high-water marks"),
     ("validation/sandy_motf_extent.tif", "FEMA MOTF surge extent"),
     ("gtsm/noaa_sandy_validation.nc", "NOAA gauge water level"),
     ("gtsm/usgs_sandy_tidal_nj.nc", "USGS tidal + interior bay gauges"),
@@ -150,7 +172,7 @@ def manifest(model_dir: Path | str, data_dir: Path = DATA) -> pd.DataFrame:
         add("elevation", "stack", f"unavailable ({e})", "")
 
     # ── forcing actually present on disk ──────────────────────────────────────
-    for fname, what, key in _FORCING:
+    for fname, what, key in _forcing_rows():
         p = model_dir / fname
         if p.exists():
             add("forcing", what, f"{fname} ({p.stat().st_size/1e6:.1f} MB)",
@@ -170,7 +192,7 @@ def manifest(model_dir: Path | str, data_dir: Path = DATA) -> pd.DataFrame:
             add("waves", lbl, inp[k], "sfincs.inp")
 
     # ── validation targets ───────────────────────────────────────────────────
-    for rel, what in _VALIDATION:
+    for rel, what in _validation_rows():
         p = Path(data_dir) / rel
         extra = ""
         if p.suffix == ".geojson" and p.exists():

@@ -87,6 +87,71 @@ def _face_xy(sf):
     return sf.quadtree_grid.data.grid.face_coordinates.T
 
 
+def _outside_region(sf, region=None) -> "np.ndarray":
+    """Boolean over faces: True where the face centre is OUTSIDE the domain's region.
+
+    The single definition of "not in the model". `apply_mask_and_boundary` clips the mask
+    with it twice — once after `create_active` and once again after `_fill_inactive_holes`,
+    which cannot tell the clipped notch from a genuine interior hole — and
+    `_check_domain_invariants` uses it so that the interior-hole invariant does not fire on
+    the same ground the clip just removed.
+    """
+    import geopandas as gpd
+    import shapely
+
+    region = region if region is not None else _domain.active().region
+    geom = gpd.read_file(region).to_crs(sf.crs).geometry.iloc[0]
+    fx, fy = _face_xy(sf)
+    return ~shapely.contains_xy(geom, fx, fy)
+
+
+def check_dry_land_boxes(boxes, crs, fx, fy, zb) -> list[str]:
+    """Invariant 8: ground declared dry must actually BE dry in the merged bed.
+
+    🔴 THE ONLY POSITIVE CHECK IN THE INVARIANT SET, and the only one that can catch a bed
+    that is present and WRONG. Invariant 6 asks whether data exists; a coarse fallback
+    tier always has data, so a headland omitted by one product and backfilled as bay water
+    by the next passes it in silence — and did, through every build until 2026-08-14, when
+    `cudem_nj` was found to truncate Ward Point at lat 40.49982 and Conference House Park
+    was reading -0.06 m off 50 m GMRT.
+
+    Split out of ``_check_domain_invariants`` so it can be tested on its own. An assert
+    that has never been seen to fail is a decoration; see
+    ``tests/test_domain_and_staging.py``.
+
+    Returns a list of failure strings (empty when the domain is clean).
+    """
+    if not boxes:
+        return []
+    from pyproj import Transformer
+
+    to_grid = Transformer.from_crs(4326, crs, always_xy=True)
+    fail: list[str] = []
+    for name, (lon0, lat0, lon1, lat1), min_z, why in boxes:
+        bx, by = to_grid.transform([lon0, lon1, lon0, lon1], [lat0, lat0, lat1, lat1])
+        sel = (fx > min(bx)) & (fx < max(bx)) & (fy > min(by)) & (fy < max(by))
+        n = int(sel.sum())
+        if n == 0:
+            # A box containing no faces asserts NOTHING and would pass forever. That is
+            # the characteristic failure of a positive check, so make it loud.
+            fail.append(
+                f"dry-land box '{name}' contains NO grid faces, so it asserts nothing. "
+                f"Widen it or fix its coordinates. {why}"
+            )
+            continue
+        bad = sel & ~(zb >= min_z)  # NaN-safe: NoData is not >= min_z, so it fails
+        if bad.any():
+            zbad = zb[bad]
+            fail.append(
+                f"{int(bad.sum())} of {n} faces in dry-land box '{name}' have a bed below "
+                f"the declared {min_z:+.2f} m (min {np.nanmin(zbad):+.2f} m, "
+                f"{int(np.isnan(zbad).sum())} NoData). The merged bed says WATER on ground "
+                f"declared to be LAND — an elevation tier is missing, mis-ordered or "
+                f"mis-clipped. {why}"
+            )
+    return fail
+
+
 def _inactive_components(sf, mask):
     """Split the inactive cells into (ocean-connected mass, interior holes).
 
@@ -419,6 +484,11 @@ def _check_domain_invariants(
        domain reaching across a state line falls straight through.
 
     7. NO ACTIVE CELL IN A DECLARED LAND BOX.
+
+    8. DECLARED DRY LAND IS ACTUALLY DRY. The only POSITIVE check here, and the only one
+       that can catch a bed that is present and WRONG. Invariant 6 asks whether data
+       exists; a coarse fallback tier always has data, so a missing headland backfilled
+       as bay water passes it silently. See ``domain.dry_land_boxes_ll``.
     """
     import rasterio
 
@@ -436,7 +506,16 @@ def _check_domain_invariants(
             f"that emptied the Navesink."
         )
 
+    # 🔴 "INSIDE the model" means inside the REGION, and saying so is load-bearing.
+    # `_inactive_components` calls anything that is not the largest `mask == 0` component a
+    # hole, and after the region clip the dry inland notch outside the ring is exactly
+    # that — its own component, not the shelf. So this invariant shares the precise
+    # blindness `_fill_inactive_holes` has (see 4c in `apply_mask_and_boundary`), and
+    # re-clipping after the fill made it fire on 14,431 cells of ground that is not in the
+    # domain at all. Ground outside the region has no conveyance to block and no boundary
+    # to spawn; only holes inside it are defects.
     _, hole = _inactive_components(sf, mask)
+    hole &= ~_outside_region(sf)
     if hole.any():
         fail.append(
             f"{int(hole.sum())} inactive cells form islands INSIDE the model "
@@ -465,6 +544,9 @@ def _check_domain_invariants(
                 f"{int(sel.sum())} cells are ACTIVE inside the declared land box "
                 f"'{name}'. {why}"
             )
+
+    # --- 8. dry-land boxes: a POSITIVE check on the bed -----------------------
+    fail.extend(check_dry_land_boxes(dom.dry_land_boxes_ll, sf.crs, fx, fy, zb))
 
     # --- 4. no-waterlevel zones ----------------------------------------------
     for zone in dom.no_waterlevel_boxes:
@@ -566,10 +648,17 @@ def _check_domain_invariants(
         if dom.boundary_arms
         else "no boundary arms declared (whitelist not enforced on this domain)"
     )
+    # Report the count, not just "OK": a positive check that silently asserts nothing is
+    # the failure mode of positive checks, and a reader should see how many it made.
+    dry_claim = (
+        f"{len(dom.dry_land_boxes_ll)} dry-land box(es) verified dry"
+        if dom.dry_land_boxes_ll
+        else "no dry-land boxes declared (bed correctness NOT positively checked)"
+    )
     print(
         "[build_static] domain invariants OK (no outflow BC on water; no paved-over "
         "surveyed channel; no interior inactive islands; no NoData under an active cell; "
-        f"no active cell in a land box; {arm_claim}; {zone_claim})"
+        f"no active cell in a land box; {dry_claim}; {arm_claim}; {zone_claim})"
     )
 
 
@@ -615,9 +704,10 @@ def apply_mask_and_boundary(
 
     # Clip the active mask to the region polygon (the rotated grid fills the L's bounding
     # box; drop the dry inland cells in the concave notch). Mask-only.
-    _region = gpd.read_file(base.region).to_crs(sf.crs).geometry.iloc[0]
+    # ONE definition of "not in the model", shared with the invariant check — they must
+    # agree, or the clip removes ground the invariant then complains is missing.
+    _outside = _outside_region(sf, base.region)
     fx, fy = _face_xy(sf)
-    _outside = ~shapely.contains_xy(_region, fx, fy)
     mask = sf.quadtree_grid.data["mask"].values.copy()
     mask[_outside] = 0
 
@@ -636,8 +726,34 @@ def apply_mask_and_boundary(
     # ground) and BEFORE create_boundary, which is what turns an island into a ring of
     # imposed open-ocean level.
     mask = _fill_inactive_holes(sf, mask, sf.quadtree_grid.data["z"].values)
+
+    # 4c. RE-APPLY THE REGION CLIP -------------------------------------------
+    # 🔴 The fill CANNOT be trusted to respect the region, and this is not a bug in it.
+    # "Interior hole" is defined as any `mask == 0` component that is not the LARGEST one,
+    # and after the clip the dry inland notch outside the region is exactly that: its own
+    # component, not the shelf. So the fill hands it straight back.
+    #
+    # Measured on v1_5_raritan (2026-08-14): with the fill disabled the build reported it
+    # would have activated 14,435 cells, against 14,141 sitting outside the region — i.e.
+    # all but ~294 of its work was undoing the clip. Those ~294 are the real inlet-throat
+    # holes the fill exists for, which is why the answer is to re-clip rather than to drop
+    # the fill: with the fill off, `_check_domain_invariants` correctly refuses to build.
+    #
+    # Before the fix the symptom was silent — ~3% extra active cells and a boundary drawn
+    # down the grid rectangle's edge instead of the drawn ring. No `mask == 2` cell was ever
+    # misplaced, so no invariant fired.
+    _readmitted = int((_outside & (mask > 0)).sum())
+    if _readmitted:
+        print(
+            f"[mask] region re-clip after hole-fill: {_readmitted} cells outside the "
+            f"region were re-activated by the fill -> inactive again"
+        )
+    mask[_outside] = 0
+
     # Mirror image, same place in the order: an ACTIVE island detached from the
     # domain must go before create_boundary, or it gets ringed with mask==2.
+    # ⚠️ AFTER the re-clip, so it judges connectivity on the mask that will actually be
+    # built — re-clipping can be what detaches a patch.
     mask = _drop_detached_active_islands(sf, mask, sf.quadtree_grid.data["z"].values)
     sf.quadtree_grid.data["mask"] = sf.quadtree_grid.data["mask"].copy(data=mask)
 
@@ -938,7 +1054,7 @@ def add_forcing(base: BaseConfig, sf: SfincsModel) -> None:
     sf.wind.create(wind="era5_nj")
     sf.pressure.create(press="era5_nj")
     sf.precipitation.create(precip="aorc_sandy_nj", cumulative_input=True, aggregate=False)
-    sf.discharge_points.create(geodataset="usgs_sandy_discharge", merge=False)
+    sf.discharge_points.create(geodataset=base.discharge_geodataset, merge=False)
     sf.quadtree_infiltration.create_cn(cn="cn_nj", antecedent_moisture=None, nrmax=2000)
 
 

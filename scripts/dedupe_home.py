@@ -1,0 +1,147 @@
+#!/usr/bin/env python
+"""Reclaim quota by HARD-LINKING byte-identical large files across the whole home dir.
+
+    python scripts/dedupe_home.py            # report only
+    python scripts/dedupe_home.py --apply    # actually link
+
+WHY THIS EXISTS SEPARATELY FROM `dedupe_experiment_inputs.py`
+------------------------------------------------------------
+That script dedupes *within* `experiments/<domain>/` on the active repo. But the account
+holds three repos plus a 29 GB raw-data store, and the same 300 MB `sfincs.nc` /
+217 MB `sfincs_subgrid.nc` / 240 MB `roughness.nc` triple is copied into EVERY run dir of
+every campaign — 26 campaigns' worth sit frozen in `~/nj_coast_sfincs/experiments`. The
+duplication that actually fills the quota is BETWEEN roots, so the reclaim has to be too.
+
+🔴 IT LINKS, IT NEVER DELETES. One root (`~/nj_coast_sfincs`) is a frozen archive whose
+whole value is that it still holds what it held. A hard link keeps every path readable at
+every location it was readable before; only the duplicate *blocks* go away. If this script
+is wrong, the cost is a wasted walk, not a lost campaign.
+
+⚠️ The flip side of a hard link: an in-place write through one path is now visible through
+the other. Every writer here (xarray/netCDF4, GDAL, shutil.copy) creates a NEW file and
+renames it over the target, which BREAKS the link instead of following it — that is why
+this is safe for `.nc`/`.tif` data. It is NOT safe for anything edited in place, so the
+scope is deliberately narrow: large binary data only, no source, no environments.
+
+HOW TO READ THE QUOTA (this filesystem is GPFS, and `quota -s` says nothing):
+    mmlsquota -u $USER --block-size auto cache      # /usr/lpp/mmfs/bin
+
+🔴 NEVER measure headroom by `dd`-ing until ENOSPC. On 2026-08-14 that filled the
+filesystem for a few seconds while three SFINCS jobs were starting; they could not create
+their stdout files OR `sfincs_map.nc`, and one still exited `COMPLETED 0:0` after 14
+minutes having written nothing. Ask the quota, do not probe it.
+"""
+
+from __future__ import annotations
+
+import argparse
+import hashlib
+import os
+from collections import defaultdict
+from pathlib import Path
+
+HOME = Path("/cache/home/tpj8")
+
+#: Only files at least this big. All the reclaimable space is in model I/O; going smaller
+#: multiplies the file count by ~100 and the reclaim by ~1%.
+MIN_SIZE = 8 * 1024 * 1024
+
+#: Extensions worth linking: bulk binary data written whole-file-then-renamed.
+DATA_SUFFIXES = {".nc", ".tif", ".tiff", ".sif", ".gz", ".tar", ".zip", ".nc4",
+                 ".bin", ".dat", ".npy", ".npz", ".parquet", ".gpkg", ".img"}
+
+#: Never walk into these. Environments and caches hardlink internally by their own rules
+#: (conda/pip/singularity), source control needs its objects left alone, and the editor
+#: server rewrites files in place.
+SKIP_DIRS = {".git", "micromamba", ".vscode-server", ".apptainer", ".cache",
+             "site-packages", "node_modules", ".claude", "__pycache__", ".ipython"}
+
+
+def walk(root: Path):
+    for dirpath, dirnames, filenames in os.walk(root, followlinks=False):
+        dirnames[:] = [d for d in dirnames if d not in SKIP_DIRS]
+        for fn in filenames:
+            p = Path(dirpath) / fn
+            if p.is_symlink() or p.suffix.lower() not in DATA_SUFFIXES:
+                continue
+            try:
+                st = p.lstat()
+            except OSError:
+                continue
+            if st.st_size >= MIN_SIZE:
+                yield p, st
+
+
+def sha(path: Path, size: int) -> str:
+    h = hashlib.sha256()
+    with path.open("rb") as fh:
+        while chunk := fh.read(8 << 20):
+            h.update(chunk)
+    return h.hexdigest()
+
+
+def main() -> int:
+    ap = argparse.ArgumentParser(description=__doc__)
+    ap.add_argument("--apply", action="store_true", help="link (default: report only)")
+    ap.add_argument("--root", default=str(HOME), help="tree to dedupe")
+    ap.add_argument("--min-mb", type=float, default=MIN_SIZE / 1048576)
+    args = ap.parse_args()
+    min_size = int(args.min_mb * 1048576)
+
+    by_size: dict[int, list] = defaultdict(list)
+    n = 0
+    for p, st in walk(Path(args.root)):
+        if st.st_size >= min_size:
+            by_size[st.st_size].append((p, st))
+            n += 1
+    print(f"scanned {n} data files >= {args.min_mb:.0f} MB under {args.root}\n")
+
+    freed = 0
+    linked = 0
+    # Only sizes with more than one file can hold a duplicate; hashing is the expensive
+    # step so it is paid only for those.
+    for size, entries in sorted(by_size.items(), key=lambda kv: -kv[0] * len(kv[1])):
+        if len(entries) < 2:
+            continue
+        by_hash: dict[str, list] = defaultdict(list)
+        for p, st in entries:
+            try:
+                by_hash[sha(p, size)].append((p, st))
+            except OSError:
+                continue
+        for digest, group in by_hash.items():
+            inodes = {st.st_ino for _, st in group}
+            if len(group) < 2 or len(inodes) < 2:
+                continue
+            # Keep the copy that already has the most links — that frees the most at once
+            # and keeps the "original" wherever the most paths already point.
+            keeper, kst = max(group, key=lambda e: e[1].st_nlink)
+            gain = size * (len(inodes) - 1)
+            print(f"  {keeper.name:<28} {digest[:8]}  {len(group)} copies, "
+                  f"{len(inodes)} inodes ({size / 1048576:7.0f} MB)"
+                  f"  -> {gain / 1048576:8.0f} MB")
+            print(f"      keep {keeper.relative_to(HOME)}")
+            for p, st in group:
+                if st.st_ino == kst.st_ino:
+                    continue
+                print(f"      link {p.relative_to(HOME)}")
+                if args.apply:
+                    tmp = p.with_name(p.name + ".dedupe-tmp")
+                    try:
+                        os.link(keeper, tmp)
+                        os.replace(tmp, p)
+                        linked += 1
+                    except OSError as exc:
+                        print(f"        SKIPPED ({exc})")
+                        tmp.unlink(missing_ok=True)
+                        continue
+            freed += gain
+
+    verb = "RECLAIMED" if args.apply else "reclaimable"
+    print(f"\n{verb}: {freed / 1024**3:.1f} GB"
+          + (f" ({linked} files linked)" if args.apply else " — rerun with --apply"))
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

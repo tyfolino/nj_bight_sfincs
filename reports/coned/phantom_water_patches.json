@@ -1,0 +1,35 @@
+[
+ {
+  "tile": "NJ_DE_Topobathy_DEM_v2_10_20.tif",
+  "area_km2": 0.187,
+  "lon_min": -74.2537,
+  "lon_max": -74.2372,
+  "lat_min": 40.4961,
+  "lat_max": 40.5012,
+  "stack_median": -3.16,
+  "stack_std": 1.382,
+  "coned_median": 2.04
+ },
+ {
+  "tile": "NJ_DE_Topobathy_DEM_v2_09_21.tif",
+  "area_km2": 0.0071,
+  "lon_min": -74.133,
+  "lon_max": -74.1305,
+  "lat_min": 40.5461,
+  "lat_max": 40.5468,
+  "stack_median": -3.22,
+  "stack_std": 1.286,
+  "coned_median": 0.93
+ },
+ {
+  "tile": "NJ_DE_Topobathy_DEM_v2_10_20.tif",
+  "area_km2": 0.0063,
+  "lon_min": -74.2552,
+  "lon_max": -74.2542,
+  "lat_min": 40.5021,
+  "lat_max": 40.5039,
+  "stack_median": -2.36,
+  "stack_std": 1.431,
+  "coned_median": 1.83
+ }
+]

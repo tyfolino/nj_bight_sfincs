@@ -69,6 +69,15 @@ DEFAULT_ELEVATION_LIST: tuple[dict, ...] = (
     {"elevation": "ehydro_nj"},
     {"elevation": "shrewsbury_ehydro_2015"},
     {"elevation": "usace_nj_2010"},  # 1 m PRE-Sandy topobathy (fails in deep/turbid water)
+    # 🔴 MUST sit ABOVE cudem_nj. CUDEM is MISSING the Ward Point headland — its land stops
+    # at lat 40.49982 in every column and the missing ~230 m of New York State is backfilled
+    # as -3 to -5.5 m of bay — and it has no tile west of lon -74.2504 at all, so Conference
+    # House Park falls through to 50 m GMRT and reads -0.06 m. That phantom water is a
+    # VALUE, not NoData, so a tier BELOW cudem_nj would change nothing there, and the
+    # no-NoData assert is structurally blind to it. 1 m CoNED, clipped to a declared box:
+    # the product is POST-Sandy, so it is kept off erodible pre-storm shoreline on purpose.
+    # See scripts/build_coned_sw_raritan.py and scripts/sweep_cudem_flatfill.py.
+    {"elevation": "coned_sw_raritan"},
     {"elevation": "cudem_nj"},  # 3 m fill: inlets + shelf + Raritan Bay
     {"elevation": "nj_10ft_dem", "zmin": 0.001},  # 3 m fill: inland land, NJ ONLY
     {"elevation": "cudem13_nj"},  # ~10 m fill: nearshore ocean the 1/9" product never tiled
@@ -143,6 +152,12 @@ class BaseConfig:
 
     # ── Water-level boundary ─────────────────────────────────────────────────
     waterlevel_geodataset: str = "noaa_sandy_nj"
+    # Resolved from the domain registry, like `region` and `refinement`: which rivers
+    # enter the model is a consequence of where the boundary was drawn, so it is a
+    # domain fact rather than a global default.
+    discharge_geodataset: str = field(
+        default_factory=lambda: _domain.active().discharge_geodataset
+    )
     waterlevel_buffer: int = field(
         default_factory=lambda: _domain.active().waterlevel_buffer
     )

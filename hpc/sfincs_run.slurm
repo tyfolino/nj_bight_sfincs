@@ -4,6 +4,17 @@
 # Target partition is main-redhat: the RHEL 9.6 ("amarel-new") nodes. The older `main`
 # partition is CentOS 7 (glibc 2.17) and must NOT be used — see hpc/amarel_bootstrap.md.
 #SBATCH -p main-redhat
+# 🔴 THE halk* NODES CANNOT WRITE TO /cache/home — AND THEY FAIL SILENTLY.
+# A job landing there is allocated, runs, and exits `COMPLETED 0:0` having produced NOTHING:
+# no sfincs_map.nc, no sfincs_his.nc, and not even its own SLURM stdout file, so there is no
+# error message anywhere to find. `sacct` says COMPLETED and the run dir just still holds
+# its inputs. On 2026-08-14 this ate five submissions before the node column was noticed;
+# a 2 GB `--wrap 'hostname; touch ...'` probe pinned to halk0064 returned COMPLETED 0:0 in
+# 8 s with no output file and no marker, while the same probe on hal0338 worked.
+# 154 of the 494 nodes in main-redhat are halk*, so ~31% of submissions hit this by chance.
+# Evidence is 5/5 halk failures vs 3/3 hal successes — the whole class is excluded until
+# someone demonstrates otherwise. Re-check with the probe above before removing this line.
+#SBATCH --exclude=halk[0001-0159]
 #SBATCH -c 64
 #SBATCH --mem=64G
 # Wave-enabled (SnapWave) solves of the 3-day Sandy window take 1:40-2:05 wall; the old

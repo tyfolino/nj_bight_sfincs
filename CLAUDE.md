@@ -41,7 +41,7 @@ Every geographic fact lives in **`nj_sfincs/domain.py`**, keyed by the `NJ_DOMAI
 | `NJ_DOMAIN` | what | status |
 |---|---|---|
 | `v1_monmouth` | Sandy Hook → Sea Girt, 547,408 faces | **FROZEN** — port-verification fixture only |
-| `v1_5_raritan` | boundary relocated to the Narrows + Arthur Kill | **not yet registered** (see STATUS) |
+| `v1_5_raritan` | boundary relocated to the Narrows + Arthur Kill | **registered, NOT frozen** — no mesh, no fingerprint (see STATUS) |
 
 **The same experiment name exists on every domain and means a different model each time.**
 That is why runs live at `experiments/<domain>/<arm>`, why `EXPERIMENTS` is keyed by domain
@@ -132,8 +132,19 @@ not trip that guard. Do not run the sweep driver to "just rebuild" a template.
   cell has NoData in the merged bed.
 - **Import `pyproj` before `hydromt_sfincs`** — `nj_sfincs/__init__.py` does this; it
   prevents a native double-free in `downscale_floodmap`.
+- 🔴 **The `halk*` nodes cannot write to `/cache/home`, and fail SILENTLY** — the job is
+  allocated, runs, exits `COMPLETED 0:0`, and writes nothing at all, not even its own SLURM
+  stdout file. 154 of 494 nodes in `main-redhat` are `halk*`. `hpc/sfincs_run.slurm` now sets
+  `#SBATCH --exclude=halk[0001-0159]`; **an `sbatch` that bypasses that script is unprotected.**
+  First thing to check when a job "completed" with no output: `sacct -j <id> --format=NodeList`.
 - **Disk quota exhaustion never says "quota".** It SIGSEGVs jobs or silently truncates
-  output maps while `sacct` reports COMPLETED. Run `scripts/dedupe_experiment_inputs.py`.
+  output maps while `sacct` reports COMPLETED. Home is **GPFS, 100 G soft / 110 G hard**, and
+  `quota -s` prints nothing — ask `mmlsquota -u $USER --block-size auto cache`
+  (in `/usr/lpp/mmfs/bin`, not on PATH). 🔴 **Never probe headroom by `dd`-ing to ENOSPC**:
+  it starves any job that is starting, and the wreckage is indistinguishable from the `halk`
+  trap above. Reclaim with `scripts/dedupe_experiment_inputs.py` (within a domain) or
+  `scripts/dedupe_home.py` (across all four data roots — it hard-links, never deletes, so it
+  is safe to point at the frozen archive; 20 GB the first time).
 - **A truncated floodmap cache reads back clean and scores bone-dry.** Writes are atomic
   now; do not weaken that.
 - **SnapWave is 90–95% of runtime** and scales per-iteration; the 3 h batch default is not

@@ -63,6 +63,12 @@ _V1_5_RARITAN: dict[str, Experiment] = {
         "the Upper Bay + Hudson tidal prism, which is comparable against literature. "
         "Without that the relocated boundary is asserted, not measured.",
         waterlevel_geodataset="naccs_sandy_v1_5_raritan",
+        # Measured on the FROZEN mesh 2026-08-14: 532 NACCS save points -> 139
+        # within 2 km of a mask==2 cell -> 71 after the dry (-29) and open-coast
+        # depth (-39) screens. Per arm: ocean 43, narrows 13, arthur_kill 15 —
+        # no arm empty, which was gate 1. Declared on the ARM, never by relaxing
+        # Domain.n_waterlevel_support (which guards the base NOAA selection).
+        n_waterlevel_support=71,
     ),
     "naccs-nowaves": Experiment(
         "naccs-nowaves",
@@ -73,6 +79,12 @@ _V1_5_RARITAN: dict[str, Experiment] = {
         "contribute ~+0.34 m of setup on the open coast and wetting is threshold-"
         "nonlinear. Score levels and phase only.",
         waterlevel_geodataset="naccs_sandy_v1_5_raritan",
+        # Measured on the FROZEN mesh 2026-08-14: 532 NACCS save points -> 139
+        # within 2 km of a mask==2 cell -> 71 after the dry (-29) and open-coast
+        # depth (-39) screens. Per arm: ocean 43, narrows 13, arthur_kill 15 —
+        # no arm empty, which was gate 1. Declared on the ARM, never by relaxing
+        # Domain.n_waterlevel_support (which guards the base NOAA selection).
+        n_waterlevel_support=71,
     ),
     "noaa-2node": Experiment(
         "noaa-2node",
@@ -100,6 +112,12 @@ _V1_5_RARITAN: dict[str, Experiment] = {
         "setup-at-the-boundary XOR SnapWave is the branch measured to overestimate max "
         "water depth by ~1 m.",
         waterlevel_geodataset="naccs_sandy_v1_5_raritan",
+        # Measured on the FROZEN mesh 2026-08-14: 532 NACCS save points -> 139
+        # within 2 km of a mask==2 cell -> 71 after the dry (-29) and open-coast
+        # depth (-39) screens. Per arm: ocean 43, narrows 13, arthur_kill 15 —
+        # no arm empty, which was gate 1. Declared on the ARM, never by relaxing
+        # Domain.n_waterlevel_support (which guards the base NOAA selection).
+        n_waterlevel_support=71,
     ),
 }
 

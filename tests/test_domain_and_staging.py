@@ -360,6 +360,11 @@ class TestWaterlevelSupportOverride(_DomainEnv):
         """
         PINNED = {
             "v1_monmouth": 2,
+            # The BASE (noaa_sandy_nj) selection, measured during the 2026-08-14
+            # template build. ⚠️ NOT the NACCS count: the premier forces from 71 points,
+            # declared on the ARM. Putting 71 here would disable the guard for every
+            # other arm on the domain — see nj_sfincs/domain.py.
+            "v1_5_raritan": 2,
         }
         self.assertEqual(
             set(PINNED),
@@ -650,6 +655,104 @@ class TestStagingIsSafeBeforeItIsDestructive(_DomainEnv):
                 rx.main(["--experiments", "all"])  # no tty, no --yes
         finally:
             rx.EXPERIMENTS.pop(name, None)
+
+
+class TestDryLandBoxes(unittest.TestCase):
+    """Invariant 8 — the POSITIVE bed check.
+
+    🔴 Why this test exists: on 2026-08-14 `cudem_nj` was found to be missing the Ward
+    Point headland, truncating New York State at lat 40.49982 and backfilling ~230 m of it
+    as -3 to -5.5 m of bay, while Conference House Park read -0.06 m off 50 m GMRT.
+    **Every domain invariant was green**, because the NoData check (invariant 6) asks only
+    whether data exists, and a coarse fallback tier always has data. The defect was caught
+    by eye, on a figure, after a mesh had already been built on it.
+
+    So the replacement check has to be positive, and it has to be SEEN TO FAIL. An assert
+    nobody has watched fire is a decoration.
+    """
+
+    #: A tiny synthetic grid in EPSG:26918 around Ward Point, so the test needs no raster.
+    CRS = "EPSG:26918"
+
+    def _grid(self):
+        import numpy as np
+        from pyproj import Transformer
+
+        t = Transformer.from_crs(4326, self.CRS, always_xy=True)
+        lons = np.linspace(-74.2490, -74.2468, 6)
+        lats = np.linspace(40.4985, 40.4994, 5)
+        lo, la = np.meshgrid(lons, lats)
+        fx, fy = t.transform(lo.ravel(), la.ravel())
+        return np.asarray(fx), np.asarray(fy)
+
+    BOX = (
+        "ward_point_headland",
+        (-74.2492, 40.4983, -74.2465, 40.4996),
+        0.5,
+        "test box",
+    )
+
+    def test_passes_when_the_declared_land_is_land(self):
+        import numpy as np
+
+        from nj_sfincs.model import check_dry_land_boxes
+
+        fx, fy = self._grid()
+        zb = np.full(fx.shape, 2.5)  # what CoNED reports there
+        self.assertEqual(check_dry_land_boxes((self.BOX,), self.CRS, fx, fy, zb), [])
+
+    def test_FIRES_on_the_actual_cudem_bed(self):
+        """The regression that motivated the check: CUDEM's phantom water at Ward Point."""
+        import numpy as np
+
+        from nj_sfincs.model import check_dry_land_boxes
+
+        fx, fy = self._grid()
+        zb = np.full(fx.shape, -4.96)  # what cudem_nj reports there
+        fail = check_dry_land_boxes((self.BOX,), self.CRS, fx, fy, zb)
+        self.assertEqual(len(fail), 1)
+        self.assertIn("ward_point_headland", fail[0])
+        self.assertIn("says WATER on ground declared to be LAND", fail[0])
+
+    def test_FIRES_on_nodata(self):
+        """NoData must fail too — `zb >= min_z` is False for NaN, and that is deliberate."""
+        import numpy as np
+
+        from nj_sfincs.model import check_dry_land_boxes
+
+        fx, fy = self._grid()
+        zb = np.full(fx.shape, np.nan)
+        fail = check_dry_land_boxes((self.BOX,), self.CRS, fx, fy, zb)
+        self.assertEqual(len(fail), 1)
+        self.assertIn("NoData", fail[0])
+
+    def test_FIRES_on_an_empty_box(self):
+        """🔴 The characteristic failure of a positive check: a box with no faces in it
+        asserts nothing and passes forever. It must be an error, not silence."""
+        import numpy as np
+
+        from nj_sfincs.model import check_dry_land_boxes
+
+        fx, fy = self._grid()
+        far = ("nowhere", (-70.0, 30.0, -69.99, 30.01), 0.5, "test box")
+        fail = check_dry_land_boxes((far,), self.CRS, fx, fy, np.full(fx.shape, 5.0))
+        self.assertEqual(len(fail), 1)
+        self.assertIn("asserts nothing", fail[0])
+
+    def test_the_registered_boxes_are_inside_the_coned_tier_box(self):
+        """A dry-land box outside `coned_sw_raritan`'s clip would assert against ground
+        the tier does not cover, which is a trap rather than a check."""
+        from nj_sfincs import domain as _domain
+
+        dom = _domain.DOMAINS["v1_5_raritan"]
+        if not dom.dry_land_boxes_ll:
+            self.skipTest("no dry-land boxes registered on v1_5_raritan")
+        tier = (-74.3120, 40.4640, -74.2320, 40.5340)  # build_coned_sw_raritan.BOX
+        for name, (lo0, la0, lo1, la1), _min_z, _why in dom.dry_land_boxes_ll:
+            self.assertTrue(
+                tier[0] <= lo0 and lo1 <= tier[2] and tier[1] <= la0 and la1 <= tier[3],
+                f"dry-land box {name!r} is not inside the CoNED tier's clip box",
+            )
 
 
 if __name__ == "__main__":

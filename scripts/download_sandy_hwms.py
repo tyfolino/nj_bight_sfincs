@@ -22,8 +22,20 @@ import requests
 from shapely.geometry import Point
 
 ROOT = Path(os.environ.get("NJ_ROOT", Path(__file__).resolve().parents[1]))
-OUT_DIR = ROOT / "data/validation"
-OUT = OUT_DIR / "sandy_hwms.geojson"
+# 🔴 The output path is a DOMAIN fact, and this script REFUSES to write the archived one.
+# `data/validation` is a symlink into the frozen archive; `v1_monmouth`'s 95-mark file is
+# what the port-verification fixture pins `hwm_n_scored=38` against, and finding 6 says a
+# changed scored-mark count invalidates every comparison built on it. A bigger domain gets
+# its own file (the bbox below comes from the ACTIVE region, so a bigger domain WILL pull
+# more marks — that is exactly the accident this guard exists to prevent).
+from nj_sfincs import domain as _domain_for_out  # noqa: E402
+OUT = _domain_for_out.active().hwm_geojson
+OUT_DIR = OUT.parent
+if "validation/" in str(OUT).replace("\\", "/") and OUT.name == "sandy_hwms.geojson":
+    raise SystemExit(
+        f"refusing to write {OUT}: that is the FROZEN archive file the port fixture is "
+        f"pinned to. Give this domain its own `hwm_geojson` in nj_sfincs/domain.py first."
+    )
 # Region comes from the ACTIVE DOMAIN registry, so this script follows the
 # domain being built instead of a fixed filename. (nj_sfincs/domain.py)
 from nj_sfincs import domain as _domain  # noqa: E402

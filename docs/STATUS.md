@@ -4,7 +4,7 @@
 12 KB "current state" memory file and its 26 reverse-chronological campaign logs; the point
 of the format is that a reader gets the current state without replaying how it was reached.
 
-Last updated: **2026-08-13**
+Last updated: **2026-08-14**
 
 📋 The original plan this work follows is frozen at
 [docs/plan_v1_5_original.md](plan_v1_5_original.md) (Phases 1–4 and 6 are done; 5 and 7 are
@@ -16,8 +16,63 @@ intended, not of where things stand.
 ## Where we are
 
 The repo has been stood up and the code ported from `~/nj_coast_sfincs`
-(commit `21e28f2`, see [ARCHIVE.md](../ARCHIVE.md)). **The port gate passes.** The v1.5
-domain is **not yet registered** — it is blocked on two manual facts, below.
+(commit `21e28f2`, see [ARCHIVE.md](../ARCHIVE.md)). **The port gate passes.** The two manual
+gates below both passed on 2026-08-13.
+
+**v1.5 is FROZEN and the first sweep is RUNNING (2026-08-14).** `data/frozen_mesh_v1_5_raritan_z10`
+exists and `premier.EXPECTED` carries the fingerprint —
+`faces=696230 boundary_edges=1652 sha(z,mask)=2a23667dd16e449c`; `python -m nj_sfincs.premier`
+reports **4/4** (template + three staged arms). Everything below that still reads "nothing may
+be staged or run yet" describes the road to that freeze, not the current state.
+
+| arm | job | node | state |
+|---|---|---|---|
+| `naccs-premier` | 60582145 | hal0338 | running, waves on, ~1.8 h solve |
+| `naccs-nowaves` | 60582164 | hal0388 | running |
+| `noaa-2node` | 60582165 | hal0391 | running |
+
+Results are **not in yet** — nothing has been scored. When they land, run
+`python run_experiments.py --experiments <arm> --validate-only` and compare **paired**.
+
+### 🔴 Two infrastructure traps that ate five submissions, 2026-08-14
+
+Both produce **`COMPLETED 0:0` with no output and no error anywhere**, which is the single
+most expensive failure shape in this project. Both are now fixed in code; this is the record
+of why those lines exist.
+
+**1. The `halk*` nodes cannot write to `/cache/home`.** A job that lands there is allocated,
+runs, and exits clean having written *nothing* — no `sfincs_map.nc`, no `sfincs_his.nc`, and
+not even its own SLURM stdout file, so there is no message to find. 154 of the 494 nodes in
+`main-redhat` are `halk*`, so ~31% of submissions hit it. Evidence: 5/5 halk submissions
+produced nothing, 3/3 `hal*` ones worked; a 2 GB probe pinned to `halk0064` running only
+`hostname; touch` returned COMPLETED 0:0 in 8 s with no output file and no marker, while the
+identical probe on `hal0338` worked. `hpc/sfincs_run.slurm` now carries
+`#SBATCH --exclude=halk[0001-0159]`. Re-check with that probe before removing it.
+
+**2. Home is a GPFS filesystem with a 100 G soft / 110 G hard quota, and `quota -s` prints
+nothing.** Ask it properly — `/usr/lpp/mmfs/bin` is not on PATH:
+
+```bash
+mmlsquota -u $USER --block-size auto cache      # blocks / quota / limit / grace
+```
+
+🔴 **Never measure headroom by `dd`-ing to ENOSPC.** Doing that filled the filesystem for a
+few seconds while three jobs were starting; they could not create their output files and one
+still exited `COMPLETED 0:0` after 14 minutes having written nothing. The failure looks
+exactly like trap 1, which is how the two got confused for an hour.
+
+Usage was **102.8 G (over soft, in the 7-day grace)** and is now **86.3 G**, reclaimed by
+`scripts/dedupe_home.py` — it hard-links byte-identical large data files across
+`nj_bight_sfincs`, `nj_coast_sfincs`, `nj_sandy_sfincs` and `sfincs_data`. **It links, it
+never deletes**, which is what makes it safe to point at the frozen archive: every path stays
+readable, only duplicate blocks go away. 20.1 GB over 142 files, and all four staged dirs
+still pass the fingerprint afterwards. Rerun it whenever a sweep is staged — `copytree`
+re-duplicates ~1.5 GB per arm every time.
+
+The 5 sweep-only CoNED tiles were deleted for space (`10_20`, the Ward Point defect tile, is
+kept so the tier and the cited figure stay rebuildable). `sweep_cudem_flatfill.py` now prints
+a **PARTIAL SWEEP** banner when fewer than 6 tiles are present, so "0 patches" can never be
+misread as "nothing wrong" — re-download the other five before trusting a clean sweep.
 
 ### ✅ Port verification — PASSED 2026-08-13
 
@@ -196,8 +251,48 @@ comparison), and it does not bite.
 which is the uncertainty that forces the radius-and-estimator choice (finding 1). Do not
 read "6 Excellent" as 6 well-located marks.
 
-⏳ Not yet integrated: v1.5 needs its own `hwm_rules` basin classification, which does not
-exist until the domain is registered. Add the marks and the rules together.
+✅ **DONE 2026-08-14 — marks and rules added together, as required.**
+
+`data/validation_v1_5/sandy_hwms_v1_5.geojson`, 107 marks in the v1.5 bbox, **69 inside the
+drawn region** (archived file: 63 → **+6**). The other 38 are inside the bbox but outside the
+ring — Staten Island proper and the Brooklyn side, excluded by design. ⚠️ So the "12 more
+marks" figure was against a lon/lat box, not the region; **+6** is what the domain can score.
+
+🔴 **A SECOND FILE, and `download_sandy_hwms.py` now REFUSES to write the first.** That script
+selects marks by the ACTIVE region's bbox, so simply running it on v1.5 would have rewritten
+the archived 95-mark file that the port fixture pins `hwm_n_scored=38` against — silently
+rescoring the fixture. It exits with an error instead. Which HWM file a domain scores against
+is now `Domain.hwm_geojson`, resolved through `_hwm_path()` in `validate/metrics.py` and
+`plots.py`, the same pattern as `discharge_geodataset`.
+
+**Basins, classified 2026-08-14 (`_V1_5_BASIN_RULES`, 69 in-region marks):**
+
+| basin | marks | of which NEW to v1.5 |
+|---|---|---|
+| `shark_river` | 3 | 0 |
+| `south_coast` | 5 | 0 |
+| `sandy_hook_bay` | 6 | 0 |
+| **`raritan_bay`** | **25** | 2 |
+| **`lower_bay_si_shore`** | **6** | **6** |
+| `atlantic_oceanfront` | 9 | 0 |
+| `shrewsbury_navesink` | 15 | 0 |
+| `unclassified` | **0** | — |
+
+🔴 **v1's rule tuple could NOT be carried over, and this is the trap worth naming.** v1's rule
+3 is `BasinRule("sandy_hook_bay", ymin=4_474_000)` with **no western bound** — harmless on v1,
+where nothing lay west of Sandy Hook Bay. On v1.5 that one rule swallows **the whole of
+Raritan Bay**, the water this domain exists to test, into a basin named after a different one.
+It would have produced per-basin numbers that looked entirely reasonable and answered nothing.
+`sandy_hook_bay` is therefore bounded here (`xmin=574_000`, `ymax=4_486_000`) and the water it
+used to absorb is `raritan_bay`.
+
+⚠️ **CONSEQUENCE: `sandy_hook_bay` does not mean the same thing on the two domains**, so its
+per-basin statistics are not comparable across them. Compare arms within a domain — which is
+the only comparison this project makes.
+
+⭐ `lower_bay_si_shore` is 6 marks, **all 6 outside the v1_monmouth footprint**: a basin that
+exists only because the boundary moved. And the last rule, `unclassified`, is an unconstrained
+catch-all that must stay empty — it is the alarm for a wrong threshold, not a new basin.
 
 ### ✅ Gate 2 — PASSED 2026-08-13. Two interior holdouts survive the crest.
 
@@ -373,7 +468,7 @@ Outflow total **240 → 957**.
 hydromt to flag against, so SFINCS treats them as a closed wall by default. High dry inland
 ground never floods, so mask 1 vs 3 is immaterial there.
 
-#### 2b. 🔴 OPEN — the built domain EXTENDS BEYOND the drawn region (found by fixing #2)
+#### 2b. ✅ FIXED 2026-08-14 — the built domain extended beyond the drawn region
 
 Raising the outflow gate made this visible: the boundary in the new figure runs down the
 **grid rectangle's** west and south edges, not the drawn ring. Measured on
@@ -393,40 +488,446 @@ it cannot make a cell active. Raising it merely put 289 BC cells on ground that 
 wrongly active, which is what made it visible. `base.region` resolves correctly to the drawn
 polygon, and the clip at `model.py` (`mask[_outside] = 0`) is applied.
 
-**Hypothesis, untested:** `_fill_inactive_holes` runs AFTER the region clip and re-activates
-the clipped notch as an "inactive island". It is the only step between the clip and
-`create_boundary` that can turn a 0 back into a 1 (`_drop_detached_active_islands` only
-removes). **Cheap test: disable the fill, re-probe, see if the 14,141 vanish.**
+#### ✅ CAUSE CONFIRMED 2026-08-14 — it IS `_fill_inactive_holes`
 
-🔴 **Do not "fix" this blind.** The mask is half the premier fingerprint, and
-`_fill_inactive_holes` exists for a documented reason (finding 9 — it is what stops
-`create_boundary` ringing scoured inlet throats with ocean level). If the fill is the cause,
-the fix is to re-apply the region clip AFTER it, not to remove it.
+Tested by monkeypatching the fill to a no-op (no edit to `model.py`) and rebuilding the
+mask-only probe on `v1_5_raritan`:
+
+```
+[TEST] fill DISABLED — it would have activated 14435 cells
+RuntimeError: [build_static] DOMAIN INVARIANTS FAILED:
+  - 14435 inactive cells form islands INSIDE the model (deepest -11.02 m, ...)
+```
+
+**14,435 filled vs 14,141 outside the region.** The fill is the cause, and the ~294-cell
+remainder is the point: those are the *legitimate* interior holes the fill exists for
+(finding 9 — the scoured inlet throats). Largest kept active component also drops
+426,399 → 414,228 with the fill off, consistent.
+
+⭐ **So the fix is NOT to remove the fill** — with it off the build correctly refuses to
+proceed, which is the invariant doing its job. `_fill_inactive_holes` cannot distinguish "an
+inactive island inside the model" from "the inactive ground I just clipped away", because
+after the clip they are topologically the same thing: neither is the largest `mask==0`
+component.
+
+**The fix is to RE-APPLY THE REGION CLIP AFTER THE FILL**, so the fill keeps its ~294 real
+holes and gives back the 14,141 cells that were never in the domain. ✅ Implemented as step
+**4c** in `apply_mask_and_boundary`, and it prints what it undoes:
+
+```
+[mask] filled 14435 interior inactive cells ...
+[mask] region re-clip after hole-fill: 14431 cells outside the region were
+       re-activated by the fill -> inactive again
+```
+
+**Result — every mask class is now entirely inside the drawn ring:**
+
+| mask | fix2 total | fix2 OUTSIDE | **fix3 total** | **fix3 OUTSIDE** |
+|---|---|---|---|---|
+| 1 active interior | 426,399 | 14,142 | 409,712 | **0** ✅ |
+| 2 waterlevel BC | 1,307 | 0 | 1,272 | **0** ✅ |
+| 3 outflow BC | 957 | 289 | 1,070 | **0** ✅ |
+
+#### 🔴 AND THE SAME BLINDNESS WAS IN INVARIANT 3 — found because the fix made it fire
+
+The first build after the re-clip **failed**, on `14431 inactive cells form islands INSIDE
+the model`. Not a misfire: invariant 3 calls `_inactive_components` and inherits its
+definition of a hole — *any* `mask == 0` component that is not the largest — so the ground
+the clip had just correctly removed came straight back as an invariant violation. The clip
+and the check were fighting.
+
+✅ **Fixed by scoping "inside the model" to mean inside the REGION** (`hole &= ~outside`),
+with **one shared `_outside_region(sf, region)` helper** now used by the clip, the re-clip
+and the invariant. They must agree by construction, or one removes ground the other demands.
+
+⭐ Worth stating plainly because it is the same lesson twice in one day: the defect was never
+"the fill is buggy". It is that **after a region clip, "outside the domain" and "an island
+inside the domain" are topologically identical**, and every piece of code that reasons about
+`mask == 0` connectivity has to be told which is which.
 
 **Impact if left:** ~3% more active cells (compute only) and a boundary that plots along the
 grid edge. All of it is dry ground +3.7 m and up that ocean water never reaches, and no
 `mask==2` cell is outside the region, so **no water-level forcing is misplaced.** It is a
 correctness/"what did I actually build" issue, not a physics error.
 
-#### 3. ⏳ OPEN — `arthur_kill` is TWO runs, and it needs a POLYGON edit (user)
+#### 3. ✅ FIXED 2026-08-14 — `arthur_kill` is ONE run of 24 cells, and the polygon never moved
 
-The arm is legitimately one cut, but the build gives **two disconnected runs**:
+**`arthur_kill` 59 cells / 2 runs → 24 cells / 1 run**, bed −13.71…−1.46 m, by adding the
+`coned_sw_raritan` elevation tier and nothing else. The 35-cell spurious run was the
+phantom-water rectangle; once Ward Point is land, it cannot form. `narrows` stays 61 cells /
+1 run. ⭐ **The user's hand-drawn ring was correct as drawn and was never edited.**
+
+Below is what the defect was and why it was misread — kept because the misreading is the
+instructive part.
+
+The arm is legitimately one cut, but the build gave **two disconnected runs**:
 
 | run | where | bed | what it is |
 |---|---|---|---|
 | 24 cells | lon −74.2617…−74.2549, lat 40.5038…40.5052 | −13.71…−1.38 | ✅ the real mouth cut (the eHydro-carved channel) |
-| 35 cells | lon −74.2501…−74.2404, lat 40.4971…40.4996 | −5.68…−3.02 | 🔴 spurious |
+| 35 cells | lon −74.2501…−74.2404, lat 40.4971…40.4996 | −5.68…−3.02 | 🔴 spurious — **fake water, see below** |
 
-**The ring cuts a corner across open water south of Ward Point instead of following the
-shore around it.** Vertices **v29 (−74.24054, 40.49962), v30 (−74.24734, 40.49728),
-v31 (−74.24923, 40.49817)** sit in water; `validate_region_v1_5.py` already reports segments
-28–33 as wet. Pull those three vertices NORTH onto the Tottenville/Ward Point shoreline and
-the arm becomes one run.
+🔴 **RETRACTED 2026-08-14.** This was recorded as "the ring cuts a corner across open water
+south of Ward Point" with an instruction to pull v29/v30/v31 north onto the shoreline. **That
+was wrong, and acting on it would have moved a correctly-drawn ring off the real coast.** The
+user challenged it against Esri imagery; the imagery is right.
 
-⚠️ Do NOT "fix" this by shrinking the `arthur_kill` arm box — that would leave a 1 km closed
-wall standing across open water near Ward Point, which is worse than the current state.
+**CUDEM IS MISSING THE WARD POINT HEADLAND AND BACKFILLS IT AS WATER.** In `cudem_nj`
+(1/9″), the southernmost land cell sits at lat **40.49982 in EVERY column** from lon −74.2486
+to −74.2393 — a razor-straight cutoff, not a coastline — and there is **no land at all** west
+of lon −74.2504, which is the tile edge. Ward Point is the southernmost point of New York
+State at ≈**40.4961 N**, so ~230 m of real headland is absent and reads as −3 to −5.5 m of
+bay. Figure: `reports/figures/ward_point_ring_vs_cudem.png` (drawn ring over CUDEM's z=0).
 
-#### 4. ⏳ OPEN — the Raritan discharge is genuinely MISSING
+The three vertices are therefore on the **real** shore. Distances to CUDEM's fake land edge —
+v29 **28 m**, v31 195 m, v30 306 m — cannot be one horizontal offset, which is the tell that
+this is missing data and not a datum or grid shift.
+
+⚠️ Do NOT "fix" this by shrinking the `arthur_kill` arm box, and do NOT move the ring. The
+fix is an elevation tier — see the section below.
+
+⚠️ **`validate_region_v1_5.py` reporting segments 28–33 as wet is not corroboration.** It
+reads the same stack, so it inherits the same hole. A wet-reach validator can only ever say
+"the bed I was given is below −0.5 m there".
+
+#### 3b. ✅ FIXED 2026-08-14 — Staten Island had no valid TOPO in the stack; land read as water
+
+Found while diagnosing defect 3, and it is the general form of it. This is the CLAUDE.md
+`nj_10ft_dem` trap firing exactly as written.
+
+| point | `cudem_nj` | `cudem13_nj` | `nj_10ft_dem` | `gmrt_nj` | merged |
+|---|---|---|---|---|---|
+| Ward Point tip (−74.2490, 40.4980) | −4.96 (fill) | — | — | 0.00 | **−4.96** |
+| Conference House Park (−74.2515, 40.5005) | — (past tile edge) | — | — | −0.06 | **−0.06** |
+| real shore 1 km east (−74.2380, 40.5025) | 7.45 | 6.04 | — | 6.04 | 7.45 ✅ |
+
+Conference House Park is dry parkland and the stack hands back **−0.06 m**. `nj_10ft_dem` is
+New-Jersey-only so Staten Island falls through it; `cudem_nj` truncates; `cudem13_nj` does
+not reach; and the last tier standing is **50 m GMRT, which puts the whole shoreline at ≈0**.
+
+🔴 **`build_static`'s no-NoData assert CANNOT catch this.** GMRT covers everything, so the bed
+is not missing — it is *present and wrong*. The assert was written against a hole; this is a
+fill. Any check that only tests for NoData will pass on it forever.
+
+**Extent, measured on a ~87 m grid inside the drawn region:** **7.29 km² is GMRT-only**
+(no CUDEM, no NJ lidar), spanning lon −74.2991…−74.2505, lat 40.4800…40.5115. That overlaps
+the CUDEM hole already documented under the eHydro section, but that section framed it as a
+*bathymetry* gap at two forced cuts. It is also a **topography** gap along the Tottenville /
+Ward Point / Conference House shore, and the topography half was never noticed because the
+symptom is silent: land simply becomes water.
+
+#### ✅ THE FIX EXISTS AND IS DOWNLOADED — USGS CoNED NJ/DE topobathy, 1 m
+
+**`1888–2014 USGS CoNED Topobathy DEM (Compiled 2015): New Jersey and Delaware`**, 1 m,
+EPSG:26918 (NAD83 UTM 18N), NAVD88 — the same product family already listed as an open
+alternative in the eHydro section. Despite the "New Jersey and Delaware" name it **covers
+Staten Island**; the New England CoNED, which is the one that lists NY counties, does *not*
+list Richmond. Do not select on the dataset name.
+
+Bulk: `https://noaa-nos-coastal-lidar-pds.s3.amazonaws.com/dem/NewJersey_Delaware_Coned_Topobathy_DEM_2015_5040/`
+— 597 tiles of 8192², ~190 MB each, plus a VRT whose `DstRect` offsets give the tile index
+without downloading anything.
+
+⭐ **31 tiles intersect the drawn region (1,332 of 2,281 km²) but the whole defect is inside
+ONE**, `NJ_DE_Topobathy_DEM_v2_10_20.tif` (lon −74.3128…−74.2154, lat 40.4625…40.5357).
+✅ Downloaded to `data/elevation_v1_5/coned/`.
+
+| point | current stack | CoNED |
+|---|---|---|
+| Ward Point tip | −4.96 (CUDEM fill) | **+2.67 LAND** |
+| Conference House Pk | −0.06 (GMRT) | **+8.23 LAND** |
+| ring vertex v30 | −5.48 | **+2.33 LAND** |
+| ring vertex v31 | −5.06 | **+2.89 LAND** |
+| Arthur Kill mid-channel | −8.14 GMRT (eHydro −13.56) | −9.81 |
+| Raritan R channel | −3.15 GMRT (eHydro −9.85) | −2.08 |
+| Perth Amboy waterfront | −0.76 GMRT | −2.09 |
+| control: real shore 1 km east | 7.45 CUDEM | 7.36 |
+
+**Measured over a ~10 m grid, lon −74.300…−74.215 × lat 40.463…40.535:**
+
+| | |
+|---|---|
+| CoNED has data | **98.9%** of the box (CUDEM: 41.4%) |
+| CoNED fills where CUDEM is ABSENT | **33.28 km²** |
+| CoNED − CUDEM where both exist | median **+0.069 m**, 90.6% within 1 m |
+| CUDEM says water, CoNED says LAND | **0.307 km²** (CUDEM median −4.44, CoNED +2.36) |
+| CUDEM says land, CoNED says water | **0.006 km²** |
+
+⭐ The 0.307 vs 0.006 km² asymmetry is the whole argument: CoNED is not trading one error for
+another, it is adding land CUDEM lost. And the control point agrees to 0.09 m, so this is not
+two products disagreeing about datum.
+
+🔴 **CoNED MUST GO ABOVE `cudem_nj` IN THE TIER LIST, and that is the load-bearing decision.**
+The phantom water is a *value*, not NoData, so a tier placed below CUDEM changes nothing at
+Ward Point. Above CUDEM, CoNED supersedes it everywhere both have data. It stays BELOW the
+eHydro carve tiers — eHydro is the dredged-channel survey and is deeper at both forced cuts
+(−13.56 vs −9.81; −9.85 vs −2.08) and, for the Raritan, 95 days pre-Sandy.
+
+#### ✅ SWEPT 2026-08-14 — Ward Point was the ONLY significant one
+
+`scripts/sweep_cudem_flatfill.py` → `reports/coned/phantom_water_patches.json`. Diffs the
+**merged stack** against CoNED at 10 m, inside the region, and reports contiguous patches
+where the stack says water (< −0.5 m) and CoNED says land (> +0.5 m). 6 tiles, the whole
+Staten Island + Rockaway frontage.
+
+| tile | what it covers | phantom water in-region |
+|---|---|---|
+| 10_20 | Ward Pt / Arthur Kill / Raritan | **0.200 km²** |
+| 09_21 | SI west / Arthur Kill north | 0.017 km² |
+| 09_23 | Rockaway / Coney Island | 0.010 km² |
+| 10_21 | SI south shore, mid | 0.007 km² |
+| 09_22 | SI east shore + **the Narrows** | 0.001 km² |
+| 10_22 | Great Kills | **0.000 km²** |
+
+Only 3 patches clear 0.005 km²:
+
+| area km² | lon | lat | stack z | CoNED z | verdict |
+|---|---|---|---|---|---|
+| **0.1870** | −74.2537…−74.2372 | 40.4961…40.5012 | −3.16 | +2.04 | **Ward Point** |
+| 0.0071 | −74.1330…−74.1305 | 40.5461…40.5468 | −3.22 | +0.93 | ⚠️ leave alone — see below |
+| 0.0063 | −74.2552…−74.2542 | 40.5021…40.5039 | −2.36 | +1.83 | Perth Amboy, adjoins Ward Pt |
+
+⭐ **93.5% of all phantom water on the frontage is the one Ward Point patch**, and the two
+places that most needed to be sound are: **Great Kills — where the only true interior holdout
+sensor (2295) sits — has ZERO**, and the **Narrows arm has 0.001 km²**. Nothing else needs
+fixing, and the mesh does not have a second hidden headland.
+
+🔴 **`build_static`'s no-NoData assert cannot find any of this, and neither can
+`validate_region_v1_5.py`** — the latter reads the same stack, so it inherits the same hole.
+Only an INDEPENDENT product can. That is what the sweep is for; re-run it whenever a tier
+changes.
+
+#### ⚠️ CoNED IS POST-SANDY, AND THAT IS WHY THE SWAP MUST STAY CLIPPED
+
+The product is compiled 2015 from sources through 2014, so on Staten Island the lidar is
+**after** the storm this model hindcasts. On bedrock upland — Ward Point, Conference House —
+that is irrelevant: the headland did not appear between 2012 and 2014. On **erodible beach,
+dune and berm** it is not irrelevant at all, and post-Sandy topography is the *wrong* bed for
+a Sandy hindcast.
+
+That is almost certainly what the 0.0071 km² patch at lon −74.133 is: Oakwood Beach, where
+CUDEM reads −4.08 m and CoNED +0.93 m, in ground that saw post-Sandy berm and buyout work.
+**Do not "fix" it.** There the older bed is the more correct one.
+
+⭐ **So the clipped box is not merely the conservative option, it is the correct one:** it
+takes CoNED exactly where CUDEM is structurally broken and leaves the erodible shorelines on
+a pre-storm bed.
+
+#### ⏳ NEXT — the declared box, chosen but not yet implemented
+
+**Decision (user, 2026-08-14): clip the CoNED override to a declared box.** Proposed:
+
+```
+coned_sw_raritan   lon -74.3120 … -74.2320,  lat 40.4640 … 40.5340
+```
+
+Covers the CUDEM hole (−74.2991…−74.2505, 40.4800…40.5115, where CoNED adds **33.28 km²**
+of bed that does not currently exist), the Ward Point patch and the Perth Amboy patch; it
+**excludes** Oakwood Beach. It sits entirely inside the single tile
+`NJ_DE_Topobathy_DEM_v2_10_20.tif`.
+
+**The seam was measured before the box was adopted** — CoNED − merged stack along each edge:
+
+| edge | n | median | p95 abs | max abs |
+|---|---|---|---|---|
+| east lon −74.2320 | 46 | **+0.012** | 1.02 | 1.76 |
+| west lon −74.3120 | 46 | **−0.004** | 0.65 | 1.59 |
+| north lat 40.5340 | 44 | **+0.000** | 1.07 | 14.44 |
+| south lat 40.4640 | 44 | **+0.016** | 0.95 | 1.18 |
+
+Median step is ±0.02 m, so the discontinuity a hard box edge introduces is centimetres. ⚠️
+The 14.44 m outlier is on the north edge, which runs across **inland** Staten Island — a
+building seen by 1 m lidar and not by 3 m CUDEM, on ground the region excludes anyway.
+
+✅ **ALL FOUR LANDED TOGETHER, 2026-08-14, as one fingerprint move:**
+1. ✅ `scripts/build_coned_sw_raritan.py` → `data/elevation_v1_5/coned_sw_raritan.tif`
+   (6843 × 7826 @ 1 m, 98.4% valid, z −17.14…+50.26 m), catalogued as `coned_sw_raritan`,
+   inserted **above `cudem_nj`** and **below the eHydro tiers**.
+2. ✅ The defect-2b re-clip, plus the invariant-3 sibling it exposed.
+3. ✅ `dry_land_boxes_ll` + invariant 8 + 5 tests.
+4. ✅ Re-probed → `data/probe_mesh_v1_5_fix3`, re-plotted, and LOOKED at
+   (`reports/figures/waterlevel_boundary_v1_5_raritan{,_cuts}.png`). The boundary now traces
+   the drawn ring instead of the grid rectangle, and both cuts are single clean runs.
+
+⚠️ The 943 MB of raw CoNED tiles under `data/elevation_v1_5/coned/` are the SWEEP inputs, not
+the tier. Only `coned_sw_raritan.tif` is in the elevation stack. Keep them: re-running
+`sweep_cudem_flatfill.py` after any tier change is how the next Ward Point gets found.
+
+⚠️ It goes in `data/elevation_v1_5/` — `data/elevation` is a symlink into the frozen archive
+and is read-only.
+
+⭐ ✅ **DONE — a POSITIVE check, not another NoData assert.** New domain field
+`dry_land_boxes_ll` and **invariant 8** (`model.check_dry_land_boxes`): declared ground must
+report a bed at or above a stated elevation, so a tier that is deleted, mis-ordered,
+mis-clipped or silently shadowed fails the build instead of quietly flooding a park.
+
+Two boxes registered on `v1_5_raritan`: `conference_house_park` (min +2.0 m; CoNED reads
++7.6 m minimum there) and `ward_point_headland` (min +0.5 m; CoNED reads +1.6 m minimum).
+Thresholds sit well below the measured bed so they fail on a REGRESSION, not on resampling.
+
+🔴 **The check is SEEN TO FAIL** — 5 new tests in `tests/test_domain_and_staging.py`, one of
+which feeds it CUDEM's actual −4.96 m at Ward Point and asserts it fires. An assert nobody
+has watched fire is a decoration. One test covers the characteristic failure of any positive
+check: **a box containing no grid faces asserts nothing and would pass forever**, so that is
+an explicit error, not silence. Another pins each box inside the CoNED tier's clip, since a
+dry-land box on ground the tier does not cover is a trap rather than a check.
+
+#### 3c. ✅ THE UN-MASKED STRETCH IS THE JAMAICA BAY WALL — as designed
+
+The user asked about "the portion of the boundary that has no mask whatsoever" southeast of
+Brooklyn. **It is the Rockaway Inlet closure, and it is correct.** Ring walked at 50 m
+against the nearest `mask==2`/`mask==3` cell, on `data/probe_mesh_v1_5_fix3`:
+
+| bare stretch | lon | lat | bed | max dist to any BC |
+|---|---|---|---|---|
+| 121.45 km | −74.012…−73.450 | 40.150…40.450 | −65.2…−13.8 | 46,955 m |
+| **1.20 km** | −73.963…−73.953 | 40.5632…40.5711 | −6.80…−4.38 | 993 m |
+
+The 121 km stretch is **not a defect and must not be "fixed"**: the drawn ring runs out to
+lon −73.45 over the deep shelf, and `create_active(zmin=-10)` stops the model at the −10 m
+isobath, so the legitimate BC line lies well INSIDE the ring there (`model.py` says exactly
+this in its own notes).
+
+The 1.20 km stretch is the closure between Coney Island and Rockaway Point — real water at
+−4 to −7 m carrying no boundary cell, i.e. a closed wall. That is *how* "Jamaica Bay is
+excluded" is implemented, `validate_region_v1_5.CROSSINGS` declares it `closed`, and the
+justification stands: that prism exchanges with the ocean through this inlet, not with Lower
+Bay.
+
+⚠️ **Say the cost out loud: this is a closed wall on WATER, not on land.** It reflects rather
+than transmits, and it removes the Jamaica Bay tidal prism entirely. Accepted by design, but
+it is the mirror of the free-outflow-on-water defect and deserves to be stated rather than
+inherited silently.
+
+#### 3d. 🟢 NOT A DEFECT — the ocean arm continues past Rockaway Point, and that is FINE
+
+Found while chasing 3c (and initially mistaken FOR it). Measured on
+`data/probe_mesh_v1_5_fix3`:
+
+The `ocean` arm is **2 runs, 1,170 + 17 cells**, separated by a **1,257 m gap** at
+lon −73.9416…−73.9372, lat 40.5428…40.5536. What fills the gap is the **Rockaway / Breezy
+Point barrier spit** — 1,832 land cells up to **+6.19 m**, carrying 43 outflow cells (bed
+−0.77…+5.75 m). So the arm is not broken by a defect; it is interrupted by a real sand spit,
+and the outflow gate correctly makes the dry crossing free-outflow.
+
+⚠️ **But the 17-cell run is on the FAR side of that spit** — lon −73.9498…−73.9413, lat
+40.5536…40.5603, bed −9.78…−1.47 m — i.e. north of the Rockaway Point tip, in the Rockaway
+Inlet throat. The design says the ocean arm is "v1's trace extended ~3.3 km straight north
+**to Rockaway Point**", and `validate_region_v1_5.CROSSINGS` declares `rockaway_inlet`
+**closed** — "which is how 'Jamaica Bay is excluded' is implemented". Those 17 cells are
+imposed ocean level past the declared stopping point.
+
+🔴 **Two declarations disagree, and that is the actual finding.** The `ocean` boundary ARM
+box runs north to northing **4,490,496**, and these cells sit at 4,488,287…4,490,473 — inside
+it, so the whitelist keeps them. The ring-walk CROSSING boxes say this is `rockaway_inlet`,
+closed. The arm box and the crossing declarations are separate lists and nothing cross-checks
+them.
+
+⚠️ **Do not read "24 BC cells inside the rockaway_inlet box" as the count.** The `ocean`
+(lat ≤ 40.560) and `rockaway_inlet` (lat ≥ 40.540) crossing boxes OVERLAP by 0.02°, so
+membership alone proves nothing; the defensible number is the **17-cell disconnected run
+beyond the spit**.
+
+#### 🔴 RECOMMENDATION RETRACTED 2026-08-14 — do NOT move the arm box
+
+This was first written as "pull the `ocean` arm box south of the Rockaway Point tip so those
+17 cells demote". **That was wrong, and the user was right to challenge it.** Measured:
+
+| | |
+|---|---|
+| distance from each of the 17 cells to the nearest NACCS support point | min 273 m, median 672 m, **max 1,129 m** |
+| the domain's own support screen | 2.0 km |
+| distance to the nearest active WET interior cell | min 25 m, median 50 m |
+| distance to Raritan Bay | 13.5 km |
+
+Every cell is well inside the support screen, so these are forced by **real save points, not
+by extrapolation** — which is the single thing that would have made this a defect. They
+border live interior water at 25–50 m, so they are a working open boundary, not a stranded
+fragment.
+
+⭐ **And the physics runs the OTHER way.** A closed wall across 1.2 km of −4 to −7 m water
+reflects; a well-supported forced opening does not. Demoting these 17 cells would make the
+model slightly worse. "Part forced, part walled" was rhetoric — an inlet that is partly open
+is not obviously wrong, and nothing measured says it is.
+
+**What IS wrong is bookkeeping only:** `validate_region_v1_5.CROSSINGS` declares
+`rockaway_inlet` `closed` while the build forces 17 cells of it. ⏳ **Fix the DECLARATION,
+not the geometry** — split the crossing, or restate it as "closed except its outer throat,
+which the ocean arm forces from NACCS at ≤1.13 km support". This touches no mask and
+therefore **does not block the freeze**.
+
+⚠️ One thing worth WATCHING rather than pre-empting: a narrow forced opening immediately
+beside a 1.2 km wall is the geometry that can produce an artificial jet. That is measurable
+with the flux cross-sections (build sequence step 5), not by argument, and it is not a reason
+to change anything now.
+
+#### 4. ✅ FIXED 2026-08-14 — the Raritan discharge is IN, and it is the biggest inflow anywhere
+
+`data/discharge_v1_5/usgs_sandy_discharge_v1_5.nc`, catalogued as
+`usgs_sandy_discharge_v1_5`. 🔴 A **second** file: `data/discharge` is a symlink into the
+frozen archive and the port fixture is pinned to its 6-point version — the same rule as
+`data/elevation` vs `data/elevation_v1_5`.
+
+| gauge | mi² | peak m³/s |
+|---|---|---|
+| **01403060** Raritan R below Calco Dam | 785.0 | **110.4** |
+| **01405030** Lawrence Brook at Westons Mills | 44.9 | 2.0 |
+| *(next largest in either domain: Manasquan)* | | *18.4* |
+
+⭐ **110.4 m³/s is six times the largest inflow the model previously had.** The cut was a
+closed wall, so this was a compound-flood hindcast with its main river missing.
+
+Inflow points sit in the same reach ~300 m apart — (−74.2997, 40.5090) bed **−2.08 m** and
+(−74.2960, 40.5085) bed **−2.09 m**, both verified against the post-CoNED merged bed and both
+landing on `mask==1` cells within 8 m. 🔴 NOT the previously queued (−74.2920, 40.4905),
+re-checked here and confirmed to be **+8.99 m of dry land on a `mask==3` cell**.
+
+**Which discharge file a domain uses is now a DOMAIN fact** (`Domain.discharge_geodataset` →
+`BaseConfig` → `model.py`), like `region` and `refinement`, because which rivers enter is
+decided by where the boundary was drawn. `v1_monmouth` still resolves to the archived
+6-point file, so the port fixture is untouched. `provenance.py` resolves it at call time so
+the recorded provenance names the file actually read.
+
+##### ⚠️ The South River is ungauged for Sandy, and is DECLARED rather than absorbed
+
+STATUS asked to "check for a South River gauge rather than accept the deficit silently".
+Checked against the NWIS site service over the Raritan basin:
+
+| gauge | mi² | Sandy record |
+|---|---|---|
+| 01405500 South River at Old Bridge | 94.6 | ❌ **discharge ended 1988-10-04** |
+| 01405400 Manalapan Bk at Spotswood | 40.7 | ⚠️ exists, but reads **0.00 cfs on 2012-10-29** |
+
+Manalapan is regulated above Duhernal Lake, and a zero on the day the Raritan more than
+doubled is not a usable proxy. So the South River (94.6 mi²) is genuinely missing. Gauged
+area feeding the cut: **829.9 mi²**. Scaling from the main stem's peak unit runoff
+(3,900 cfs / 785 mi² = 4.97 cfs/mi²) puts the deficit near **470 cfs ≈ 13 m³/s** against a
+modelled peak of ~110 m³/s.
+
+🔴 **Deliberately NOT synthesised.** Against a multi-metre surge in Raritan Bay, 13 m³/s is
+immaterial — the same argument the discharge module already makes for Shark River and the
+Navesink — and a drainage-area-ratio estimate would sit in the output file looking like data
+while being an assumption. If it ever matters, it goes in as its own declared arm.
+
+#### 4b. ✅ ARM BRACKETS RE-CUT 2026-08-14 — the old ones could not catch the defect they exist for
+
+| arm | as built | old bracket | **new** |
+|---|---|---|---|
+| ocean | 1,187 | [200..4000] | **[1000..1400]** |
+| narrows | 61 | [20..400] | **[45..85]** |
+| arthur_kill | **24** | [15..300] | **[16..40]** |
+
+🔴 **`arthur_kill` is the lesson.** Before the CoNED tier it was **59 cells in two runs** — 24
+real plus 35 spawned by phantom water — and 59 passed `[15..300]` without a murmur. A bracket
+wide enough to admit the defect it exists to catch is not a bracket.
+
+⚠️ **A `raritan` boundary ARM was NOT added, and queue item 3 asking for one is withdrawn.**
+`domain.py` already says why: arms are where `mask==2` is *allowed*, and across a discharge
+cut it never is. The cut is governed by `no_waterlevel_boxes['raritan_cut']`, which makes an
+imposed level there a build-time error — the correct mechanism, and it asserts clean. The
+old warning that the `arthur_kill` box "was silently ADOPTING THE RARITAN RIVER" is also
+stale: that box spans lon −74.2800…−74.2400 and the Raritan cut is at −74.2997, ~500 m
+outside it. Both were true of the mis-located cut, and neither survived its correction.
 
 Correct observation: there is no discharge yet. The Raritan cut currently has its `mask==2`
 demoted and a `raritan_cut` no-waterlevel zone asserting clean, so it is a **closed wall**.
@@ -647,9 +1148,10 @@ the isobath and patching individual channels all failed first. Do not re-try the
    see whether the 14,141 out-of-region active cells vanish). Cheap, and it decides whether
    the built domain is the drawn domain.
 
-2c. 🔴 **THE USER'S: move ring vertices v29/v30/v31 onto the Ward Point
-   shore** so `arthur_kill` becomes one run (defect 3 above). Everything after this bakes
-   the geometry in, so do it before the freeze. Then re-run, in order:
+2c. 🔴 **~~move ring vertices v29/v30/v31~~ — CANCELLED 2026-08-14. The ring is correct.**
+   Replaced by: **add a Staten Island topo/topobathy tier** (defect 3b above) so the Ward
+   Point headland exists in the bed. Everything after this bakes the geometry in, so do it
+   before the freeze. Then re-run, in order:
    `python scripts/validate_region_v1_5.py` →
    `NJ_DOMAIN=v1_5_raritan python scripts/probe_mesh_size.py data/probe_mesh_v1_5_fix3` →
    `NJ_DOMAIN=v1_5_raritan python scripts/plot_waterlevel_boundary.py data/probe_mesh_v1_5_fix3`

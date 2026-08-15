@@ -42,6 +42,7 @@ import numpy as np
 
 import nj_sfincs  # noqa: F401 — pins the pyproj-before-hydromt import order
 from nj_sfincs import validate
+from nj_sfincs import domain as _domain
 from nj_sfincs.config import exp_root
 from nj_sfincs.config import DATA
 from nj_sfincs.validate import DEPTH_MIN
@@ -52,7 +53,7 @@ GROUND_CAP = 0.5  # m; matches hwm_metrics
 def residuals(model_dir: Path, estimator: str, radius_m: float):
     """Per-mark (mask, residual) for one run. Mirrors validate.hwm_metrics."""
     _mod, da_hmax, da_dep = validate.load_floodmap(model_dir)
-    hwm = gpd.read_file(str(DATA / "validation" / "sandy_hwms.geojson")).to_crs(
+    hwm = gpd.read_file(str(_domain.active().hwm_geojson)).to_crs(
         da_dep.rio.crs
     )
     depth, dep_arr, wse = da_hmax.values, da_dep.values, (da_dep + da_hmax).values

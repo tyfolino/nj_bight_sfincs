@@ -343,6 +343,25 @@ HWM_ESTIMATOR_DEFAULT = "median"
 HWM_RADIUS_M = 50.0
 
 
+
+def _hwm_path(data_dir):
+    """The HWM file for the ACTIVE domain, under `data_dir`.
+
+    🔴 Domain-dependent on purpose. `v1_monmouth` scores against the archived 95-mark
+    file (38 scored) and the port fixture is pinned to it; `v1_5_raritan` reaches into
+    Raritan Bay and is entitled to the marks there. Resolving by name alone would have
+    silently rescored the port fixture the moment a bigger file appeared.
+
+    `data_dir` is honoured so a run dir carrying its own copy still works; only the
+    filename comes from the registry.
+    """
+    from pathlib import Path
+
+    from .. import domain as _domain  # noqa: PLC0415
+
+    rel = _domain.active().hwm_geojson
+    return Path(data_dir) / rel.parent.name / rel.name
+
 def hwm_metrics(
     da_hmax,
     da_dep,
@@ -424,9 +443,7 @@ def hwm_metrics(
             "This is not a cosmetic argument — it decides the SIGN of the bias."
         )
     GROUND_CAP = 0.5
-    hwm = gpd.read_file(str(Path(data_dir) / "validation" / "sandy_hwms.geojson")).to_crs(
-        da_dep.rio.crs
-    )
+    hwm = gpd.read_file(str(_hwm_path(data_dir))).to_crs(da_dep.rio.crs)
     if hwm_ids is not None:
         want = {str(i) for i in hwm_ids}
         before = len(hwm)

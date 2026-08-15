@@ -114,6 +114,24 @@ inlet_channels_burn:
 # ⚠️ The two surveys are on DIFFERENT reduction planes — NJ_03_SWO on C.O.E. Mean Low Water
 # (3.5 ft below NAVD88), RR_01_RAR on Mean Lower Low Water (2.9-3.0 ft below) — so the
 # builder reads each survey's stated plane from its own header instead of assuming MLLW.
+coned_sw_raritan:
+  data_type: RasterDataset
+  uri: elevation_v1_5/coned_sw_raritan.tif
+  driver:
+    name: rasterio
+    options: {}
+  metadata:
+    category: topography
+    crs: 26918
+    unit: m+NAVD88
+    source: USGS CoNED "1888-2014 Topobathy DEM (Compiled 2015) New Jersey and Delaware",
+      1 m, tile NJ_DE_Topobathy_DEM_v2_10_20, CLIPPED to lon -74.3120..-74.2320,
+      lat 40.4640..40.5340 by scripts/build_coned_sw_raritan.py. Sits ABOVE cudem_nj (the
+      phantom water at Ward Point is a VALUE, not NoData, so a lower tier cannot fix it)
+      and BELOW the eHydro tiers. Clipped rather than added whole because the product is
+      POST-SANDY and must not replace erodible pre-storm shoreline.
+    url: https://noaa-nos-coastal-lidar-pds.s3.amazonaws.com/dem/NewJersey_Delaware_Coned_Topobathy_DEM_2015_5040/
+
 ehydro_raritan_ak:
   data_type: RasterDataset
   uri: elevation_v1_5/ehydro_raritan_ak.tif
@@ -654,6 +672,39 @@ aorc_sandy_nj:
 # sf.discharge_points.create(geodataset="usgs_sandy_discharge", merge=False)
 # Daily-mean discharge (m3/s) at 2 domain inflows (Shark River, Navesink).
 # Point coords are the model-domain inflow cells, NOT the upstream gauge sites.
+
+# v1_5_raritan: the 6 above PLUS the Raritan River (01403060, 110.4 m3/s peak — by far
+# the largest inflow in the domain) and Lawrence Brook (01405030). Separate file because
+# data/discharge is a symlink into the FROZEN archive and the port fixture is pinned to
+# the 6-point version. Built by scripts/download_usgs_sandy_discharge.py.
+# The South River (94.6 mi2) is ungauged for Sandy and deliberately NOT synthesised —
+# see the UNGAUGED_NOTE block in that script.
+naccs_sandy_v1_5_raritan:
+  data_type: GeoDataset
+  uri: gtsm/naccs_sandy_v1_5_raritan.nc
+  driver:
+    name: geodataset_xarray
+    options: {}
+  metadata:
+    category: ocean
+    crs: 4326
+    unit: m+NAVD88
+    source: NACCS/CHS ADCIRC SimB1HT storm 001 (Sandy), 71 save points,
+      MSL(1992)->NAVD88 via VDatum. Built by scripts/build_naccs_boundary.py on the
+      FROZEN v1_5_raritan mesh. 71 points vs the incumbent 2-gauge interpolant — the
+      whole point of the domain move.
+
+usgs_sandy_discharge_v1_5:
+  data_type: GeoDataset
+  uri: discharge_v1_5/usgs_sandy_discharge_v1_5.nc
+  driver:
+    name: geodataset_xarray
+    options: {}
+  metadata:
+    category: hydro
+    crs: 4326
+    unit: m3/s
+    source: USGS NWIS daily-mean discharge (00060/00003), 8 domain inflow points
 
 usgs_sandy_discharge:
   data_type: GeoDataset

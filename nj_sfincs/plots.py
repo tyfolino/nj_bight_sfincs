@@ -32,6 +32,25 @@ from . import domain as _domain
 from .config import DATA, exp_root
 
 
+
+def _hwm_path(data_dir):
+    """The HWM file for the ACTIVE domain, under `data_dir`.
+
+    🔴 Domain-dependent on purpose. `v1_monmouth` scores against the archived 95-mark
+    file (38 scored) and the port fixture is pinned to it; `v1_5_raritan` reaches into
+    Raritan Bay and is entitled to the marks there. Resolving by name alone would have
+    silently rescored the port fixture the moment a bigger file appeared.
+
+    `data_dir` is honoured so a run dir carrying its own copy still works; only the
+    filename comes from the registry.
+    """
+    from pathlib import Path
+
+    from . import domain as _domain  # noqa: PLC0415
+
+    rel = _domain.active().hwm_geojson
+    return Path(data_dir) / rel.parent.name / rel.name
+
 def _run_dir(run, root=None) -> Path:
     """Accept an experiment NAME or an explicit path."""
     p = Path(run)
@@ -180,9 +199,7 @@ def _sample_hwm(da_hmax, da_dep, data_dir=DATA, estimator=None, scored_only=Fals
 
     estimator = estimator or HWM_ESTIMATOR_DEFAULT
     GROUND_CAP = 0.5
-    hwm = gpd.read_file(str(Path(data_dir) / "validation" / "sandy_hwms.geojson")).to_crs(
-        da_dep.rio.crs
-    )
+    hwm = gpd.read_file(str(_hwm_path(data_dir))).to_crs(da_dep.rio.crs)
     depth, dep_arr, wse = da_hmax.values, da_dep.values, (da_dep + da_hmax).values
     if depth.ndim == 3:
         depth, wse, dep_arr = depth[0], wse[0], dep_arr[0]
@@ -483,7 +500,7 @@ def plot_depth_panels(
 
     pts = None
     if hwm:
-        f = Path(data_dir) / "validation" / "sandy_hwms.geojson"
+        f = _hwm_path(data_dir)
         if f.exists():
             pts = gpd.read_file(str(f)).to_crs(f"EPSG:{_domain.active().epsg}")
             pts = pts[pts["quality"].astype(float) <= 2]

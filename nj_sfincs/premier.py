@@ -109,6 +109,15 @@ class DomainFingerprint:
 #: eHydro inlet carve.
 V1_MONMOUTH = DomainFingerprint(547408, 1635, "45f4f74ca9a2347d")
 
+#: v1_5_raritan at mask_zmin = -10 m. Frozen 2026-08-14 from
+#: ``data/frozen_mesh_v1_5_raritan_z10`` (mesh_key ``v1_5_raritan_z10``).
+#:
+#: ⚠️ ``v1_5_raritan_z15`` will SHARE this mesh_key and differ from this fingerprint ONLY
+#: IN THE SHA — identical face and boundary-edge counts, because it is staged from this
+#: same mesh by ``scripts/setup_boundary_depth.py``, which re-derives the mask on a copy.
+#: You cannot tell the two apart by counting anything.
+V1_5_RARITAN_Z10 = DomainFingerprint(696230, 1652, "2a23667dd16e449c")
+
 #: The fingerprint each registered domain MUST have. Keyed by ``domain.Domain.name``, so
 #: ``NJ_DOMAIN`` selects both the geography and the identity check in one move and the two
 #: cannot drift apart.
@@ -118,10 +127,15 @@ V1_MONMOUTH = DomainFingerprint(547408, 1635, "45f4f74ca9a2347d")
 #: matters. Register a domain's fingerprint BEFORE running anything on it.
 EXPECTED: dict[str, DomainFingerprint] = {
     "v1_monmouth": V1_MONMOUTH,
+    "v1_5_raritan": V1_5_RARITAN_Z10,
 }
 
 KNOWN = {
     V1_MONMOUTH: "v1_monmouth FROZEN (leak fixed, Shark inlet carved) — archive fixture",
+    V1_5_RARITAN_Z10: (
+        "v1_5_raritan z10 FROZEN 2026-08-14 — boundary out of Raritan Bay "
+        "(ocean + Narrows + Arthur Kill mouth), CoNED bed at Ward Point, Raritan discharge"
+    ),
 }
 
 

@@ -250,8 +250,44 @@ class Domain:
     #: inlet gorges don't punch inactive holes through an interior.
     always_active_boxes_ll: tuple[tuple[float, float, float, float], ...] = ()
 
+    #: (name, (lon_min, lat_min, lon_max, lat_max), min_z, why) — ground the merged bed
+    #: MUST report as dry land, at or above ``min_z`` metres NAVD88.
+    #:
+    #: 🔴 THIS IS A POSITIVE CHECK, AND THAT IS THE ENTIRE POINT. The existing bed
+    #: invariant asks "is there data here" (invariant 6, NoData under an active cell) and
+    #: is therefore STRUCTURALLY BLIND to the failure that actually happened: on
+    #: 2026-08-14 `cudem_nj` was found to be missing the Ward Point headland, truncating
+    #: New York State at lat 40.49982 and backfilling ~230 m of it as -3 to -5.5 m of bay,
+    #: while Conference House Park — dry parkland — fell past every tier to 50 m GMRT and
+    #: read -0.06 m. Nothing was NoData. Nothing fired. It was caught by eye, on a figure.
+    #:
+    #: A tier that is deleted, mis-ordered, mis-clipped, or that silently reverts to a
+    #: coarse fallback will fail THIS check loudly, because it asserts what the ground IS
+    #: rather than merely that something was returned for it.
+    #:
+    #: ⚠️ Draw each box TIGHT and on unambiguously dry ground — the check is "every face
+    #: in the box", so a box that clips a shoreline will fail on real water.
+    dry_land_boxes_ll: tuple[tuple[str, tuple[float, float, float, float], float, str], ...] = ()
+
     #: Rectangles (projected CRS) in which a water-level BC is a build-time error.
     no_waterlevel_boxes: tuple[NoWaterLevelBox, ...] = ()
+
+    #: Catalog key for the river-discharge GeoDataset. A DOMAIN fact, not a global one:
+    #: which rivers enter is decided by where the boundary is drawn. v1_5_raritan adds
+    #: the Raritan (110.4 m3/s peak, the largest inflow anywhere in either domain) and
+    #: Lawrence Brook, which v1_monmouth's footprint does not contain.
+    #: ⚠️ v1_monmouth must keep the 6-point archived file — the port fixture is pinned
+    #: to it, and `data/discharge` is a read-only symlink into the frozen archive.
+    discharge_geodataset: str = "usgs_sandy_discharge"
+
+    #: The high-water-mark set this domain is scored against. A DOMAIN fact for the same
+    #: reason `discharge_geodataset` is: `download_sandy_hwms.py` selects marks by the
+    #: ACTIVE region's bbox, so a bigger domain is entitled to more marks.
+    #: 🔴 `v1_monmouth` must keep the archived file. `premier`'s port fixture pins
+    #: `hwm_n_scored=38` and the per-basin split, and finding 6 says a changed scored-mark
+    #: count invalidates the comparison outright. `data/validation` is a read-only symlink
+    #: into the frozen archive, which enforces that on disk.
+    hwm_geojson: Path = DATA / "validation" / "sandy_hwms.geojson"
 
     #: Northing above which the coast is no longer open ocean (a spit tip, a harbour
     #: mouth). Incident wave energy and wave-boundary support points are taken only
@@ -433,6 +469,64 @@ _V1_BASIN_RULES = (
     ),
 )
 
+#: v1.5's basins. ⚠️ NOT a superset of `_V1_BASIN_RULES` and deliberately so.
+#:
+#: 🔴 v1's rule 3 is ``BasinRule("sandy_hook_bay", ymin=4_474_000)`` with NO western
+#: bound, because on v1's footprint there was nothing west of Sandy Hook Bay to confuse
+#: it with. On v1.5 that same rule swallows the ENTIRE Raritan Bay — the water this
+#: domain exists to test — into a basin named after a different one. Carrying the v1
+#: tuple over unchanged would have produced per-basin numbers that looked fine and
+#: answered nothing. (Same failure mode as a refinement recipe: a gate written for one
+#: basin, applied to another, silently does the wrong thing.)
+#:
+#: So `sandy_hook_bay` is bounded here, and the water it used to absorb becomes
+#: `raritan_bay`. ⚠️ CONSEQUENCE: `sandy_hook_bay` does NOT mean the same thing on the
+#: two domains, so its per-basin statistics are NOT comparable across them. Compare arms
+#: within a domain; that is the only comparison this project makes anyway.
+_V1_5_BASIN_RULES = (
+    # ── carried VERBATIM from v1, order preserved ────────────────────────────
+    BasinRule(
+        "shark_river", xmax=584_300, ymax=4_450_800,
+        why="As v1: fed through Shark River Inlet, so a CONVEYANCE test.",
+    ),
+    BasinRule("south_coast", ymax=4_458_000, why="As v1: Belmar/Avon ocean front."),
+    # ── the northern split, NEW in v1.5 ──────────────────────────────────────
+    BasinRule(
+        "sandy_hook_bay", ymin=4_474_000, ymax=4_486_000, xmin=574_000,
+        why="Sandy Hook Bay PROPER. Bounded west at easting 574,000 and north at "
+        "4,486,000, unlike v1's unbounded version — see the note above this tuple.",
+    ),
+    BasinRule(
+        "raritan_bay", ymin=4_474_000, ymax=4_486_000, xmax=574_000,
+        why="⭐ THE TARGET. Raritan Bay and its NJ shore round to the Arthur Kill "
+        "mouth — the water the boundary relocation exists to COMPUTE rather than "
+        "force. On v1 these marks fell inside `sandy_hook_bay`.",
+    ),
+    BasinRule(
+        "lower_bay_si_shore", ymin=4_486_000,
+        why="The Staten Island frontage and the Narrows approach. Entirely NEW water: "
+        "every mark here is outside the v1_monmouth footprint, so this basin exists "
+        "only because the domain moved.",
+    ),
+    # ── back to v1's ordering for the southern estuaries ─────────────────────
+    BasinRule(
+        "atlantic_oceanfront", ymin=4_458_000, ymax=4_474_000, side=+1, **_BARRIER,
+        why="As v1: seaward of the Sea Bright barrier axis.",
+    ),
+    BasinRule(
+        "shrewsbury_navesink", ymin=4_458_000, ymax=4_474_000,
+        why="As v1's catch-all, but BOUNDED: on v1 this was the unconstrained last "
+        "rule, which on v1.5 would collect every northern mark the rules above miss.",
+    ),
+    BasinRule(
+        "unclassified",
+        why="🔴 Must stay EMPTY. The rules above are bounded, so this is the alarm for "
+        "a mark that fell through every one of them — which means a threshold is wrong, "
+        "not that a new basin was discovered.",
+    ),
+)
+
+
 V1_MONMOUTH = Domain(
     name="v1_monmouth",
     region=DATA / "region_v1_monmouth.geojson",
@@ -556,7 +650,10 @@ V1_5_RARITAN = Domain(
         BoundaryArm(
             "ocean",
             (580_926, 4_443_729, 593_125, 4_490_496),
-            min_cells=200, max_cells=4_000,
+            # AS BUILT 2026-08-14 on probe_mesh_v1_5_fix3: 1,187 cells, in 2 runs
+            # (1,170 + 17) separated by the Breezy Point spit — see STATUS 3c/3d, that
+            # split is real sand and is NOT a defect.
+            min_cells=1_000, max_cells=1_400,
             why="The Atlantic side, inherited from v1 unchanged (same southern limit, "
             "lat 40.150) and continued ~3.3 km north to close on Rockaway Point. v1's "
             "own mask==2 already ran at lon -73.936..-73.947 up to its north edge at "
@@ -565,7 +662,7 @@ V1_5_RARITAN = Domain(
         BoundaryArm(
             "narrows",
             (577_851, 4_493_651, 583_315, 4_497_041),
-            min_cells=20, max_cells=400,
+            min_cells=45, max_cells=85,  # as built 2026-08-14: 61 cells, 1 run
             why="Verrazzano Narrows, ~1.9 km. Carries the Upper Bay + Hudson tidal "
             "prism. ⚠️ Must stay a WATER-LEVEL boundary: a discharge BC over-determines "
             "a tidal strait (its flux is a RESPONSE to the level difference across it) "
@@ -574,7 +671,12 @@ V1_5_RARITAN = Domain(
         BoundaryArm(
             "arthur_kill",
             (561_016, 4_482_616, 564_384, 4_485_197),
-            min_cells=15, max_cells=300,
+            # 🔴 RE-BRACKETED 2026-08-14, and the old [15..300] is why this matters.
+            # Until the CoNED tier landed this arm was 59 cells in TWO runs — 24 real
+            # plus 35 spawned by cudem_nj's phantom water at Ward Point — and 59 sailed
+            # through [15..300] without comment. A bracket wide enough to admit the
+            # defect it exists to catch is not a bracket. As built: 24 cells, 1 run.
+            min_cells=16, max_cells=40,
             why="The Arthur Kill MOUTH at Perth Amboy / Ward Point, ~1.46 km. Cut here "
             "rather than at the Kill Van Kull junction (2026-08-13): the north cut had "
             "NO NACCS support within 9.56 km, the mouth has a point at 0.21 km. ⚠️ This "
@@ -626,10 +728,50 @@ V1_5_RARITAN = Domain(
         # The ring's northernmost vertex is lat 40.61090, so 40.6125 clears it; the
         # region clip runs AFTER create_active, so extending the box cannot pull in
         # anything outside the drawn ring.
-        (-74.30, 40.42, -73.93, 40.6125),
+        # West edge -74.32 rather than -74.30: PRECAUTIONARY SLACK, not a fix.
+        # ⚠️ Measured 2026-08-14 — moving it changed the mask by exactly ZERO cells, and
+        # the reasoning that motivated it was wrong. The old -74.30 edge sat 34 m east of
+        # the ring's westernmost vertex (-74.30043), so it did clip a sliver of the
+        # Raritan crossing, but the bed there is ~-2 m — above `mask_zmin` — so nothing
+        # was being deactivated. A probe at -74.303 reading mask==0 was the REGION CLIP
+        # (the ring ends at -74.3004), not this box.
+        # Kept anyway because it is free and it is insurance: if a future carve deepened
+        # that reach past -10 m, the -74.30 edge WOULD deactivate the channel a few tens
+        # of metres from where the Raritan discharge is imposed. Safe for the same reason
+        # the north edge is — include_polygon only ADDS active cells, and the region clip
+        # runs afterwards, so nothing outside the drawn ring can survive it.
+        (-74.32, 40.42, -73.93, 40.6125),
         # The closure corridor, ~1.8 km wide along the 11.13 km cut. Still needed:
         # 28% of the cut is deeper than mask_zmin and it runs east of the bay box.
         (-73.9522, 40.4450, -73.9304, 40.5547),
+    ),
+    # 🔴 THE GROUND CUDEM LOST. Both boxes sit on the Tottenville / Ward Point headland,
+    # which `cudem_nj` truncates at lat 40.49982 and backfills as -3 to -5.5 m of bay, and
+    # which no other tier covers: `nj_10ft_dem` is NEW-JERSEY-ONLY and this is New York, so
+    # without `coned_sw_raritan` the bed here falls to 50 m GMRT and reads ~0.
+    #
+    # These assert what the ground IS. Delete the CoNED tier, order it below `cudem_nj`,
+    # mis-clip its box, or let a future stack edit shadow it, and the build stops here
+    # instead of quietly flooding a public park and splitting the arthur_kill arm in two.
+    #
+    # Thresholds are well below the measured bed (CoNED reads +7.6 m minimum in the park
+    # box, +1.6 m in the headland box) so these fail on a REGRESSION, not on resampling.
+    dry_land_boxes_ll=(
+        (
+            "conference_house_park",
+            (-74.2528, 40.5012, -74.2502, 40.5026),
+            2.0,
+            "Conference House Park, Tottenville — dry NYC parkland that the merged bed "
+            "reported as -0.06 m (50 m GMRT) before the CoNED tier existed.",
+        ),
+        (
+            "ward_point_headland",
+            (-74.2492, 40.4983, -74.2465, 40.4996),
+            0.5,
+            "The Ward Point headland itself — the southernmost land in New York State, "
+            "~230 m of which cudem_nj omits. The drawn ring runs along its shore, and "
+            "when this reads as water the arthur_kill arm breaks into two runs.",
+        ),
     ),
     # 🔴 The Raritan River cut is a DISCHARGE boundary, so a water-level BC across it is a
     # build-time error. An imposed ocean level across a tidal river PUMPS it — the mirror
@@ -649,6 +791,22 @@ V1_5_RARITAN = Domain(
             "arm box, which starts at easting 561,016.",
         ),
     ),
+    discharge_geodataset="usgs_sandy_discharge_v1_5",
+    hwm_geojson=DATA / "validation_v1_5" / "sandy_hwms_v1_5.geojson",
+    hwm_rules=_V1_5_BASIN_RULES,
+    # 🔴 THIS IS THE COUNT FOR THE **BASE** FORCING (`noaa_sandy_nj`), NOT FOR NACCS.
+    # The template is built from BaseConfig, whose water level is the NOAA gauge set, and
+    # each arm then swaps in its own source. hydromt picks NOAA gauges by BUFFERING the
+    # region, so this is the number that catches an extra gauge silently appearing when
+    # the domain is extended — which is exactly what it is for.
+    # Measured during the 2026-08-14 template build: `[bnd] 2 water-level support point(s)`.
+    #
+    # ⚠️ The NACCS arms force from 71 points, and that number belongs on the ARM
+    # (`Experiment.n_waterlevel_support`), never here: relaxing this value would disable
+    # the guard for every other arm on the domain. It was briefly set to 71 here, and the
+    # template build failed loudly rather than quietly forcing from the wrong set — the
+    # guard working as designed.
+    n_waterlevel_support=2,
     open_coast_max_y=4_476_000,
     plot_window=(556_000, 596_000, 4_476_000, 4_500_000),
     map_windows={
@@ -659,8 +817,6 @@ V1_5_RARITAN = Domain(
         "sandy_hook": (574_000, 592_000, 4_468_000, 4_486_000),
     },
     waterlevel_buffer=100_000,
-    # ⚠️ Declared AFTER the builder reports its screen, never by relaxing this to fit.
-    n_waterlevel_support=None,
 )
 
 

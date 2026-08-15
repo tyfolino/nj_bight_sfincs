@@ -45,8 +45,12 @@ import requests
 import xarray as xr
 
 ROOT = Path(os.environ.get("NJ_ROOT", Path(__file__).resolve().parents[1]))
-OUT_DIR = ROOT / "data/discharge"
-OUT = OUT_DIR / "usgs_sandy_discharge.nc"
+# 🔴 NOT `data/discharge` — that is a SYMLINK INTO THE FROZEN ARCHIVE and is read-only.
+# The archived `discharge/usgs_sandy_discharge.nc` feeds v1_monmouth and the port-
+# verification fixture is pinned against it, so this script must never be able to
+# rewrite it. Same rule, and same reason, as `data/elevation` vs `data/elevation_v1_5`.
+OUT_DIR = ROOT / "data/discharge_v1_5"
+OUT = OUT_DIR / "usgs_sandy_discharge_v1_5.nc"
 
 CFS_TO_CMS = 0.0283168466
 
@@ -80,7 +84,51 @@ STATIONS = [
      "src_lon": -74.135, "src_lat": 39.878},   # bed < -0.5 m, Cedar Ck mouth
     {"id": "01408029", "name": "Manasquan River nr Allenwood",
      "src_lon": -74.095, "src_lat": 40.114},   # bed -0.92 m, Manasquan estuary
+
+    # ── NEW in v1_5_raritan: the Raritan River ─────────────────────────────────
+    # The domain's west limit cuts the tidal Raritan at lon -74.2993..-74.3004, and
+    # until now that cut was a CLOSED WALL — a compound-flood hindcast with no river.
+    # Both gauges below enter through that one cross-section, so both inflow points sit
+    # in the same reach ~300 m apart; kept separate rather than summed so each gauge
+    # stays independently auditable.
+    #
+    # 🔴 A DISCHARGE, NEVER A WATER LEVEL. An imposed ocean level across a tidal river
+    # PUMPS it — the mirror of the free-outflow face that drained the Navesink — and it
+    # would fight the inflow. `domain.no_waterlevel_boxes['raritan_cut']` makes a mask==2
+    # cell here a build-time error.
+    {"id": "01403060", "name": "Raritan R below Calco Dam at Bound Brook",
+     "src_lon": -74.2997, "src_lat": 40.5090},  # bed -2.08 m (coned_sw_raritan)
+    {"id": "01405030", "name": "Lawrence Brook at Westons Mills",
+     "src_lon": -74.2960, "src_lat": 40.5085},  # bed -2.09 m (coned_sw_raritan)
 ]
+
+# 🔴 THE UNGAUGED REMAINDER, DECLARED RATHER THAN ABSORBED.
+#
+# STATUS flagged 01403060 as "a LOWER BOUND: Lawrence Brook and the South River join
+# below it. Check for a South River gauge rather than accept the deficit silently."
+# Checked, 2026-08-14, against the NWIS site service over the Raritan basin:
+#
+#   01403060  Raritan R below Calco Dam       785.0 mi2   ✅ full Sandy record
+#   01405030  Lawrence Brook at Westons Mills  44.9 mi2   ✅ full Sandy record
+#   01405500  South River at Old Bridge        94.6 mi2   ❌ DISCONTINUED 1988-10-04
+#   01405400  Manalapan Bk at Spotswood        40.7 mi2   ⚠️ record exists but reads
+#                                                            0.00 cfs on 2012-10-29,
+#                                                            the day the Raritan more
+#                                                            than doubled. Regulated
+#                                                            above Duhernal Lake; not a
+#                                                            usable proxy.
+#
+# So the South River (94.6 mi2) is genuinely ungauged for Sandy and is NOT included.
+# Gauged area feeding the cut: 829.9 mi2. Scaling the South River from the main stem's
+# unit runoff at peak (3,900 cfs / 785 mi2 = 4.97 cfs/mi2) puts the missing flow at
+# roughly 470 cfs ~ 13 m3/s, against a modelled peak of ~110 m3/s here.
+#
+# ⚠️ Deliberately NOT synthesised. Against a multi-metre surge in Raritan Bay a 13 m3/s
+# deficit is immaterial (the same argument this module's docstring already makes for
+# Shark River and the Navesink), and a drainage-area-ratio estimate would look like data
+# in the output file while being an assumption. If it ever matters, add it as its own
+# declared arm so the assumption is visible.
+UNGAUGED_NOTE = "South River (94.6 mi2) ungauged for Sandy; gauge 01405500 ended 1988"
 
 
 def fetch(site_id: str) -> pd.Series:
