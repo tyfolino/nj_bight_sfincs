@@ -19,20 +19,42 @@ The repo has been stood up and the code ported from `~/nj_coast_sfincs`
 (commit `21e28f2`, see [ARCHIVE.md](../ARCHIVE.md)). **The port gate passes.** The two manual
 gates below both passed on 2026-08-13.
 
-**v1.5 is FROZEN and the first sweep is RUNNING (2026-08-14).** `data/frozen_mesh_v1_5_raritan_z10`
-exists and `premier.EXPECTED` carries the fingerprint —
+**v1.5 is FROZEN and the first sweep has COMPLETED (2026-08-14).**
+`data/frozen_mesh_v1_5_raritan_z10` exists and `premier.EXPECTED` carries the fingerprint —
 `faces=696230 boundary_edges=1652 sha(z,mask)=2a23667dd16e449c`; `python -m nj_sfincs.premier`
 reports **4/4** (template + three staged arms). Everything below that still reads "nothing may
 be staged or run yet" describes the road to that freeze, not the current state.
 
-| arm | job | node | state |
-|---|---|---|---|
-| `naccs-premier` | 60582145 | hal0338 | running, waves on, ~1.8 h solve |
-| `naccs-nowaves` | 60582164 | hal0388 | running |
-| `noaa-2node` | 60582165 | hal0391 | running |
+| arm | job | node | elapsed | `sfincs_map.nc` | SnapWave | state |
+|---|---|---|---|---|---|---|
+| `naccs-premier` | 60582145 | hal0338 | 2:19:46 | 1.10 GB | 88.6% | ✅ COMPLETED, clean close |
+| `naccs-nowaves` | 60582164 | hal0388 | 0:09:27 | 243 MB | — | ✅ COMPLETED, clean close |
+| `noaa-2node` | 60582165 | hal0391 | 1:36:07 | 1.09 GB | 89.0% | ✅ COMPLETED, clean close |
 
-Results are **not in yet** — nothing has been scored. When they land, run
-`python run_experiments.py --experiments <arm> --validate-only` and compare **paired**.
+⭐ **Checked against the `COMPLETED 0:0` trap specifically, not just against `sacct`.** All three
+landed on `hal*` (the `--exclude=halk[0001-0159]` held), each wrote `sfincs_map.nc` +
+`sfincs_his.nc` + a full timing block ending `----------- Closing off SFINCS -----------`, and
+all four run dirs still fingerprint 4/4 — so they ran on the domain they claim to have run on.
+
+🔴 **NOTHING HAS BEEN SCORED.** There is no `metrics.csv`, no floodmap cache and no validation
+output anywhere under `experiments/v1_5_raritan/`. Next:
+`python run_experiments.py --experiments <arm> --validate-only`, then compare **paired**
+(`scripts/paired_hwm_bootstrap.py`).
+
+✅ **The interior holdouts ARE registered** — checked 2026-08-15, `domain.py:643`:
+`obs_gauges=(_SSS_GREAT_KILLS, _SSS_ARTHUR_KILL, _SSS_NARROWS_SI, _SSS_NARROWS_BKLN,
+_SANDY_HOOK)`, all four reading `gtsm/sandy_storm_tide_raritan.nc`. The "register as
+`ObsGauge`s when `v1_5_raritan` is" note below is **done**; the scoring run will test the
+interior.
+
+⚠️ **What still governs how the scores must be read:**
+
+1. **`naccs-nowaves` has waves off**, so its CSI/POD/FAR/n_dry are INADMISSIBLE and the runner
+   will drop them (`extent_admissible=False`). Levels and phase only.
+2. **Every sensor statistic is a HIGH-WATER statistic.** All four holdouts sit above normal
+   water, so their troughs are below the recordable floor and the clipping is not
+   missing-at-random — see the floor table below. High-water amplitude and phase are
+   available; full M2 range is not, at any of them.
 
 ### 🔴 Two infrastructure traps that ate five submissions, 2026-08-14
 
@@ -61,13 +83,41 @@ few seconds while three jobs were starting; they could not create their output f
 still exited `COMPLETED 0:0` after 14 minutes having written nothing. The failure looks
 exactly like trap 1, which is how the two got confused for an hour.
 
-Usage was **102.8 G (over soft, in the 7-day grace)** and is now **86.3 G**, reclaimed by
+Usage was **102.8 G (over soft, in the 7-day grace)** and is now **86.57 G**, reclaimed by
 `scripts/dedupe_home.py` — it hard-links byte-identical large data files across
 `nj_bight_sfincs`, `nj_coast_sfincs`, `nj_sandy_sfincs` and `sfincs_data`. **It links, it
 never deletes**, which is what makes it safe to point at the frozen archive: every path stays
-readable, only duplicate blocks go away. 20.1 GB over 142 files, and all four staged dirs
-still pass the fingerprint afterwards. Rerun it whenever a sweep is staged — `copytree`
-re-duplicates ~1.5 GB per arm every time.
+readable, only duplicate blocks go away. 20.1 GB over 142 files, then a further **3.42 G over
+195 files on 2026-08-15** (89.99 → 86.57 G, measured on the quota either side). All four
+v1.5 dirs and both v1_monmouth dirs still fingerprint afterwards, and `verify_port.py` still
+passes bit-for-bit. Rerun it whenever a sweep is staged — `copytree` re-duplicates ~1.5 GB
+per arm every time.
+
+#### 🔴 That script silently reclaimed NOTHING for a whole run — two bugs, fixed 2026-08-15
+
+The 2026-08-15 run first printed **`RECLAIMED: 3.5 GB (0 files linked)`** and the quota did not
+move a byte. Both bugs are the same failure shape this project keeps paying for: **a success
+message over a no-op.**
+
+**1. The keeper was chosen in the direction that cannot work.** `os.link` writes
+`<name>.dedupe-tmp` **into the loser's own directory**, so the copy being *replaced* is the one
+that needs a writable parent. The archive freeze has since been applied, so
+`nj_coast_sfincs/data` is `dr-xr-xr-x` while `nj_coast_sfincs/experiments` is writable (exactly
+as the "Known gaps" entry prescribes). Choosing the keeper by link count alone put **every**
+loser inside the frozen `data/`, and all 3.5 GB of candidates failed `EPERM` one by one.
+
+✅ **Fixed by inverting the preference: KEEP THE COPY THAT CANNOT BE REPLACED.** The frozen
+inode survives untouched and the writable copy becomes the link — same blocks reclaimed, and
+the archive is never written to at all. Strictly safer than the direction that failed.
+
+**2. `freed` did not depend on the reclaim succeeding.** It accumulated candidate gain
+unconditionally and `--apply` merely relabelled the total `RECLAIMED`. It now counts only
+inodes actually released, and **reasons in inodes, not paths** — an inode gives its blocks back
+only when *every* path pointing at it has been relinked. A `blocked by a read-only parent dir`
+line now reports pairs where both copies are frozen.
+
+⚠️ Verify a reclaim **against `mmlsquota`, never against the script's own summary.** That is
+what caught this, and the check costs one command.
 
 The 5 sweep-only CoNED tiles were deleted for space (`10_20`, the Ward Point defect tile, is
 kept so the tier and the cited figure stay rebuildable). `sweep_cudem_flatfill.py` now prints
