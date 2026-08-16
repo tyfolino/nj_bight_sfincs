@@ -27,17 +27,62 @@ be staged or run yet" describes the road to that freeze, not the current state.
 
 | arm | job | node | elapsed | `sfincs_map.nc` | SnapWave | state |
 |---|---|---|---|---|---|---|
-| `naccs-premier` | 60582145 | hal0338 | 2:19:46 | 1.10 GB | 88.6% | ✅ COMPLETED, clean close |
-| `naccs-nowaves` | 60582164 | hal0388 | 0:09:27 | 243 MB | — | ✅ COMPLETED, clean close |
-| `noaa-2node` | 60582165 | hal0391 | 1:36:07 | 1.09 GB | 89.0% | ✅ COMPLETED, clean close |
+| `naccs-premier` | 60582145 | hal0338 | 2:19:46 | 1.10 GB | 88.6% | ✅ ran clean — **output later destroyed** |
+| `naccs-nowaves` | 60582164 | hal0388 | 0:09:27 | 243 MB | — | ✅ ran clean — **output later destroyed** |
+| `noaa-2node` | 60582165 | hal0391 | 1:36:07 | 1.09 GB | 89.0% | ✅ ran clean — **output later destroyed** |
 
-⭐ **Checked against the `COMPLETED 0:0` trap specifically, not just against `sacct`.** All three
-landed on `hal*` (the `--exclude=halk[0001-0159]` held), each wrote `sfincs_map.nc` +
-`sfincs_his.nc` + a full timing block ending `----------- Closing off SFINCS -----------`, and
-all four run dirs still fingerprint 4/4 — so they ran on the domain they claim to have run on.
+⭐ **These three runs were CORRECT.** They landed on `hal*`, closed with a full timing block,
+and the sizes above are real — the 2026-08-16 re-run of `naccs-nowaves` reproduced **243.0 MB**
+exactly. The 08-14 sweep was never scientifically void; only its output was lost.
 
-🔴 **NOTHING HAS BEEN SCORED.** There is no `metrics.csv`, no floodmap cache and no validation
-output anywhere under `experiments/v1_5_raritan/`. Next:
+### 🔴 THE `halk*` NODES CLOBBERED ALL THREE, ~25 h LATER — diagnosed 2026-08-16
+
+Each arm was submitted **twice**: once onto a `halk*` node (before the exclude line existed),
+once onto a good `hal*` node, **both against the same run dir**.
+
+| arm | halk attempt | fate | hal attempt | fate |
+|---|---|---|---|---|
+| `naccs-premier` | 60582058 · halk0064 | CANCELLED 19:48:41 | 60582145 · hal0338 | ✅ 19:59:30→22:19:16 |
+| `naccs-nowaves` | 60582059/60582146 | ended 19:32 / CANCELLED 20:11:14 | 60582164 · hal0388 | ✅ 20:13:41→20:23:08 |
+| `noaa-2node` | 60582060/60582147 | CANCELLED 19:48:41 / 20:11:14 | 60582165 · hal0391 | ✅ 20:13:41→21:49:48 |
+
+The good runs finished and wrote correct output. **On 08-15 evening the dead halk jobs'
+buffered writes finally landed on top of them**, leaving 29% / 86% / 11% of the window and, on
+the two waves-on arms, an `zsmax` that is entirely fill.
+
+🔴 **It is invisible to `ls`, because the clobbered file carries the HALK job's mtime.** Three
+clocks disagree, and that is the only tell:
+
+| | premier `sfincs_map.nc` |
+|---|---|
+| GPFS creation (`mmlsattr -L`) | 08-14 **19:59:47** — the *hal* job, to the second |
+| mtime (`stat -c %y`) | 08-14 **19:47:41** — the *halk* job that died before it |
+| ctime (`stat -c %z`) | 08-15 **20:42:16** — when the clobber landed |
+
+Proof the content changed rather than the metadata: the floodmap cached 08-15 12:24 holds
+**11,985,450** valid pixels, and the same downscale from the file as it stood on 08-16 yields
+**0** — its `zsmax` is 0 finite of 2,088,690.
+
+⚠️ **Not the quota, and not an external sync.** No SFINCS job ran on 08-15; GPFS snapshots are
+weekly and the newest (`cache.2026-08-11`) predates the sweep, so there was no recovery path.
+`dedupe_home.py` is cleared — it groups by exact size then full SHA-256 and cannot link
+non-identical files.
+
+✅ **Re-submitted 2026-08-16** on `hal0384/0385/0386` with `sfincs-desktop.sif` (Faber, the
+engine the 08-14 output records) via `run.submit_slurm(dir, sif=...)`, `--time=12:00:00`:
+jobs **60622418** premier · **60622419** noaa-2node · **60622420** nowaves.
+`naccs-nowaves` is back and **WHOLE** — 73/73 map steps, 433/433 his steps, all three `zsmax`
+blocks written.
+
+⭐ **`premier.output_complete()` now exists and is the guard that was missing.** Every other
+check in `premier.py` tests *identity* — that a run is on the domain it claims. Nothing tested
+that output is *whole*. `python -m nj_sfincs.premier` now reports `output WHOLE` /
+`OUTPUT TRUNCATED` / `no output` per run dir and names the shortfall. It is wired into the
+audit only, never into a staging assert, so it cannot block a build.
+
+🔴 **NOTHING HAS BEEN SCORED.** There is no `metrics.csv` under `experiments/v1_5_raritan/`.
+⚠️ The three `floodmap_hmax_lev3.tif` caches present are from the DESTROYED runs — they
+self-invalidate on mtime once the new maps land, but do not read them before then. Next:
 `python run_experiments.py --experiments <arm> --validate-only`, then compare **paired**
 (`scripts/paired_hwm_bootstrap.py`).
 
@@ -62,14 +107,22 @@ Both produce **`COMPLETED 0:0` with no output and no error anywhere**, which is 
 most expensive failure shape in this project. Both are now fixed in code; this is the record
 of why those lines exist.
 
-**1. The `halk*` nodes cannot write to `/cache/home`.** A job that lands there is allocated,
-runs, and exits clean having written *nothing* — no `sfincs_map.nc`, no `sfincs_his.nc`, and
-not even its own SLURM stdout file, so there is no message to find. 154 of the 494 nodes in
-`main-redhat` are `halk*`, so ~31% of submissions hit it. Evidence: 5/5 halk submissions
-produced nothing, 3/3 `hal*` ones worked; a 2 GB probe pinned to `halk0064` running only
-`hostname; touch` returned COMPLETED 0:0 in 8 s with no output file and no marker, while the
-identical probe on `hal0338` worked. `hpc/sfincs_run.slurm` now carries
-`#SBATCH --exclude=halk[0001-0159]`. Re-check with that probe before removing it.
+**1. The `halk*` nodes do not write to `/cache/home` on time.** 154 of the 494 nodes in
+`main-redhat` are `halk*`, so ~31% of submissions hit it. `hpc/sfincs_run.slurm` now carries
+`#SBATCH --exclude=halk[0001-0159]`. Re-check with the probe below before removing it.
+
+⚠️ **This was first recorded as "writes nothing at all", and that is only half of it — the
+harmless half.** Some halk jobs do produce nothing: allocated, runs, exits clean, no
+`sfincs_map.nc`, no `sfincs_his.nc`, not even a SLURM stdout file. Evidence: a 2 GB probe
+pinned to `halk0064` running only `hostname; touch` returned COMPLETED 0:0 in 8 s with no
+output file and no marker, while the identical probe on `hal0338` worked. That costs a slot.
+
+🔴 **Others write partial output whose flush lands HOURS OR DAYS later, on top of whatever ran
+after them in the same directory.** 60582058 on halk0064 produced a 4,377-byte stdout *and*
+real map/his output — so "5/5 halk submissions produced nothing" was wrong, and reading it as
+"a halk job is merely wasted" is what left the good 08-14 runs unprotected. See the clobber
+section above: this is the single most expensive failure this project has had, precisely
+because the result reads back clean and carries a plausible mtime.
 
 **2. Home is a GPFS filesystem with a 100 G soft / 110 G hard quota, and `quota -s` prints
 nothing.** Ask it properly — `/usr/lpp/mmfs/bin` is not on PATH:
@@ -1343,12 +1396,78 @@ Already in `nj_sfincs/experiments.py` under `v1_5_raritan`:
 
 ## Known gaps in this repo
 
-- **The archive is not yet read-only on disk.** Run, once:
-  `cd ~/nj_coast_sfincs && chmod -R a-w nj_sfincs scripts docs reports tests data *.md *.py`
-  (undo with `u+w`). Leave `experiments/` writable — the port fixture is copied out of it.
+- ✅ **The archive IS read-only on disk** — `nj_coast_sfincs/data` is `dr-xr-xr-x`,
+  `experiments/` deliberately left writable (the port fixture is copied out of it).
+  ⚠️ That freeze is what broke `dedupe_home.py`; read the quota section above before
+  changing either permission.
 - **`ruff` is not installed anywhere on this machine**, so the tree has not been formatted.
   It is written to the 88-column style by hand. Run `ruff format . && ruff check .` once,
   in its own commit, before any logic edits — that is the only moment it is free.
-- **`nj_sfincs/plots.py` is untested at runtime.** It imports cleanly, but no figure has
-  been drawn since the port.
-- **No `notebooks/`.** Deliberate; add one when there is something to look at.
+- ⚠️ **`nj_sfincs/plots.py` was untested at runtime until 2026-08-15**, and the first thing
+  to run it found a bug (below). `plot_gauge_verification`, `plot_hwm_residual_panels`,
+  `plot_motf_panels` and `animate.animate_field` are now exercised on the v1.5 arms. The
+  rest of the module still has not drawn a figure.
+- ✅ **`notebooks/v1_5_raritan/sandy-v1_5-viz.ipynb`** — 16 cells, headers only, no
+  narration: metrics → gauges → HWM → MOTF → 2 animations → an `ipywidgets` picker over
+  run × field × window → GIF save. MOTF is fed the waves-on arms only.
+
+### 🔴 `plot_gauge_verification` drew FIVE ERROR BOXES and looked like a figure
+
+Found 2026-08-15 by running the notebook — nothing had called `plots.py` since the port.
+`gauge_series_frame` documents `mod` as **optional**, but `_model_series` handed `None`
+straight to `his_series`, which does `mod.output` → `AttributeError` on every
+`series_source="his"` gauge, i.e. all five on this domain.
+
+⭐ **Why it survived: the caller catches per gauge and draws the exception INTO the panel**
+(`plots.py:786-790`, "one bad gauge must not kill the figure"). A total failure therefore
+rendered as a clean five-panel figure full of grey text instead of a traceback. **A
+per-item catch that degrades gracefully hides a 100% failure rate exactly as well as a 1%
+one** — the count of panels that drew *nothing* is the thing worth asserting on.
+
+✅ Fixed by `validate.core.open_run()`, memoised per run dir so the ~21 s `SfincsModel`
+open is paid once per run instead of once per gauge per run. 59 tests OK, port gate still
+bit-for-bit.
+
+### 🟡 First v1.5 gauge numbers — PROVISIONAL, straight off `gauge_series_frame`
+
+Not the validator, and every one is a **high-water** statistic (all four sensors clip below
+their recordable floor). `naccs-premier`, model − observed:
+
+| gauge | obs pts on model clock | bias |
+|---|---|---|
+| `sandy_hook` | 283 | **−0.006** |
+| `sss_arthur_kill_mouth` | 384 | −0.107 |
+| `sss_narrows_bkln` | 309 | −0.116 |
+| `sss_narrows_si` | 236 | −0.401 |
+| `sss_great_kills` | 101 | **−0.555** |
+
+⚠️ **Great Kills is the one to chase, and it is NOT yet a model finding.** The forcing
+product is independently measured 0.35–0.39 m LOW at that same sensor (§"NACCS vs those
+sensors"). Two numbers of the same sign at the same place may share a cause or may be
+coincidence at n=101 — do not attribute it to the relocated boundary until the scorer has
+run and the arms are compared paired.
+
+### 🗑️ Archive trimmed 2026-08-15 — 18 GB reclaimed, 89.99 → 72.02 G
+
+🔴 **`du` on `nj_coast_sfincs/experiments` reported 32 G and was MISLEADING.** After the
+dedupe, ~40 GB of apparent size there is *shared inodes* with `data/frozen_mesh_*`, so
+deleting the `sfincs.nc` / `sfincs_subgrid.nc` / `roughness.nc` / subgrid-tif copies frees
+**nothing at all**. Only ~24 GB was ever unique. Measure by `st_nlink`, not by `du`, before
+planning any trim.
+
+| removed | freed | recoverable? |
+|---|---|---|
+| `snapwave.upw` ×7 | 4.30 GB | ✅ runtime upwind table, NOT in `sfincs.inp` — the solver rebuilds it |
+| 31 `*_hmax_lev3.tif` floodmaps | 5.06 GB | ✅ re-downscaled from a surviving `sfincs_map.nc` |
+| 11 non-premier `v1_monmouth/sfincs_map.nc` | ~5.2 GB | ❌ gone — but every score is in `v1_monmouth/metrics.csv` |
+| (dedupe, same day) | 3.42 GB | — |
+
+**KEPT deliberately:** all 17 `sfincs_his.nc` (12 MB total — the gauge series, and what a
+notebook actually opens), `v1_monmouth/metrics.csv`,
+`v1_monmouth/faber-waves-premier/sfincs_map.nc`, and **all five
+`v2_barnegat/sfincs_map.nc` (8.79 GB)**.
+
+🔴 **v2_barnegat has NO metrics.csv anywhere** — not in `experiments/`, and
+`reports/v2_barnegat/` holds only animations. Its scores exist solely as prose in the
+archived docs, so deleting its maps would make those five runs unre-scorable forever.
+**Score it to a CSV before trimming it.**

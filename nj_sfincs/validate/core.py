@@ -325,7 +325,22 @@ def read_output(mod, lazy: bool = True) -> None:
 
     fn_map = root / "sfincs_map.nc"
     if fn_map.is_file():
-        ds = xu.open_dataset(fn_map) if lazy else xu.load_dataset(fn_map)
+        # 🔴 `timemax` IS NOT DECODED, AND THAT IS DELIBERATE. SFINCS declares it as
+        # "seconds since <tref>" but writes one entry per `dtmaxout` block, and it gives
+        # the variable NO `_FillValue`. A run whose output stopped early therefore leaves
+        # unwritten blocks holding the raw netCDF float fill, 9.96921e+36 — which xarray
+        # dutifully tries to read as ~3e29 years and raises
+        #     ValueError: unable to decode time units ... Try ... installing cftime
+        # a message that names the wrong cause entirely (cftime IS installed). That
+        # exception comes out of `open_dataset`, so it takes the WHOLE run with it: every
+        # gauge, every floodmap, not just zsmax.
+        #
+        # Leaving it raw costs nothing — no caller reads timemax's values, only its
+        # length, as the dimension `zsmax` is stacked along. And it keeps the fill visible
+        # instead of hiding it, which is the point: an all-fill timemax is how you SEE
+        # that a run's max-water-level blocks were never written.
+        kw = {"decode_times": {"timemax": False}}
+        ds = xu.open_dataset(fn_map, **kw) if lazy else xu.load_dataset(fn_map, **kw)
         ds = ds.set_coords(["mesh2d_node_x", "mesh2d_node_y"])
         crs = ds.grid.crs  # Galibier: xugrid parsed it
         if crs is None:
@@ -403,11 +418,40 @@ _DEP_MEMO: dict[tuple, object] = {}
 _DEP_MEMO_MAX = 3
 
 
+#: Opened run handles, keyed by run dir. ``his_series`` needs a model whose output store
+#: is populated, and the callers that only have a PATH (the plot helpers) would otherwise
+#: pay the ~21 s SfincsModel open once per gauge per run.
+_MODEL_MEMO: dict[Path, object] = {}
+
+
+def open_run(model_dir: Path):
+    """Open a run read-only with its output loaded, memoised on the run dir.
+
+    🔴 EXISTS BECAUSE ``mod=None`` WAS AN UNIMPLEMENTED OPTION. ``gauge_series_frame``
+    documents ``mod`` as optional and ``_model_series`` handed it straight to
+    ``his_series``, which does ``mod.output`` — so every ``series_source="his"`` gauge
+    raised ``AttributeError: 'NoneType' object has no attribute 'output'``. The only
+    caller that passed no model was ``plots.plot_gauge_verification``, which catches per
+    gauge and draws the exception into the panel, so the failure rendered as a FIGURE OF
+    FIVE ERROR BOXES rather than as a traceback. An optional argument has to be optional.
+    """
+    model_dir = Path(model_dir).resolve()
+    mod = _MODEL_MEMO.get(model_dir)
+    if mod is None:
+        mod = SfincsModel(
+            str(model_dir), data_libs=[str(DATA / "data_catalog.yml")], mode="r"
+        )
+        read_output(mod)
+        _MODEL_MEMO[model_dir] = mod
+    return mod
+
+
 def cache_clear():
     """Drop every in-process memo (frees the pinned rasters and zs arrays)."""
     _FLOODMAP_MEMO.clear()
     _DEP_MEMO.clear()
     _ZS_MEMO.clear()
+    _MODEL_MEMO.clear()
 
 
 def zs_at_faces(model_dir: Path, idx, var: str = "zs"):

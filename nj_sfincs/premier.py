@@ -368,6 +368,78 @@ def assert_sealed_domain(model_dir: Path | str, context: str = "") -> None:
         )
 
 
+def _inp(model_dir: Path, key: str) -> str | None:
+    """One value out of sfincs.inp, or None. Local so premier imports nothing heavier."""
+    p = Path(model_dir) / "sfincs.inp"
+    if not p.is_file():
+        return None
+    for line in p.read_text().splitlines():
+        if "=" in line and line.split("=")[0].strip() == key:
+            return line.split("=", 1)[1].strip()
+    return None
+
+
+def output_complete(model_dir: Path | str) -> tuple[bool | None, list[str]]:
+    """Does this run's output reach its own configured ``tstop``? ``None`` = no output yet.
+
+    🔴 EVERY OTHER GUARD IN THIS FILE CHECKS *IDENTITY* — that a run is on the domain it
+    claims. Nothing checked that a run's output is WHOLE, and on 2026-08-15 that gap cost
+    all three v1.5 arms. The `hal*` jobs completed correctly on 08-14; ~25 h later the
+    buffered writes of the `halk*` jobs that had died on the same run dirs landed on top
+    of them, leaving 12-86% of the window and, on two arms, an all-fill `zsmax`.
+
+    ⚠️ **It reads back completely clean.** The file is a valid netCDF — `time` is an
+    unlimited dimension, so a short file is well-formed, not corrupt — and it carries the
+    *halk* job's mtime, so it never looks stale next to anything. `sacct` says COMPLETED,
+    the solver log says `Closing off SFINCS`, and the run dir still fingerprints. The only
+    thing that tells you is the last timestamp against `tstop`.
+
+    Checks the map, the his, and `zsmax`: the max-water-level blocks are written LAST, so
+    they are the first thing a truncated run loses, and they are what every flood-extent
+    and HWM metric is computed from. An all-fill `zsmax` scores the model bone dry.
+    """
+    model_dir = Path(model_dir)
+    t0, t1 = _inp(model_dir, "tstart"), _inp(model_dir, "tstop")
+    if not t0 or not t1:
+        return None, []
+    from datetime import datetime
+
+    fmt = "%Y%m%d %H%M%S"
+    span = (datetime.strptime(t1, fmt) - datetime.strptime(t0, fmt)).total_seconds()
+    if span <= 0:
+        return None, []
+
+    problems: list[str] = []
+    seen = False
+    for fn, key in (("sfincs_map.nc", "dtmapout"), ("sfincs_his.nc", "dthisout")):
+        p = model_dir / fn
+        if not p.is_file():
+            continue
+        seen = True
+        step = float(_inp(model_dir, key) or 0) or span
+        # decode_times=False: an unwritten `timemax` block holds the raw netCDF float fill
+        # and blows up CF time decoding, which would make this guard fail on exactly the
+        # runs it exists to catch.
+        with xr.open_dataset(p, decode_times=False) as ds:
+            if "time" not in ds.variables or ds.sizes.get("time", 0) == 0:
+                problems.append(f"{fn}: no time axis")
+                continue
+            last = float(np.asarray(ds["time"].values).ravel()[-1])
+            if last < span - step / 2:
+                problems.append(
+                    f"{fn}: ends at {last / 3600:.1f} h of {span / 3600:.1f} h "
+                    f"({100 * last / span:.0f}%)"
+                )
+            if fn == "sfincs_map.nc" and "zsmax" in ds.variables:
+                z = np.asarray(ds["zsmax"].values, dtype="float64")
+                # -99999 is SFINCS' fill; the attribute is present but decode is off here.
+                if not np.isfinite(z).any() or not (z > -9.0e3).any():
+                    problems.append("sfincs_map.nc: zsmax is entirely fill (never written)")
+    if not seen:
+        return None, []
+    return (not problems), problems
+
+
 def describe(model_dir: Path | str) -> str:
     """One-line audit of a model directory."""
     try:
@@ -377,8 +449,13 @@ def describe(model_dir: Path | str) -> str:
     label = KNOWN.get(fp, "UNRECOGNISED")
     ok, problems = obs_points_ok(model_dir)
     obs_s = "obs OK" if ok else f"OBS STALE ({len(problems)})"
-    flag = "OK  " if (fp == expected() and ok) else "BAD "
-    return f"  {flag}{str(model_dir):44s} {label:60s} {obs_s}"
+    whole, gaps = output_complete(model_dir)
+    out_s = {None: "no output", True: "output WHOLE"}.get(whole, "OUTPUT TRUNCATED")
+    flag = "OK  " if (fp == expected() and ok and whole is not False) else "BAD "
+    line = f"  {flag}{str(model_dir):44s} {label:60s} {obs_s}  {out_s}"
+    for g in gaps:
+        line += f"\n      🔴 {g}"
+    return line
 
 
 def _main(argv: list[str] | None = None) -> int:

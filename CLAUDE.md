@@ -132,11 +132,22 @@ not trip that guard. Do not run the sweep driver to "just rebuild" a template.
   cell has NoData in the merged bed.
 - **Import `pyproj` before `hydromt_sfincs`** — `nj_sfincs/__init__.py` does this; it
   prevents a native double-free in `downscale_floodmap`.
-- 🔴 **The `halk*` nodes cannot write to `/cache/home`, and fail SILENTLY** — the job is
-  allocated, runs, exits `COMPLETED 0:0`, and writes nothing at all, not even its own SLURM
-  stdout file. 154 of 494 nodes in `main-redhat` are `halk*`. `hpc/sfincs_run.slurm` now sets
+- 🔴 **The `halk*` nodes write to `/cache/home` LATE, and their late writes CLOBBER a good
+  run.** 154 of 494 nodes in `main-redhat` are `halk*`. `hpc/sfincs_run.slurm` sets
   `#SBATCH --exclude=halk[0001-0159]`; **an `sbatch` that bypasses that script is unprotected.**
-  First thing to check when a job "completed" with no output: `sacct -j <id> --format=NodeList`.
+  First thing to check when output looks wrong: `sacct -j <id> --format=NodeList`.
+  ⚠️ **Some halk jobs produce nothing** (exit `COMPLETED 0:0`, no output, not even a SLURM
+  stdout file) — that is the 2026-08-14 signature and it merely wastes a slot. **Others write
+  partial output whose flush lands HOURS OR DAYS later, on top of whatever ran after them in
+  the same run dir.** On 2026-08-15 that destroyed all three v1.5 arms: the good `hal*` runs
+  had completed correctly on 08-14, and ~25 h later the dead halk jobs' buffered writes
+  overwrote them with 12–86% of the window and, on two arms, an all-fill `zsmax`. Re-running
+  the same arm on a halk node and then a good node is enough to trigger it.
+  🔴 **The tell is timestamps, and it is invisible to `ls`:** the clobbered file carries the
+  *halk* job's mtime, so it never looks stale. Compare three clocks —
+  `stat -c '%y %z'` (mtime, ctime) against `mmlsattr -L <f> | grep creation`. Creation
+  matches the job that legitimately made the file, mtime belongs to the halk job that died
+  before it, and ctime marks when the clobber landed.
 - **Disk quota exhaustion never says "quota".** It SIGSEGVs jobs or silently truncates
   output maps while `sacct` reports COMPLETED. Home is **GPFS, 100 G soft / 110 G hard**, and
   `quota -s` prints nothing — ask `mmlsquota -u $USER --block-size auto cache`

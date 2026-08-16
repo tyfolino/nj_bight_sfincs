@@ -69,7 +69,10 @@ def _obs_series(g, data_dir: Path = DATA):
 def _model_series(mod, model_dir: Path, g, dom):
     """(times, values) for a gauge's MODELLED series, per ``ObsGauge.series_source``."""
     if g.series_source == "his":
-        return his_series(mod, g.name)
+        # `mod` is optional here, so open the run when the caller only had a path.
+        from .core import open_run
+
+        return his_series(mod if mod is not None else open_run(model_dir), g.name)
     cells = wet_channel_cells(model_dir, g.lon, g.lat, dom.epsg)
     if cells is None:
         return None
