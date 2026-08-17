@@ -196,10 +196,12 @@ def _sample_hwm(da_hmax, da_dep, data_dir=DATA, estimator=None, scored_only=Fals
     of the HWM file rather than a model failure.
     """
     from .validate import DEPTH_MIN, HWM_ESTIMATOR_DEFAULT, HWM_RADIUS_M
+    from .validate.metrics import _clip_to_region
 
     estimator = estimator or HWM_ESTIMATOR_DEFAULT
     GROUND_CAP = 0.5
-    hwm = gpd.read_file(str(_hwm_path(data_dir))).to_crs(da_dep.rio.crs)
+    # Same region screen as the scorer, or the panels plot marks the CSV never scored.
+    hwm = _clip_to_region(gpd.read_file(str(_hwm_path(data_dir))).to_crs(da_dep.rio.crs))
     depth, dep_arr, wse = da_hmax.values, da_dep.values, (da_dep + da_hmax).values
     if depth.ndim == 3:
         depth, wse, dep_arr = depth[0], wse[0], dep_arr[0]
@@ -502,7 +504,10 @@ def plot_depth_panels(
     if hwm:
         f = _hwm_path(data_dir)
         if f.exists():
+            from .validate.metrics import _clip_to_region
+
             pts = gpd.read_file(str(f)).to_crs(f"EPSG:{_domain.active().epsg}")
+            pts = _clip_to_region(pts)
             pts = pts[pts["quality"].astype(float) <= 2]
 
     im = None

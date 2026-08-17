@@ -365,6 +365,54 @@ def _hwm_path(data_dir):
     rel = _domain.active().hwm_geojson
     return Path(data_dir) / rel.parent.name / rel.name
 
+
+def _clip_to_region(hwm):
+    """Drop marks outside the ACTIVE domain's region polygon.
+
+    🔴 WITHOUT THIS, A MARK THE MODEL NEVER SIMULATED SCORES AS "DRY", NOT AS ABSENT.
+    The dry-mark path is deliberately generous: a mark the model leaves dry is scored
+    against ``nanmin`` of the nearby BED rather than dropped, so "the model says water
+    never got above this ground" still counts against it. That is right for a mark inside
+    the domain and catastrophic for one outside it, because ``da_dep`` is the downscaled
+    subgrid DEM — it carries valid bed values across the whole grid RECTANGLE, including
+    every cell the region clip made inactive. So an out-of-domain mark finds finite ground,
+    never finds water, and books a residual of (bare earth − observed flood elevation).
+
+    Measured on ``v1_5_raritan`` when this was found (2026-08-17): 7 of 53 scored marks sat
+    outside the region, ALL 7 dry, ALL 7 of the domain's dry marks. They carried bias
+    −2.788 m / RMSE 3.165 m and dragged the headline from 0.402 m to 1.210 m — a number
+    that was three quarters an artefact of scoring Staten Island against a model that
+    never included it.
+
+    ⚠️ This is the SAME confusion as ``_fill_inactive_holes`` (STATUS, 2026-08-14): once a
+    region clip has run, "outside the domain" and "inside the domain" are indistinguishable
+    to anything reading only a raster. Every piece of code that reasons about cells beyond
+    the mask has to be told which is which.
+
+    ⭐ Safe for the port fixture BY MEASUREMENT, not by argument: ``v1_monmouth`` has 0
+    scored marks outside its region and 0 dry marks, so ``hwm_n_scored`` stays 38 and
+    ``scripts/verify_port.py`` still passes bit-for-bit. ``tests/test_hwm_region_clip.py``
+    pins both that and the v1.5 drop.
+    """
+    import geopandas as _gpd  # noqa: PLC0415
+
+    from .. import domain as _domain  # noqa: PLC0415
+
+    region = _domain.active().region
+    if region is None:
+        return hwm
+    reg = _gpd.read_file(str(region)).to_crs(hwm.crs)
+    geom = reg.union_all() if hasattr(reg, "union_all") else reg.unary_union
+    keep = hwm.geometry.within(geom).values
+    if not keep.all():
+        print(
+            f"[hwm] region clip: {len(hwm) - int(keep.sum())} of {len(hwm)} marks are "
+            "outside the domain region and are NOT scored (they would otherwise score "
+            "as dry against bare earth)"
+        )
+    return hwm[keep].reset_index(drop=True)
+
+
 def hwm_metrics(
     da_hmax,
     da_dep,
@@ -447,6 +495,7 @@ def hwm_metrics(
         )
     GROUND_CAP = 0.5
     hwm = gpd.read_file(str(_hwm_path(data_dir))).to_crs(da_dep.rio.crs)
+    hwm = _clip_to_region(hwm)
     if hwm_ids is not None:
         want = {str(i) for i in hwm_ids}
         before = len(hwm)

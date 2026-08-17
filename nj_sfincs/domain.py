@@ -619,6 +619,78 @@ _SSS_NARROWS_BKLN = ObsGauge(
 # clock, not a gauge. Score it as an HWM (peak >= 3.57 m); a declared-but-meaningless
 # gauge looks like coverage.
 
+# ── The v1 southern estuary gauges, RE-NUDGED for v1.5's mesh ────────────────────────
+# 🔴 THE v1 COORDINATES DO NOT TRANSFER, AND THE FAILURE IS SILENT.
+# v1.5 refines the quadtree differently in the southern estuaries, so all three of v1's
+# points land on DRY BANKS here — measured on the sealed template, bed +3.48 / +4.42 /
+# +3.57 m. That is precisely the scar `premier.obs_points_ok` was generalised for: a bank
+# cell only wets during the storm, so every pre-storm tide and phase metric returns NaN
+# without ever raising. `usgs_tidal_sea_bright` carries a 21 m nudge that was tuned on v1's
+# faces and is worth nothing on these.
+#
+# So each gauge gets its OWN v1.5 entry, nudged to the nearest `mask==1` face with bed
+# < −1.0 m. They cannot reuse the v1 constants: those coordinates are asserted against
+# `v1_monmouth`'s own sfincs.obs by `obs_points_ok`, and the port fixture is pinned to them.
+#
+# | gauge | nudge | v1.5 bed | v1 bed |
+# |---|---|---|---|
+# | usgs_tidal_sea_bright | 24.8 m | −4.20 | −4.33 (21 m) |
+# | usgs_tidal_shark_river | 35.0 m | −2.22 | map-sourced on v1 |
+# | usgs_stormtide_sea_bright | 105.9 m | −1.19 | published coords |
+#
+# ⚠️ The open-coast SSS nudge is the big one — 105.9 m, because the nearest wet face is
+# offshore of the beach it sits on. Its published cell is +3.48 m and would wet by only
+# ~0.9 m at Sandy's observed 4.4 m peak there; a barely-wet cell is a bad place to read a
+# modelled crest. 106 m of open coast is flat compared with that, but it IS a nudge across
+# the surf zone and the comparison should be read as "the model's nearshore level", not
+# "the model at the sensor".
+_V15_SSS_SEA_BRIGHT = ObsGauge(
+    "usgs_stormtide_sea_bright",
+    -73.97200,
+    40.37275,
+    "surge",
+    "gtsm/sandy_storm_tide_nj.nc",
+    "stormtide_m",
+    2258,
+    survives_crest=True,
+    series_source="his",
+    note="USGS SSS rapid-deployment sensor, Sea Bright — the only open-coast record that "
+    "survived the peak. ⚠️ NUDGED 105.9 m offshore onto a −1.19 m face; the published "
+    "point is a +3.48 m bank on this mesh. Read as nearshore level, not at-sensor.",
+)
+_V15_USGS_SEA_BRIGHT = ObsGauge(
+    "usgs_tidal_sea_bright",
+    -73.97523,
+    40.36554,
+    "tide",
+    "gtsm/usgs_sandy_tidal_nj.nc",
+    None,
+    1407600,
+    survives_crest=False,
+    record_ends="2012-10-29 04:00",
+    series_source="his",
+    note="Shrewsbury R. ⚠️ NUDGED 24.8 m into the channel (bed −4.20 m) — this is v1.5's "
+    "OWN nudge, not v1's 21 m one, which lands on a +4.42 m bank here. Record ends "
+    "~10-29 04:00, so tidal range/phase only, not the peak.",
+)
+_V15_USGS_SHARK = ObsGauge(
+    "usgs_tidal_shark_river",
+    -74.02597,
+    40.18530,
+    "tide",
+    "gtsm/usgs_sandy_tidal_nj.nc",
+    None,
+    1407770,
+    survives_crest=False,
+    record_ends="2012-10-29 04:00",
+    # v1 had to fall back to `series_source="map"` here because its obs point snapped to a
+    # +1.79 m bank. v1.5 has a wet face 35 m away, so this one can be scored off `his` at
+    # 10-min instead of hourly — strictly better resolution for tidal phase.
+    series_source="his",
+    note="Shark R. ⚠️ NUDGED 35.0 m onto a −2.22 m face. Record ends ~10-29 04:00 — "
+    "pre-storm tide only.",
+)
+
 #: ⚠️ PROVISIONAL — registered 2026-08-13 so `scripts/probe_mesh_size.py` can measure the
 #: mesh BEFORE the subgrid is paid for. It is deliberately INCOMPLETE: no `obs_gauges`,
 #: no `hwm_rules`, no fingerprint in `premier.EXPECTED`. Those do not affect the face
@@ -641,7 +713,8 @@ V1_5_RARITAN = Domain(
     mask_zmin=-10.0,
     mesh_key="v1_5_raritan_z10",
     obs_gauges=(_SSS_GREAT_KILLS, _SSS_ARTHUR_KILL, _SSS_NARROWS_SI, _SSS_NARROWS_BKLN,
-                _SANDY_HOOK),
+                _SANDY_HOOK,
+                _V15_SSS_SEA_BRIGHT, _V15_USGS_SEA_BRIGHT, _V15_USGS_SHARK),
     # ── The arm whitelist. A mask==2 cell outside all three is a BUILD ERROR. ──
     # Boxes are padded around each cut so they contain every BC cell it produces, and
     # are DISJOINT — the ocean box stops at easting 593,125 / northing 4,490,496, well

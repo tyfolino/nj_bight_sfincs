@@ -4,7 +4,7 @@
 12 KB "current state" memory file and its 26 reverse-chronological campaign logs; the point
 of the format is that a reader gets the current state without replaying how it was reached.
 
-Last updated: **2026-08-14**
+Last updated: **2026-08-17**
 
 📋 The original plan this work follows is frozen at
 [docs/plan_v1_5_original.md](plan_v1_5_original.md) (Phases 1–4 and 6 are done; 5 and 7 are
@@ -80,11 +80,163 @@ that output is *whole*. `python -m nj_sfincs.premier` now reports `output WHOLE`
 `OUTPUT TRUNCATED` / `no output` per run dir and names the shortfall. It is wired into the
 audit only, never into a staging assert, so it cannot block a build.
 
-🔴 **NOTHING HAS BEEN SCORED.** There is no `metrics.csv` under `experiments/v1_5_raritan/`.
-⚠️ The three `floodmap_hmax_lev3.tif` caches present are from the DESTROYED runs — they
-self-invalidate on mtime once the new maps land, but do not read them before then. Next:
-`python run_experiments.py --experiments <arm> --validate-only`, then compare **paired**
-(`scripts/paired_hwm_bootstrap.py`).
+✅ **ALL THREE ARMS ARE BACK AND WHOLE — re-run 2026-08-16, verified 2026-08-17.**
+Jobs **60622418** premier · hal0384 · 1:38:23 · 1.096 GB · SnapWave 89.4% ·
+**60622419** noaa-2node · hal0385 · 1:35:20 · 1.094 GB · SnapWave 89.4% ·
+**60622420** nowaves · hal0386 · 0:09:27 · 243.0 MB. All three closed with a full timing
+block; `NJ_DOMAIN=v1_5_raritan python -m nj_sfincs.premier` reports **4/4, `output WHOLE`**.
+
+⭐ **The clobber did NOT recur, and the timestamps are the proof.** On each `sfincs_map.nc`,
+mtime **==** ctime **==** the job's own end time to the second (11:15:35 / 11:12:32 /
+09:46:39). Only GPFS creation still reads 08-14 — the inode was made then and rewritten in
+place, which is expected. Checked at 2026-08-17 12:00, ~26 h after the runs, i.e. **past the
+~25 h window in which the 08-15 clobber landed.** `sacct -u $USER -S 2026-08-15` shows no
+`halk*` job at all since the exclude line went in.
+
+✅ **SCORED 2026-08-17.** `experiments/v1_5_raritan/metrics.csv` + `report.html` exist.
+The three stale floodmap caches self-invalidated on mtime exactly as designed
+(`validate/core.py:529`) and were rebuilt 12:07–12:12. `naccs-nowaves` correctly came back
+`extent_admissible=False` with CSI/POD/FAR dropped.
+
+### 🔴 THE FIRST SCORES WERE 3/4 ARTEFACT — out-of-domain HWMs scored as DRY, fixed 2026-08-17
+
+The first `metrics.csv` reported `hwm_rmse_scored_m` = **1.210 m**. The real figure is
+**0.402 m**. The difference was **7 marks that are not in the model at all.**
+
+`score_hwm` deliberately does not drop a mark the model leaves dry — it scores it against
+`nanmin` of the nearby BED, so "the model says water never got above this ground" still
+counts against the model. That is right for a mark inside the domain. 🔴 **`da_dep` is the
+downscaled subgrid DEM, and it carries valid bed values across the whole grid RECTANGLE,
+including every cell the region clip made inactive.** So a mark outside the region finds
+finite ground, never finds water, and books a residual of (bare earth − observed flood
+elevation). It never drops out, because dropping out requires NaN bed.
+
+| set | n | bias | RMSE |
+|---|---|---|---|
+| inside the region | 46 | −0.081 | **0.402** |
+| outside it (**all 7 dry**) | 7 | −2.788 | 3.165 |
+| what the CSV first reported | 53 | −0.438 | 1.210 |
+
+⭐ **All 7 dry marks were outside the region; there were ZERO dry marks inside it.** The
+domain does not have a wet/dry problem — it was being scored against Staten Island.
+
+⚠️ **This is the same confusion as `_fill_inactive_holes` (2026-08-14), one section below.**
+After a region clip, "outside the domain" and "inside the domain" are indistinguishable to
+anything reading only a raster. Every piece of code reasoning about cells beyond the mask
+has to be told which is which.
+
+✅ **Fixed by `_clip_to_region` in `validate/metrics.py`**, applied where the marks are
+loaded so every downstream key inherits it, and applied to the same two places in
+`plots.py` so the panels cannot plot marks the CSV never scored.
+`tests/test_hwm_region_clip.py` pins it.
+
+⭐ **SAFE FOR THE PORT FIXTURE BY MEASUREMENT, NOT BY ARGUMENT.** `v1_monmouth` has 0 scored
+marks outside its region and 0 dry marks, so clipping 32 of its 95 changes nothing:
+`scripts/verify_port.py` still passes **bit-for-bit**, `hwm_n_scored` still 38,
+`hwm_bias_scored_m` still −0.363105931. That check is the reason this was safe to land.
+
+#### ✅ PAIRED, on the 46 in-region marks — and the artefact was DILUTING the signal
+
+The 7 out-of-domain marks are dry in both arms, so they contribute a near-identical large
+residual to each and compress the RMSE difference toward zero. Removing them roughly
+**triples** the measured effect.
+
+| comparison | Δ on 53 (contaminated) | **Δ on 46 in-region** | 95% CI | P(A better) |
+|---|---|---|---|---|
+| premier − noaa-2node | −0.0223 | **−0.0717** | [−0.161, −0.013] | 0.994 |
+| premier − nowaves | −0.0142 | **−0.0469** | [−0.108, −0.008] | 0.995 |
+
+Both CIs exclude zero. `naccs-premier` RMSE **0.402** vs noaa-2node **0.474** vs nowaves
+**0.449**; bias −0.081 / −0.255 / −0.037.
+
+🔴 **This is a FORCING-DENSITY result, not the boundary-move argument.** It says dense NACCS
+forcing beats 2-node NOAA forcing *on this domain*. It is NOT the v1_monmouth comparison
+CLAUDE.md warns about (ΔRMSE −0.042, CI [−0.238, +0.137], P = 0.706, 38 marks), and it does
+not make the boundary relocation an empirical result. **The case for v1.5 remains
+STRUCTURAL.**
+
+⚠️ No pre-registration was written before this scorer run.
+
+#### Other first-read numbers
+
+| | premier | noaa-2node | nowaves |
+|---|---|---|---|
+| `motf_csi` | **0.662** | 0.652 | inadmissible |
+| Great Kills peak err (m) | −0.385 | −0.281 | −0.374 |
+
+Great Kills is the one true interior holdout (8.85 km from any arm, so the model COMPUTES
+it) and every arm runs ~0.3–0.4 m low there — close to the **−0.350 m** that NACCS itself
+runs low at that sensor (§ "NACCS vs those sensors"). ⚠️ Suggestive only: that NACCS figure
+is a high-water-only comparison at n=112, and NACCS forces nothing within 8.85 km of it.
+
+⚠️ **Per-basin counts still do not match the classification table above** (46 scored vs 69
+in-region). `score_hwm` also keeps only `quality <= 2`. Reconcile before quoting per-basin
+numbers — the table and the CSV count different populations.
+
+### ✅ The v1 southern estuary gauges are now on v1.5 — re-run 2026-08-17
+
+Jobs **60657512** premier · **60657513** noaa-2node · **60657514** nowaves, on
+hal0259/0260/0262. Adding the three v1 gauges — Shark River, Shrewsbury, Sea Bright
+open-coast — takes v1.5 from 5 observation points to **8**.
+
+⭐ **No mesh rebuild and no re-stage.** Observation points are diagnostic: SFINCS writes a
+series at each into `sfincs_his.nc` and the solution does not depend on them. But
+`sfincs.obs` is only written inside `build_static`, behind the subgrid, and `build_template`
+`rmtree`s its target. `scripts/sync_obs_points.py` rewrites the text file from the registry
+instead. 🔴 **It verifies the format rather than assuming it** — it regenerates the file from
+the points ALREADY in it and refuses to write unless that reproduces the existing bytes.
+
+🔴 **v1's COORDINATES DO NOT TRANSFER, AND THE FAILURE WOULD HAVE BEEN SILENT.** v1.5 refines
+the quadtree differently in the southern estuaries: all three v1 points land on DRY BANKS
+here — bed **+3.48 / +4.42 / +3.57 m** on the sealed template. `usgs_tidal_sea_bright`'s
+famous 21 m nudge was tuned on v1's faces and is worth nothing on these. A bank cell only
+wets during the storm, so every pre-storm tide and phase metric would return NaN without
+raising — exactly the scar `premier.obs_points_ok` was generalised for.
+
+So each gets its own v1.5 entry, nudged to the nearest `mask==1` face with bed < −1.0 m:
+
+| gauge | nudge | v1.5 bed | v1 |
+|---|---|---|---|
+| `usgs_tidal_sea_bright` | 24.8 m | −4.20 | −4.33 at a 21 m nudge |
+| `usgs_tidal_shark_river` | 35.0 m | −2.22 | map-sourced (its v1 point was a +1.79 m bank) |
+| `usgs_stormtide_sea_bright` | **105.9 m** | −1.19 | published coords |
+
+⚠️ **The open-coast SSS nudge is the big one.** The nearest wet face is offshore of the beach
+the sensor sits on; its published cell is +3.48 m and would wet by only ~0.9 m at the
+observed 4.4 m peak, and a barely-wet cell is a bad place to read a modelled crest. Read that
+panel as **the model's nearshore level, not the model at the sensor**.
+
+⭐ Shark River gains resolution over v1: v1 had to fall back to `series_source="map"`
+(hourly) because its point was on a bank, while v1.5 has a wet face 35 m away and can be
+scored off `his` at 10 min.
+
+⚠️ **There is NO Navesink gauge.** `usgs_sandy_tidal_nj.nc` holds 4 stations, of which only
+1407770 (Shark R) and 1407600 (Shrewsbury) are inside v1.5; 1408168 and 1409125 are south of
+lat 40.150. The Navesink is an HWM basin only — `shrewsbury_navesink`, 12 marks, and it is
+the **best**-scoring basin on the domain (bias +0.013, RMSE 0.185).
+
+#### ⏳ PICK UP HERE — the re-run was still in flight at end of session 2026-08-17
+
+`naccs-nowaves` finished (803 s, `output WHOLE`, 8 stations). **60657512 premier and
+60657513 noaa-2node were at 1:29 of ~1:38 when the session ended**, with a queued job waiting
+on them to run `sacct` → map-size check → `premier` audit → `--validate-only`.
+
+🔴 **DO NOT TRUST ANY PREMIER / NOAA-2NODE NUMBER UNTIL `python -m nj_sfincs.premier` REPORTS
+`output WHOLE` FOR BOTH.** Mid-run they read back as a plausible-looking catastrophe — the
+notebook was run against the half-written files and produced `median −1.87 m, 20 of 46 dry`
+and `CSI 0.20`, because output stopped at hour 48.0 of 72 and Sandy's crest is at hour 48.7.
+The arms were fine; the files were half there. The audit named it immediately
+(`OUTPUT TRUNCATED — ends at 48.0 h of 72.0 h`), which is exactly what `output_complete()`
+exists for.
+
+⚠️ **Every score in this file above is from the PRE-re-run scoring.** Observation points are
+diagnostic and cannot change the solution, so premier should return to **RMSE 0.402 / CSI
+0.662** exactly. **If it does not, something changed that should not have — chase that before
+reporting the new number.** `map_sizes_pre`: premier 1,095,742,111 · noaa-2node
+1,094,248,175 · nowaves 242,972,872.
+
+⚠️ The notebook has the CORRUPTED figures embedded in its outputs from that mid-write run.
+Re-execute it after the rescore before those outputs are committed.
 
 ✅ **The interior holdouts ARE registered** — checked 2026-08-15, `domain.py:643`:
 `obs_gauges=(_SSS_GREAT_KILLS, _SSS_ARTHUR_KILL, _SSS_NARROWS_SI, _SSS_NARROWS_BKLN,
@@ -100,6 +252,83 @@ interior.
    water, so their troughs are below the recordable floor and the clipping is not
    missing-at-random — see the floor table below. High-water amplitude and phase are
    available; full M2 range is not, at any of them.
+
+### 🟡 Stockdon as a DIAGNOSTIC — why waves buy only 5 cm, 2026-08-17
+
+`scripts/stockdon_envelope.py`. 🔴 **It is a post-hoc envelope on a finished still-water run,
+NOT an arm.** A `naccs-stockdon` solver arm was proposed and NOT built: NACCS already carries
+wave setup (§23) and adding a parametric term on top is the double count §22 measures at
+~1 m. Nothing here modifies a water level, so no double counting is possible.
+
+⭐ **The framing that makes the rule intuitive:** setup accumulates from deep water to the
+beach. NACCS hands us the total *seaward* of the boundary; SnapWave adds the surf zone
+*shoreward* of it — two legs of one trip, no overlap. **Stockdon prices the whole trip in one
+number**, from deep water to the shore, with no knowledge of where our boundary is. Add it to
+NACCS and the seaward leg is paid twice. ⚠️ So Stockdon is not inherently a double count —
+against a boundary product with NO wave coupling it is the correct and legal branch, which is
+what the archive was doing. **The boundary product changed, not the formula.**
+
+🔴 **The envelope test is VACUOUS and must not be quoted as validation.** `R2%` is ~2.98 m
+tall, so 86–92% of marks fall inside it and **0% fall above it** — at β_f 0.02, 0.05 AND 0.10
+alike. A test that returns the same answer across a 5× parameter swing measures nothing.
+
+⭐ **What IS informative: how much water each mark needs above still water** (`obs − still`),
+compared against `eta` — the setup term, the only part of Stockdon that is a water LEVEL.
+Swash is an excursion, not a level, and no still-water model can reproduce it.
+
+| basin | n (q≤3) | water needed | `eta` β_f=0.02 | `eta` β_f=0.05 |
+|---|---|---|---|---|
+| open beach (pooled) | 12 | **+0.37** | 0.33 | 0.82 |
+| `atlantic_oceanfront` | 8 | +0.41 | 0.34 | 0.86 |
+| `raritan_bay` | 23 | **−0.11** | — | — |
+| `sandy_hook_bay` | 5 | −0.02 | — | — |
+
+1. **On the open beach three independent routes agree at ~0.35 m**: marks need 0.37, SnapWave
+   delivers ~0.34 (§4), Stockdon at β_f=0.02 gives 0.33. ⚠️ **β_f was chosen AFTER seeing the
+   target — that is calibration, not validation.** The archive's 0.05 overshoots by >2×,
+   consistent with its own note that it ran high in sheltered spots.
+2. **The bay needs NO wave contribution.** `need` is negative and ~60% of bay marks already
+   sit at or below the still-water surface. Any uniform setup there makes it worse. Waves are
+   an open-beach lever on this domain, nothing else.
+3. ⭐ **That explains the paired result.** SnapWave costs 90–95% of runtime and moves HWM RMSE
+   by only 0.047 m because it is fixing **12 marks of 58** — well, on those twelve, and
+   invisibly on the rest.
+
+⚠️ Small-n throughout, and 5 of the 12 are `q==3` marks readmitted by `--max-quality 3`.
+
+#### ⚠️ The q≤2 cut removes the marks a wave question needs
+
+Open coast holds **14** in-region marks; only **7** pass `q<=2`. The dropped ones are
+systematically HIGHER — q≤2 tops out at 4.18 m while the single tallest open-coast mark,
+**5.79 m, is a q==3 we never score.** The archive saw the same thing (the tallest beach marks
+ride the runup top). So the headline is testing "do waves matter" on a set with much of the
+wave-driven tail filtered out.
+
+🔴 **`--max-quality 3` is a STANDALONE diagnostic and its numbers are NOT comparable with
+`metrics.csv`** — a changed scored-mark count invalidates a comparison (FINDINGS §6). The
+script prints a banner whenever the cut is not 2. ⚠️ `quality` is VERTICAL survey precision
+only, so "taller marks are worse-quality" may have nothing to do with runup; the direction is
+suggestive, not established.
+
+⏳ **Open, and it decides whether SnapWave is earning its runtime:** §4 puts SnapWave's
+contribution at +0.34 m (premier − nowaves) while the `z15` entry records only **+0.027 m** of
+setup between boundary and shore *within* premier. Those are different quantities so both can
+hold — but setup that raises level almost uniformly instead of building shoreward is odd.
+Resolve it off the finished premier run.
+
+### ⏳ NEXT SESSION — southern domain, NACCS acquisition started 2026-08-17
+
+The user is pulling **NACCS/CHS data for the southern domain** — `v2_barnegat` and most likely
+**all the way to Cape May**. Nothing is staged and no domain is registered for it yet.
+
+⚠️ Two things from this repo's scars that apply before any of it is trusted:
+- **`build_naccs_boundary.py` filters members on `ADCIRC_MEMBER` and reads water level by the
+  `ET00` column CODE, not position** — a mixed zip carries STWAVE members whose column 9 is
+  `TM`, a wave period. Re-verify `--report-only --no-cache` on the new footprint.
+- **A new domain is a registry entry in `domain.py` with its own fingerprint**, its own HWM
+  file (`Domain.hwm_geojson`) and its own basin rules. 🔴 v1's rule tuple could not be carried
+  to v1.5 because an unbounded rule swallowed the wrong basin; expect the same going south,
+  and keep `unclassified` empty as the alarm.
 
 ### 🔴 Two infrastructure traps that ate five submissions, 2026-08-14
 
