@@ -15,10 +15,11 @@ Now a gauge is an entry in ``Domain.obs_gauges`` and the metric functions loop o
 sign of the bias, and therefore the ranking of every arm. Every row carries
 ``hwm_estimator`` and ``hwm_radius_m`` so a CSV always says which measurement it is.
 
-**Waves off ⇒ CSI / POD / FAR / n_dry are INADMISSIBLE.** Waves contribute ~+0.34 m of
-setup on the open coast and wetting is threshold-nonlinear, so an extent metric computed
-with SnapWave off is not a weaker version of the same number, it is a different one. Score
-levels and phase on a waves-off arm and nothing else.
+**A waves-off extent metric is kept, and flagged.** Waves-off is a legitimate
+configuration (Grimley et al. 2025 run it), so the number is computed and the row carries
+``extent_admissible=False``. Measured on v1.5: SnapWave moves the median open-coast level
++0.084 m and the CSI 0.018 — against 0.011 between the two waves-on arms. Do not RANK
+across the pair; reading the number itself is the reader's call. FINDINGS §4.
 """
 
 from __future__ import annotations
@@ -600,15 +601,33 @@ def hwm_metrics(
     return result
 
 
-def motf_metrics(da_hmax, da_dep, data_dir: Path = DATA) -> dict:
+def motf_metrics(da_hmax, da_dep, model_dir: Path, data_dir: Path = DATA) -> dict:
     """FEMA MOTF extent: CSI / POD / FAR from hits / miss / false-alarm pixels.
 
-    🔴 INADMISSIBLE ON A WAVES-OFF ARM. Wetting is threshold-nonlinear and waves are worth
-    ~+0.34 m of setup on the open coast, so these are a different measurement with SnapWave
-    off, not a weaker one.
+    ⚠️ ON A WAVES-OFF ARM these are a different measurement, not a weaker one — wetting
+    is threshold-nonlinear, and on v1.5 SnapWave is worth ΔCSI 0.018 (2.24 km² of open
+    coast changes wet/dry state). The number is still computed and still meaningful on its
+    own terms; the row's ``extent_admissible`` flag is what says not to rank across the
+    pair. FINDINGS §4.
 
     ⚠️ POD rewards OVER-flooding, exactly as the wet-only HWM metric rewards under-flooding.
     Read CSI, and read it beside the HWM residuals rather than instead of them.
+
+    🔴 SCORED ONLY WHERE THE SOLVER ACTUALLY RAN (2026-08-20). ``land_in`` used to be
+    ``MOTF valid AND dep > 0``, and ``da_dep`` is the subgrid DEM — valid bed across the
+    whole grid RECTANGLE, including every cell the mask left inactive. So the comparison
+    ran on ground the model never simulated, in BOTH directions:
+
+    * MOTF wet where the domain does not reach → a MISS the model could not have hit.
+      ``v1_5_raritan``: 2.56 km², POD 0.789 → 0.821 with FAR unmoved to 4 places.
+    * ``downscale_floodmap`` bleeds zsmax onto low ground under INACTIVE faces → a FALSE
+      ALARM the solver never computed. ``v1_monmouth``: 3.15 km² of phantom false alarm
+      up to 1.45 km outside the mask, FAR 0.208 → 0.167.
+
+    ``simulated_mask`` reads the run's own ``msk`` and is the only screen that is right
+    on both — see its docstring for why neither region polygon is.
+    ``motf_km2_unsimulated`` reports what the screen removed, so a clipped CSI is never
+    quoted without it.
     """
     with rasterio.open(str(Path(data_dir) / "validation" / "sandy_motf_extent.tif")) as r:
         motf, mtf, m_nd = r.read(1), r.transform, r.nodata
@@ -626,16 +645,28 @@ def motf_metrics(da_hmax, da_dep, data_dir: Path = DATA) -> dict:
 
     dep_at, h_at = _2d(da_dep.values)[rr, cc], _2d(da_hmax.values)[rr, cc]
 
+    from .core import simulated_mask  # noqa: PLC0415
+
     motf_wet = motf == 1
     mod_wet = (h_at >= DEPTH_MIN) & np.isfinite(h_at)
-    land_in = (motf != m_nd) & (dep_at > 0.0)
+    footprint = (motf != m_nd) & (dep_at > 0.0)
+    sim = simulated_mask(model_dir, motf.shape, mtf)
+    land_in = footprint & sim
     nh = int((motf_wet & mod_wet & land_in).sum())
     nm = int((motf_wet & ~mod_wet & land_in).sum())
     nf = int((~motf_wet & mod_wet & land_in).sum())
+    km2 = abs(mtf.a * mtf.e) / 1e6
     return {
         "motf_csi": nh / (nh + nm + nf) if (nh + nm + nf) else float("nan"),
         "motf_pod": nh / (nh + nm) if (nh + nm) else float("nan"),
         "motf_far": nf / (nh + nf) if (nh + nf) else float("nan"),
+        # What the mask screen removed, split by which way it would have scored. Quote
+        # these beside the CSI: they are the size of the correction, and a domain whose
+        # mask does not cover the MOTF sheet will show it here rather than in a silently
+        # flattering score.
+        "motf_km2_unsimulated": float(int((footprint & ~sim).sum()) * km2),
+        "motf_km2_unsim_motfwet": float(int((footprint & ~sim & motf_wet).sum()) * km2),
+        "motf_km2_unsim_modwet": float(int((footprint & ~sim & mod_wet).sum()) * km2),
     }
 
 
@@ -724,7 +755,7 @@ def evaluate(
         (gauge_peak_metrics, (mod, model_dir, data_dir)),
         (tide_metrics, (mod, model_dir, data_dir)),
         (hwm_metrics, (da_hmax, da_dep, data_dir, hwm_ids, hwm_estimator)),
-        (motf_metrics, (da_hmax, da_dep, data_dir)),
+        (motf_metrics, (da_hmax, da_dep, model_dir, data_dir)),
     ]:
         try:
             row.update(fn(*args))

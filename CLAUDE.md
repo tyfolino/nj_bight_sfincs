@@ -162,6 +162,13 @@ not trip that guard. Do not run the sweep driver to "just rebuild" a template.
   enough for a large domain. Pass `--slurm-args "--time=12:00:00"`.
 - **`zb` is NaN on SFINCS-inactive faces**, so any hm0 comparison must restrict to faces
   active in *both* runs.
+- 🔴 **`da_dep` is valid on ground the model never simulated**, so `dep > 0` is NOT a
+  "was this cell in the domain" test — the subgrid DEM covers the whole grid RECTANGLE.
+  And **`downscale_floodmap` BLEEDS**: it paints zsmax onto low ground under INACTIVE
+  faces, so a floodmap shows water the solver never computed (v1_monmouth: 3.68 km², up
+  to 1.45 km outside the mask). Screen spatial metrics with `validate.simulated_mask`,
+  which reads the run's own `msk` — **not** a region polygon, which is a build input the
+  mask legitimately grows past. FINDINGS §37.
 - **An HWM records that water ARRIVED, not which way it came in.**
 
 ## 6. Conventions
@@ -172,8 +179,10 @@ not trip that guard. Do not run the sweep driver to "just rebuild" a template.
 - **The user commits and pushes. Claude may `git add`, never `git commit`.**
 - 🔴 **Never quote an HWM bias without its estimator and radius.** The estimator alone flips
   the sign of the bias and inverts the ranking of every arm. Use the `_scored` keys.
-- 🔴 **Waves off ⇒ CSI / POD / FAR / n_dry are INADMISSIBLE.** The runner drops them from
-  the row and stamps `extent_admissible=False`. Score levels and phase only.
+- ⚠️ **A waves-off arm's CSI / POD / FAR are KEPT and flagged** `extent_admissible=False`
+  — waves-off is a legitimate configuration, not a broken one. The caution is against
+  RANKING one against a waves-on arm: on v1.5 SnapWave is worth ΔCSI 0.018, against
+  ΔCSI 0.011 between the two waves-on arms. FINDINGS §4.
 - **Compare arms PAIRED** — bootstrap the per-mark differences, not the two pooled
   statistics (`scripts/paired_hwm_bootstrap.py`).
 - **Write the pre-registration BEFORE running the scorer** — pick the diagnostic before you

@@ -95,8 +95,9 @@ place, which is expected. Checked at 2026-08-17 12:00, ~26 h after the runs, i.e
 
 ✅ **SCORED 2026-08-17.** `experiments/v1_5_raritan/metrics.csv` + `report.html` exist.
 The three stale floodmap caches self-invalidated on mtime exactly as designed
-(`validate/core.py:529`) and were rebuilt 12:07–12:12. `naccs-nowaves` correctly came back
-`extent_admissible=False` with CSI/POD/FAR dropped.
+(`validate/core.py:529`) and were rebuilt 12:07–12:12. `naccs-nowaves` came back
+`extent_admissible=False`. ⚠️ At that time the runner also DELETED its CSI/POD/FAR; since
+2026-08-20 it keeps them and only flags them (FINDINGS §4).
 
 ### 🔴 THE FIRST SCORES WERE 3/4 ARTEFACT — out-of-domain HWMs scored as DRY, fixed 2026-08-17
 
@@ -161,7 +162,7 @@ STRUCTURAL.**
 
 | | premier | noaa-2node | nowaves |
 |---|---|---|---|
-| `motf_csi` | **0.662** | 0.652 | inadmissible |
+| `motf_csi` | **0.662** | 0.652 | not scored at the time |
 | Great Kills peak err (m) | −0.385 | −0.281 | −0.374 |
 
 Great Kills is the one true interior holdout (8.85 km from any arm, so the model COMPUTES
@@ -215,11 +216,34 @@ scored off `his` at 10 min.
 lat 40.150. The Navesink is an HWM basin only — `shrewsbury_navesink`, 12 marks, and it is
 the **best**-scoring basin on the domain (bias +0.013, RMSE 0.185).
 
-#### ⏳ PICK UP HERE — the re-run was still in flight at end of session 2026-08-17
+#### ⏳ PICK UP HERE — rescore, then re-execute the notebook
 
-`naccs-nowaves` finished (803 s, `output WHOLE`, 8 stations). **60657512 premier and
-60657513 noaa-2node were at 1:29 of ~1:38 when the session ended**, with a queued job waiting
-on them to run `sacct` → map-size check → `premier` audit → `--validate-only`.
+✅ **THE RE-RUN LANDED AND THE ARMS ARE WHOLE — verified 2026-08-20.**
+`python -m nj_sfincs.premier` reports `output WHOLE` for all three and **4/4 on domain**.
+Map sizes reproduce `map_sizes_pre` byte for byte (premier 1,095,742,111 · noaa-2node
+1,094,248,175 · nowaves 242,972,872). Three-clock check clean — `mtime == ctime` on all
+three, so these were in-place re-runs, not the `halk` late-flush signature.
+
+🔴 **STILL TO DO: `--validate-only`.** `metrics.csv` (08-17 12:12), `report.html` (12:13)
+and `floodmaps/*.tif` (12:08–12:12) ALL predate the re-runs (13:01 / 14:42 / 14:45), so
+every number in them describes superseded output.
+
+🔴 **AND THE MOTF TARGET HAS MOVED — do not chase it.** `motf_metrics` now scores only
+where the solver ran (FINDINGS §37), so premier's CSI is **0.685, not 0.662**. The old
+0.662 was the pre-mask number and reproducing it would mean reproducing the defect.
+Expect, from the freshly rebuilt floodmaps:
+
+| arm | CSI | POD | FAR |
+|---|---|---|---|
+| `naccs-premier` | 0.6846 | 0.8207 | 0.1950 |
+| `noaa-2node` | 0.6738 | 0.8026 | 0.1924 |
+
+`naccs-nowaves` is waves-off, so its CSI/POD/FAR stay INADMISSIBLE (FINDINGS §4).
+The HWM side is untouched by this change — **RMSE 0.402 still stands as the check**, and
+if it does not come back, chase that.
+
+⚠️ The floodmap caches for premier and noaa-2node were stale against the re-run and were
+rebuilt 2026-08-20 (~3 min each). That is the mtime invalidation working, not a fault.
 
 🔴 **DO NOT TRUST ANY PREMIER / NOAA-2NODE NUMBER UNTIL `python -m nj_sfincs.premier` REPORTS
 `output WHOLE` FOR BOTH.** Mid-run they read back as a plausible-looking catastrophe — the
@@ -229,11 +253,11 @@ The arms were fine; the files were half there. The audit named it immediately
 (`OUTPUT TRUNCATED — ends at 48.0 h of 72.0 h`), which is exactly what `output_complete()`
 exists for.
 
-⚠️ **Every score in this file above is from the PRE-re-run scoring.** Observation points are
-diagnostic and cannot change the solution, so premier should return to **RMSE 0.402 / CSI
-0.662** exactly. **If it does not, something changed that should not have — chase that before
-reporting the new number.** `map_sizes_pre`: premier 1,095,742,111 · noaa-2node
-1,094,248,175 · nowaves 242,972,872.
+⚠️ **Every score in this file above is from the PRE-re-run scoring, and every CSI / POD /
+FAR in it also predates the active-mask screen** (FINDINGS §37) — those are two separate
+reasons the extent numbers above are stale. Observation points are diagnostic and cannot
+change the solution, so the HWM side should return to **RMSE 0.402** exactly; if it does
+not, chase that before reporting the new number.
 
 ⚠️ The notebook has the CORRUPTED figures embedded in its outputs from that mid-write run.
 Re-execute it after the rescore before those outputs are committed.
@@ -283,9 +307,14 @@ Swash is an excursion, not a level, and no still-water model can reproduce it.
 | `raritan_bay` | 23 | **−0.11** | — | — |
 | `sandy_hook_bay` | 5 | −0.02 | — | — |
 
-1. **On the open beach three independent routes agree at ~0.35 m**: marks need 0.37, SnapWave
-   delivers ~0.34 (§4), Stockdon at β_f=0.02 gives 0.33. ⚠️ **β_f was chosen AFTER seeing the
-   target — that is calibration, not validation.** The archive's 0.05 overshoots by >2×,
+1. 🔴 **RETRACTED 2026-08-20 — it was a TWO-way agreement, not three.** As written: "on the
+   open beach three independent routes agree at ~0.35 m: marks need 0.37, SnapWave delivers
+   ~0.34 (§4), Stockdon at β_f=0.02 gives 0.33." Measured off the finished premier run,
+   **SnapWave delivers +0.024 m at those marks, not 0.34** (FINDINGS §4) — §4's figure was
+   an unmeasured assertion that this passage then cited as independent corroboration.
+   Marks-need (0.37) and Stockdon (0.33) still agree with each other. ⚠️ **β_f was chosen
+   AFTER seeing the target — that is calibration, not validation**, so the surviving pair
+   is one measurement and one curve fitted to it. The archive's 0.05 overshoots by >2×,
    consistent with its own note that it ran high in sheltered spots.
 2. **The bay needs NO wave contribution.** `need` is negative and ~60% of bay marks already
    sit at or below the still-water surface. Any uniform setup there makes it worse. Waves are
@@ -310,11 +339,19 @@ script prints a banner whenever the cut is not 2. ⚠️ `quality` is VERTICAL s
 only, so "taller marks are worse-quality" may have nothing to do with runup; the direction is
 suggestive, not established.
 
-⏳ **Open, and it decides whether SnapWave is earning its runtime:** §4 puts SnapWave's
-contribution at +0.34 m (premier − nowaves) while the `z15` entry records only **+0.027 m** of
-setup between boundary and shore *within* premier. Those are different quantities so both can
-hold — but setup that raises level almost uniformly instead of building shoreward is odd.
-Resolve it off the finished premier run.
+✅ **RESOLVED 2026-08-20, off the finished premier run — and the answer is the awkward
+one.** The conflict was: §4 put SnapWave at +0.34 m (premier − nowaves) while the `z15`
+entry recorded only +0.027 m of setup between boundary and shore *within* premier.
+**§4's number was wrong.** Measured, SnapWave delivers +0.024 m at the open-beach marks —
+which is the `z15` entry's order of magnitude, not §4's. The two now agree.
+
+🔴 **But the "odd" part is real and is now the open question.** SnapWave's contribution is
++0.084 m over the open-coast footprint, +0.065 m in the estuary, +0.024 m at the ocean-beach
+marks, and **−0.109 m in `raritan_bay`**. That is a broad near-uniform shift with a sign
+flip in the target basin — not setup building shoreward. Runtime cost is 7,063 s against
+803 s (**8.8×**). ⏳ **Diagnose what SnapWave is actually adding before deciding whether it
+earns that**; the extent effect (ΔCSI 0.018) is real but small, and it is the only part of
+the original justification that survived.
 
 ### ⏳ NEXT SESSION — southern domain, NACCS acquisition started 2026-08-17
 

@@ -38,11 +38,49 @@ Live campaign state is in [STATUS.md](STATUS.md). This file is for what is settl
 3. **FEMA MOTF POD rewards OVER-flooding** — the mirror image. Flood everything and POD is
    perfect. And MOTF is a HWM/sensor-interpolated *bathtub*: a flat 3.4 m fill reproduces it
    at IoU 0.906, so it shares provenance with our own marks and is an extent CONSISTENCY
-   check, not an independent observation. Read CSI, beside the residuals.
+   check, not an independent observation. Read CSI, beside the residuals — and only
+   over ground the solver actually ran (finding 37).
 
-4. 🔴 **Waves off ⇒ CSI / POD / FAR / n_dry are INADMISSIBLE.** Waves contribute ~+0.34 m of
-   setup on the open coast and wetting is threshold-nonlinear, so an extent metric with
-   SnapWave off is a *different* measurement, not a weaker one.
+4. ⚠️ **A waves-off CSI / POD / FAR is not on the same footing as a waves-on one — but it
+   is a real number and the runner keeps it.** Waves-off is a legitimate configuration, not
+   a broken one: Grimley et al. 2025 run exactly it (finding 22). The row carries
+   `extent_admissible=False`; judging what that permits is the reader's call. Measured on
+   v1.5, `naccs-premier` − `naccs-nowaves`, still-water level where both are wet
+   (2026-08-20, off the verified-WHOLE runs):
+
+   | region | mean | median | p90 | p99 | max |
+   |---|---|---|---|---|---|
+   | open coast | +0.088 | +0.084 | +0.198 | +0.830 | +3.743 |
+   | estuary | +0.061 | +0.065 | +0.171 | +1.247 | +1.877 |
+
+   🔴 **This finding used to assert "~+0.34 m of setup on the open coast". THAT NUMBER IS
+   NOT REPRODUCIBLE on the verified-WHOLE runs, by any of three routes.** At the open-beach
+   HWM marks — the population the claim is about — SnapWave delivers **+0.024 m** (scorer's
+   own sampler and estimator, marks wet in both arms, n=7) or **+0.017 m** (50 m depth
+   median, q≤3, n=12, the same n=12 the STATUS open-beach table uses). Over the whole
+   open-coast MOTF footprint it is +0.084 m, and only 5.12% of those cells reach 0.34 m.
+   The figure was quoted in six places and measured in none of them. Corrected 2026-08-20.
+
+   🔴 **Consequence — the three-way agreement in STATUS is broken.** That passage reads
+   "on the open beach three independent routes agree at ~0.35 m: marks need 0.37, SnapWave
+   delivers ~0.34 (§4), Stockdon at β_f=0.02 gives 0.33." The first and third stand; the
+   second was this finding's unmeasured assertion and is really ~+0.02 m. Two routes agree,
+   SnapWave is not one of them, and β_f was already flagged there as calibrated to the
+   target rather than validated against it.
+
+   ⭐ **What SnapWave actually does here is not beach setup.** Its contribution is LARGER
+   over the open-coast footprint at large (+0.084) and in the estuary (+0.065) than at the
+   ocean-beach marks themselves (+0.024), and in `raritan_bay` it is **negative, −0.109 m**
+   at the scored marks. Genuine surf-zone setup builds shoreward and vanishes inside the
+   bay. This is a broad, near-uniform level shift with a sign flip in the target basin —
+   the anomaly STATUS suspected, now measured. **Resolve this before drawing any conclusion
+   about whether SnapWave earns its 8.8× runtime** (7,063 s against 803 s).
+
+   What survives, and is the whole of the caution: wetting is threshold-nonlinear, so the
+   effect is not only in level — **2.24 km² of open coast is premier-wet and nowaves-dry**.
+   In extent terms SnapWave is worth **ΔCSI 0.018**, against **ΔCSI 0.011** between the two
+   waves-on arms, so a table that ranks them together carries a confound larger than the
+   signal under test. No scored mark changes wet/dry state between the arms.
 
 5. **Compare arms PAIRED.** Bootstrap the per-mark differences, not the two pooled
    statistics. Two arms can differ by more than either differs from the truth while the
@@ -232,6 +270,28 @@ Live campaign state is in [STATUS.md](STATUS.md). This file is for what is settl
 36. **Hardlinks defeat a path-keyed cache.** `Path.resolve()` collapses symlinks only, so
     a deduped subgrid tif gives every arm a distinct cache entry for one physical file.
     Key on `(st_dev, st_ino)`.
+
+37. 🔴 **Score only where the solver actually RAN — `da_dep` will not tell you where that
+   is.** The subgrid DEM carries valid bed across the whole grid RECTANGLE, so `dep > 0` is
+   true on ground the mask left inactive. Every metric that reads a raster has to be told
+   which is which; this is now the third place it bit (after the HWM region clip and
+   `_fill_inactive_holes`). MOTF was scoring unsimulated ground in **both** directions:
+   unreachable MOTF-wet booked misses the model could not have hit, and — the one nobody
+   was looking for — **`downscale_floodmap` bleeds**, painting zsmax onto low ground under
+   INACTIVE faces, which booked FALSE ALARMS the solver never computed. Measured 2026-08-20:
+
+   | | removed | of which MOTF-wet | of which model-wet (bleed) | CSI | POD | FAR |
+   |---|---|---|---|---|---|---|
+   | `v1_5_raritan` premier | 76.6 km² | 2.56 km² | 0.0018 km² | 0.662 → **0.685** | 0.789 → **0.821** | 0.195 → 0.195 |
+   | `v1_monmouth` fixture | 30.9 km² | 2.78 km² | 3.68 km² | 0.638 → **0.684** | 0.766 → **0.793** | 0.208 → **0.167** |
+
+   🔴 **The screen is the run's own `msk`, NOT a region polygon.** The active mask is region
+   + `mask_zmin` + always-active boxes, and `include_polygon` only ever ADDS cells, so the
+   mask legitimately extends past the polygon — on `v1_monmouth` the registry region is
+   2,494 km² against the run's own 2,909 km², 415 km² apart, and the bleed sits up to
+   1.45 km outside both. Either polygon is wrong on one domain or the other;
+   `validate.simulated_mask` is wrong on neither and cannot go stale against the run.
+   `motf_km2_unsimulated` reports what was removed — quote it beside the CSI.
 
 ### Closed — do not re-open
 

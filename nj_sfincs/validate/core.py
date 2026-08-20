@@ -418,6 +418,12 @@ _DEP_MEMO: dict[tuple, object] = {}
 _DEP_MEMO_MAX = 3
 
 
+#: Rasterised active-mask footprints, keyed by (run dir, map mtime, target grid).
+#: Small (one bool array per target grid) and each rasterise is ~3.5 s.
+_SIMMASK_MEMO: dict[tuple, object] = {}
+_SIMMASK_MEMO_MAX = 8
+
+
 #: Opened run handles, keyed by run dir. ``his_series`` needs a model whose output store
 #: is populated, and the callers that only have a PATH (the plot helpers) would otherwise
 #: pay the ~21 s SfincsModel open once per gauge per run.
@@ -451,7 +457,86 @@ def cache_clear():
     _FLOODMAP_MEMO.clear()
     _DEP_MEMO.clear()
     _ZS_MEMO.clear()
+    _SIMMASK_MEMO.clear()
     _MODEL_MEMO.clear()
+
+
+def simulated_mask(model_dir: Path, shape, transform):
+    """Which cells of a target raster the solver ACTUALLY SIMULATED.
+
+    Rasterises the run's own active faces — ``msk > 0`` in ``sfincs_map.nc``, over the
+    ``mesh2d`` node geometry stored beside it — onto ``shape``/``transform``. Returns a
+    bool array: True where a face the solver integrated covers the cell.
+
+    🔴 WHY THIS IS NOT THE REGION POLYGON. ``Domain.region`` is a BUILD INPUT. The active
+    mask is region + ``mask_zmin`` + ``always_active_boxes``, and ``include_polygon``
+    only ever ADDS cells, so the mask can and does extend beyond the polygon. Measured
+    2026-08-20: on ``v1_monmouth`` the registry region is 2,494 km² against the run's
+    own 2,909 km² — 415 km² apart. Whichever polygon you pick is wrong on one domain
+    or the other. The mask read out of the run is wrong on neither, and it cannot go stale
+    against the run because it IS the run.
+
+    🔴 WHY ANY OF THIS IS NEEDED — ``downscale_floodmap`` BLEEDS. It paints zsmax onto
+    the subgrid DEM by nearest active cell, so low ground under INACTIVE faces comes
+    back holding water the solver never computed. On ``v1_monmouth`` that is 3.68 km² of
+    phantom flood, up to 1.45 km outside the mask, median bed 1.00 m under median 0.36 m
+    of water — and 3.15 km² of it was scoring as MOTF FALSE ALARMS. ``da_dep`` cannot
+    catch this: the subgrid DEM carries valid bed across the whole grid RECTANGLE, so
+    ``dep > 0`` is true on ground the model never had. Same confusion as
+    ``_clip_to_region`` (metrics.py) and ``_fill_inactive_holes``, third instance.
+
+    ⚠️ Read from ``sfincs_map.nc`` directly, NOT via ``SfincsModel`` — this is four
+    variables and a 21 s model open would dwarf the 3.5 s rasterise.
+    """
+    from rasterio.features import rasterize  # noqa: PLC0415
+
+    model_dir = Path(model_dir).resolve()
+    mp = model_dir / "sfincs_map.nc"
+    key = (
+        model_dir,
+        mp.stat().st_mtime if mp.is_file() else None,
+        tuple(shape),
+        tuple(transform)[:6],
+    )
+    hit = _SIMMASK_MEMO.get(key)
+    if hit is not None:
+        return hit
+
+    with xr.open_dataset(mp) as ds:
+        msk = ds["msk"].values
+        fn = ds["mesh2d_face_nodes"].values
+        node_x = ds["mesh2d_node_x"].values
+        node_y = ds["mesh2d_node_y"].values
+    # face_nodes is 1-based in the SFINCS/UGRID output; do not assume it.
+    fn0 = fn - 1 if np.nanmin(fn) == 1 else fn
+    idx = fn0[np.where(msk > 0)[0]].astype("int64")
+    xs, ys = node_x[idx], node_y[idx]
+    shapes = (
+        (
+            {
+                "type": "Polygon",
+                "coordinates": [
+                    [
+                        (xs[i, 0], ys[i, 0]),
+                        (xs[i, 1], ys[i, 1]),
+                        (xs[i, 2], ys[i, 2]),
+                        (xs[i, 3], ys[i, 3]),
+                        (xs[i, 0], ys[i, 0]),
+                    ]
+                ],
+            },
+            1,
+        )
+        for i in range(xs.shape[0])
+    )
+    out = rasterize(
+        shapes, out_shape=tuple(shape), transform=transform,
+        fill=0, default_value=1, dtype="uint8",
+    ).astype(bool)
+    if len(_SIMMASK_MEMO) >= _SIMMASK_MEMO_MAX:
+        _SIMMASK_MEMO.pop(next(iter(_SIMMASK_MEMO)))
+    _SIMMASK_MEMO[key] = out
+    return out
 
 
 def zs_at_faces(model_dir: Path, idx, var: str = "zs"):

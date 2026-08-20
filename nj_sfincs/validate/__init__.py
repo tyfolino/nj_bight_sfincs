@@ -9,7 +9,8 @@ Import from here; the split is an organising device, not an interface.
 
 * **Never quote an HWM bias without its estimator and radius.** The estimator alone flips
   the sign of the bias and inverts the ranking of every arm.
-* **Waves off ⇒ CSI / POD / FAR / n_dry are INADMISSIBLE.** Score levels and phase only.
+* **A waves-off CSI / POD / FAR is kept but flagged** ``extent_admissible=False`` — it is
+  a real measurement on its own terms, just not on the same footing as a waves-on one.
 
 And when comparing two arms, compare them **paired** — bootstrap the per-mark differences,
 not the two pooled statistics. Two arms can differ by more than either differs from the
@@ -28,6 +29,7 @@ from .core import (  # noqa: F401
     peak_after_floor,
     prestorm_window,
     read_output,
+    simulated_mask,
     tidal_signal,
     uniform_series,
     wet_channel_cells,

@@ -60,12 +60,32 @@ PINNED: dict[str, float] = {
     "hwm_bias_scored_m": -0.3631059310561731,
     "hwm_rmse_scored_m": 0.5704992999451454,
     "hwm_n_scored": 38,
-    "motf_csi": 0.6378335183129856,
-    "motf_pod": 0.7662452178117845,
-    "motf_far": 0.2080725826899544,
     "phase_lag_sandy_hook_min": 17.6,
     "gauge_peak_err_prefail_m": -0.3116818981170652,
 }
+
+#: 🔴 DELIBERATELY RE-BASELINED 2026-08-20 — the three MOTF keys, and ONLY these.
+#:
+#: The archive scored MOTF over ``MOTF valid AND dep > 0``. ``da_dep`` is the subgrid
+#: DEM, which carries valid bed across the whole grid RECTANGLE, so that comparison ran
+#: on ground the solver never simulated. ``motf_metrics`` now screens on the run's own
+#: active mask (``simulated_mask``). On THIS fixture that removes 30.9 km², of which
+#: 3.68 km² was
+#: ``downscale_floodmap`` bleeding zsmax onto low ground under inactive faces — phantom
+#: water up to 1.45 km outside the mask, 3.15 km² of it scoring as FALSE ALARMS.
+#:
+#: ⚠️ So the archive number is not a target any more: reproducing it would mean
+#: reproducing the defect. Both values are kept here so the change stays auditable — the
+#: gate is only meaningful while every OTHER key is still bit-for-bit against the
+#: archive. Nothing else in the port moved; hwm_*, phase_lag and gauge_peak are
+#: untouched.
+REBASELINED: dict[str, tuple[float, float]] = {
+    # key: (archive value, value after the active-mask screen)
+    "motf_csi": (0.6378335183129856, 0.6841603512860266),
+    "motf_pod": (0.7662452178117845, 0.7926427001558183),
+    "motf_far": (0.2080725826899544, 0.1666966401075916),
+}
+PINNED.update({k: new for k, (_old, new) in REBASELINED.items()})
 
 #: archive key -> ported key. Everything not listed kept its name.
 RENAMES = {
@@ -109,12 +129,20 @@ def tier1() -> int:
     if row.get("hwm_radius_m") != 50.0:
         fails.append(f"hwm_radius_m is {row.get('hwm_radius_m')!r}, expected 50.0")
 
+    if REBASELINED:
+        print("\n[tier1] re-baselined keys (archive value is NOT the target — see the")
+        print("        REBASELINED note at the top of this file):")
+        for k, (was, now) in REBASELINED.items():
+            print(f"          {k:<22} archive {was:.9g} -> expected {now:.9g}")
+
     print(f"\n{'metric':<34} {'archive':>18} {'ported':>18}   verdict")
     print("-" * 96)
     for old_key, want in PINNED.items():
         new_key = RENAMES.get(old_key, old_key)
         got = row.get(new_key)
         note = "" if new_key == old_key else f"  (renamed -> {new_key})"
+        if old_key in REBASELINED:
+            note += "  (re-baselined 2026-08-20)"
         if got is None:
             fails.append(f"{old_key}: ported row has no key {new_key!r}")
             print(f"{old_key:<34} {want:>18.9g} {'MISSING':>18}   FAIL{note}")
@@ -162,7 +190,14 @@ def tier1() -> int:
             "domain."
         )
         return 1
-    print("\n✅ TIER 1 PASSED — the ported scorer reproduces the archive bit for bit.")
+    if REBASELINED:
+        print(
+            "\n✅ TIER 1 PASSED — bit for bit against the archive on every key\n"
+            f"   except the {len(REBASELINED)} deliberately re-baselined MOTF keys,"
+            " which match\n   their post-active-mask values bit for bit."
+        )
+    else:
+        print("\n✅ TIER 1 PASSED — ported scorer reproduces the archive bit for bit.")
     return 0
 
 

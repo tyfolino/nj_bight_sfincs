@@ -368,7 +368,60 @@ def plot_hwm_residual_panels(runs, root=None, data_dir=DATA, ncol=2):
 # ── flood extent ─────────────────────────────────────────────────────────────
 
 
-def plot_motf_panels(runs, root=None, data_dir=DATA, ncol=2):
+#: (run dir, map mtime) -> bool. Trivial, but the probe opens a netCDF per panel.
+_WAVES_OFF_MEMO: dict[tuple, bool] = {}
+
+
+def _waves_off(model_dir) -> bool:
+    """Did this run have SnapWave OFF? Read from the RUN, not the arm registry.
+
+    A run dir is not always a registered arm — a staged copy, a bracket, or something a
+    collaborator handed over all score fine and none of them resolve in ``EXPERIMENTS``.
+    The output file always knows: with SnapWave off, SFINCS writes no wave variables at
+    all (measured on ``naccs-nowaves``: no ``hm0``, ``snapwavemsk``, ``tp``/``wavdir``).
+    """
+    import xarray as xr  # noqa: PLC0415
+
+    mp = Path(model_dir) / "sfincs_map.nc"
+    key = (str(mp), mp.stat().st_mtime if mp.is_file() else None)
+    if key not in _WAVES_OFF_MEMO:
+        with xr.open_dataset(mp) as ds:
+            _WAVES_OFF_MEMO[key] = not any(
+                v in ds.variables for v in ("hm0", "snapwavemsk")
+            )
+    return _WAVES_OFF_MEMO[key]
+
+
+def _motf_window(dep, motf, m_nd, Xc, Yc, _2d, sim, margin: float = 2000.0):
+    """Bounding box of the ground the MOTF comparison actually scores, plus a margin.
+
+    That ground is ``MOTF valid AND model land AND actually simulated`` — the same
+    ``land_in`` screen the
+    panels use — so the view is the CSI's own support and nothing scored falls outside
+    it. The MOTF sheet covers the whole NY Bight; a single domain covers a fraction of
+    it, and drawing the sheet's full extent left the comparison a smudge in one corner.
+
+    Derived from ONE run and shared by every panel, so the panels stay comparable. Cheap
+    (~0.2 s): it re-gathers dep at MOTF centres, which ``np.ix_`` broadcasts rather than
+    materialising the two 240 MB index grids ``meshgrid`` would.
+    """
+    mod_t = dep.rio.transform()
+    mc = np.clip(((Xc - mod_t.c) / mod_t.a).astype(int), 0, dep.shape[-1] - 1)
+    mr = np.clip(((Yc - mod_t.f) / mod_t.e).astype(int), 0, dep.shape[-2] - 1)
+    land = (motf != m_nd) & (_2d(dep.values)[np.ix_(mr, mc)] > 0.0) & sim
+    rows, cols = np.where(land.any(axis=1))[0], np.where(land.any(axis=0))[0]
+    if not rows.size or not cols.size:  # no overlap — fall back to the full sheet
+        return (Xc.min(), Xc.max(), Yc.min(), Yc.max())
+    xs, ys = Xc[cols], Yc[rows]
+    return (
+        float(xs.min() - margin),
+        float(xs.max() + margin),
+        float(ys.min() - margin),
+        float(ys.max() + margin),
+    )
+
+
+def plot_motf_panels(runs, root=None, data_dir=DATA, ncol=2, window=None):
     """Modelled flood vs FEMA MOTF — hit / miss / false alarm — for several runs.
 
     ⚠️ READ THE CSI, NOT THE POD. FEMA MOTF is a HWM/sensor-interpolated *bathtub* surface
@@ -378,14 +431,26 @@ def plot_motf_panels(runs, root=None, data_dir=DATA, ncol=2):
     POD. It is the mirror image of the wet-only HWM flaw, which rewards under-flooding. Use
     this to see WHERE the extent differs, not to rank runs.
 
-    🔴 AND NOT AT ALL WITH WAVES OFF — wetting is threshold-nonlinear and waves carry
-    ~+0.34 m of setup, so an extent comparison across a waves-on / waves-off pair is
-    meaningless.
+    ⚠️ A WAVES-OFF PANEL IS DRAWN AND LABELLED, not withheld. Waves-off is a valid
+    configuration (FINDINGS §4), so its CSI is real; it is just not on the same footing
+    as a waves-on one — SnapWave is worth ΔCSI 0.018 here against ΔCSI 0.011 between the
+    two waves-on arms. Such a panel is tagged **waves OFF** in its title, read off the
+    run's own output, so a pair reads as two measurements rather than as a ranking.
+
+    ``window`` — ``(xmin, xmax, ymin, ymax)`` in the model CRS. Default is the bounding
+    box of the ground the CSI is actually computed over (MOTF valid AND model land),
+    taken once from the first run and shared, so the panels stay directly comparable.
+    The MOTF raster spans far more ground than any one domain covers, and drawing its
+    full extent put the whole comparison in a corner of the axes.
+
+    ⭐ THE WINDOW IS A VIEW, NOT A SCREEN. Every count, area and score below is computed
+    over the FULL arrays; cropping happens only on the way to ``imshow``. Narrowing the
+    window can never move a number on this figure.
     """
     import matplotlib.pyplot as plt
     import rasterio
 
-    from .validate import DEPTH_MIN, load_floodmap
+    from .validate import DEPTH_MIN, load_floodmap, simulated_mask
 
     root = Path(root) if root else exp_root()
     runs = _runs_dict(runs, root)
@@ -398,30 +463,62 @@ def plot_motf_panels(runs, root=None, data_dir=DATA, ncol=2):
     mh, mw = motf.shape
     motf_wet = motf == 1
 
-    n = len(runs)
-    ncol = min(ncol, n)
-    nrow = int(np.ceil(n / ncol))
-    fig, axes = plt.subplots(nrow, ncol, figsize=(5.4 * ncol, 8.6 * nrow), squeeze=False)
-    cmap = ListedColormap(
-        [(1, 1, 1, 0), (0.2, 0.6, 0.3, 1), (0.2, 0.4, 0.85, 1), (0.85, 0.2, 0.2, 1)]
-    )
-    ext = [mtf.c, mtf.c + mw * mtf.a, mtf.f + mh * mtf.e, mtf.f]
+    # MOTF cell CENTRES. Run-independent, so they are built once.
+    Xc = mtf.c + (np.arange(mw) + 0.5) * mtf.a
+    Yc = mtf.f + (np.arange(mh) + 0.5) * mtf.e
 
     def _2d(a):
         return a[0] if a.ndim == 3 else a
 
+    if window is None:
+        _first = root / next(iter(runs.values()))
+        window = _motf_window(
+            load_floodmap(_first, need_model=False, data_dir=data_dir)[2],
+            motf, m_nd, Xc, Yc, _2d,
+            simulated_mask(_first, motf.shape, mtf),
+        )
+    # Display slices: which MOTF rows/cols are inside the window. Used to CROP the drawn
+    # rasters — a plain slice, no decimation, so every visible category pixel is still
+    # drawn at full 15 m resolution and no isolated hit/miss can vanish into a stride.
+    cs = np.where((Xc >= window[0]) & (Xc <= window[1]))[0]
+    rs = np.where((Yc >= window[2]) & (Yc <= window[3]))[0]
+    csl = slice(int(cs[0]), int(cs[-1]) + 1) if cs.size else slice(None)
+    rsl = slice(int(rs[0]), int(rs[-1]) + 1) if rs.size else slice(None)
+    cat_ext = [
+        float(Xc[csl][0] - mtf.a / 2),
+        float(Xc[csl][-1] + mtf.a / 2),
+        float(Yc[rsl][-1] + mtf.e / 2),
+        float(Yc[rsl][0] - mtf.e / 2),
+    ]
+
+    n = len(runs)
+    ncol = min(ncol, n)
+    nrow = int(np.ceil(n / ncol))
+    # Size the figure to the WINDOW's aspect, as the HWM residual panel does. The old
+    # hardcoded 5.4x8.6 was the MOTF sheet's shape and letterboxes any other window.
+    aspect = (window[1] - window[0]) / (window[3] - window[2])
+    fig, axes = plt.subplots(
+        nrow, ncol, figsize=(max(3.6, 7.4 * aspect) * ncol, 7.4 * nrow), squeeze=False
+    )
+    cmap = ListedColormap(
+        [(1, 1, 1, 0), (0.2, 0.6, 0.3, 1), (0.2, 0.4, 0.85, 1), (0.85, 0.2, 0.2, 1)]
+    )
+
     for ax, (label, name) in zip(axes.ravel(), runs.items()):
         _, hmax, dep = load_floodmap(root / name, need_model=False, data_dir=data_dir)
         mod_t = dep.rio.transform()
-        Xc = mtf.c + (np.arange(mw) + 0.5) * mtf.a
-        Yc = mtf.f + (np.arange(mh) + 0.5) * mtf.e
         mc = np.clip(((Xc - mod_t.c) / mod_t.a).astype(int), 0, dep.shape[-1] - 1)
         mr = np.clip(((Yc - mod_t.f) / mod_t.e).astype(int), 0, dep.shape[-2] - 1)
         rr, cc = np.meshgrid(mr, mc, indexing="ij")
         dep_at, h_at = _2d(dep.values)[rr, cc], _2d(hmax.values)[rr, cc]
 
         mod_wet = (h_at >= DEPTH_MIN) & np.isfinite(h_at)
-        land_in = (motf != m_nd) & (dep_at > 0.0)
+        # ⚠️ THE SAME SCREEN motf_metrics USES, or the panel and the CSV disagree about
+        # what was even compared. Cells the solver never ran are excluded in BOTH
+        # directions — unreachable MOTF wet, and downscale bleed onto inactive faces.
+        land_in = (motf != m_nd) & (dep_at > 0.0) & simulated_mask(
+            root / name, motf.shape, mtf
+        )
         hits = motf_wet & mod_wet & land_in
         miss = motf_wet & ~mod_wet & land_in
         fa = ~motf_wet & mod_wet & land_in
@@ -433,24 +530,31 @@ def plot_motf_panels(runs, root=None, data_dir=DATA, ncol=2):
 
         cat = np.zeros_like(motf, dtype="uint8")
         cat[hits], cat[miss], cat[fa] = 1, 2, 3
-        mod_ext = [
-            mod_t.c,
-            mod_t.c + dep.shape[-1] * mod_t.a,
-            mod_t.f + dep.shape[-2] * mod_t.e,
-            mod_t.f,
-        ]
+        # ⚡ Crop + decimate the backdrop BEFORE imshow — see _for_display. This panel
+        # used to hand matplotlib the whole 95 Mpx de-rotated dep and then crop with
+        # set_xlim, resampling ~4 s per panel to fill a figure ~1600 px wide. The HWM
+        # residual panel was fixed in that pass; this one was missed. Backdrop only —
+        # every hit / miss / false-alarm count is sampled at full resolution below.
+        bg, bg_ext = _for_display(dep, window=window)
         ax.imshow(
-            _2d(dep.values), extent=mod_ext, cmap="Greys", vmin=-5, vmax=20,
+            bg, extent=bg_ext, cmap="Greys", vmin=-5, vmax=20,
             alpha=0.45, origin="upper",
         )
         ax.imshow(
-            cat, cmap=cmap, vmin=0, vmax=3, extent=ext, origin="upper",
+            cat[rsl, csl], cmap=cmap, vmin=0, vmax=3, extent=cat_ext, origin="upper",
             interpolation="nearest",
         )
         ax.set_aspect("equal")
-        ax.set_xlim(ext[0], ext[1])
-        ax.set_ylim(ext[2], ext[3])
-        ax.set_title(f"{label}\nCSI={csi:.2f}  POD={pod:.2f}  FAR={far:.2f}", fontsize=10)
+        ax.set_xlim(window[0], window[1])
+        ax.set_ylim(window[2], window[3])
+        # Tag the panel from the RUN's own output rather than leaving the reader to
+        # remember which arm had SnapWave off. FINDINGS §4.
+        tag = "  ·  waves OFF" if _waves_off(root / name) else ""
+        ax.set_title(
+            f"{label}{tag}\nCSI={csi:.2f}  POD={pod:.2f}  FAR={far:.2f}",
+            fontsize=10,
+            color="#8a4500" if tag else "black",
+        )
         ax.legend(
             handles=[
                 Patch(color=cmap(1), label=f"hit ({nh * PIX:.1f} km²)"),
@@ -855,9 +959,13 @@ def plot_experiment_comparison(metrics_df, floodmap_dir):
         row = metrics_df.loc[name]
         csi = row.get("motf_csi", float("nan"))
         bias = row.get("hwm_bias_scored_m", float("nan"))
-        # ⚠️ CSI is absent (dropped by the runner) on a waves-off arm, where it is
-        # inadmissible. Say so rather than printing nan.
-        csi_s = "CSI n/a (waves off)" if csi != csi else f"CSI={csi:.2f}"
+        # A waves-off arm's CSI is now KEPT and flagged rather than dropped, so label it
+        # instead of hiding it — the row's extent_admissible carries the caveat.
+        adm = row.get("extent_admissible", True)
+        csi_s = (
+            "CSI n/a" if csi != csi
+            else f"CSI={csi:.2f}" + ("" if adm else " (waves off)")
+        )
         ax.set_title(f"{name}\n{csi_s}  HWM bias={bias:+.2f} m", fontsize=9)
         ax.set_aspect("equal")
     fig.suptitle("Experiment comparison — max flood depth [m]", y=1.02)

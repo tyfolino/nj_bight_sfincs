@@ -75,9 +75,9 @@ _V1_5_RARITAN: dict[str, Experiment] = {
         WaveConfig(use_waves=False),
         "The premier boundary with SnapWave OFF. SnapWave is 90–95% of runtime, so this "
         "is the cheap arm for anything about LEVELS and PHASE. "
-        "🔴 CSI / POD / FAR / n_dry are INADMISSIBLE here and must not be quoted: waves "
-        "contribute ~+0.34 m of setup on the open coast and wetting is threshold-"
-        "nonlinear. Score levels and phase only.",
+        "⚠️ Its CSI / POD / FAR are kept and flagged extent_admissible=False: SnapWave "
+        "is worth ΔCSI 0.018 here, against ΔCSI 0.011 between the waves-on arms, so "
+        "do not RANK it against them. FINDINGS §4.",
         waterlevel_geodataset="naccs_sandy_v1_5_raritan",
         # Measured on the FROZEN mesh 2026-08-14: 532 NACCS save points -> 139
         # within 2 km of a mask==2 cell -> 71 after the dry (-29) and open-coast

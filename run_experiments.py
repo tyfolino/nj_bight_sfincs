@@ -231,13 +231,22 @@ def collect_metrics(names: list[str]) -> pd.DataFrame:
         sealed = premier.is_sealed(exp_dir)
         dom = domain.active().name
         rows[name]["domain"] = dom if sealed else f"NOT-{dom}"
-        # A waves-off arm's extent metrics are inadmissible; say so IN THE ROW, so a CSV
-        # read six weeks later cannot quote a CSI that never meant anything.
+        # A waves-off arm's extent metrics are KEPT, and flagged. Scoring a waves-off run
+        # against MOTF is a legitimate standalone measurement — Grimley et al. 2025 run
+        # exactly that configuration (FINDINGS §22) — and the reader decides whether it
+        # answers their question. `extent_admissible` carries the caveat; it used to also
+        # DELETE the values, which threw away a real number to make a point.
+        #
+        # What the flag means: not "this run is wrong" but "this CSI is not on the same
+        # footing as a waves-on CSI". Measured on v1.5 (2026-08-20), SnapWave is worth
+        # ΔCSI 0.018 — against ΔCSI 0.011 between the two waves-on arms, so a mixed
+        # ranking puts a bigger effect in the table than the one under test.
         if exp is not None and not exp.waves.use_waves:
             rows[name]["extent_admissible"] = False
-            for k in ("motf_csi", "motf_pod", "motf_far"):
-                rows[name].pop(k, None)
-            print(f"[{name}] waves OFF — CSI/POD/FAR dropped from the row (inadmissible)")
+            print(
+                f"[{name}] waves OFF — CSI/POD/FAR kept, extent_admissible=False. "
+                "Not on the same footing as a waves-on CSI; see FINDINGS §4."
+            )
         else:
             rows[name]["extent_admissible"] = True
         if not sealed:
