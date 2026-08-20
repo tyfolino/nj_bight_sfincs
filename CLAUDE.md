@@ -133,7 +133,9 @@ not trip that guard. Do not run the sweep driver to "just rebuild" a template.
 - **Import `pyproj` before `hydromt_sfincs`** — `nj_sfincs/__init__.py` does this; it
   prevents a native double-free in `downscale_floodmap`.
 - 🔴 **The `halk*` nodes write to `/cache/home` LATE, and their late writes CLOBBER a good
-  run.** 154 of 494 nodes in `main-redhat` are `halk*`. `hpc/sfincs_run.slurm` sets
+  run.** ⚠️ 2026-08-20 Amarel merged `main-redhat` INTO `main`; submitting to
+  `main-redhat` now fails outright. All 159 `halk*` nodes are in the DEFAULT partition
+  now, so this trap is closer to hand, not further. `hpc/sfincs_run.slurm` sets
   `#SBATCH --exclude=halk[0001-0159]`; **an `sbatch` that bypasses that script is unprotected.**
   First thing to check when output looks wrong: `sacct -j <id> --format=NodeList`.
   ⚠️ **Some halk jobs produce nothing** (exit `COMPLETED 0:0`, no output, not even a SLURM

@@ -172,7 +172,12 @@ Phase 2 done: `singularity pull` → `$PROJ/sfincs-cpu.sif` (206 M, log in `hpc/
 ### Phase 0 outcome (verified 2026-06-15)
 - **Storage:** HOME quota ~100 GB; budget ~35 GB → keep everything in the repo (`$PROJ`),
   no `/scratch` needed.
-- **Partition = `main-redhat`.** Critical: the default `main` partition is still **CentOS 7
+- 🔴 **SUPERSEDED 2026-08-20: partition is now `main`.** Amarel consolidated
+  `main-redhat` into `main`; sbatch to `main-redhat` fails with "invalid partition
+  specified". `main` now holds the RHEL 9.6 hal/halk nodes (verified on hal0339,
+  5.14.0-570.30.1.el9_6). The CentOS-7 warning below no longer applies — but the halk
+  exclusion matters MORE, since all 159 are now in the default partition.
+- ~~**Partition = `main-redhat`.**~~ Critical: the default `main` partition is still **CentOS 7
   (glibc 2.17)** — the pre-upgrade OS. Our env (numpy 2.4.5 etc.) is built against RHEL 9.6
   glibc 2.34 and will NOT run there. `main-redhat` = the RHEL 9.6 "amarel-new" nodes
   (glibc 2.34, `/usr/bin/singularity` present). All sbatch/salloc use `-p main-redhat`.

@@ -68,13 +68,39 @@ Live campaign state is in [STATUS.md](STATUS.md). This file is for what is settl
    SnapWave is not one of them, and β_f was already flagged there as calibrated to the
    target rather than validated against it.
 
-   ⭐ **What SnapWave actually does here is not beach setup.** Its contribution is LARGER
-   over the open-coast footprint at large (+0.084) and in the estuary (+0.065) than at the
-   ocean-beach marks themselves (+0.024), and in `raritan_bay` it is **negative, −0.109 m**
-   at the scored marks. Genuine surf-zone setup builds shoreward and vanishes inside the
-   bay. This is a broad, near-uniform level shift with a sign flip in the target basin —
-   the anomaly STATUS suspected, now measured. **Resolve this before drawing any conclusion
-   about whether SnapWave earns its 8.8× runtime** (7,063 s against 803 s).
+   🔴 **RETRACTED WITHIN THE HOUR — the `raritan_bay` sign flip is a `zsmax` ARTEFACT, not
+   dissipation.** It was reported here as measured dissipation on four lines of evidence.
+   All four were computed from `zsmax`, and all four inherited the same bias. `zsmax` is a
+   running max at the SOLVER timestep; the hourly `zs` field is not. Their gap differs by
+   ARM, and it is not small:
+
+   | region | premier excess | nowaves excess | **arm gap** | Δ via zsmax | Δ via hourly zs |
+   |---|---|---|---|---|---|
+   | open coast | 0.010 | 0.004 | +0.007 | +0.090 | **+0.089** |
+   | Sandy Hook Bay | 0.194 | 0.166 | +0.028 | +0.117 | +0.162 |
+   | Lower Bay / SI | 0.103 | 0.114 | −0.011 | +0.108 | +0.091 |
+   | **Raritan Bay** | 0.255 | **0.431** | **−0.176** | **−0.129** | **+0.059** |
+
+   The −0.176 m arm gap in Raritan Bay *is* the −0.129 m "damping". Measured on hourly `zs`
+   over the same faces the sign REVERSES to +0.059, the crest-time water volume in the basin
+   is **+0.8% HIGHER** in premier, and the 10-min station series at `sss_great_kills` and
+   `sss_arthur_kill_mouth` differ by only −0.011 and −0.050 m — with premier showing MORE
+   sub-hourly variance, not less. There is no surge-damping signal.
+
+   ⭐ **What is real, and is a bigger problem than the thing it replaced:** in Raritan Bay
+   the waves-off run carries **0.431 m** of sub-hourly excursion above its own hourly field,
+   against premier's 0.255 m. Every spatial score in this project — HWM residuals, the
+   floodmap, MOTF CSI — is computed from `zsmax`, so in that basin they all inherit a
+   ~0.18 m arm-dependent offset before any physics. ⏳ **Whether that excursion is a real
+   seiche that SnapWave damps (which would make the original hypothesis right, by a route
+   nobody proposed) or numerical chatter in a shallow basin is UNRESOLVED and cannot be
+   settled from hourly output.** Settle it by re-running the cheap `naccs-nowaves` arm
+   (803 s) with fine `dtout`, or with observation points in the bay head — there are
+   currently none west of the Arthur Kill mouth.
+
+   ✅ **The open coast is CLEAN and the §4 correction above still stands**: excess 0.010 /
+   0.004, arm gap +0.007, and zsmax (+0.090) agrees with hourly (+0.089) to 1 mm. The
+   retraction of "~+0.34 m" is unaffected.
 
    What survives, and is the whole of the caution: wetting is threshold-nonlinear, so the
    effect is not only in level — **2.24 km² of open coast is premier-wet and nowaves-dry**.

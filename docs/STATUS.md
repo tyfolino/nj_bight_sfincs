@@ -345,13 +345,53 @@ entry recorded only +0.027 m of setup between boundary and shore *within* premie
 **§4's number was wrong.** Measured, SnapWave delivers +0.024 m at the open-beach marks —
 which is the `z15` entry's order of magnitude, not §4's. The two now agree.
 
-🔴 **But the "odd" part is real and is now the open question.** SnapWave's contribution is
-+0.084 m over the open-coast footprint, +0.065 m in the estuary, +0.024 m at the ocean-beach
-marks, and **−0.109 m in `raritan_bay`**. That is a broad near-uniform shift with a sign
-flip in the target basin — not setup building shoreward. Runtime cost is 7,063 s against
-803 s (**8.8×**). ⏳ **Diagnose what SnapWave is actually adding before deciding whether it
-earns that**; the extent effect (ΔCSI 0.018) is real but small, and it is the only part of
-the original justification that survived.
+🔴 **The "dissipation" reading is RETRACTED (2026-08-20, same session).** It was reported
+as measured, on four lines of evidence, all of which came from `zsmax` and all of which
+inherited one bias. `zsmax` is a running max at the solver timestep; hourly `zs` is not,
+and the gap between them differs by ARM — in Raritan Bay premier carries 0.255 m of
+sub-hourly excess against nowaves' **0.431 m**, an arm gap of −0.176 m that fully accounts
+for the −0.129 m "damping". On hourly `zs` the sign reverses to **+0.059**; basin volume at
+the crest is **+0.8% higher** in premier; the 10-min stations differ by ≤0.05 m. No
+surge-damping signal survives. FINDINGS §4 has the table.
+
+🔴 **The replacement problem is worse.** Every spatial score here — HWM residuals, floodmap,
+MOTF CSI — is built from `zsmax`, so inside Raritan Bay they all carry a ~0.18 m
+arm-dependent offset before any physics. The open coast is clean (arm gap +0.007, zsmax and
+hourly agree to 1 mm), so this is basin-local, but Raritan Bay is **the basin v1.5 exists to
+compute**.
+
+⏳ **RUNNING — `diag-nowaves-fasthis`, SLURM 60693810, submitted 2026-08-20.** A copy of
+`naccs-nowaves` (identical physics; fingerprint verified `faces=696230 boundary_edges=1652
+sha=2a23667dd16e449c`) with `dthisout` 600 s → **60 s** and a six-point observation transect
+down the Raritan Bay deep axis (`rb_axis_571k` … `rb_axis_559k`, depths 10–16 m), because
+there were no obs points west of the Arthur Kill mouth. Bulk inputs are HARDLINKED from
+`naccs-nowaves`, so it cost ~0 disk. 803 s of solve.
+**Read it as: is the sub-hourly motion COHERENT between bay points?** A basin seiche is
+coherent with a consistent period; numerical chatter is not. Coherent ⇒ the original
+"SnapWave damps it" hypothesis is right by a different route; incoherent ⇒ `zsmax` is
+contaminated in this basin and every spatial score there needs re-examining.
+
+🔴 **THE TRANSECT DID NOT TAKE — SFINCS SILENTLY DROPPED ALL SIX POINTS.** The file was
+complete and well-formed (14 lines, verified with `cat -A`) and its mtime is 85 s BEFORE the
+job started, so this is not a staging race. SFINCS logs a line only for ACCEPTED points and
+emits no warning for rejected ones: the log runs `observation point 1..8` — exactly the
+original eight — then moves on. **Cause unknown as of 2026-08-20.** Ruled out: file
+truncation, missing trailing newline, CRLF, a count key in `sfincs.inp` (there is none), and
+local staging by the batch script (there is none — it runs in place from the repo).
+Not yet ruled out: the quadtree cell lookup rejecting the coordinates, or a format the
+free-format read is fussier about than it looks (the appended lines carry 4 spaces between
+the x and y fields where the originals carry 3).
+
+⚠️ **So this run is WEAKER than designed but not useless**: `dthisout=60 s` still applies to
+the original eight, two of which are in the bay — `sss_arthur_kill_mouth` (x 565 km, inside
+the band whose `zsmax` gap is −0.237 m) and `sss_great_kills`. Two points test coherence;
+they do not resolve the along-axis structure.
+⏳ **Before re-running: prove an added obs point is ACCEPTED** — diff the log's
+`observation point N` count against `wc -l sfincs.obs`. That check costs nothing and would
+have caught this immediately.
+That decides whether the 0.431 m excursion is a real seiche SnapWave damps (which would
+vindicate the original hypothesis by a different route) or numerical chatter. Until then,
+**do not quote a Raritan Bay HWM or extent difference between a waves-on and waves-off arm.**
 
 ### ⏳ NEXT SESSION — southern domain, NACCS acquisition started 2026-08-17
 
@@ -373,8 +413,11 @@ Both produce **`COMPLETED 0:0` with no output and no error anywhere**, which is 
 most expensive failure shape in this project. Both are now fixed in code; this is the record
 of why those lines exist.
 
-**1. The `halk*` nodes do not write to `/cache/home` on time.** 154 of the 494 nodes in
-`main-redhat` are `halk*`, so ~31% of submissions hit it. `hpc/sfincs_run.slurm` now carries
+**1. The `halk*` nodes do not write to `/cache/home` on time.** ⚠️ **2026-08-20: Amarel
+merged `main-redhat` into `main`** — sbatch to `main-redhat` now fails with "invalid
+partition specified", and `hpc/sfincs_run.slurm` + `hpc/amarel_bootstrap.md` were updated.
+**All 159 `halk*` nodes are now in the DEFAULT partition**, so an sbatch that bypasses the
+batch script is more exposed than before, not less. `hpc/sfincs_run.slurm` now carries
 `#SBATCH --exclude=halk[0001-0159]`. Re-check with the probe below before removing it.
 
 ⚠️ **This was first recorded as "writes nothing at all", and that is only half of it — the

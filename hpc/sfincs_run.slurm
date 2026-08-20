@@ -1,9 +1,14 @@
 #!/bin/bash
 # Run a SFINCS solve in the Singularity container as a batch job.
 #   sbatch hpc/sfincs_run.slurm [model_dir]   (default: model_quadtree)
-# Target partition is main-redhat: the RHEL 9.6 ("amarel-new") nodes. The older `main`
-# partition is CentOS 7 (glibc 2.17) and must NOT be used — see hpc/amarel_bootstrap.md.
-#SBATCH -p main-redhat
+# Target partition is `main`. ⚠️ CHANGED 2026-08-20: Amarel consolidated `main-redhat`
+# INTO `main`, and submitting to `main-redhat` now fails outright with "invalid partition
+# specified". The old warning that `main` was CentOS 7 (glibc 2.17) no longer holds — the
+# hal[0097-0446] / halk[0001-0159] RHEL 9.6 nodes are what `main` now contains (verified:
+# this repo's own session runs on hal0339 under 5.14.0-570.30.1.el9_6).
+# 🔴 The halk exclusion below matters MORE after this change, not less: all 159 halk nodes
+# now sit in the DEFAULT partition. See hpc/amarel_bootstrap.md and CLAUDE.md §5.
+#SBATCH -p main
 # 🔴 THE halk* NODES CANNOT WRITE TO /cache/home — AND THEY FAIL SILENTLY.
 # A job landing there is allocated, runs, and exits `COMPLETED 0:0` having produced NOTHING:
 # no sfincs_map.nc, no sfincs_his.nc, and not even its own SLURM stdout file, so there is no
