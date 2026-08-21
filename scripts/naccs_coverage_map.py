@@ -170,7 +170,10 @@ def _first_row(zf: zipfile.ZipFile, member: str):
 
 def scan() -> tuple[dict, dict, dict]:
     """Return (adcirc, stwave, zips_holding) keyed by save-point id."""
-    zips = sorted(NACCS.glob("CHSFileDownload_*.zip"))
+    # *.zip, not CHSFileDownload_*: since the 2026-08-20 repack the canonical zips
+    # are naccs_repack_<PRODUCT>.zip (see scripts/repack_naccs_zips.py). Matches
+    # build_naccs_boundary.py's glob so the two readers see the same set.
+    zips = sorted(NACCS.glob("*.zip"))
     if not zips:
         raise SystemExit(f"no CHS zips in {NACCS}")
 

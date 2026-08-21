@@ -59,6 +59,9 @@ _V1_5_RARITAN: dict[str, Experiment] = {
         "THE PREMIER. NACCS/CHS ADCIRC storm tide on the relocated boundary — one ocean "
         "arm plus the Verrazzano Narrows and Arthur Kill cross-sections — with CORA "
         "per-support-point waves. Lower Bay, Raritan Bay and Sandy Hook Bay are COMPUTED. "
+        "Since 2026-08-21 the config includes the USACE Keansburg protection line "
+        "(sfincs.weir, staged in the TEMPLATE so every arm inherits it — FINDINGS §38; "
+        "user decision). "
         "The auditable claim is the flux cross-sections: Q(t) through the Narrows carries "
         "the Upper Bay + Hudson tidal prism, which is comparable against literature. "
         "Without that the relocated boundary is asserted, not measured.",
@@ -86,18 +89,13 @@ _V1_5_RARITAN: dict[str, Experiment] = {
         # Domain.n_waterlevel_support (which guards the base NOAA selection).
         n_waterlevel_support=71,
     ),
-    "noaa-2node": Experiment(
-        "noaa-2node",
-        _PREMIER_WAVES,
-        "THE INCUMBENT, kept only to show what the relocation bought. The 2-node "
-        "Battery↔Atlantic City linear interpolant — the construction v1.5 exists to get "
-        "away from — on the v1.5 mesh. ⚠️ On this domain the Narrows and Arthur Kill are "
-        "forced cross-sections, so this arm is NOT the archive's incumbent re-run; it is "
-        "the old FORCING PRODUCT on the new geometry. Compare paired, and read it as a "
-        "product comparison rather than a domain comparison.",
-        waterlevel_geodataset="noaa_sandy_nj",
-        n_waterlevel_support=2,
-    ),
+    # "noaa-2node" — RETIRED 2026-08-20 (user decision: NACCS forcing is adopted going
+    # forward). The 2-node Battery↔Atlantic City interpolant existed only to show what
+    # relocation + dense forcing bought, and that result is banked: final scoring
+    # 2026-08-20 in experiments/v1_5_raritan/metrics.csv (HWM RMSE 0.474 vs premier
+    # 0.402; paired Δ −0.0717, CI [−0.161, −0.013], P 0.994 — STATUS 2026-08-17).
+    # The run dir and its scores are KEPT; only the registry entry is gone, so no
+    # future sweep can stage it. Re-instate the entry if it ever needs a rescore.
     "naccs-premier-z15": Experiment(
         "naccs-premier-z15",
         _PREMIER_WAVES,
@@ -132,6 +130,9 @@ EXPERIMENTS_BY_DOMAIN: dict[str, dict[str, Experiment]] = {
     "v1_monmouth": {},
     "v1_5_raritan": _V1_5_RARITAN,
     "v1_5_raritan_z15": _V1_5_RARITAN,
+    # Frozen archive fixture, score-only (scripts/score_v2_barnegat.py): its five
+    # archived runs are RESCORED in place, never staged from a config.
+    "v2_barnegat": {},
 }
 
 

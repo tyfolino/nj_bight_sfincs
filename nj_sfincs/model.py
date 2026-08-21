@@ -1352,6 +1352,23 @@ def restore_diagnostics(model_dir: Path) -> None:
     set_inp_keys(model_dir / "sfincs.inp", kv)
 
 
+def _ensure_weirfile_key(text: str, model_dir: Path) -> str:
+    """Re-add ``weirfile = sfincs.weir`` when the staged file exists but the key dropped.
+
+    hydromt's writer only emits keys it models, so the structure line staged in the
+    template (FINDINGS §38) silently disappears from ``sfincs.inp`` on every re-write —
+    the latitude failure shape. A dir with no ``sfincs.weir`` is left untouched, so
+    domains without structures never gain a dangling key.
+    """
+    if not (Path(model_dir) / "sfincs.weir").is_file() or "\nweirfile" in text:
+        return text
+    anchor = "obsfile              = sfincs.obs"
+    line = "weirfile             = sfincs.weir"
+    if anchor in text:
+        return text.replace(anchor, f"{anchor}\n{line}")
+    return text.rstrip("\n") + f"\n{line}\n"  # anchor gone — append, never no-op
+
+
 def finalize(
     wcfg: WaveConfig,
     base: BaseConfig,
@@ -1395,6 +1412,14 @@ def finalize(
             "coriolis             = 1",
             f"coriolis             = 1\nlatitude             = {base.latitude}",
         )
+
+    # (a2) weirfile — hydromt's writer does not carry keys it does not model, so the
+    # structure line staged in the template (Keansburg protection, FINDINGS §38) would
+    # silently drop on re-write, exactly like latitude above. The file rides along via
+    # copytree; only the key needs repair. ⚠️ SFINCS logs a line only for ACCEPTED
+    # structures — after any re-staging, check the log for "structure u/v points found"
+    # (the obs-point silent-drop scar, generalised).
+    text = _ensure_weirfile_key(text, model_dir)
 
     # (b) strip orphan infiltration keys (component sets key but writes no file).
     text = (

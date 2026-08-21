@@ -52,10 +52,16 @@ GROUND_CAP = 0.5  # m; matches hwm_metrics
 
 def residuals(model_dir: Path, estimator: str, radius_m: float):
     """Per-mark (mask, residual) for one run. Mirrors validate.hwm_metrics."""
+    from nj_sfincs.validate.metrics import _clip_to_region
+
     _mod, da_hmax, da_dep = validate.load_floodmap(model_dir)
     hwm = gpd.read_file(str(_domain.active().hwm_geojson)).to_crs(
         da_dep.rio.crs
     )
+    # Same region clip hwm_metrics applies (2026-08-17): an out-of-region mark scores
+    # as dry against bare earth in EVERY arm — near-identical large residuals that
+    # dilute the paired delta (~3x on the first v1.5 comparison, STATUS).
+    hwm = _clip_to_region(hwm)
     depth, dep_arr, wse = da_hmax.values, da_dep.values, (da_dep + da_hmax).values
     if depth.ndim == 3:
         depth, wse, dep_arr = depth[0], wse[0], dep_arr[0]

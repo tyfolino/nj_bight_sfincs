@@ -421,7 +421,7 @@ def _motf_window(dep, motf, m_nd, Xc, Yc, _2d, sim, margin: float = 2000.0):
     )
 
 
-def plot_motf_panels(runs, root=None, data_dir=DATA, ncol=2, window=None):
+def plot_motf_panels(runs, root=None, data_dir=DATA, ncol=2, window=None, split_fa=False):
     """Modelled flood vs FEMA MOTF — hit / miss / false alarm — for several runs.
 
     ⚠️ READ THE CSI, NOT THE POD. FEMA MOTF is a HWM/sensor-interpolated *bathtub* surface
@@ -446,11 +446,18 @@ def plot_motf_panels(runs, root=None, data_dir=DATA, ncol=2, window=None):
     ⭐ THE WINDOW IS A VIEW, NOT A SCREEN. Every count, area and score below is computed
     over the FULL arrays; cropping happens only on the way to ``imshow``. Narrowing the
     window can never move a number on this figure.
+
+    ``split_fa`` — draw false alarms in TWO colours by ``fa_decomp.sea_connected``:
+    red for surge-plausible (the component touches tidal water), tan for
+    never-sea-connected (rain / local runoff — water MOTF structurally cannot contain,
+    FINDINGS §38). The headline CSI/POD/FAR are UNCHANGED; the connected-only
+    ``CSIc``/``FARc`` are printed beside them, never instead (the fa_decomp convention).
     """
     import matplotlib.pyplot as plt
     import rasterio
 
     from .validate import DEPTH_MIN, load_floodmap, simulated_mask
+    from .validate.metrics import motf_exclude_mask, motf_path
 
     root = Path(root) if root else exp_root()
     runs = _runs_dict(runs, root)
@@ -458,10 +465,14 @@ def plot_motf_panels(runs, root=None, data_dir=DATA, ncol=2, window=None):
     if not runs:
         raise SystemExit("no finished runs among those given")
 
-    with rasterio.open(str(Path(data_dir) / "validation" / "sandy_motf_extent.tif")) as r:
+    with rasterio.open(str(motf_path(data_dir))) as r:
         motf, mtf, m_nd = r.read(1), r.transform, r.nodata
     mh, mw = motf.shape
     motf_wet = motf == 1
+    # Domain-declared sheet-invalid ground (e.g. NY land on the NJ-only render) —
+    # the SAME screen motf_metrics applies, or the panel and the CSV disagree.
+    _excl = motf_exclude_mask(motf.shape, mtf)
+    _valid = ~_excl if _excl is not None else np.ones(motf.shape, dtype=bool)
 
     # MOTF cell CENTRES. Run-independent, so they are built once.
     Xc = mtf.c + (np.arange(mw) + 0.5) * mtf.a
@@ -475,7 +486,7 @@ def plot_motf_panels(runs, root=None, data_dir=DATA, ncol=2, window=None):
         window = _motf_window(
             load_floodmap(_first, need_model=False, data_dir=data_dir)[2],
             motf, m_nd, Xc, Yc, _2d,
-            simulated_mask(_first, motf.shape, mtf),
+            simulated_mask(_first, motf.shape, mtf) & _valid,
         )
     # Display slices: which MOTF rows/cols are inside the window. Used to CROP the drawn
     # rasters — a plain slice, no decimation, so every visible category pixel is still
@@ -501,7 +512,8 @@ def plot_motf_panels(runs, root=None, data_dir=DATA, ncol=2, window=None):
         nrow, ncol, figsize=(max(3.6, 7.4 * aspect) * ncol, 7.4 * nrow), squeeze=False
     )
     cmap = ListedColormap(
-        [(1, 1, 1, 0), (0.2, 0.6, 0.3, 1), (0.2, 0.4, 0.85, 1), (0.85, 0.2, 0.2, 1)]
+        [(1, 1, 1, 0), (0.2, 0.6, 0.3, 1), (0.2, 0.4, 0.85, 1), (0.85, 0.2, 0.2, 1),
+         (0.87, 0.66, 0.34, 1)]  # 4 = FA never sea-connected (split_fa only)
     )
 
     for ax, (label, name) in zip(axes.ravel(), runs.items()):
@@ -518,7 +530,7 @@ def plot_motf_panels(runs, root=None, data_dir=DATA, ncol=2, window=None):
         # directions — unreachable MOTF wet, and downscale bleed onto inactive faces.
         land_in = (motf != m_nd) & (dep_at > 0.0) & simulated_mask(
             root / name, motf.shape, mtf
-        )
+        ) & _valid
         hits = motf_wet & mod_wet & land_in
         miss = motf_wet & ~mod_wet & land_in
         fa = ~motf_wet & mod_wet & land_in
@@ -530,6 +542,17 @@ def plot_motf_panels(runs, root=None, data_dir=DATA, ncol=2, window=None):
 
         cat = np.zeros_like(motf, dtype="uint8")
         cat[hits], cat[miss], cat[fa] = 1, 2, 3
+        conn_line = ""
+        if split_fa:
+            from .validate.fa_decomp import sea_connected  # noqa: PLC0415
+
+            fa_disc = fa & ~sea_connected(mod_wet, dep_at)
+            cat[fa_disc] = 4
+            nfd = int(fa_disc.sum())
+            nfc = nf - nfd
+            csi_c = nh / (nh + nm_ + nfc) if (nh + nm_ + nfc) else np.nan
+            far_c = nfc / (nh + nfc) if (nh + nfc) else 0.0
+            conn_line = f"\nsea-connected only: CSIc={csi_c:.2f}  FARc={far_c:.2f}"
         # ⚡ Crop + decimate the backdrop BEFORE imshow — see _for_display. This panel
         # used to hand matplotlib the whole 95 Mpx de-rotated dep and then crop with
         # set_xlim, resampling ~4 s per panel to fill a figure ~1600 px wide. The HWM
@@ -541,7 +564,7 @@ def plot_motf_panels(runs, root=None, data_dir=DATA, ncol=2, window=None):
             alpha=0.45, origin="upper",
         )
         ax.imshow(
-            cat[rsl, csl], cmap=cmap, vmin=0, vmax=3, extent=cat_ext, origin="upper",
+            cat[rsl, csl], cmap=cmap, vmin=0, vmax=4, extent=cat_ext, origin="upper",
             interpolation="nearest",
         )
         ax.set_aspect("equal")
@@ -551,15 +574,22 @@ def plot_motf_panels(runs, root=None, data_dir=DATA, ncol=2, window=None):
         # remember which arm had SnapWave off. FINDINGS §4.
         tag = "  ·  waves OFF" if _waves_off(root / name) else ""
         ax.set_title(
-            f"{label}{tag}\nCSI={csi:.2f}  POD={pod:.2f}  FAR={far:.2f}",
+            f"{label}{tag}\nCSI={csi:.2f}  POD={pod:.2f}  FAR={far:.2f}{conn_line}",
             fontsize=10,
             color="#8a4500" if tag else "black",
         )
+        if split_fa:
+            fa_handles = [
+                Patch(color=cmap(3), label=f"false alarm, sea-connected ({nfc * PIX:.1f} km²)"),
+                Patch(color=cmap(4), label=f"false alarm, never connected ({nfd * PIX:.1f} km²)"),
+            ]
+        else:
+            fa_handles = [Patch(color=cmap(3), label=f"false alarm ({nf * PIX:.1f} km²)")]
         ax.legend(
             handles=[
                 Patch(color=cmap(1), label=f"hit ({nh * PIX:.1f} km²)"),
                 Patch(color=cmap(2), label=f"miss ({nm_ * PIX:.1f} km²)"),
-                Patch(color=cmap(3), label=f"false alarm ({nf * PIX:.1f} km²)"),
+                *fa_handles,
             ],
             loc="upper right",
             fontsize=7,

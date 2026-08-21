@@ -46,7 +46,18 @@ ROOT = Path(os.environ.get("NJ_ROOT", Path(__file__).resolve().parents[1]))
 # domain being built instead of a fixed filename. (nj_sfincs/domain.py)
 from nj_sfincs import domain as _domain  # noqa: E402
 REGION = _domain.active().region
-OUT = ROOT / "data/validation/sandy_motf_extent.tif"
+# 🔴 The output path is a DOMAIN fact (`Domain.motf_tif`), and this script REFUSES to
+# write the archived one — the same guard, for the same reason, as
+# download_sandy_hwms.py: `data/validation` is the frozen archive, the port fixture
+# pins `motf_csi=0.637834` against that exact raster, and the render covers the ACTIVE
+# region's bbox, so running under a bigger domain would silently rewrite the fixture's
+# sheet (and pull more NY land in as fake-dry). A new domain gets its own `motf_tif`.
+OUT = _domain.active().motf_tif
+if "validation/" in str(OUT).replace("\\", "/") and OUT.name == "sandy_motf_extent.tif":
+    raise SystemExit(
+        f"refusing to write {OUT}: that is the FROZEN archive raster the port fixture "
+        f"is pinned to. Give this domain its own `motf_tif` in nj_sfincs/domain.py first."
+    )
 EXPORT = ("https://njmaps1.rad.rutgers.edu/arcgis/rest/services/"
           "CoastalFlooding/StormSurge/MapServer/export")
 EPSG = 32618
@@ -69,9 +80,11 @@ print(f"rendered flooded pixels: {flooded.sum()} ({flooded.mean() * 100:.1f}%) "
       f"= {flooded.sum() * RES * RES / 1e6:.1f} km2")
 
 OUT.parent.mkdir(parents=True, exist_ok=True)
-with rasterio.open(OUT, "w", driver="GTiff", height=H, width=W, count=1,
+tmp = OUT.with_suffix(OUT.suffix + ".tmp")
+with rasterio.open(tmp, "w", driver="GTiff", height=H, width=W, count=1,
                    dtype="uint8", crs=f"EPSG:{EPSG}",
                    transform=from_origin(w, n, RES, RES),
                    nodata=255, compress="deflate") as dst:
     dst.write(flooded, 1)
+os.replace(tmp, OUT)
 print(f"Wrote {OUT}")

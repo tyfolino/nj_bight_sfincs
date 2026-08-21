@@ -4,7 +4,148 @@
 12 KB "current state" memory file and its 26 reverse-chronological campaign logs; the point
 of the format is that a reader gets the current state without replaying how it was reached.
 
-Last updated: **2026-08-17**
+Last updated: **2026-08-21** (⭐ SEICHE QUESTION ANSWERED, FINDINGS §40 — the Raritan Bay
+sub-hourly motion is a real coherent oscillation, `zsmax` scoring stands for a single arm;
+the "transect did not take" entry was wrong, no re-run needed ·
+rain ground truth measured, FINDINGS §39 — classifier precision 0.99 · weir decision
+inputs measured, FINDINGS §38 — pocket caps to ~2.45 m · diag runs accepted by user,
+re-audit waived · the bay rings differently between ARMS on the 10-min his ·
+advisor notebook clone executed · env tarball rebuilt + deployed · paired bootstrap
+was missing the region clip, fixed)
+
+## ⏳ PICK UP — next session
+
+1. ⭐ **v3 data acquisition — scoped, blocked, ready to go.** Read the "DATA
+   ACQUISITION" subsection in the v3 section below FIRST: it names the two blockers
+   (downloaders write into the read-only archive; v3 cannot be registered before it
+   has a polygon + mesh) and the one decision that gates the pulls. The southern
+   terminus is DECIDED (stop at Cape May, do not cross to Delaware) with the NACCS
+   coverage table that settles it.
+2. User: the **v3 QGIS polygon**; the full checklist is in the v3 section below.
+   ⚠️ It also settles the **Cape May Canal** question — the one real design choice
+   the southern terminus forces.
+3. Optional, cheap: a **weir-era fasthis** re-run if the bay phase question is ever
+   pushed further — see the ANSWERED section below for why it was not needed to
+   settle the seiche-vs-chatter question.
+
+✅ Deletion manifest EXECUTED 2026-08-21 on the user's sign-off — 10.5 G reclaimed,
+quota 65.22 G, details at the top of
+`reports/cleanup/deletion_manifest_2026-08.md`. Kept: `sfincs-env.tar.gz`,
+`.vscode-server`, the blocked 16.5 G `.ige`.
+
+### ✅ THE WEIR IS PROMOTED — executed 2026-08-21 (user decision), FINDINGS §38
+
+The Keansburg protection line is now part of the domain's model config, staged in the
+TEMPLATE so **every arm inherits it** (a premier-only weir would confound
+premier-vs-nowaves forever). No new solver time was spent: the verified-WHOLE weir
+runs — byte-identical stagings plus exactly the one `weirfile` line, full window —
+were ADOPTED as the arms.
+
+- `data/structures_v1_5/keansburg_weir.weir` (+ PROVENANCE.md) is the durable source;
+  `_template_sealed` carries `sfincs.weir` + the `weirfile` key (fingerprint
+  unmoved, audit 8/8); `model.finalize` re-adds the key if hydromt's writer drops it
+  (`_ensure_weirfile_key`, pinned by `tests/test_weir_staging.py` — the latitude
+  failure shape).
+- Run dirs: `naccs-premier` ← `diag-premier-keansburg-weir`,
+  `naccs-nowaves` ← `diag-nowaves-keansburg-weir`; the pre-weir runs are banked as
+  `preweir-naccs-premier` / `preweir-naccs-nowaves` (provenance.txt in all four
+  records the rename). Last pre-weir scoring banked at
+  `metrics_2026-08-21_pre_weir_rebaseline.csv`.
+- **New headline (weir premier): HWM RMSE 0.4084, bias −0.037** (pre-weir 0.4018 /
+  −0.081 — bias halves; `raritan_bay` RMSE 0.452 → 0.405 with the pocket outlier
+  fixed), **CSI 0.7044, POD 0.8214, FAR 0.1682** (pre-weir 0.7108 / 0.8384 / 0.1764
+  — POD drops because the weir correctly dries a pocket the MOTF bathtub wrongly
+  floods), CSIc 0.7893. nowaves: HWM RMSE 0.3867, flagged `extent_admissible=False`
+  as always. Tests re-pinned with BOTH baselines in their docstrings; 73 OK; port
+  gate bit-for-bit.
+- ⚠️ `diag-premier-norain` remains a rain-off copy of the PRE-weir premier. Its
+  banked result (FINDINGS §39) is untouched; a rain diagnostic on the weir baseline
+  would need a fresh staging.
+
+✅ **The diag runs are ACCEPTED (user decision, 2026-08-21):** visual inspection +
+the `output WHOLE` audit, waiving the >26 h three-clock re-audit. Neither diag run
+ever had a halk submission against its directory (the clobber's precondition), and
+no halk job has run since the exclude line landed. The two sections below are no
+longer provisional; the rain share is written into **FINDINGS §39** and the weir
+decision-run result into **FINDINGS §38**.
+
+### ✅ 2026-08-21 — rain ground truth: the FA classifier is validated (FINDINGS §39)
+
+`scripts/measure_rain_share.py` (pre-registered diagnostic in its docstring, written
+before the numbers) → `reports/rain/rain_share.csv`, premier vs `diag-premier-norain`
+on the MOTF grid, same screens as `motf_metrics` + simulated-in-BOTH:
+
+| field | value |
+|---|---|
+| FA total | 11.40 km² |
+| **FA rain share** (wet-in-premier ∧ dry-in-norain) | **75.7%** (8.62 km²) |
+| `disc_precision` — P(rain-true \| labelled disconnected) | **0.991** |
+| `disc_recall` | 0.914 |
+| flip-marginal FA (premier depth within 5 cm of DEPTH_MIN) | 1.35 km² |
+| rain share of the WHOLE premier wet extent | 19.7% |
+
+The connectivity heuristic is a near-perfect rain detector on this domain: 99% of
+disconnected-labelled FA is dry with rain off, and it catches 91% of the rain-true FA
+(conservative in the direction fa_decomp claims). The 70%-of-FA figure from the
+classifier was, if anything, an undercount (truth 75.7%).
+
+### ✅ 2026-08-21 — weir decision inputs (FINDINGS §38; pre-reg:
+`reports/keansburg/preregistration_weir_decision.md`, written first)
+
+`diag-premier-keansburg-weir` (A) vs `naccs-premier` (B):
+
+1. **Primary — pocket marks: PASSED.** 6155/6156/6133 model 2.45–2.46 m (residual
+   +0.87–0.91, was +1.68–1.77). Same capping as the nowaves pair (FINDINGS §38).
+2. **Paired HWM: the pre-registered bound is NOT met as stated, and the failure is
+   the bay band, stated honestly.** Δ RMSE +0.007 m, 95% CI [−0.114, +0.120], n=46
+   (A RMSE 0.4084 vs B 0.4018). The CI is inflated by ±0.13–0.43 m residual moves at
+   marks 12–15 km from the weir on BOTH flanks (Navesink shore, Perth Amboy/Ward
+   Point; worst 6406 +1.03) — see the his-ringing entry below for why that is not
+   weir physics.
+3. **Extent: the expected signature.** Domain CSI 0.7108 → 0.7044 (POD −0.017,
+   FAR improves 0.1764 → 0.1682). Keansburg box (−74.155..−74.105, 40.425..40.455):
+   CSI 0.761 → **0.783**, FA 1.28 → **0.52 km²**, miss 0.24 → 0.68 km² (MOTF floods
+   the pocket too — bathtub, no structures — so drying it correctly books "misses"
+   against a reference error).
+
+Recommendation to put to the user: the physical case for promotion is strong
+(pocket capped, box extent better, FAR better); the domain-wide HWM delta is a wash
+inside the ringing band. Decision is the user's.
+
+### 🔴 NEW 2026-08-21 — the bay rings DIFFERENTLY BETWEEN ARMS on the 10-min his
+
+Measured comparing `sfincs_his.nc` of the two waves-on premier-physics arms (differ
+only by the 2 km weir): instantaneous |Δzs| reaches **1.32 m at Arthur Kill mouth
+(inside the crest window)**, 0.58 m Great Kills, 0.4–0.8 m at the Narrows (mostly
+pre-storm) — while CREST PEAKS differ only −0.03..−0.15 m and the open coast is
+clean (≤0.04 m; Shark River 0.004 m). So the arm-dependence is in the PHASE of
+large fast bay oscillations and it is in the 10-min series itself — **not merely
+zsmax sub-hourly excess**. Consequences:
+- The "do not quote a Raritan Bay HWM/extent difference between waves-on and
+  waves-off arms" caveat extends to ANY pair of arms: a local perturbation re-rings
+  the whole bay at the ±0.1–0.4 m level at marks 12–15 km away.
+- ✅ Mechanism SETTLED 2026-08-21 (FINDINGS §40): a **coherent seiche**, not chatter.
+  This measurement's reading — envelope robust, phase not — is exactly what a real
+  basin oscillation sampled by a running max produces, and it is now the explanation
+  rather than an open question.
+
+### ✅ 2026-08-21 — housekeeping landed with the above
+
+- `scripts/paired_hwm_bootstrap.py` was missing the 2026-08-17 region clip and
+  scored n=53 / RMSE 1.21 (the documented artefact). Now applies `_clip_to_region`;
+  premier reproduces the pinned 0.4018 / −0.0806 at n=46.
+- `plot_motf_panels(split_fa=True)` draws never-sea-connected FAs in tan with
+  CSIc/FARc beside the headline keys (never instead); connectivity shared with
+  `fa_decomp.sea_connected` so panel and CSV cannot disagree.
+- Advisor notebook: `notebooks/v1_5_raritan/sandy-v1_5-viz-2026-08-21.ipynb` —
+  executed clone with the boundary-support figure (71/71 NACCS points inside the
+  domain vs 0/2 for the 2-node interpolant) and the split-FA MOTF panels. The
+  original keeps its pre-rebaseline outputs deliberately (side-by-side demo).
+- `sfincs-env.tar.gz` rebuilt (880 M, deleted in the 08-20 cleanup; `hpc/pack-env.sh`)
+  and deployed to `/tmp/tpj8/sfincs` on hal0308; `sfincs` + `sfincs-local` Jupyter
+  kernels registered.
+- `scripts/score_v2_barnegat.py` docstring reworded — it tripped the repo-hygiene
+  archive grep ("symlink" beside the archive name). 68 tests OK, port gate passes.
 
 📋 The original plan this work follows is frozen at
 [docs/plan_v1_5_original.md](plan_v1_5_original.md) (Phases 1–4 and 6 are done; 5 and 7 are
@@ -224,23 +365,90 @@ Map sizes reproduce `map_sizes_pre` byte for byte (premier 1,095,742,111 · noaa
 1,094,248,175 · nowaves 242,972,872). Three-clock check clean — `mtime == ctime` on all
 three, so these were in-place re-runs, not the `halk` late-flush signature.
 
-🔴 **STILL TO DO: `--validate-only`.** `metrics.csv` (08-17 12:12), `report.html` (12:13)
-and `floodmaps/*.tif` (12:08–12:12) ALL predate the re-runs (13:01 / 14:42 / 14:45), so
-every number in them describes superseded output.
+✅ **RESCORED 2026-08-20 — the gate PASSED on every pinned number.** `--validate-only`
+on all three arms against the verified-WHOLE re-runs:
 
-🔴 **AND THE MOTF TARGET HAS MOVED — do not chase it.** `motf_metrics` now scores only
-where the solver ran (FINDINGS §37), so premier's CSI is **0.685, not 0.662**. The old
-0.662 was the pre-mask number and reproducing it would mean reproducing the defect.
-Expect, from the freshly rebuilt floodmaps:
+| arm | HWM RMSE (median, 50 m) | bias | CSI | POD | FAR |
+|---|---|---|---|---|---|
+| `naccs-premier` | **0.401777** (= the pinned 0.402) | −0.081 | **0.6846** | 0.8207 | 0.1950 |
+| `naccs-nowaves` | 0.448715 | −0.037 | 0.6663 ⚠️ `extent_admissible=False` | 0.7910 | 0.1913 |
+| `noaa-2node` | 0.473515 | −0.255 | 0.6738 | 0.8026 | 0.1924 |
 
-| arm | CSI | POD | FAR |
-|---|---|---|---|
-| `naccs-premier` | 0.6846 | 0.8207 | 0.1950 |
-| `noaa-2node` | 0.6738 | 0.8026 | 0.1924 |
+n=46 scored, 0 dry, on every arm — exactly the pre-re-run HWM numbers, as diagnostic obs
+points must produce. CSI/POD/FAR match the expected post-active-mask-screen values to
+4 decimals. `metrics.csv` + `report.html` rewritten 2026-08-20.
 
-`naccs-nowaves` is waves-off, so its CSI/POD/FAR stay INADMISSIBLE (FINDINGS §4).
-The HWM side is untouched by this change — **RMSE 0.402 still stands as the check**, and
-if it does not come back, chase that.
+🔴 **This is the LAST SCORING OF `noaa-2node`.** Decision (user, 2026-08-20): NACCS
+forcing is adopted going forward and the 2-node interpolant is retired from future
+sweeps. Its banked result — the forcing-density comparison above and the paired
+Δ = −0.0717 [−0.161, −0.013] — is the record; the arm will be retired from
+`experiments.py` (run dir and scores kept).
+
+⚠️ These CSI values are the **pre-Staten-Island-screen baseline**, banked deliberately:
+the MOTF raster is NJ-only and stops at lat 40.5283 (rendered on the v1_monmouth bbox),
+so v1.5's SI sliver scores as false alarm and its northern 9 km is unscored. The full
+3-arm pre-rebaseline CSV is preserved at
+`experiments/v1_5_raritan/metrics_2026-08-20_pre_motf_rebaseline.csv` — the ONLY place
+noaa-2node's final per-basin keys live.
+
+### ✅ MOTF REBASELINED 2026-08-20 — own render + NJ-validity screen, same session
+
+Two defects, one fix, landed together (`Domain.motf_tif` + `Domain.motf_exclude_boxes_ll`):
+
+1. **The archived sheet was rendered on the v1_monmouth bbox** and stops at lat
+   40.5283 — the Narrows and the upper SI shore were silently unscored. v1.5 now
+   scores its own render, `data/validation_v1_5/sandy_motf_extent_v1_5.tif`
+   (`download_sandy_motf_extent.py` grew the same domain-output guard as the HWM
+   downloader; the archived raster cannot be overwritten).
+2. **The MOTF source layer is NJ-ONLY and its pixels are only {0,1}** — nodata never
+   occurs — so NY land reads as *confidently dry* and every model-wet Staten Island
+   pixel booked a false alarm the sheet cannot adjudicate. Two exclude boxes
+   (`staten_island`, `brooklyn_rockaway`), validated against the `nj_10ft_dem`
+   footprint (an NJ-only product, so its data extent IS the NJ discriminator):
+   0 NJ pixels inside either box; Ward Point in, Perth Amboy out.
+
+| arm | CSI | POD | FAR | vs pre-rebaseline |
+|---|---|---|---|---|
+| `naccs-premier` | **0.7108** | 0.8384 | **0.1764** | CSI 0.6846, FAR 0.1950 |
+| `naccs-nowaves` ⚠️ | 0.6920 | 0.8086 | 0.1724 | (flagged, as before) |
+
+New CSV key `motf_km2_excluded_boxes` = **13.98 km²** (what the NJ screen removed from
+the scored set — quote it beside the CSI). `motf_km2_unsim_motfwet` is now 18.65 km²:
+the new sheet's bbox includes real Sandy flooding up the Raritan valley outside the
+region, correctly screened as unreachable. HWM side untouched — RMSE 0.401777 exactly.
+`tests/test_motf_simulated_mask.py` re-pinned with both baselines in its docstring;
+port gate bit-for-bit (v1_monmouth keeps the archived sheet and declares no boxes).
+
+### ✅ THE FALSE ALARMS ARE MOSTLY NOT SURGE — FA decomposition landed 2026-08-20
+
+MOTF is a surge-only bathtub and cannot contain rain ponding; our arms force AORC rain
+with infiltration effectively OFF (`model.py:1398-1408` strips the CN keys —
+`create_cn` runs but writes no file, so rain lands on impervious-in-effect ground).
+`validate/fa_decomp.py` splits every false-alarm pixel by whether its water EVER had a
+wet surface path to tidal water (`hmax` is a running max, so its footprint is the
+union of everything ever wet; a component that never touches the sea got its water
+from rain/runoff, not surge). On the rebaselined premier:
+
+| | km² | share of FA |
+|---|---|---|
+| FA, connected to the sea | 3.45 | 30% |
+| **FA, never connected** | **7.96** | **70%** |
+| of which within the LOCAL rain total | 0.0 | (bound is conservative — see test) |
+
+`motf_far_connected` **0.061** vs `motf_far` 0.176; `motf_csi_connected` **0.795** vs
+0.711. ⚠️ Diagnostic keys, ALWAYS reported beside the headline keys, never instead.
+`naccs-nowaves` decomposes almost identically (disconnected 7.49 km²) — consistent
+with the disconnected share being rain, which is arm-independent.
+`tests/test_fa_decomp.py` pins it.
+
+⏳ **`diag-premier-norain` RUNNING — SLURM 60700612, hal0338, submitted 2026-08-20.**
+Byte-identical staging of `naccs-premier` (bulk inputs hardlinked, ~0 disk; fingerprint
+verified 6/6; `snapwave.upw` deliberately NOT linked — the solver regenerates it in
+place, and a shared inode would clobber premier's copy) minus the `netamprfile` line:
+rain OFF, everything else identical. Read it as ground truth for the classifier:
+wet-in-premier ∧ dry-in-norain ≈ the rain share of the extent. Not in `experiments.py`
+by design — the `diag-nowaves-fasthis` precedent: diagnostics are staged by hand and
+documented, not registered where `--experiments all` can re-stage them.
 
 ⚠️ The floodmap caches for premier and noaa-2node were stale against the re-run and were
 rebuilt 2026-08-20 (~3 min each). That is the mtime invalidation working, not a fault.
@@ -371,41 +579,192 @@ coherent with a consistent period; numerical chatter is not. Coherent ⇒ the or
 "SnapWave damps it" hypothesis is right by a different route; incoherent ⇒ `zsmax` is
 contaminated in this basin and every spatial score there needs re-examining.
 
-🔴 **THE TRANSECT DID NOT TAKE — SFINCS SILENTLY DROPPED ALL SIX POINTS.** The file was
-complete and well-formed (14 lines, verified with `cat -A`) and its mtime is 85 s BEFORE the
-job started, so this is not a staging race. SFINCS logs a line only for ACCEPTED points and
-emits no warning for rejected ones: the log runs `observation point 1..8` — exactly the
-original eight — then moves on. **Cause unknown as of 2026-08-20.** Ruled out: file
-truncation, missing trailing newline, CRLF, a count key in `sfincs.inp` (there is none), and
-local staging by the batch script (there is none — it runs in place from the repo).
-Not yet ruled out: the quadtree cell lookup rejecting the coordinates, or a format the
-free-format read is fussier about than it looks (the appended lines carry 4 spaces between
-the x and y fields where the originals carry 3).
+✅ **THE TRANSECT DID TAKE — the "SFINCS silently dropped all six points" entry was
+WRONG, corrected 2026-08-21.** The run's own log lists `observation point 1..14` and
+`wc -l sfincs.obs` is 14; the `his` carries 14 stations × 4321 steps. Whatever produced
+the earlier "1..8" reading, it was not the run. The acceptance check that entry demanded
+(log lines vs `wc -l sfincs.obs`) is still the right guard and **passes** — keep doing it,
+it costs nothing. No re-run was required.
 
-⚠️ **So this run is WEAKER than designed but not useless**: `dthisout=60 s` still applies to
-the original eight, two of which are in the bay — `sss_arthur_kill_mouth` (x 565 km, inside
-the band whose `zsmax` gap is −0.237 m) and `sss_great_kills`. Two points test coherence;
-they do not resolve the along-axis structure.
-⏳ **Before re-running: prove an added obs point is ACCEPTED** — diff the log's
-`observation point N` count against `wc -l sfincs.obs`. That check costs nothing and would
-have caught this immediately.
-That decides whether the 0.431 m excursion is a real seiche SnapWave damps (which would
-vindicate the original hypothesis by a different route) or numerical chatter. Until then,
-**do not quote a Raritan Bay HWM or extent difference between a waves-on and waves-off arm.**
+### ✅ ANSWERED 2026-08-21 — it is a COHERENT SEICHE, not chatter (FINDINGS §40)
 
-### ⏳ NEXT SESSION — southern domain, NACCS acquisition started 2026-08-17
+`scripts/diagnose_bay_seiche.py`; pre-registration
+`reports/seiche/preregistration_bay_seiche.md` written before any number. Read off the
+existing `diag-nowaves-fasthis` (waves-off, PRE-weir).
 
-The user is pulling **NACCS/CHS data for the southern domain** — `v2_barnegat` and most likely
-**all the way to Cape May**. Nothing is staged and no domain is registered for it yet.
+1. **Primary — the excess is RESOLVED at 60 s: `recovery_frac` median 0.985** (min 0.950
+   over the five clean axis points). No physical mode of this basin lives under the 120 s
+   Nyquist, so the `zsmax` excess is not sub-timestep noise.
+2. **Coherent, and organized at all times.** γ² between the axis ENDS (11.6 km) = 0.934,
+   band mean 0.437 vs a 0.084 noise floor; every pair stays coherent in the quiet
+   pre-storm window too (0.48–0.80, floor 0.26). Bay `hp_std` 0.067 m vs open coast
+   0.016 m. Lags mixed-sign at ~8% of a period ⇒ quasi-standing; periods 34–60 min.
+3. ⚠️ **`rb_axis_559k` is a discharge artefact** — 253 m from the Raritan source
+   (Qmax 110 m³/s), a single-face sub-2-min 1.33 m `zsmax` spike. Flagged in the CSV
+   (`src_contaminated`), not dropped. **No scored HWM mark is within 500 m of a source**
+   (closest 674 m of 46), so nothing in `metrics.csv` is touched.
 
-⚠️ Two things from this repo's scars that apply before any of it is trusted:
-- **`build_naccs_boundary.py` filters members on `ADCIRC_MEMBER` and reads water level by the
-  `ET00` column CODE, not position** — a mixed zip carries STWAVE members whose column 9 is
-  `TM`, a wave period. Re-verify `--report-only --no-cache` on the new footprint.
-- **A new domain is a registry entry in `domain.py` with its own fingerprint**, its own HWM
-  file (`Domain.hwm_geojson`) and its own basin rules. 🔴 v1's rule tuple could not be carried
-  to v1.5 because an unbounded rule swallowed the wrong basin; expect the same going south,
-  and keep `unclassified` empty as the alarm.
+🔴 **Consequence for scoring: `zsmax` in Raritan Bay STANDS for a single arm** — it is
+measuring real water, so the bay spatial scores do NOT need a filtered or hourly basis.
+**The arm-comparison caution is unchanged and is now explained**: a real seiche has a
+phase, `zsmax` samples it, and a local perturbation re-rings the basin — hence
+instantaneous |Δzs| of 1.32 m against crest peaks differing only 0.03–0.15 m. The
+envelope is robust, the phase is not. Keep comparing bay arms paired, and keep treating a
+bay-wide Δ inside ±0.1–0.4 m as unattributable.
+
+⚠️ One arm, one storm; the axis follows the dredged channel (flank points agree, which is
+the check). The earlier framing "is the 0.431 m excursion a real seiche **SnapWave damps**"
+is only half-answered: the motion is real, but this run cannot say why two arms ring
+differently. A weir-era or waves-on fasthis would be the next step **if** that is ever
+worth ~14 min of solver — it was not needed for the question as posed.
+
+### ⏳ v3 — the full Jersey shore, Raritan Bay → Cape May (kicked off 2026-08-20)
+
+**Decision (user, 2026-08-20): v3 spans v1.5's drawn northern ring to Cape May, forced
+by NACCS (the 2-node interpolant is retired). Arms: `naccs-premier`, `naccs-nowaves`.**
+
+**Already in hand (verified 2026-08-20):**
+- NACCS: `data/NACCS/` repacked to 5 canonical zips; **1,287 ADCIRC save points,
+  lat 38.83–40.62** — the whole shore past Cape May. STWAVE02/03/07 (563/301/523 pts)
+  parked in their own zips (no reader; CORA is the adopted wave boundary).
+- NOAA: `noaa_sandy_nj.nc` already holds **Cape May 8536110** → a v3 template gets
+  3 base support points, not 2. Set `n_waterlevel_support=3` DELIBERATELY (the
+  99.1 km buffer scar).
+- CUDEM: the VRT + tile list already reach lat 38.75 (Cape May ✅ — no extension).
+- `scripts/build_cn_nj.py` ported from the archive (domain-aware, per-domain output
+  guard) — `cn_nj` stops at 39.556 and the catalog named a script the port had lost.
+- v2_barnegat registered in bight as a frozen score-only fixture; its Manahawkin wall
+  is what v3 removes.
+
+**Blocked on the USER's QGIS polygon** — inherit v1.5's drawn northern ring (Narrows +
+Arthur Kill cuts) verbatim, NOT v2's straight lat-40.52 line; no Manahawkin wall;
+extend to Cape May Point. Consider raising the `bay_fringe` refinement gate zmax
+(2.0 excludes every berm crest — the Keansburg lesson, FINDINGS §38).
+
+#### ✅ SOUTHERN TERMINUS DECIDED 2026-08-21 — stop at Cape May, do NOT cross to Delaware
+
+User's call, and the measured evidence backs it. **Do not run the boundary from Cape May
+Point across the Delaware Bay mouth to Cape Henlopen.** Four reasons, strongest first:
+
+1. 🔴 **NACCS support fails on the Delaware end.** Measured against the repo's own
+   1,287-point set (`data/NACCS/_sandy_parsed.npz`), nearest ADCIRC save point:
+
+   | candidate | nearest pt | within 2 km | gate-1 (2.0 km) |
+   |---|---|---|---|
+   | Cape May Inlet | 0.23 km | 26 | **PASS** |
+   | Cape May Harbor | 0.47 km | 6 | **PASS** |
+   | Cape May Point (DelBay shore) | 0.69 km | 2 | **PASS** |
+   | offshore Cape May (~−10 m) | 1.37 km | 4 | **PASS** |
+   | mid Delaware Bay mouth | 0.72 km | 2 | PASS |
+   | **Cape Henlopen, DE** | **9.00 km** | **0** | 🔴 **FAIL** |
+   | Cape May Canal, DelBay end | 2.43 km | 0 | ⚠️ marginal FAIL |
+
+   The set stops at lat 38.832; Cape Henlopen is 38.79. A mouth crossing would have one
+   supported half and one bare half — the "0 points on Arthur Kill" failure that
+   `build_naccs_boundary.py`'s per-arm reporting exists to catch. ⚠️ Indicative only,
+   same caveat as the v1.5 gate-1 entry: sketch points, not `mask==2` cells on a mesh
+   that does not exist, so these are an UPPER bound on surviving support.
+2. **Validation is NJ-only, and Delaware land would repeat the Staten Island defect
+   exactly.** The MOTF sheet is an NJ statewide render whose pixels are {0,1} with no
+   nodata, so non-NJ land reads as *confidently dry* and every model-wet Delaware pixel
+   books a false alarm the sheet cannot adjudicate (FINDINGS §37–38 — this already cost
+   one rebaseline). `nj_10ft_dem` is NJ-only too.
+3. ⭐ **Conversely, stopping at Cape May keeps the BEST topo tier for the whole domain.**
+   `data/elevation/raw/Rast_statewide_10ft_DEM.ige` (16.5 G) is the **statewide NJ**
+   10 ft LiDAR mosaic — Cape May is inside it. Cross into Delaware and the finest tier
+   simply stops.
+4. **Cost with no NJ deliverable**, and it commits the Delaware Bay in/out decision now
+   rather than leaving it open.
+
+⚠️ **This is NOT "the Raritan mistake" and must not be argued as one.** Raritan's defect
+was cutting a basin in HALF so its interior maximum was structurally unreachable. Putting
+the whole of Delaware Bay outside the domain is a legitimate topology; the objections are
+the four above.
+
+🔴 **The one real design question the terminus forces: the CAPE MAY CANAL.** It is a real
+navigable tidal connection from Delaware Bay through to Cape May Harbour. If v3 includes
+the harbour but excludes Delaware Bay, the canal is an unforced hole in the boundary.
+Three options, to settle against bathymetry + the polygon:
+- **(a) short forced cross-section at the canal** — the Arthur Kill analogue, and the
+  spirit of v1.5. NACCS is marginal there (2.43 km), but the documented per-arm fallback
+  applies: **1-node gauge forcing, and Cape May 8536110 is already in
+  `noaa_sandy_nj.nc`.** *Preferred.*
+- (b) declare the canal closed (`land_boxes`) — cheapest and reversible, but ⚠️ **it is a
+  WALL, and removing v2's Manahawkin wall is v3's whole premise.** If taken, measure what
+  it costs with `make_flux_crosssections.py` rather than asserting it is small.
+- (c) cut on the Atlantic side at Cape May Inlet — cleanest topology, but drops Cape May
+  city, a real NJ flood target.
+
+#### ⏳ DATA ACQUISITION — scoped 2026-08-21, NOT started (two blockers found)
+
+Southern extent of every existing elevation source, measured. Only the 1-arcsec CUDEM
+reaches Cape May:
+
+| source | southern limit | reaches Cape May (38.93)? |
+|---|---|---|
+| `cudem_nj.vrt` (1″) | 38.750 | ✅ |
+| `cudem13_nj.vrt` (1/3″) | 39.499 | ❌ |
+| `gmrt_nj.tif` | 39.600 | ❌ |
+| `nj_10ft_dem.tif` | 39.645 | ❌ (source mosaic IS statewide — local re-clip, no download) |
+| `ehydro_south.tif` | 39.661 | ❌ (Philadelphia district ⇒ **positive depths**, per-preset sign field) |
+| `usace_nj_2010_topobathy_clip.tif` | 39.680 | ❌ |
+
+⚠️ STATUS previously read "CUDEM … already reach lat 38.75 (Cape May ✅ — no extension)".
+True of the 1″ VRT, **false of the 1/3″ VRT**, which is the tier that matters nearshore.
+
+🔴 **BLOCKER 1 — the downloaders write to FIXED paths inside the READ-ONLY archive.**
+`download_3dep.py` → `data/elevation/nj_10ft_dem.tif`, `download_cudem13.py` →
+`data/elevation/cudem13_nj.vrt`, `download_gmrt.py` → `data/elevation/gmrt_nj.tif`,
+`download_aorc_sandy_precip.py` → `data/precip/aorc_sandy_nj.nc`, `download_ehydro_nj.py`
+→ `data/elevation/ehydro_nj.tif`. Both `data/elevation` and `data/precip` are symlinks
+into the frozen archive and are `dr-xr-xr-x`, so every one of these fails EPERM — the
+freeze working as designed. **They need per-domain outputs first** (`data/elevation_v3/`,
+`data/precip_v3/` + catalog keys), the same treatment `download_sandy_hwms.py`,
+`download_sandy_motf_extent.py` and `build_cn_nj.py` already have. None have CLI
+bbox/region overrides; all resolve extent from `active().region`'s **bbox only**.
+
+🔴 **BLOCKER 2 — v3 cannot be registered in `domain.py` yet, and the guards are right.**
+Registering it was attempted and **reverted**: 5 tests fail, and 3 of them cannot be
+satisfied honestly before the mesh and polygon exist — `test_every_domain_has_a_fingerprint`
+and `test_expected_resolves_per_domain` need a fingerprint (no mesh), and
+`test_basin_rules_are_named_and_unique` needs real basins (no polygon). Only the
+EXPERIMENTS_BY_DOMAIN key and the PINNED support count could be declared. **A placeholder
+fingerprint is exactly the "success message over a no-op" this project keeps paying for —
+do not invent one.** The registry is enforcing polygon-first, which is the checklist order.
+
+**Decision needed before pulls start:** either (i) accept polygon-first and pull after the
+QGIS polygon lands (simplest, and the registry's intent), or (ii) add an explicit
+`acquisition_only` state to `Domain` so those 3 guards skip it deliberately, paired with a
+NEW invariant that such a domain has no `mesh_key`, declares no arms, and cannot be built.
+⭐ A superset acquisition footprint is already prepared and measured —
+`data/region_v3_PROVISIONAL_acquisition_bbox.geojson`, lon[−75.05, −73.45]
+lat[38.85, 40.62] — a deliberate superset of any plausible v3 polygon, so pulls driven
+from it stay valid once the real polygon replaces it. It is an input, not a modelling
+region; nothing references it yet.
+
+Quota at scoping time: **65.22 G of 100 G soft** (~35 G headroom). The new elevation is
+the bulk and is NJ-land-only, so ocean compresses to nothing — v1.5's clip is 573 MB for
+~0.9°×0.9°, so expect roughly 1–2.5 G total for the southern extension.
+
+**Then, in order** (the v1.5 template, files named): register `v3` in `domain.py`
+(own `mesh_key`, `hwm_geojson=data/validation_v3/…`, `motf_tif=data/validation_v3/…`,
+bounded basin rules with `unclassified` as the alarm) → `NJ_DOMAIN=v3` data pulls
+(domain-aware: usace_nj_2010, **3DEP re-clip from the 16.5 G raw `.ige` — verify, then
+that file unblocks on the deletion manifest**, cudem13, gmrt, AORC, CORA, HWMs, MOTF
+render, `build_cn_nj.py`) → extend hardcoded lists (USGS tidal + STN sensor sets
+southward; `download_ehydro_nj.py` southern preset with a **per-preset sign field** —
+Philadelphia district ships positive depths) → `validate_region_v3.py` (from
+`validate_region_v1_5.py`, declared Crossings: Barnegat/Little Egg/Absecon/Great
+Egg/Corson/Townsends/Hereford/Cold Spring inlets all interior now) →
+`probe_mesh_size.py` (expect ~2.2–2.6 M faces, SnapWave ~12–15 h ⇒ `--time=18:00:00`)
+→ `plot_waterlevel_boundary.py` and LOOK → iterate arms/boxes → quota gate (D+E
+reclaim; freeze needs 4–6 G) → `freeze_mesh.py` → `accept_domain.py` → fingerprint in
+`premier.EXPECTED`+`KNOWN`+`PINNED` → seal → smoke → sweep → `--validate-only`.
+
+⚠️ Standing scars that apply: re-verify `build_naccs_boundary.py --report-only
+--no-cache` on the v3 footprint (ET00-by-code, mixed-product zips); per-arm NACCS
+coverage, not aggregate; obs-point accepted-count check (log lines vs `wc -l
+sfincs.obs`); `sacct NodeList` = `hal*` on every job; three-clock check on output.
 
 ### 🔴 Two infrastructure traps that ate five submissions, 2026-08-14
 
@@ -626,14 +985,18 @@ independently reproduces the 2.77 km / 95.5% measured off the mesh by
 ⏳ STWAVE still has no reader; it needs its own, for its own column layout and 30-minute
 step. Not on the premier's path.
 
-#### Where the zips go
+#### Where the zips go — REPACKED 2026-08-20
 
 `~/nj_bight_sfincs/data/NACCS/` — a real local directory (the builder reads
-`ROOT/data/NACCS`). **Point the browser here.** ⚠️ Two zips from 2026-08-13 originally
-landed in the **archive's** `data/NACCS/`, which the freeze then made read-only; they were
-moved across (sha256-verified identical, then deleted from the archive, which was re-frozen).
-The archive's NACCS dir is back to the 6 zips it held before the restart, which is what it
-should contain — those two were never part of its record.
+`ROOT/data/NACCS`). ✅ **The 24 request zips were repacked into 5 canonical zips**
+(`naccs_repack_<PRODUCT>.zip` + provenance; `scripts/repack_naccs_zips.py`,
+`_repack/repack_manifest.json` is the member→source record): 1,843 cross-zip duplicate
+members all CRC-verified identical, the never-read `H5/` mirror dropped (user decision),
+1.6 G → 590 MB. Originals deleted AFTER `build_naccs_boundary.py --report-only
+--no-cache` reproduced the 1,287-point parse and the v1_monmouth support sha16
+`21f967f9798a6945` on the repacked set. ⚠️ New CHS downloads land beside them as
+`CHSFileDownload_*.zip` and simply coexist (both readers glob `*.zip` now); rerun the
+repack script to fold them in. The archive's NACCS dir (6 zips) is untouched.
 
 ✅ **`_sandy_parsed.npz` is present and is SAFE.** An earlier note here claimed the parse
 cache was "keyed to nothing" and would never notice a new zip. That is wrong:
@@ -1776,7 +2139,14 @@ notebook actually opens), `v1_monmouth/metrics.csv`,
 `v1_monmouth/faber-waves-premier/sfincs_map.nc`, and **all five
 `v2_barnegat/sfincs_map.nc` (8.79 GB)**.
 
-🔴 **v2_barnegat has NO metrics.csv anywhere** — not in `experiments/`, and
-`reports/v2_barnegat/` holds only animations. Its scores exist solely as prose in the
-archived docs, so deleting its maps would make those five runs unre-scorable forever.
-**Score it to a CSV before trimming it.**
+✅ **v2_barnegat SCORED 2026-08-20** — `experiments/v2_barnegat/metrics.csv` (5 rows,
+184 keys) via `scripts/score_v2_barnegat.py`: the archived runs rescored in place
+(through the `data/v2_barnegat_runs` symlink) with the CURRENT scorer, so the numbers
+are NOT the archived campaign prose — active-mask screen, `_scored` HWM keys, FA
+decomposition all apply. Headlines (median, 50 m; n=60): wave-cora RMSE 0.507 /
+CSI 0.672 · +bed-ehydro **0.493** / 0.702 · +mask-inlet 0.582 / 0.553 ·
++tide-shift 0.599 / 0.550 · BRACKET+manahawkin-open 0.509 / 0.707 (`bracket=True`,
+inadmissible by construction). ⚠️ The five arms span THREE fingerprints (pre/post
+inlet-repair mask, ehydro bed) — compare within a fingerprint only. **The 8.79 GB of
+maps are now trimmable** (deletion manifest; keep the floodmap caches + his files so
+everything stays re-computable).

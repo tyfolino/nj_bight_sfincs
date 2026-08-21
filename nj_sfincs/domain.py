@@ -289,6 +289,25 @@ class Domain:
     #: into the frozen archive, which enforces that on disk.
     hwm_geojson: Path = DATA / "validation" / "sandy_hwms.geojson"
 
+    #: The FEMA MOTF extent raster this domain is scored against — a DOMAIN fact for
+    #: the same reason ``hwm_geojson`` is: ``download_sandy_motf_extent.py`` renders the
+    #: ACTIVE region's bbox, so a bigger domain needs its own, bigger sheet. Found the
+    #: hard way (2026-08-20): the archived raster was rendered on the v1_monmouth bbox
+    #: and stops at lat 40.5283, so v1.5's northern ~9 km — the Narrows, the upper
+    #: Staten Island shore — was silently absent from every CSI.
+    #: 🔴 ``v1_monmouth`` must keep the archived file — the port fixture pins
+    #: ``motf_csi=0.637834`` pre-screen; ``data/validation`` is the read-only archive.
+    motf_tif: Path = DATA / "validation" / "sandy_motf_extent.tif"
+
+    #: (name, (lon_min, lat_min, lon_max, lat_max), why) — ground EXCLUDED from the MOTF
+    #: comparison footprint because the MOTF sheet is known-invalid there, not because
+    #: the model is. The sheet is an NJ-statewide render whose pixels are only {0, 1} —
+    #: nodata never occurs — so New York land it does not cover reads as CONFIDENTLY DRY
+    #: rather than as missing, and every model-wet pixel on Staten Island books a false
+    #: alarm the sheet cannot adjudicate. Coordinate boxes by convention (CLAUDE.md §6).
+    #: ``motf_km2_excluded_boxes`` reports what the screen removed — quote it beside CSI.
+    motf_exclude_boxes_ll: tuple[tuple[str, tuple[float, float, float, float], str], ...] = ()
+
     #: Northing above which the coast is no longer open ocean (a spit tip, a harbour
     #: mouth). Incident wave energy and wave-boundary support points are taken only
     #: below it.
@@ -552,7 +571,7 @@ V1_MONMOUTH = Domain(
 
 
 # ═════════════════════════════════════════════════════════════════════════════
-# v1_5_raritan — NOT YET REGISTERED
+# v1_5_raritan — REGISTERED AND FROZEN (2026-08-14)
 # ═════════════════════════════════════════════════════════════════════════════
 # The domain this repo exists to build: the boundary relocated OUT of Raritan Bay, so
 # Lower Bay / Raritan Bay / Sandy Hook Bay are COMPUTED rather than forced. One ocean
@@ -560,11 +579,10 @@ V1_MONMOUTH = Domain(
 # plus two short forced cross-sections at Verrazzano Narrows and Arthur Kill. Staten
 # Island south shore is a declared land boundary; Jamaica Bay is excluded.
 #
-# It is deliberately ABSENT rather than stubbed. An unregistered domain fails loudly at
-# `active()`; a stubbed one with placeholder geometry would build, run, and produce
-# numbers. Two manual facts have to be confirmed before any polygon is drawn — NACCS
-# coverage at both cuts, and at least two interior gauges that survive the crest — and
-# both are recorded in docs/STATUS.md.
+# Frozen mesh: data/frozen_mesh_v1_5_raritan_z10 — fingerprint faces=696230
+# boundary_edges=1652 sha(z,mask)=2a23667dd16e449c, pinned in premier.EXPECTED.
+# Both pre-polygon gates (NACCS coverage at the cuts; interior gauges surviving the
+# crest) passed 2026-08-13 — the record is in docs/STATUS.md.
 
 # ── v1.5 interior gauges: the USGS storm-tide (SSS) water-level units ─────────────
 # Gate 2. These are what make "Raritan Bay is COMPUTED, not forced" testable at all.
@@ -866,6 +884,33 @@ V1_5_RARITAN = Domain(
     ),
     discharge_geodataset="usgs_sandy_discharge_v1_5",
     hwm_geojson=DATA / "validation_v1_5" / "sandy_hwms_v1_5.geojson",
+    # Own MOTF render: the archived sheet was rendered on the v1_monmouth bbox and
+    # stops at lat 40.5283 — the Narrows and the upper SI shore were silently unscored.
+    # Built by `NJ_DOMAIN=v1_5_raritan python scripts/download_sandy_motf_extent.py`.
+    motf_tif=DATA / "validation_v1_5" / "sandy_motf_extent_v1_5.tif",
+    # The MOTF source layer is NEW JERSEY ONLY and renders NY land as 0 = confidently
+    # dry, so every model-wet pixel there booked a false alarm the sheet cannot
+    # adjudicate. Boxes validated 2026-08-20 against the nj_10ft_dem footprint (an
+    # NJ-only product, so its data extent IS the NJ-land discriminator): 0 NJ pixels
+    # inside either box; Ward Point (40.4961) and all SI shore contained; Perth Amboy
+    # (west of the Arthur Kill) untouched. 4.50 km² of scored land removed on the
+    # archived sheet; the brooklyn_rockaway box only bites on the v1.5 render, which
+    # reaches past lat 40.53.
+    motf_exclude_boxes_ll=(
+        (
+            "staten_island",
+            (-74.2525, 40.4870, -74.030, 40.6500),
+            "NY land east of the Arthur Kill — outside the NJ-only MOTF layer, reads "
+            "as fake-dry. West edge splits the Kill: Ward Point (SI, -74.249) in, "
+            "Perth Amboy (NJ, -74.256 and west) out.",
+        ),
+        (
+            "brooklyn_rockaway",
+            (-74.0300, 40.5300, -73.850, 40.6500),
+            "Brooklyn / Rockaway shore — NY land on the v1.5 render north of the "
+            "archived sheet's 40.5283 cutoff.",
+        ),
+    ),
     hwm_rules=_V1_5_BASIN_RULES,
     # 🔴 THIS IS THE COUNT FOR THE **BASE** FORCING (`noaa_sandy_nj`), NOT FOR NACCS.
     # The template is built from BaseConfig, whose water level is the NOAA gauge set, and
@@ -893,7 +938,83 @@ V1_5_RARITAN = Domain(
 )
 
 
-DOMAINS: dict[str, Domain] = {d.name: d for d in (V1_MONMOUTH, V1_5_RARITAN)}
+# ═════════════════════════════════════════════════════════════════════════════
+# v2_barnegat — FROZEN ARCHIVE FIXTURE, registered 2026-08-20 for SCORING ONLY
+# ═════════════════════════════════════════════════════════════════════════════
+# The archive's v1-plus-Barnegat-lobe domain (nj_coast_sfincs/nj_sfincs/domain.py:550).
+# Its five kept runs (8.79 GB of sfincs_map.nc) had NO metrics.csv anywhere — their
+# scores existed only as prose in the archived campaign logs, so trimming the maps
+# would have made them unre-scorable forever. This entry exists so the bight scorer
+# can bank a CSV first (scripts/score_v2_barnegat.py); the maps are then trimmable.
+#
+# frozen=True: staged and scored, never built — the frozen mesh was deliberately not
+# ported (ARCHIVE.md). Only the fields the SCORER touches are populated; build-time
+# fields (mask overrides, always-active boxes, refinement) stay in the archive with
+# the mesh they describe. region is a data/ symlink into the read-only archive.
+# The archived sandy_hwms.geojson (95 marks) and sandy_motf_extent.tif were both
+# built on the V2 bbox (lat 39.69–40.53) — the defaults are exactly right here,
+# which is also WHY v1_monmouth could score against them all along.
+
+_BB_MANTOLOKING = ObsGauge(
+    "usgs_tidal_bb_mantoloking", -74.0544444, 40.0405556, "surge",
+    "gtsm/usgs_sandy_tidal_nj.nc", None, 1408168,
+    survives_crest=True,
+    note="Barnegat Bay at Mantoloking. 721 pts, complete through the peak. Observed "
+    "peak 2.11 m NAVD88 at 2012-10-30 06:18 UTC — 0.52 m HIGHER and ~6 h LATER than "
+    "Barnegat Light at the inlet; the pair constrains bay conveyance.",
+)
+_BB_BARNEGAT_LIGHT = ObsGauge(
+    "usgs_tidal_bb_barnegat_light", -74.1105556, 39.7608333, "surge",
+    "gtsm/usgs_sandy_tidal_nj.nc", None, 1409125,
+    survives_crest=True,
+    note="Barnegat Bay at Barnegat Light, just inside the inlet. Observed peak 1.59 m "
+    "NAVD88 at 2012-10-30 00:24 UTC. Inside the 6 km buffer to the artificial "
+    "Manahawkin south edge, so it is also the check on that boundary.",
+)
+_SSS_BARNEGAT_INLET = ObsGauge(
+    "usgs_stormtide_barnegat_inlet", -74.104167, 39.763611, "surge",
+    "gtsm/sandy_storm_tide_nj.nc", "stormtide_m", 2260,
+    survives_crest=True,
+    note="USGS SSS-NJ-OCE-001WV, in Barnegat Inlet itself. Peak 1.65 m NAVD88 at "
+    "2012-10-30 00:00 — corroborates Barnegat Light (1.59 m at 00:24) from ~1 km.",
+)
+
+# Sloped divider fitted to the barrier's bay-side shore between Barnegat and
+# Manasquan Inlets (x = 576,000 + 0.160*(y - 4,402,000)) — ported verbatim from the
+# archive so the basin split reproduces its campaign's.
+_S_BARRIER = dict(slope_x0=576_000, slope_y0=4_402_000, slope=0.160)
+_V2_SOUTH_RULES = (
+    BasinRule("manasquan", xmax=582_600, ymin=4_434_000, ymax=4_443_000,
+              why="Manasquan River estuary, behind the inlet — a conveyance basin."),
+    BasinRule("barnegat_barrier", ymax=4_444_000, side=+1, **_S_BARRIER,
+              why="Ocean-front barrier: Island Beach, Bay Head/Mantoloking and the "
+                  "north end of LBI. Includes the Mantoloking breach zone."),
+    BasinRule("barnegat_bay", ymax=4_444_000,
+              why="The lagoon and its mainland shore — behind-barrier, so the "
+                  "conveyance test for Barnegat and Manasquan Inlets."),
+)
+
+V2_BARNEGAT = Domain(
+    name="v2_barnegat",
+    region=DATA / "region_v2_barnegat.geojson",
+    epsg=32618,
+    latitude=40.11,  # domain mean, (39.70 + 40.52) / 2 — the archive's value
+    frozen=True,
+    obs_gauges=(_SANDY_HOOK, _SSS_SEA_BRIGHT, _USGS_SEA_BRIGHT, _USGS_SHARK,
+                _BB_MANTOLOKING, _BB_BARNEGAT_LIGHT, _SSS_BARNEGAT_INLET),
+    open_coast_max_y=4_476_000,
+    hwm_rules=_V2_SOUTH_RULES + _V1_BASIN_RULES,
+    plot_window=(578_500, 592_000, 4_462_000, 4_482_000),
+    # Battery 20.0 km, AC 39.6 km, Cape May 99.1 km — 100 km would admit Cape May by
+    # 0.9 km. The archive chose 60 km with ~20 km margin either side; kept verbatim.
+    waterlevel_buffer=60_000,
+    n_waterlevel_support=2,
+)
+
+
+DOMAINS: dict[str, Domain] = {
+    d.name: d for d in (V1_MONMOUTH, V1_5_RARITAN, V2_BARNEGAT)
+}
 
 #: Until v1_5_raritan is registered the only domain is the frozen port-verification
 #: fixture. That is the safe default: anything that tries to BUILD on it is refused.

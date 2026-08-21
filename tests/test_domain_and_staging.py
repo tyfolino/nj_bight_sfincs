@@ -365,6 +365,9 @@ class TestWaterlevelSupportOverride(_DomainEnv):
             # declared on the ARM. Putting 71 here would disable the guard for every
             # other arm on the domain — see nj_sfincs/domain.py.
             "v1_5_raritan": 2,
+            # Frozen archive fixture (score-only): the archive's own 60 km buffer
+            # keeps Battery + Atlantic City and excludes Cape May by ~39 km.
+            "v2_barnegat": 2,
         }
         self.assertEqual(
             set(PINNED),

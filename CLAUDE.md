@@ -41,7 +41,7 @@ Every geographic fact lives in **`nj_sfincs/domain.py`**, keyed by the `NJ_DOMAI
 | `NJ_DOMAIN` | what | status |
 |---|---|---|
 | `v1_monmouth` | Sandy Hook → Sea Girt, 547,408 faces | **FROZEN** — port-verification fixture only |
-| `v1_5_raritan` | boundary relocated to the Narrows + Arthur Kill | **registered, NOT frozen** — no mesh, no fingerprint (see STATUS) |
+| `v1_5_raritan` | boundary relocated to the Narrows + Arthur Kill | **FROZEN 2026-08-14** — `faces=696230 boundary_edges=1652 sha=2a23667dd16e449c`, three arms run + scored (see STATUS) |
 
 **The same experiment name exists on every domain and means a different model each time.**
 That is why runs live at `experiments/<domain>/<arm>`, why `EXPERIMENTS` is keyed by domain
@@ -172,6 +172,13 @@ not trip that guard. Do not run the sweep driver to "just rebuild" a template.
   which reads the run's own `msk` — **not** a region polygon, which is a build input the
   mask legitimately grows past. FINDINGS §37.
 - **An HWM records that water ARRIVED, not which way it came in.**
+- ⚠️ **A station or mark within ~500 m of a discharge source reads the INJECTION, not the
+  basin.** `rb_axis_559k` sits 253 m from the Raritan source (Qmax 110 m³/s) and carries a
+  single-face, sub-2-minute **1.33 m** `zsmax` spike its own 60 s series never sees;
+  neighbouring faces do not share it. `scripts/diagnose_bay_seiche.py` computes
+  `dist_nearest_src_m` / `src_contaminated` so the flag is a column, not a footnote.
+  Measured clean for the scored HWMs on v1.5 (0 of 46 within 500 m, closest 674 m) —
+  **re-check on any new domain**, because it is a per-domain fact. FINDINGS §40.
 
 ## 6. Conventions
 
@@ -181,6 +188,11 @@ not trip that guard. Do not run the sweep driver to "just rebuild" a template.
 - **The user commits and pushes. Claude may `git add`, never `git commit`.**
 - 🔴 **Never quote an HWM bias without its estimator and radius.** The estimator alone flips
   the sign of the bias and inverts the ranking of every arm. Use the `_scored` keys.
+- **Which MOTF raster a domain scores, and where that raster is VALID, are DOMAIN facts**
+  (`Domain.motf_tif`, `Domain.motf_exclude_boxes_ll`). The source layer is NJ-only and
+  renders NY land as confidently dry — quote `motf_km2_excluded_boxes` beside any CSI.
+  The FA decomposition keys (`motf_far_connected` etc.) are diagnostic, reported beside
+  the headline keys, never instead. FINDINGS §37–38.
 - ⚠️ **A waves-off arm's CSI / POD / FAR are KEPT and flagged** `extent_admissible=False`
   — waves-off is a legitimate configuration, not a broken one. The caution is against
   RANKING one against a waves-on arm: on v1.5 SnapWave is worth ΔCSI 0.018, against

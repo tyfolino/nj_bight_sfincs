@@ -36,6 +36,7 @@ from .core import (  # noqa: F401
     xcorr_lag_minutes,
     zs_at_faces,
 )
+from .fa_decomp import fa_decomposition  # noqa: F401
 from .metrics import (  # noqa: F401
     HWM_ESTIMATOR_DEFAULT,
     HWM_ESTIMATORS,

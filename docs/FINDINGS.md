@@ -319,6 +319,164 @@ Live campaign state is in [STATUS.md](STATUS.md). This file is for what is settl
    `validate.simulated_mask` is wrong on neither and cannot go stale against the run.
    `motf_km2_unsimulated` reports what was removed — quote it beside the CSI.
 
+38. **The Keansburg overshoot is MISSING FLOOD PROTECTION, not bad elevation data — and
+    MOTF makes the same error, so it cannot arbitrate it.** Diagnosed 2026-08-20,
+    `scripts/diagnose_keansburg.py` → `reports/keansburg/`. Three marks read obs
+    ≈1.55 m against a modeled ~3.3 m (residuals +1.67…+1.77, the worst on the domain);
+    every neighbour within 2 km (obs 3.6–4.4 m) validates to ±0.5 m.
+
+    - **The bed is right.** On five shore-normal transects the model's subgrid crest
+      matches USACE 2010 1 m lidar to ±0.05 m and CUDEM to ±0.3 m everywhere — the
+      Keansburg beachfront dune stands 6.0 m in the model, exactly as surveyed. The
+      earlier "the 100 m cells average the berm away" hypothesis is REFUTED at the
+      dep level (the cell-EDGE flux tables remain unexamined).
+    - **All three marks sit in the pocket BEHIND the USACE Keansburg protection**
+      (levee + Waackaack Creek tide gates; 6155 is literally "upstream, right of
+      wooden walkway bridge" — a creek mark). The corridor at lon −74.136 has no
+      continuous barrier above ~2.9 m in ANY product, so with no structures in the
+      build the pocket connects to the bay and equilibrates to bay level (~3.3 m).
+      In reality the gates + levee throttled the inflow and the interior stopped at
+      ~1.55 m. The marks are consistent with each other and almost certainly REAL.
+    - **MOTF floods the pocket too** — wet at all three marks — because a bathtub has
+      no structures either. So extent agreement is high exactly where the levels are
+      most wrong: local CSI 0.768 (better than the 0.685 domain figure), model wet
+      9.11 km² vs MOTF 7.86 km² in the Keansburg box, FA 1.74 km², miss 0.49 km².
+      An extent product cannot see a volume-limited flood; only the marks can.
+    - ⚠️ 6156/6133 are q3 (outside the q≤2 headline set); **6155 is q1 and IS in it**,
+      contributing the largest single residual to `raritan_bay`'s RMSE 0.452.
+
+    **Remedy adopted (user, 2026-08-20): the weir delta arm — and the smoke PASSED.**
+    `sfincs.weir` = the protection line traced along the USACE-2010 lidar ridge (89
+    vertices, lon −74.150..−74.128, crest = max(ridge, 2.9 m) — the 2.9 floor closes
+    the Waackaack gate reach at the measured adjacent levee crest; cd 0.6; the line
+    deliberately stops WEST of East Keansburg, which genuinely flooded to 3.57 m).
+    No z/mask change — fingerprint UNMOVED, verified on the staged copy.
+    - ⭐ **The quadtree Faber engine HONORS `weirfile`**: `diag-nowaves-keansburg-weir`
+      logs `reading weir file` → `217 structure u/v points found`, output WHOLE.
+      (Checked because of the obs-point silent-drop scar — an accepted-input log line
+      is the only proof a staged file was read.)
+    - **Effect at the pocket marks: 3.27–3.38 m → 2.48–2.49 m** (residual +1.7/+1.8 →
+      **+0.9**). The pocket is now overtopping-limited instead of filling to bay
+      level — half the error; the remainder says the real crest/gates outperform a
+      2.9 m broad-crested weir at cd 0.6.
+    - ⚠️ Marks 2–5 km WEST of the weir moved by −0.2..−0.3 m between the two nowaves
+      runs. Do not attribute that to the weir: it is inside this basin's known
+      arm-dependent `zsmax` sub-hourly band (STATUS, "do not quote a Raritan Bay
+      difference between arms" caveat). The local capping is 3–4× that band.
+    - ✅ **The waves-on decision run agrees (2026-08-21,
+      `diag-premier-keansburg-weir`; pre-reg
+      `reports/keansburg/preregistration_weir_decision.md`).** Pocket marks
+      3.27–3.38 → **2.45–2.46 m** (residual +0.87–0.91); Keansburg box
+      (−74.155..−74.105, 40.425..40.455) CSI 0.761 → **0.783**, FA 1.28 →
+      **0.52 km²**, miss 0.24 → 0.68 km² (MOTF floods the pocket too, so correctly
+      drying it books misses against the reference's own error). Domain-wide: HWM
+      Δ RMSE +0.007 m [−0.114, +0.120] paired n=46 — a wash inside the bay ringing
+      band (STATUS, his-ringing entry 2026-08-21); MOTF CSI 0.7108 → 0.7044
+      with FAR improving 0.1764 → 0.1682. Promote-vs-delta is the user's decision.
+    - ✅ **PROMOTED 2026-08-21 (user decision).** The weir is in the TEMPLATE so every
+      arm inherits it; the verified weir runs were adopted as `naccs-premier` /
+      `naccs-nowaves` (pre-weir runs banked as `preweir-*`;
+      `metrics_2026-08-21_pre_weir_rebaseline.csv`). Headline now: HWM RMSE 0.4084 /
+      bias −0.037, CSI 0.7044 / FAR 0.1682. Durable source
+      `data/structures_v1_5/keansburg_weir.weir`; `model._ensure_weirfile_key` keeps
+      the inp key alive across re-staging (`tests/test_weir_staging.py`).
+    Not indicated: bed burn (the bed already matches the lidar — nothing to burn
+    short of inventing a crest the survey does not show). The v3 refinement design
+    should still raise the `bay_fringe` gate (zmax 2.0 excludes every berm crest on
+    this shore).
+
+39. **The FA "disconnected = rain" classifier is VALIDATED against a rain-off run —
+    and the rain share was an undercount.** Measured 2026-08-21,
+    `scripts/measure_rain_share.py` (pre-registered in its docstring) →
+    `reports/rain/rain_share.csv`; `naccs-premier` vs `diag-premier-norain`
+    (byte-identical staging minus `netamprfile`), on the MOTF grid under the
+    `motf_metrics` screens ∧ simulated-in-both. Ground truth: wet-in-premier ∧
+    dry-in-norain (`DEPTH_MIN` threshold).
+
+    | field | value |
+    |---|---|
+    | FA total | 11.40 km² |
+    | **FA rain share (ground truth)** | **75.7%** (8.62 km²) |
+    | `disc_precision` — P(rain-true \| labelled disconnected) | **0.991** |
+    | `disc_recall` | 0.914 |
+    | FA within 5 cm of the wet threshold (flip-marginal) | 1.35 km² |
+    | rain share of the WHOLE premier wet extent | 19.7% |
+
+    So `fa_decomp`'s connectivity heuristic is a near-perfect rain detector here:
+    99% of what it excuses is genuinely rain, and it misses 9% of the rain-true FA
+    (conservative in its claimed direction — the 70%-of-FA figure in the fa_decomp
+    entry was an undercount of the true 75.7%). The `motf_csi_connected` /
+    `motf_far_connected` keys therefore mean what they say. ⚠️ Conditions: one
+    domain, one storm, infiltration effectively OFF (`model.py` strips the CN
+    keys), and both runs share `zsmax` sub-hourly behaviour except where rain
+    itself changes it. ⚠️ Runs accepted on the user's visual inspection + the
+    `output WHOLE` audit, 2026-08-21, waiving the >26 h three-clock re-audit
+    (neither diag run ever had a halk submission against its directory).
+
+40. ⭐ **The Raritan Bay sub-hourly motion is a REAL, COHERENT basin oscillation — not
+    numerical chatter. `zsmax` scoring in the bay STANDS; what is fragile is its PHASE
+    between arms, not its envelope.** Measured 2026-08-21,
+    `scripts/diagnose_bay_seiche.py`, pre-registered at
+    `reports/seiche/preregistration_bay_seiche.md` (written before any number) →
+    `reports/seiche/bay_seiche_{stations,pairs,windows}.csv`,
+    `reports/figures/bay_seiche_diagnostic.png`. Read off `diag-nowaves-fasthis`
+    (`dthisout=60 s`, 14 accepted obs points, six on the Raritan Bay deep axis over
+    11.6 km; SLURM 60693810, hal0344, `output WHOLE`).
+
+    **Primary field — where the excess lives in FREQUENCY.** No physical mode of a 12 km,
+    6–16 m basin has a period under the 120 s Nyquist of a 60 s record, so if the
+    `zsmax` excess is resolved at 60 s it cannot be sub-timestep noise:
+
+    | | `zsmax` − hourly | 60 s max − hourly | `recovery_frac` |
+    |---|---|---|---|
+    | axis, median (5 clean pts) | — | — | **0.985** (min 0.950) |
+    | `rb_axis_559k` ⚠️ | 1.867 m | 0.536 m | 0.287 |
+    | open-coast control | 0.026–0.244 m | ≈ same | 0.98–1.00 |
+
+    **≈ 98% of the excess is motion the record resolves.** The pre-registered threshold
+    was 0.7.
+
+    **Secondary — it is coherent, and organized at ALL times.** Magnitude-squared
+    coherence between the axis ENDS (11.6 km apart) γ² = 0.934 at 10.4 min, band mean
+    0.437 against a 95% noise floor of **0.084**. Split by window (post-hoc), every pair
+    is coherent in the quiet pre-storm window as well as at the crest (band means
+    0.48–0.80, floor 0.26) — so this is a persistent tidally-driven oscillation the storm
+    amplifies 2–5×, not something the storm creates. Bay `hp_std` 0.067 m vs open-coast
+    0.016 m, and 0.040 m in the bay even pre-storm (7× Shark River). Adjacent lags are
+    **mixed-sign and only ~8% of a period**, i.e. quasi-standing rather than progressive;
+    implied speeds 9.4–28.7 m/s straddle `sqrt(g·h)` = 11.7 m/s. Dominant periods 34–60
+    min, 4 of 6 axis stations within ±20% of 40 min.
+
+    🔴 **What this does and does not license.** It licenses reading a single arm's bay
+    `zsmax` as real water. It does **not** retract the arm-comparison caution: a real
+    seiche has a phase, `zsmax` is a running max that samples that phase, and a local
+    perturbation re-rings the basin — which is exactly why instantaneous |Δzs| between
+    two arms reaches 1.32 m while their crest PEAKS differ by only 0.03–0.15 m. **The
+    envelope is robust; the phase is not.** Continue to compare bay arms paired and to
+    treat a bay-wide Δ inside ±0.1–0.4 m as unattributable.
+
+    ⚠️ **`rb_axis_559k` is a discharge-injection artefact, flagged not dropped.** It sits
+    **253 m** from the Raritan River source (Qmax 110 m³/s) and carries a single-face,
+    sub-2-minute 1.33 m `zsmax` spike its own 60 s series never sees; neighbouring faces
+    do not share it. ⭐ **No scored HWM mark is within 500 m of any discharge source**
+    (closest 674 m, n=46), so this contaminates no score — but a station or mark inside an
+    injection zone reads the source, not the basin.
+
+    ⚠️ Conditions: ONE arm (waves-off, PRE-weir), one storm. This establishes what the
+    motion IS; it does not by itself explain why two arms ring differently. The axis
+    follows the **dredged navigation channel** (10–16 m in a bay of ~6 m), so "coherent"
+    is established along the channel — the flank points (Arthur Kill mouth, Great Kills)
+    agree, which is the check that it is not channel-only. Peak-period resolution is
+    limited by the 61-min high-pass: three stations peak at the 60-min band edge.
+    ⚠️ The Merian consistency note in the script output (half-wave 33 min on the sampled
+    channel vs observed 34.3 min) is **post-hoc with free parameters chosen after seeing
+    the answer** — suggestive, never quotable as a match.
+
+    ⚠️ **STATUS recorded that SFINCS silently dropped the six `rb_axis_*` points. That was
+    wrong** — the run's own log lists `observation point 1..14` and `wc -l sfincs.obs` is
+    14. The acceptance check (log lines vs `wc -l`) is still the right guard and now
+    passes; no re-run was needed.
+
 ### Closed — do not re-open
 
 Each of these cost a campaign and is settled. The evidence is in the archive's

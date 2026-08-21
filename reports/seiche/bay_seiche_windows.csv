@@ -1,0 +1,17 @@
+window,a,b,sep_m,coh_band_mean,coh_peak
+quiet,rb_axis_571k,rb_axis_569k,2631.5,0.771,0.965
+quiet,rb_axis_569k,rb_axis_566k,1697.7,0.704,0.984
+quiet,rb_axis_566k,rb_axis_564k,3092.7,0.733,0.995
+quiet,rb_axis_564k,rb_axis_561k,3440.8,0.798,0.981
+quiet,rb_axis_561k,rb_axis_559k,2285.1,0.629,0.985
+quiet,rb_axis_571k,rb_axis_559k,11647.4,0.482,0.887
+quiet,rb_axis_566k,sss_arthur_kill_mouth,1610.0,0.753,0.971
+quiet,rb_axis_571k,sss_great_kills,5421.7,0.582,0.892
+crest,rb_axis_571k,rb_axis_569k,2631.5,0.645,0.977
+crest,rb_axis_569k,rb_axis_566k,1697.7,0.707,0.986
+crest,rb_axis_566k,rb_axis_564k,3092.7,0.517,0.908
+crest,rb_axis_564k,rb_axis_561k,3440.8,0.677,0.957
+crest,rb_axis_561k,rb_axis_559k,2285.1,0.605,0.991
+crest,rb_axis_571k,rb_axis_559k,11647.4,0.541,0.958
+crest,rb_axis_566k,sss_arthur_kill_mouth,1610.0,0.641,0.985
+crest,rb_axis_571k,sss_great_kills,5421.7,0.659,0.975

@@ -60,20 +60,38 @@ class TestMotfSimulatedMask(unittest.TestCase):
     def test_v1_5_is_dominated_by_unreachable_motf_wet(self):
         """On v1.5 the correction is almost all MISSES the model could not have hit.
 
-        Its mask reaches every low cell its own downscale could bleed into, so the bleed
-        term is 0.0018 km² — 8 cells, three orders of magnitude under the 2.56 km² of
-        unreachable MOTF wet. Asserted as a RATIO so the point survives a re-run: on
-        this domain the screen removes misses, not false alarms. Contrast v1_monmouth.
+        Its mask reaches every low cell its own downscale could bleed into, so the
+        bleed term is 0.045 km² against 18.65 km² of unreachable MOTF wet (the sheet's
+        bbox includes real Sandy flooding up the Raritan valley, outside the region).
+        Asserted as a RATIO so the point survives a re-run: on this domain the screen
+        removes misses, not false alarms. Contrast v1_monmouth.
+
+        🔴 REBASELINED 2026-08-20 (deliberately, both recorded): the domain now scores
+        its OWN MOTF render (`Domain.motf_tif` — the archived sheet was rendered on the
+        v1_monmouth bbox and stopped at lat 40.5283) with the NJ-only validity screen
+        (`motf_exclude_boxes_ll`; NY land read as fake-dry and booked false alarms).
+        Old sheet, no screen: CSI 0.6845927101805489 / POD 0.8206884110516467 /
+        FAR 0.19499823050607526, bleed 0.0018 km², unreachable 2.56 km².
+        New sheet + screen, pre-weir premier: CSI 0.7107507558045186 /
+        POD 0.8384162445185739 / FAR 0.176438224509623.
+
+        🔴 RE-PINNED AGAIN 2026-08-21 (WEIR PROMOTION, FINDINGS §38, user decision):
+        ``naccs-premier`` now includes the Keansburg protection line — the run dir IS
+        the verified-WHOLE ``diag-premier-keansburg-weir``, adopted as the arm. POD
+        drops because the weir correctly dries a pocket the MOTF bathtub wrongly
+        floods; FAR improves. The values pinned below are the weir premier;
+        13.98 km² excluded as non-NJ either way.
         """
         m = self._score("v1_5_raritan", "naccs-premier")
-        self.assertLess(m["motf_km2_unsim_modwet"], 0.01)
+        self.assertLess(m["motf_km2_unsim_modwet"], 0.1)
         self.assertGreater(m["motf_km2_unsim_motfwet"], 2.0)
         self.assertGreater(
             m["motf_km2_unsim_motfwet"], 100 * m["motf_km2_unsim_modwet"]
         )
-        self.assertAlmostEqual(m["motf_csi"], 0.6845927101805489, places=9)
-        self.assertAlmostEqual(m["motf_pod"], 0.8206884110516467, places=9)
-        self.assertAlmostEqual(m["motf_far"], 0.19499823050607526, places=9)
+        self.assertAlmostEqual(m["motf_csi"], 0.7044218462614195, places=9)
+        self.assertAlmostEqual(m["motf_pod"], 0.8214038831716232, places=9)
+        self.assertAlmostEqual(m["motf_far"], 0.16817504622067456, places=9)
+        self.assertAlmostEqual(m["motf_km2_excluded_boxes"], 13.984875, places=6)
 
     def test_v1_monmouth_removes_downscale_bleed_too(self):
         """The port fixture DOES bleed: phantom water under inactive faces was scoring.

@@ -125,9 +125,20 @@ V1_5_RARITAN_Z10 = DomainFingerprint(696230, 1652, "2a23667dd16e449c")
 #: A domain with no entry here audits "UNRECOGNISED" — an unimplemented feature that reads
 #: exactly like a real domain error, and therefore trains you to ignore the one alarm that
 #: matters. Register a domain's fingerprint BEFORE running anything on it.
+#: v2_barnegat — the archive's v1-plus-Barnegat-lobe domain, ported 2026-08-20 as a
+#: FROZEN score-only fixture (its five kept maps had no metrics.csv anywhere; see
+#: domain.py). Values verbatim from the archive's premier.py: the post-inlet-repair
+#: mask (2026-07-30). ⚠️ The archived ARM directories legitimately carry OTHER
+#: fingerprints — the pre-repair mask (below), bed-ehydro arms (a carve moves `z`),
+#: and the manahawkin-open bracket — so an audit of those dirs labels rather than
+#: matches. Nothing here may be staged or run; `frozen=True` refuses the build.
+V2_BARNEGAT = DomainFingerprint(1143357, 2164, "3b1356b9590c59ff")
+V2_BARNEGAT_PREMASK = DomainFingerprint(1143357, 2164, "9ccbab0bc7a9fc0d")
+
 EXPECTED: dict[str, DomainFingerprint] = {
     "v1_monmouth": V1_MONMOUTH,
     "v1_5_raritan": V1_5_RARITAN_Z10,
+    "v2_barnegat": V2_BARNEGAT,
 }
 
 KNOWN = {
@@ -135,6 +146,14 @@ KNOWN = {
     V1_5_RARITAN_Z10: (
         "v1_5_raritan z10 FROZEN 2026-08-14 — boundary out of Raritan Bay "
         "(ocean + Narrows + Arthur Kill mouth), CoNED bed at Ward Point, Raritan discharge"
+    ),
+    V2_BARNEGAT: (
+        "v2_barnegat FROZEN (post inlet-mask repair 2026-07-30) — archive fixture, "
+        "score-only"
+    ),
+    V2_BARNEGAT_PREMASK: (
+        "v2_barnegat PRE-repair mask — the 2026-07-26..29 campaign arms; not "
+        "comparable to post-repair runs"
     ),
 }
 

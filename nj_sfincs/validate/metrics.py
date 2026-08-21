@@ -367,6 +367,50 @@ def _hwm_path(data_dir):
     return Path(data_dir) / rel.parent.name / rel.name
 
 
+def motf_path(data_dir):
+    """The MOTF extent raster for the ACTIVE domain, under `data_dir`.
+
+    Same pattern and same reason as ``_hwm_path``: the raster is rendered over a
+    domain's bbox, so which file a domain scores against is a registry fact.
+    ``v1_monmouth`` resolves the archived sheet the port fixture is pinned to;
+    ``v1_5_raritan`` gets its own render covering the northern 9 km the archived
+    sheet stops short of.
+    """
+    from pathlib import Path
+
+    from .. import domain as _domain  # noqa: PLC0415
+
+    rel = _domain.active().motf_tif
+    return Path(data_dir) / rel.parent.name / rel.name
+
+
+def motf_exclude_mask(shape, transform, crs_epsg: int | None = None):
+    """Boolean mask over a MOTF-grid raster: True where a domain exclude box says the
+    sheet is invalid (``Domain.motf_exclude_boxes_ll``).
+
+    Boxes are lon/lat; the raster is projected, so cell centres are transformed
+    exactly rather than approximating the box as a projected rectangle. Returns None
+    when the active domain declares no boxes, so callers can skip the work.
+    """
+    from pyproj import Transformer  # noqa: PLC0415
+
+    from .. import domain as _domain  # noqa: PLC0415
+
+    boxes = _domain.active().motf_exclude_boxes_ll
+    if not boxes:
+        return None
+    epsg = crs_epsg or _domain.active().epsg
+    h, w = shape
+    Xc = transform.c + (np.arange(w) + 0.5) * transform.a
+    Yc = transform.f + (np.arange(h) + 0.5) * transform.e
+    XX, YY = np.meshgrid(Xc, Yc)
+    lon, lat = Transformer.from_crs(epsg, 4326, always_xy=True).transform(XX, YY)
+    excl = np.zeros(shape, dtype=bool)
+    for _name, (w0, s0, e0, n0), _why in boxes:
+        excl |= (lon >= w0) & (lon <= e0) & (lat >= s0) & (lat <= n0)
+    return excl
+
+
 def _clip_to_region(hwm):
     """Drop marks outside the ACTIVE domain's region polygon.
 
@@ -628,8 +672,16 @@ def motf_metrics(da_hmax, da_dep, model_dir: Path, data_dir: Path = DATA) -> dic
     on both — see its docstring for why neither region polygon is.
     ``motf_km2_unsimulated`` reports what the screen removed, so a clipped CSI is never
     quoted without it.
+
+    ⚠️ AND ONLY WHERE THE MOTF SHEET IS VALID (2026-08-20). The sheet is an NJ-statewide
+    render whose pixels are only {0, 1} — nodata never occurs — so New York ground it
+    does not cover reads as confidently DRY, and every model-wet Staten Island pixel
+    booked a false alarm the sheet cannot adjudicate. ``Domain.motf_exclude_boxes_ll``
+    declares that ground; ``motf_km2_excluded_boxes`` reports what the screen removed.
+    Which raster is scored is also a domain fact now (``Domain.motf_tif``): the archived
+    sheet was rendered on the v1_monmouth bbox and stops at lat 40.5283.
     """
-    with rasterio.open(str(Path(data_dir) / "validation" / "sandy_motf_extent.tif")) as r:
+    with rasterio.open(str(motf_path(data_dir))) as r:
         motf, mtf, m_nd = r.read(1), r.transform, r.nodata
     mod_t = da_dep.rio.transform()
     mh, mw = motf.shape
@@ -651,11 +703,19 @@ def motf_metrics(da_hmax, da_dep, model_dir: Path, data_dir: Path = DATA) -> dic
     mod_wet = (h_at >= DEPTH_MIN) & np.isfinite(h_at)
     footprint = (motf != m_nd) & (dep_at > 0.0)
     sim = simulated_mask(model_dir, motf.shape, mtf)
+    excl = motf_exclude_mask(motf.shape, mtf)
     land_in = footprint & sim
+    km2 = abs(mtf.a * mtf.e) / 1e6
+    if excl is None:
+        km2_excluded = 0.0
+    else:
+        # what the boxes removed FROM THE SCORED SET — ground that passed every other
+        # screen and would have entered the counts
+        km2_excluded = float(int((land_in & excl).sum()) * km2)
+        land_in = land_in & ~excl
     nh = int((motf_wet & mod_wet & land_in).sum())
     nm = int((motf_wet & ~mod_wet & land_in).sum())
     nf = int((~motf_wet & mod_wet & land_in).sum())
-    km2 = abs(mtf.a * mtf.e) / 1e6
     return {
         "motf_csi": nh / (nh + nm + nf) if (nh + nm + nf) else float("nan"),
         "motf_pod": nh / (nh + nm) if (nh + nm) else float("nan"),
@@ -667,6 +727,8 @@ def motf_metrics(da_hmax, da_dep, model_dir: Path, data_dir: Path = DATA) -> dic
         "motf_km2_unsimulated": float(int((footprint & ~sim).sum()) * km2),
         "motf_km2_unsim_motfwet": float(int((footprint & ~sim & motf_wet).sum()) * km2),
         "motf_km2_unsim_modwet": float(int((footprint & ~sim & mod_wet).sum()) * km2),
+        # What the sheet-validity boxes removed (0.0 when the domain declares none).
+        "motf_km2_excluded_boxes": km2_excluded,
     }
 
 
@@ -751,11 +813,14 @@ def evaluate(
         Path(gallery_tif).parent.mkdir(parents=True, exist_ok=True)
         da_hmax.rio.to_raster(gallery_tif)
 
+    from .fa_decomp import fa_decomposition
+
     for fn, args in [
         (gauge_peak_metrics, (mod, model_dir, data_dir)),
         (tide_metrics, (mod, model_dir, data_dir)),
         (hwm_metrics, (da_hmax, da_dep, data_dir, hwm_ids, hwm_estimator)),
         (motf_metrics, (da_hmax, da_dep, model_dir, data_dir)),
+        (fa_decomposition, (da_hmax, da_dep, model_dir, data_dir)),
     ]:
         try:
             row.update(fn(*args))

@@ -1,0 +1,12 @@
+hwm_id,elev_ft,vdatum_id,vcollect_method_id,hwm_quality_id,hwm_type_id,hwm_environment,bank,height_above_gnd,stillwater,flag_date,survey_date,hwm_locationdescription,hwm_notes,latitude_dd,longitude_dd
+6159,14.5,2,,2,5,Coastal,,,,2012-10-30T00:00:00,,on exterior of northeast corner of house,,40.445394,-74.209531
+6160,14.5,2,,1,5,Coastal,,,,2012-10-30T00:00:00,,exterior of northwest corner of house,,40.445417,-74.209389
+6132,12.5,2,,2,5,Coastal,,,,2012-10-30T00:00:00,,exterior of house,,40.450971,-74.174209
+6158,13.0,2,,1,5,Coastal,,,,2012-10-30T00:00:00,,on exterior of house near window screen,,40.446467,-74.163189
+6157,12.0,2,,1,5,Coastal,,,,2012-10-30T00:00:00,,on wall inside house,,40.442903,-74.159472
+6156,5.1,2,,3,5,Coastal,,,,2012-10-30T00:00:00,,on wooden fence post,,40.447297,-74.146589
+6133,5.1,2,,3,5,Coastal,,,,2012-10-30T00:00:00,,exterior wall of steel shipping container,,40.448188,-74.142222
+6155,5.2,2,,1,5,Coastal,,,,2012-10-30T00:00:00,,"upstream, right of wooden walkway bridge",,40.442464,-74.136228
+6154,11.7,2,,2,5,Coastal,,,,2012-10-30T00:00:00,,on marsh overflow retaining wall,,40.43239,-74.1131
+6152,9.6,2,,3,1,Coastal,,,,2012-10-30T00:00:00,,mud and seed line on ouside wall of business,,40.42259,-74.09671
+6153,11.7,2,,2,1,Coastal,,,,2012-10-30T00:00:00,,mud and seed line on residence door,,40.42251,-74.05932
