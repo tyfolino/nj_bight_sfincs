@@ -95,7 +95,13 @@ def main() -> int:
     print(f"domain {dom.name}  bbox {dom.bbox_ll()}")
     print(f"CORA node search box (W,S,E,N) = {box}")
 
-    out = _domain.DATA / "waves" / "cora_waves_nj.nc"
+    # data/waves is the archive symlink (read-only). A domain being assembled writes to
+    # its own acquisition dir, like every other puller (nj_sfincs.domain.acquisition_dir).
+    if dom.name in _domain.ARCHIVED_TIER_DOMAINS:
+        out = _domain.DATA / "waves" / "cora_waves_nj.nc"
+    else:
+        out = _domain.acquisition_dir("waves", dom) / f"cora_waves_{dom.name}.nc"
+        out.parent.mkdir(parents=True, exist_ok=True)
 
     # ── locate the nodes once, from the cheap coordinate arrays ──────────────
     print(f"\nopening {S3_BASE}/swan_HS.63_{YEAR}_map.zarr ...")

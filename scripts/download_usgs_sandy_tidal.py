@@ -33,7 +33,14 @@ import xarray as xr
 
 ROOT = Path(os.environ.get("NJ_ROOT", Path(__file__).resolve().parents[1]))
 OUT_DIR = ROOT / "data/gtsm"
-OUT = OUT_DIR / "usgs_sandy_tidal_nj.nc"
+
+# Per-domain station list + output (2026-08-24). The v1/v1.5 file stays byte-identical
+# under its old name; v3 writes its own, beside naccs_sandy_<domain>.nc.
+from nj_sfincs import domain as _domain  # noqa: E402
+
+_DOM = _domain.active()
+OUT = OUT_DIR / ("usgs_sandy_tidal_nj.nc" if _DOM.name in _domain.ARCHIVED_TIER_DOMAINS
+                 else f"usgs_sandy_tidal_{_DOM.name}.nc")
 
 FT_TO_M = 0.3048
 PARM = "72279"            # Tidal elevation, NOS-averaged, NAVD88, feet
@@ -66,6 +73,28 @@ STATIONS = [
     # NOT included: 01409146 East Thorofare at Ship Bottom. Its record ends
     # 2012-10-28 (pre-peak) AND it lies south of the 39.70 domain edge.
 ]
+
+# v3 (2026-08-24): every NWIS site in lat 38.85-39.80 with parameter 72279 over
+# 2012-10-27..31, probed directly (n = 6-min samples in the window). ⚠️ Unlike the four
+# above, most of these run THROUGH the peak, so on v3 a station's own record length
+# decides what it is good for (interior holdout vs tide-only check), not the file note.
+# Sluice Creek (South Dennis) is Delaware Bay side, outside the ring; kept so the region
+# clip is what drops it.
+STATIONS_V3 = STATIONS + [
+    {"id": "01409146", "name": "East Thorofare at Ship Bottom NJ",        "lon": -74.1858, "lat": 39.6542},  # n=714
+    {"id": "01409335", "name": "Little Egg Inlet near Tuckerton NJ",      "lon": -74.3247, "lat": 39.5089},  # n=960
+    {"id": "01410510", "name": "Absecon Creek at Absecon NJ",             "lon": -74.5000, "lat": 39.4231},  # n=958
+    {"id": "01410560", "name": "Inside Thorofare at Atlantic City NJ",    "lon": -74.4569, "lat": 39.3536},  # n=958
+    {"id": "01410600", "name": "Absecon Channel at Atlantic City NJ",     "lon": -74.4236, "lat": 39.3778},  # n=480
+    {"id": "01411320", "name": "Great Egg Harbor Bay at Ocean City NJ",   "lon": -74.5756, "lat": 39.2858},  # n=720
+    {"id": "01411350", "name": "Ludlum Thorofare at Sea Isle City NJ",    "lon": -74.6978, "lat": 39.1578},  # n=960
+    {"id": "01411355", "name": "Ingram Thorofare at Avalon NJ",           "lon": -74.7419, "lat": 39.1086},  # n=720
+    {"id": "01411360", "name": "Great Channel at Stone Harbor NJ",        "lon": -74.7650, "lat": 39.0569},  # n=960
+    {"id": "01411390", "name": "Cape May Harbor at Cape May NJ",          "lon": -74.8889, "lat": 38.9483},  # n=471
+    {"id": "01411435", "name": "Sluice Creek at South Dennis NJ",         "lon": -74.8322, "lat": 39.1617},  # n=1188, Delaware Bay side
+]
+if _DOM.name not in _domain.ARCHIVED_TIER_DOMAINS:
+    STATIONS = STATIONS_V3
 
 
 def fetch(site_id: str) -> pd.Series:
@@ -121,7 +150,9 @@ def main():
             "title": "USGS in-domain tidal gauges (NAVD88) — Hurricane Sandy PRE-STORM only",
             "source": "https://waterservices.usgs.gov/nwis/iv/ (parameter 72279)",
             "datum": "NAVD88", "units": "m",
-            "note": "uv record ends 2012-10-28 23:54, ~24 h before the storm peak — tidal check only",
+            "note": ("v1/v1.5 stations: uv record ends 2012-10-28 23:54, ~24 h before the storm peak — "
+                     "tidal check only. v3 southern stations mostly run through the peak; "
+                     "judge each by its own record length."),
         },
     )
     ds["waterlevel"].attrs.update(units="m", datum="NAVD88", long_name="tidal water surface elevation")

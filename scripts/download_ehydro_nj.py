@@ -75,7 +75,10 @@ ELEV = ROOT / "data" / "elevation"
 #: ⚠️ `data/elevation` is a SYMLINK into the frozen archive and is READ-ONLY. The `nj`
 #: preset below is therefore a RECORD of how `ehydro_nj.tif` was made, not something that
 #: can be re-run in place — it would have to write into the archive. Anything new goes to
-#: `data/elevation_v1_5/`, a real local directory.
+#: `data/elevation_<domain>/`, a real local directory — resolved through
+#: `nj_sfincs.domain.acquisition_dir` so a new domain cannot inherit v1.5's.
+#: ⚠️ The v1.5 presets keep the literal path: they are a RECORD of files that already
+#: exist, and re-pointing them at the active domain would make the record lie.
 ELEV_LOCAL = ROOT / "data" / "elevation_v1_5"
 
 #: Presets: (surveys, output raster, raw-cache dir, title).
@@ -86,7 +89,27 @@ ELEV_LOCAL = ROOT / "data" / "elevation_v1_5"
 #: cut at 40.504 — and never touch it. The mouth is surveyed under "Seguin Pt.-Ward
 #: Pt.-Outerbridge" and "Perth Amboy Anch & 2nd Chnl". Picking on the name would have
 #: carved the wrong reach and looked like a success.
+#: 🔴 SIGN IS A DISTRICT FACT. New York (CENAN) XYZ files carry signed elevations below
+#: the plane (negative = deeper); Philadelphia (CENAP) ships POSITIVE DEPTHS (measured
+#: 2026-08-24 on CM_01_CMC_20150319_CS: Z = +0.18..+38.3 ft). A preset's 5th element is
+#: the multiplier that turns its Z into "elevation relative to the plane"; the two
+#: CENAN presets predate it and default to +1 in main().
 PRESETS: dict[str, tuple] = {
+    # v3 southern channels (2026-08-24). CENAP surveys nearest Sandy are all 2015
+    # (+865..+877 d) — there is nothing closer; the alternative tier is CUDEM, which is
+    # post-Sandy too. Federal channels only: Great Egg, Townsends and Hereford inlets are
+    # unsurveyed. Barnegat Inlet is already in ehydro_south (archived tier).
+    "south_v3": (
+        [
+            ("CM_01_CMC_20150319_CS", "Cape May Canal", "CENAP"),
+            ("CS_02_CMH_20150313_CS", "Cold Spring Inlet (Cape May Inlet)", "CENAP"),
+            ("AI_01_AIE_20150325_CS", "Absecon Inlet", "CENAP"),
+        ],
+        ROOT / "data" / "elevation_v3" / "ehydro_south_v3.tif",
+        ROOT / "data" / "elevation_v3" / "ehydro" / "raw",
+        "v3 southern inlet + canal carving tier (Philadelphia district, +depth)",
+        -1.0,
+    ),
     # The frozen v1_monmouth carving tier. Verdicts from scripts/audit_paved_channels.py
     # (2026-07-14). Shrewsbury (NJ_14_SNR_20150902_CS_4368_15) is deliberately NOT here:
     # it ships as its own tier, `shrewsbury_ehydro_2015`, from the bridge-as-dam fix.
@@ -202,6 +225,25 @@ def stated_offset_m(path: Path) -> float | None:
     return ft * FT_TO_M
 
 
+#: 🔴 VDatum's web API is BROKEN south of Barnegat (2026-08-24): `region=contiguous`
+#: returns "Uncaught error" for every point tested at Cape May and Great Egg, every
+#: named regional grid returns "Input Region is not correct", and the /regions endpoint
+#: is a 404 — while the same query at the Arthur Kill still answers. The CENAP XYZ files
+#: state no plane in their header (bare x y z from line 1). So for these surveys the
+#: sounding plane is the MLLW-NAVD88 datum of the nearest NOAA station, from the CO-OPS
+#: metadata API (mdapi .../stations/<id>/datums.json, feet, epoch 1983-2001):
+#:   8536110 Cape May (on the canal's bay mouth):  MLLW 2.42 ft, NAVD88 5.44 ft -> -3.02 ft
+#:   8534720 Atlantic City (Steel Pier):            MLLW 4.96 ft, NAVD88 7.57 ft -> -2.61 ft
+#: A single station offset ignores the along-channel gradient the VDatum field was built
+#: to capture; over a 5 km canal between two ~1.4 m-range basins that is small, and it is
+#: declared here rather than hidden in a NaN.
+STATION_PLANE_M: dict[str, tuple[float, str]] = {
+    "CM_01_CMC_20150319_CS": (-3.02 * 0.3048, "8536110 Cape May, 0.5-5 km from the survey"),
+    "CS_02_CMH_20150313_CS": (-3.02 * 0.3048, "8536110 Cape May, ~4 km"),
+    "AI_01_AIE_20150325_CS": (-2.61 * 0.3048, "8534720 Atlantic City, ~2 km"),
+}
+
+
 def vdatum_offset(lon: float, lat: float) -> float:
     """NAVD88 height (m) of the MLLW=0 surface at (lon, lat); NaN outside coverage."""
     url = (
@@ -261,7 +303,8 @@ def main(preset: str = "nj") -> None:
     from rasterio.transform import from_origin
     from scipy.interpolate import griddata
 
-    surveys, raster_out, raw, title = PRESETS[preset]
+    surveys, raster_out, raw, title, *rest = PRESETS[preset]
+    zsign = rest[0] if rest else 1.0
     print(f"[{preset}] {title}")
     print(f"        {len(surveys)} survey(s) -> {raster_out}")
     if preset == "nj" and raster_out.exists():
@@ -280,7 +323,10 @@ def main(preset: str = "nj") -> None:
         xyz = _one(d, ".xyz")
         gdb = _one(d, ".gdb")
         raw_pts = read_xyz(xyz)
-        x_ft, y_ft, z_mllw_ft = raw_pts[:, 0], raw_pts[:, 1], raw_pts[:, 2]
+        x_ft, y_ft, z_mllw_ft = raw_pts[:, 0], raw_pts[:, 1], zsign * raw_pts[:, 2]
+        if zsign < 0 and raw_pts[:, 2].min() < 0:
+            print(f"    ⚠️ preset says +depth but Z has negatives (min {raw_pts[:, 2].min():.1f}); "
+                  "check the district convention for this survey")
         print(f"    {len(raw_pts)} soundings; survey-datum ft "
               f"{z_mllw_ft.min():.1f}..{z_mllw_ft.max():.1f}")
 
@@ -290,6 +336,11 @@ def main(preset: str = "nj") -> None:
         if stated is not None:
             print(f"    survey states its plane at {stated:+.3f} m NAVD88 — using it")
             off = np.full(len(z_mllw_ft), stated)
+        elif sid in STATION_PLANE_M:
+            plane, prov = STATION_PLANE_M[sid]
+            print(f"    survey states no plane; VDatum is unusable here -> NOAA station "
+                  f"datum {plane:+.3f} m NAVD88 ({prov})")
+            off = np.full(len(z_mllw_ft), plane)
         else:
             print("    survey states no plane; falling back to the VDatum MLLW field")
             off = offset_field(sid, np.asarray(lon), np.asarray(lat), raw.parent)

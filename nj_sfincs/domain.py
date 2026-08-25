@@ -226,6 +226,33 @@ class Domain:
     #: so archived runs stay reproducible.
     frozen: bool = False
 
+    #: 🔴 ACQUISITION-ONLY: registered so the DOWNLOADERS can resolve a bbox, and for
+    #: nothing else. There is no polygon, no mesh and no fingerprint yet.
+    #:
+    #: Every acquisition script resolves its extent from ``active().region``'s bbox, so a
+    #: domain has to exist before its data can be pulled — but the registry's guards
+    #: rightly demand a fingerprint (needs a mesh) and real basin rules (needs a polygon),
+    #: which is the polygon-first order. This flag is the DELIBERATE, NARROW exemption:
+    #: those guards skip an acquisition-only domain, and ``_check_acquisition_only``
+    #: replaces them with harder ones — no ``mesh_key``, no arms, no boundary arms, no
+    #: HWM rules, no declared support count, and ``frozen`` off.
+    #:
+    #: ⚠️ It is NOT a placeholder fingerprint. Inventing one would make
+    #: ``assert_sealed_domain`` pass on a domain that does not exist — the "success
+    #: message over a no-op" this project keeps paying for. Anything that tries to BUILD,
+    #: STAGE, PROBE or FREEZE an acquisition-only domain must refuse; ``build_static``
+    #: does, and so does ``premier``.
+    #:
+    #: Clearing this flag is the moment the real polygon lands: swap ``region`` to the
+    #: drawn file, drop the flag, and every skipped guard comes back on.
+    acquisition_only: bool = False
+    #: The polygon is DRAWN and gated but no mesh is frozen yet: the state between
+    #: ``acquisition_only`` and sealed. Everything that needs a fingerprint, basin rules
+    #: or a support count skips it — those are asserted on the real mesh at freeze —
+    #: while ``assert_buildable`` lets it through, which is the point. Set 2026-08-24 on
+    #: v3 the moment ``region_v3_EDITED_inland`` landed; cleared at freeze.
+    building: bool = False
+
     #: Quadtree refinement polygons for THIS domain. A refinement recipe is not portable:
     #: a level gate written for one basin will happily refine a different basin's open
     #: water to its finest level, and a shelf polygon written for one coast lands in open
@@ -279,6 +306,24 @@ class Domain:
     #: ⚠️ v1_monmouth must keep the 6-point archived file — the port fixture is pinned
     #: to it, and `data/discharge` is a read-only symlink into the frozen archive.
     discharge_geodataset: str = "usgs_sandy_discharge"
+    #: Per-domain data keys (2026-08-24). Which catalog entries a build reads is a
+    #: consequence of where the ring is, exactly like ``discharge_geodataset``: the
+    #: archived ``*_nj`` products stop at v2's southern limit and a v3 build that
+    #: silently used them would have NoData rain, CN and bed over the whole south.
+    #: ``None`` for ``elevation_list`` means ``config.DEFAULT_ELEVATION_LIST``.
+    elevation_list: tuple[dict, ...] | None = None
+    #: What the QUADTREE REFINEMENT gates zmin/zmax against AND what the FACE elevation
+    #: (``z``, the mask's input and half the fingerprint) is merged from. ``None`` = the
+    #: elevation list itself (v1/v1.5/v2 behaviour). v3 sets a single pre-merged 25 m
+    #: raster: hydromt's block loop (``compute_quadtree``, nrmax=2000 cells) makes ONE
+    #: block of the whole 130 x 200 km bbox at level 0 and ``merge`` clip+LOADS every
+    #: native tier for it — 164 GB on v3, twice, 2026-08-24. The finest face is 25 m, so
+    #: a 25 m average bed is an honest face elevation. ⚠️ The SUBGRID must still sample
+    #: the native tiers; its memory is handled separately (see STATUS).
+    coarse_elevation_list: tuple[dict, ...] | None = None
+    precip_dataset: str = "aorc_sandy_nj"
+    cn_dataset: str = "cn_nj"
+    cora_waves: Path = DATA / "waves" / "cora_waves_nj.nc"
 
     #: The high-water-mark set this domain is scored against. A DOMAIN fact for the same
     #: reason `discharge_geodataset` is: `download_sandy_hwms.py` selects marks by the
@@ -1012,9 +1057,207 @@ V2_BARNEGAT = Domain(
 )
 
 
+# ═══════════════════════════════════════════════════════════════════════════════
+# v3 — the full Jersey shore, Raritan Bay -> Cape May. BUILDING (polygon drawn, no mesh).
+# ═══════════════════════════════════════════════════════════════════════════════
+# The ring: `data/region_v3_EDITED_inland.geojson` (user, QGIS, 2026-08-24). v1.5's three
+# FORCED cuts verbatim (ocean arm, Narrows, Arthur Kill mouth); the landward edge runs
+# through the head of tide of every southern river (Metedeconk, Toms, Wading, Mullica,
+# Great Egg, Tuckahoe) so every river crossing is DRY — no water-level or outflow BC on
+# any river, discharge sources at the gauges, inside. The Cape May Canal is NOT cut: the
+# ring leaves land north of the canal's Delaware Bay mouth (NOAA 8536110 sits on it) and
+# a forced wedge in Delaware Bay rounds Cape May Point. Gate: scripts/validate_region_v3.py
+# (exit 0, 17 declared reaches, zero river reaches). docs/STATUS.md has the measurements.
+#
+# ⚠️ `n_waterlevel_support` stays UNSET until hydromt selects on the real mesh: Cape May
+# is INSIDE the ring (on the canal mouth), so the base NOAA count should become 3 —
+# ASSERT it at the template build, do not declare it. `boundary_arms` come from the
+# mesh probe (Step 2 of the build plan); `hwm_rules` from the v3 HWM pull.
+#: v3 bed, top tier first (hydromt: earlier wins). Same ORDER as DEFAULT_ELEVATION_LIST
+#: with the v3 pulls substituted; the archived carving tiers stay because they are
+#: NoData outside their surveyed channels (ehydro_south = Barnegat Inlet + Manasquan +
+#: Metedeconk channels, lat 39.66-40.11). ehydro_south_v3 goes on top: it is the only
+#: measurement of the bed under the Cape May Canal, which the ring's forcing depends on.
+V3_ELEVATION_LIST: tuple[dict, ...] = (
+    {"elevation": "ehydro_south_v3"},
+    {"elevation": "ehydro_raritan_ak"},
+    {"elevation": "ehydro_nj"},
+    {"elevation": "ehydro_south"},
+    {"elevation": "shrewsbury_ehydro_2015"},
+    {"elevation": "usace_nj_2010_v3"},
+    {"elevation": "coned_sw_raritan"},
+    {"elevation": "cudem_nj_v3"},  # the archive's 1/9" CUDEM, with local overviews
+    {"elevation": "nj_10ft_dem_v3", "zmin": 0.001},
+    {"elevation": "cudem13_v3"},
+    {"elevation": "gmrt_v3"},
+)
+
+V3 = Domain(
+    name="v3",
+    region=DATA / "region_v3_EDITED_inland.geojson",
+    refinement=DATA / "quadtree" / "refinement_v3.geojson",
+    # ── Inherited from v1.5 VERBATIM: the northern ring is v1.5's, so its mask facts
+    # are v3's. Measured 2026-08-24: without the two always-active boxes the Lower Bay /
+    # Raritan Bay channels deeper than mask_zmin sever the whole Raritan lobe from the
+    # ocean and `_drop_detached_islands` DROPS it (41k + 20k + 11k cells, bed -12..+30).
+    boundary_arms=(
+        # v1.5's three arms verbatim (its ocean box ends at its lat-40.150 south limit)…
+        *V1_5_RARITAN.boundary_arms,
+        # …plus everything south of it: the -10 m isobath to Cape May, the closure west
+        # at lat 38.93, and the Delaware Bay wedge round Cape May Point to the canal
+        # mouth. One contiguous run with v1.5's ocean arm (the probe counts them as one
+        # run of ~6,700 cells across the two boxes). Counts are PROVISIONAL bounds from
+        # the first clean probe (2026-08-24); tighten at the freeze.
+        BoundaryArm(
+            "ocean_south",
+            (501_000, 4_298_500, 634_000, 4_443_729),
+            min_cells=5_000, max_cells=6_200,  # measured 5,598 on the clean probe
+            why="The Jersey shore south of v1.5's limit: isobath, Cape May closure, "
+            "Delaware Bay wedge (NOAA 8536110 sits on the wedge at the canal mouth).",
+        ),
+    ),
+    land_boxes=(
+        (
+            "tuckahoe_head_of_tide",
+            (514_700, 4_350_500, 515_150, 4_351_300),
+            "The ring crosses the Tuckahoe on dry ground 480 m upstream of the source "
+            "at gauge 01411300, and hydromt puts FREE-OUTFLOW cells on that edge at "
+            "+1.22..+2.97 m — low enough for injected discharge or a surge that reaches "
+            "the head of tide to DRAIN out of the model (the Navesink failure). 13 edge "
+            "cells -> inactive = a wall, which is what a head-of-tide crossing is. Every "
+            "other river crossing's nearest outflow cell is above +7 m (measured "
+            "2026-08-24); the Delaware Bay shore leg north of the canal carries 34 "
+            "outflow cells at -0.94..+3 m and is left OPEN on purpose: water reaching "
+            "them from inside would be leaving to an unmodelled bay, and a box there "
+            "would deactivate Villas.",
+        ),
+    ),
+    always_active_boxes_ll=V1_5_RARITAN.always_active_boxes_ll,
+    dry_land_boxes_ll=V1_5_RARITAN.dry_land_boxes_ll,
+    no_waterlevel_boxes=V1_5_RARITAN.no_waterlevel_boxes,  # the Raritan River cut
+    elevation_list=V3_ELEVATION_LIST,
+    coarse_elevation_list=({"elevation": "bed_v3_coarse_25m"},),
+    precip_dataset="aorc_sandy_v3",
+    cn_dataset="cn_v3",
+    cora_waves=DATA / "waves_v3" / "cora_waves_v3.nc",
+    epsg=32618,
+    latitude=39.74,  # (38.855 + 40.62) / 2, the drawn ring's mid-latitude
+    building=True,
+    discharge_geodataset="usgs_sandy_discharge_v3",
+    hwm_geojson=DATA / "validation_v3" / "sandy_hwms_v3.geojson",
+    # ⭐ Rendered on the acquisition RECTANGLE on purpose (2026-08-24): on v3 the MOTF
+    # extent was a DOMAIN-DESIGN input — it decided how far up the Great Egg / Mullica
+    # the ring had to reach — so it covers more ground than the ring. Scoring restricts
+    # to the run's own `msk` (validate.simulated_mask), so a superset raster costs
+    # nothing there. No re-render needed.
+    motf_tif=DATA / "validation_v3" / "sandy_motf_extent_v3.tif",
+)
+
+
 DOMAINS: dict[str, Domain] = {
-    d.name: d for d in (V1_MONMOUTH, V1_5_RARITAN, V2_BARNEGAT)
+    d.name: d for d in (V1_MONMOUTH, V1_5_RARITAN, V2_BARNEGAT, V3)
 }
+
+
+def _check_acquisition_only(dom: "Domain") -> None:
+    """An acquisition-only domain must be INERT: extent resolution and nothing else.
+
+    Called at import for every registered domain. The three registry guards that an
+    acquisition-only domain skips (fingerprint, per-domain fingerprint resolution, basin
+    rules) are replaced by these, which are strictly harder to satisfy by accident.
+    """
+    if not dom.acquisition_only:
+        return
+    bad = []
+    if dom.mesh_key is not None:
+        bad.append("mesh_key is set — an acquisition-only domain has no mesh")
+    if dom.frozen:
+        bad.append("frozen is set — frozen means staged-and-scored, the opposite")
+    if dom.boundary_arms:
+        bad.append("boundary_arms are declared — there is no boundary to whitelist")
+    if dom.hwm_rules:
+        bad.append("hwm_rules are declared — there is nothing to score")
+    if dom.n_waterlevel_support is not None:
+        bad.append(
+            "n_waterlevel_support is declared — it must be asserted against hydromt's "
+            "own selection on the real mesh, not guessed from a rectangle"
+        )
+    if bad:
+        raise ValueError(f"domain {dom.name!r} is acquisition_only but: " + "; ".join(bad))
+
+
+def _check_building(dom: "Domain") -> None:
+    """A building domain has a REAL polygon and NO mesh. Both halves are asserted.
+
+    The first half is what separates it from ``acquisition_only`` (a rectangle); the
+    second is what separates it from sealed (a fingerprint). A domain that is both
+    flags at once is a contradiction.
+    """
+    if not dom.building:
+        return
+    bad = []
+    if dom.acquisition_only:
+        bad.append("acquisition_only is ALSO set — a domain is one state, not two")
+    if "PROVISIONAL" in dom.region.name:
+        bad.append(f"region is still the provisional rectangle ({dom.region.name})")
+    if dom.mesh_key is not None:
+        bad.append("mesh_key is set — building means no frozen mesh yet")
+    if dom.frozen:
+        bad.append("frozen is set — freeze clears `building`, not the other way round")
+    if bad:
+        raise ValueError(f"domain {dom.name!r} is building but: " + "; ".join(bad))
+
+
+for _d in DOMAINS.values():
+    _check_acquisition_only(_d)
+    _check_building(_d)
+
+
+#: Domains whose elevation/precip/etc. tiers live in the READ-ONLY archive
+#: (``data/elevation`` and friends are symlinks into ``~/nj_coast_sfincs``, mode
+#: ``dr-xr-xr-x``). A puller must never target these: the freeze is what keeps their
+#: fingerprints reproducible, and on disk it simply returns EPERM.
+ARCHIVED_TIER_DOMAINS = ("v1_monmouth", "v1_5_raritan", "v2_barnegat")
+
+
+def acquisition_dir(kind: str, dom: "Domain | None" = None) -> Path:
+    """``data/<kind>_<domain>`` for a domain being assembled. Refuses the built ones.
+
+    Every acquisition script used to write a FIXED path under ``data/<kind>/`` — which
+    is a symlink into the frozen archive, so all of them failed EPERM the moment a new
+    domain needed data. This is the one place that decides where a new domain's pulls
+    land, so a sixth puller cannot quietly reintroduce the fixed path.
+
+    ⚠️ Returns the directory only; it is NOT created here. The caller creates it when it
+    is about to write, so a script that dies in its argument parsing leaves no empty
+    directory behind to look like a completed pull.
+    """
+    dom = dom or active()
+    if dom.frozen or dom.name in ARCHIVED_TIER_DOMAINS:
+        raise SystemExit(
+            f"refusing to acquire {kind!r} for domain {dom.name!r}: its tiers are the "
+            f"archived, read-only data/{kind}/. Run under the NEW domain being "
+            "assembled (e.g. NJ_DOMAIN=v3)."
+        )
+    return DATA / f"{kind}_{dom.name}"
+
+
+def assert_buildable(dom: "Domain | None" = None) -> "Domain":
+    """Refuse to build/stage/probe/freeze an acquisition-only domain.
+
+    The failure this prevents is not subtle but it IS silent: a rectangle resolves a
+    bbox perfectly well, so a build launched on one produces a plausible mesh over open
+    ocean and inland NJ, and nothing in the numbers says so.
+    """
+    dom = dom or active()
+    if dom.acquisition_only:
+        raise RuntimeError(
+            f"domain {dom.name!r} is acquisition_only: its region is a PROVISIONAL "
+            f"bbox rectangle ({dom.region.name}), not a modelling polygon. It may "
+            "resolve a download extent and nothing else. Draw the polygon, point "
+            "`region` at it and clear `acquisition_only` first."
+        )
+    return dom
 
 #: Until v1_5_raritan is registered the only domain is the frozen port-verification
 #: fixture. That is the safe default: anything that tries to BUILD on it is refused.

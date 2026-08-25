@@ -59,7 +59,34 @@ HSG_CODE = {"A": 1, "B": 6, "C": 5, "D": 3,
 DEFAULT_HSG_CODE = 3  # land with no SSURGO HSG -> treat as D (conservative)
 
 
-def fetch_hsg_polygons(bbox):
+def fetch_hsg_polygons(bbox, tile_deg=0.25):
+    """SSURGO map units intersecting bbox, fetched in tiles.
+
+    SDA answers a single v1-sized box but returns HTTP 413 on the v3 bbox (1.4 x 1.8
+    deg, 2026-08-24). Tiles of `tile_deg` are each well under the limit; a polygon that
+    straddles two tiles comes back twice and is deduplicated on (mukey, wkt).
+    """
+    import itertools
+
+    w, s, e, n = bbox
+    xs = list(np.arange(w, e, tile_deg)) + [e]
+    ys = list(np.arange(s, n, tile_deg)) + [n]
+    seen, parts = set(), []
+    for (x0, x1), (y0, y1) in itertools.product(zip(xs[:-1], xs[1:]), zip(ys[:-1], ys[1:])):
+        g = _fetch_hsg_tile((x0, y0, x1, y1))
+        for mukey, hsg, wkt in g:
+            if (mukey, wkt) in seen:
+                continue
+            seen.add((mukey, wkt))
+            parts.append((mukey, hsg, wkt))
+    print(f"  SSURGO: {len(parts)} unique map-unit polygons from "
+          f"{(len(xs)-1)*(len(ys)-1)} tiles")
+    geoms = [shapely_wkt.loads(wk) for _m, _h, wk in parts]
+    codes = [HSG_CODE.get(h, DEFAULT_HSG_CODE) for _m, h, _w in parts]
+    return gpd.GeoDataFrame({"hsg_code": codes}, geometry=geoms, crs="EPSG:4326")
+
+
+def _fetch_hsg_tile(bbox):
     w, s, e, n = bbox
     poly = f"POLYGON(({w} {s}, {e} {s}, {e} {n}, {w} {n}, {w} {s}))"
     sql = (
@@ -70,17 +97,10 @@ def fetch_hsg_polygons(bbox):
         "FROM mupolygon g JOIN mapunit mu ON g.mukey=mu.mukey "
         f"WHERE g.mupolygongeo.STIntersects(geometry::STGeomFromText('{poly}',4326))=1"
     )
-    r = requests.post(SDA, json={"format": "JSON", "query": sql}, timeout=120)
+    r = requests.post(SDA, json={"format": "JSON", "query": sql}, timeout=300)
     r.raise_for_status()
-    rows = r.json()["Table"]
-    geoms, codes = [], []
-    for mukey, hsg, w in rows:
-        if w is None:
-            continue
-        geoms.append(shapely_wkt.loads(w))
-        codes.append(HSG_CODE.get(hsg, DEFAULT_HSG_CODE))
-    gdf = gpd.GeoDataFrame({"hsg_code": codes}, geometry=geoms, crs="EPSG:4326")
-    return gdf
+    rows = r.json().get("Table", [])
+    return [(mukey, hsg, wk) for mukey, hsg, wk in rows if wk is not None]
 
 
 def main():

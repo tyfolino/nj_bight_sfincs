@@ -610,9 +610,24 @@ def _check_domain_invariants(
             )
 
     # --- 2. paved-over surveyed channels -------------------------------------
-    tif = DATA / "elevation" / "ehydro_nj.tif"
-    if tif.exists():
-        act = mask > 0
+    # Every CARVING tier in the active domain's elevation list (2026-08-24: it used to
+    # be the archive's Shark River survey alone, which on v3 checked nothing south of
+    # Belmar). A survey is any tier whose key starts with "ehydro" or "shrewsbury".
+    from nj_sfincs.config import DEFAULT_ELEVATION_LIST
+
+    dom = _domain.active()
+    act = mask > 0
+    for entry in dom.elevation_list or DEFAULT_ELEVATION_LIST:
+        key = entry["elevation"]
+        if not key.startswith(("ehydro", "shrewsbury")):
+            continue
+        try:
+            tif = Path(sf.data_catalog.get_source(key).full_uri)
+        except Exception:  # noqa: BLE001 — a missing catalog key is reported below
+            tif = DATA / "missing" / key
+        if not tif.exists():
+            fail.append(f"carving tier {key!r} has no raster at {tif} — cannot check it")
+            continue
         with rasterio.open(tif) as d:
             v = np.array(
                 [r[0] for r in d.sample(zip(fx[act].tolist(), fy[act].tolist()))],
@@ -625,8 +640,8 @@ def _check_domain_invariants(
         if paved.any():
             fail.append(
                 f"{int(paved.sum())} active cells are (near-)land in the model "
-                f"(bed >= {PAVED_BED_LAND} m) where the eHydro survey sounded water "
-                f"below {PAVED_SURVEY_WATER} m. A channel is still paved over."
+                f"(bed >= {PAVED_BED_LAND} m) where {key} sounded water below "
+                f"{PAVED_SURVEY_WATER} m. A channel is still paved over."
             )
 
     if fail:
@@ -898,11 +913,17 @@ def build_static(base: BaseConfig, template_dir: Path, skip_subgrid: bool = Fals
         rotated=base.rotated,
         crs=base.crs,
         refinement_polygons=refinement_gdf,
-        elevation_list=base.elevation(),
+        # ⚠️ Refinement GATING only (zmin/zmax per polygon) — see
+        # Domain.coarse_elevation_list. The bed itself is `base.elevation()` below.
+        elevation_list=base.coarse_elevation(),
     )
 
     # 3. Elevation ------------------------------------------------------------
-    sf.quadtree_elevation.create(elevation_list=base.elevation(), buffer_cells=0, nrmax=2000)
+    # Face z from the coarse list where the domain declares one (v3) — see
+    # Domain.coarse_elevation_list. The subgrid below always uses the native tiers.
+    sf.quadtree_elevation.create(
+        elevation_list=base.coarse_elevation(), buffer_cells=0, nrmax=2000
+    )
 
     # 4-5. Active mask + boundary cells --------------------------------------
     apply_mask_and_boundary(base, sf)
@@ -920,7 +941,15 @@ def build_static(base: BaseConfig, template_dir: Path, skip_subgrid: bool = Fals
     print(f"[obs] {len(gauges)} observation points: {', '.join(g.name for g in gauges)}")
     n_crest = sum(g.survives_crest for g in gauges)
     print(f"[obs] {n_crest} of them survive the storm crest")
-    sf.observation_points.create(locations=val_gauges, merge=False)
+    if gauges:
+        sf.observation_points.create(locations=val_gauges, merge=False)
+    else:
+        # A `building` domain may not have its gauges declared yet (v3 on 2026-08-24:
+        # the probe needs the mesh first). hydromt raises NoDataException on an empty
+        # set, which read as a build failure. Warn, never gate — but a SEALED domain
+        # with no gauges has nothing to score, and that is what the freeze asserts.
+        print("[obs] ⚠️ no obs_gauges declared on this domain — no his output points. "
+              "Declare them before freezing.")
 
     # 7. Roughness + subgrid (memory/CPU peak) --------------------------------
     if skip_subgrid:
@@ -1053,9 +1082,10 @@ def add_forcing(base: BaseConfig, sf: SfincsModel) -> None:
     check_waterlevel_support(sf)
     sf.wind.create(wind="era5_nj")
     sf.pressure.create(press="era5_nj")
-    sf.precipitation.create(precip="aorc_sandy_nj", cumulative_input=True, aggregate=False)
+    _dom = _domain.active()
+    sf.precipitation.create(precip=_dom.precip_dataset, cumulative_input=True, aggregate=False)
     sf.discharge_points.create(geodataset=base.discharge_geodataset, merge=False)
-    sf.quadtree_infiltration.create_cn(cn="cn_nj", antecedent_moisture=None, nrmax=2000)
+    sf.quadtree_infiltration.create_cn(cn=_dom.cn_dataset, antecedent_moisture=None, nrmax=2000)
 
 
 def _point_wave_bnd(wcfg: WaveConfig, base: BaseConfig, sf: SfincsModel, pts):

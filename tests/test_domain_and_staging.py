@@ -63,6 +63,8 @@ class TestDomainRegistry(_DomainEnv):
 
     def test_basin_rules_are_named_and_unique(self):
         for name, dom in domain.DOMAINS.items():
+            if dom.acquisition_only or dom.building:
+                continue  # no scored HWM set yet — see TestAcquisitionOnly / TestBuilding
             names = domain.hwm_basin_names(dom)
             self.assertTrue(names, f"{name} has no HWM basin rules")
             self.assertEqual(
@@ -75,6 +77,8 @@ class TestDomainRegistry(_DomainEnv):
     def test_waterlevel_support_is_declared(self):
         """A domain with no declared support count cannot have an inserted node caught."""
         for name, dom in domain.DOMAINS.items():
+            if dom.acquisition_only or dom.building:
+                continue  # must stay None until hydromt selects on the real mesh
             self.assertIsNotNone(
                 dom.n_waterlevel_support, f"{name} does not declare n_waterlevel_support"
             )
@@ -175,13 +179,16 @@ class TestFingerprints(_DomainEnv):
     def test_every_domain_has_a_fingerprint(self):
         self.assertEqual(
             set(premier.EXPECTED),
-            set(domain.DOMAINS),
+            {n for n, d in domain.DOMAINS.items()
+             if not (d.acquisition_only or d.building)},
             "a domain without a fingerprint audits UNRECOGNISED, which reads exactly "
             "like a real domain error and trains you to ignore the one alarm that matters",
         )
 
     def test_expected_resolves_per_domain(self):
-        for name in domain.DOMAINS:
+        for name, dom in domain.DOMAINS.items():
+            if dom.acquisition_only or dom.building:
+                continue  # no mesh, so no fingerprint — the state tests pin that
             os.environ["NJ_DOMAIN"] = name
             self.assertEqual(premier.expected(), premier.EXPECTED[name])
 
@@ -371,7 +378,8 @@ class TestWaterlevelSupportOverride(_DomainEnv):
         }
         self.assertEqual(
             set(PINNED),
-            set(domain.DOMAINS),
+            {n for n, d in domain.DOMAINS.items()
+             if not (d.acquisition_only or d.building)},
             "a domain is missing from PINNED — add it here DELIBERATELY, with the count "
             "you intend, rather than letting the registry answer its own question",
         )
@@ -760,3 +768,137 @@ class TestDryLandBoxes(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestAcquisitionOnly(_DomainEnv):
+    """An acquisition-only domain exists to resolve a download bbox. Nothing else.
+
+    These replace the three registry guards such a domain skips (fingerprint, per-domain
+    fingerprint resolution, basin rules). They are strictly harder to satisfy by accident:
+    the skipped guards are satisfied by TYPING a value, these by NOT typing one.
+    """
+
+    def _acq(self):
+        return {n: d for n, d in domain.DOMAINS.items() if d.acquisition_only}
+
+    def test_v3_has_left_this_state(self):
+        """v3 was the acquisition domain 2026-08-24 a.m.; its polygon landed p.m."""
+        self.assertNotIn("v3", self._acq())
+        self.assertTrue(domain.DOMAINS["v3"].building)
+
+    def test_inert_fields(self):
+        """Re-asserts domain._check_acquisition_only from outside the module.
+
+        It runs at import, so a regression there would be invisible: the module would
+        simply stop raising and every other test would still pass.
+        """
+        for name, dom in self._acq().items():
+            domain._check_acquisition_only(dom)
+            self.assertIsNone(dom.mesh_key, name)
+            self.assertFalse(dom.frozen, name)
+            self.assertEqual(dom.boundary_arms, (), name)
+            self.assertEqual(dom.hwm_rules, (), name)
+            self.assertIsNone(dom.n_waterlevel_support, name)
+
+    def test_check_rejects_a_domain_that_declares_a_mesh(self):
+        import dataclasses
+
+        bad = dataclasses.replace(
+            domain.DOMAINS["v3"], acquisition_only=True, building=False,
+            region=domain.DATA / "region_v9_PROVISIONAL_bbox.geojson",  # name only; never read
+            mesh_key="borrowed",
+        )
+        with self.assertRaises(ValueError):
+            domain._check_acquisition_only(bad)
+
+    def test_has_no_fingerprint(self):
+        """🔴 The one that matters. A fingerprint on a domain with no mesh would make
+        assert_sealed_domain PASS on something that does not exist."""
+        for name in self._acq():
+            self.assertNotIn(name, premier.EXPECTED, name)
+            self.assertNotIn(name, premier.BRACKETS, name)
+
+    def test_declares_no_arms(self):
+        for name in self._acq():
+            self.assertIn(name, EXPERIMENTS_BY_DOMAIN, name)
+            self.assertEqual(EXPERIMENTS_BY_DOMAIN[name], {}, name)
+
+    def test_assert_buildable_refuses_it(self):
+        for name, dom in self._acq().items():
+            with self.assertRaises(RuntimeError, msg=name):
+                domain.assert_buildable(dom)
+
+    def test_assert_buildable_passes_a_real_domain(self):
+        """The guard has to let the normal case through, or it is just a wall."""
+        dom = domain.DOMAINS["v1_5_raritan"]
+        self.assertIs(domain.assert_buildable(dom), dom)
+
+    def test_default_domain_is_buildable(self):
+        self.assertFalse(domain.DOMAINS[domain.DEFAULT_DOMAIN].acquisition_only)
+
+    def test_region_is_the_provisional_rectangle(self):
+        """If someone points an acquisition domain at a real polygon they must also
+        clear the flag; a 5-vertex rectangle is the tell that they have not."""
+        import json
+
+        for name, dom in self._acq().items():
+            self.assertIn("PROVISIONAL", dom.region.name, name)
+            g = json.loads(dom.region.read_text())
+            ring = g["features"][0]["geometry"]["coordinates"][0]
+            self.assertEqual(len(ring), 5, f"{name}: not a rectangle any more")
+
+
+class TestBuilding(_DomainEnv):
+    """A building domain: real polygon, no mesh. The state between acquisition and sealed.
+
+    It must be BUILDABLE (that is what it is for) and must NOT carry anything only a
+    frozen mesh can justify — a fingerprint, a support count, a mesh_key.
+    """
+
+    def _bld(self):
+        return {n: d for n, d in domain.DOMAINS.items() if d.building}
+
+    def test_v3_is_building(self):
+        self.assertEqual(set(self._bld()), {"v3"})
+
+    def test_one_state_at_a_time(self):
+        for name, dom in domain.DOMAINS.items():
+            self.assertFalse(dom.acquisition_only and dom.building, name)
+            self.assertFalse(dom.building and dom.frozen, name)
+
+    def test_check_matches_import_time_guard(self):
+        import dataclasses
+
+        for name, dom in self._bld().items():
+            domain._check_building(dom)
+            self.assertNotIn("PROVISIONAL", dom.region.name, name)
+            self.assertIsNone(dom.mesh_key, name)
+            self.assertIsNone(dom.n_waterlevel_support, name)
+        bad = dataclasses.replace(domain.DOMAINS["v3"], mesh_key="borrowed")
+        with self.assertRaises(ValueError):
+            domain._check_building(bad)
+
+    def test_region_is_the_gated_ring(self):
+        import json
+
+        for name, dom in self._bld().items():
+            ring = json.loads(dom.region.read_text())["features"][0]["geometry"]
+            self.assertGreater(len(ring["coordinates"][0]), 5, f"{name}: a rectangle")
+
+    def test_has_no_fingerprint(self):
+        for name in self._bld():
+            self.assertNotIn(name, premier.EXPECTED, name)
+            self.assertNotIn(name, premier.BRACKETS, name)
+
+    def test_assert_buildable_passes_it(self):
+        for name, dom in self._bld().items():
+            self.assertIs(domain.assert_buildable(dom), dom, name)
+
+    def test_own_outputs_not_the_archive(self):
+        """Every pull for a building domain lands in its own dir, never the archive's."""
+        for name, dom in self._bld().items():
+            self.assertNotIn(name, domain.ARCHIVED_TIER_DOMAINS)
+            self.assertNotEqual(dom.hwm_geojson.parent.name, "validation", name)
+            self.assertNotEqual(dom.motf_tif.parent.name, "validation", name)
+            self.assertNotEqual(dom.discharge_geodataset, "usgs_sandy_discharge", name)
+

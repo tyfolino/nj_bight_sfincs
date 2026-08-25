@@ -31,8 +31,10 @@ ROOT = Path(os.environ.get("NJ_ROOT", Path(__file__).resolve().parents[1]))
 # domain being built instead of a fixed filename. (nj_sfincs/domain.py)
 from nj_sfincs import domain as _domain  # noqa: E402
 REGION = _domain.active().region
-OUT_DIR = ROOT / "data/precip"
-OUT = OUT_DIR / "aorc_sandy_nj.nc"
+# 🔴 PER-DOMAIN OUTPUT — `data/precip` is a read-only symlink into the archive.
+from nj_sfincs import domain as _domain_out  # noqa: E402
+OUT_DIR = _domain_out.acquisition_dir("precip")
+OUT = OUT_DIR / f"aorc_sandy_{_domain_out.active().name}.nc"
 
 AORC_STORE = "noaa-nws-aorc-v1-1-1km/2012.zarr"
 PRECIP_VAR = "APCP_surface"

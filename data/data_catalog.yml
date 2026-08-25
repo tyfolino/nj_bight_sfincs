@@ -706,6 +706,21 @@ usgs_sandy_discharge_v1_5:
     unit: m3/s
     source: USGS NWIS daily-mean discharge (00060/00003), 8 domain inflow points
 
+usgs_sandy_discharge_v3:
+  data_type: GeoDataset
+  uri: discharge_v3/usgs_sandy_discharge_v3.nc
+  driver:
+    name: geodataset_xarray
+    options: {}
+  metadata:
+    category: hydro
+    crs: 4326
+    unit: m3/s
+    source: >-
+      USGS NWIS daily-mean discharge (00060/00003), 19 inflow points — the two Raritan sources at v1.5's cut, the rest AT THEIR GAUGE
+      (v3 crosses every river at its head of tide on dry ground, so there is no cut to
+      place a source on). Built by NJ_DOMAIN=v3 scripts/download_usgs_sandy_discharge.py.
+
 usgs_sandy_discharge:
   data_type: GeoDataset
   uri: discharge/usgs_sandy_discharge.nc
@@ -836,3 +851,164 @@ wavemaker_nj_coast:
 #     caveat:   vs NDBC 44025 at the buoy's own location/depth CORA is +0.49 m HIGH
 #               (peak 10.84 vs 9.65 m, RMSE 0.78 m). It is used for its SHELF
 #               TRANSFORMATION and alongshore structure, not as a height standard.
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# v3 (2026-08-24) — the same products re-pulled to the v3 ring (lat 38.855-40.62,
+# lon -75.0..-73.55) by the domain-aware pullers, under data/<kind>_v3/. The archived
+# keys above stay for the frozen domains; a v3 build must use these.
+# ═══════════════════════════════════════════════════════════════════════════════
+cudem13_v3:
+  data_type: RasterDataset
+  uri: elevation_v3/cudem13_v3.vrt
+  driver:
+    name: rasterio
+    options: {}
+  metadata:
+    category: topography
+    unit: m+NAVD88
+    source: NOAA NCEI 1/3 arc-sec Topobathy DEM (NCEI_third_Topobathy_2014_8580), 14 tiles,
+      lat 38.749-40.50. ⚠️ No tile west of lon -74.75 — the Cape May peninsula's west side
+      and the Delaware Bay wedge fall through to cudem_nj (1/9"). scripts/download_cudem13.py
+
+gmrt_v3:
+  data_type: RasterDataset
+  uri: elevation_v3/gmrt_v3.tif
+  driver:
+    name: rasterio
+    options: {}
+  metadata:
+    category: topography
+    crs: 4326
+    unit: m+MSL
+    source: GMRT GridServer ~50 m, lat 38.75-40.72 lon -75.15..-73.35 — the ONLY tier on the
+      outer shelf south of lat 39.6 (22% of the ring read NoData before it). scripts/download_gmrt.py
+
+nj_10ft_dem_v3:
+  data_type: RasterDataset
+  uri: elevation_v3/nj_10ft_dem_v3.tif
+  driver:
+    name: rasterio
+    options: {}
+  metadata:
+    category: topography
+    crs: 4326
+    unit: m+NAVD88
+    source: NJ OGIS statewide 10-ft LiDAR DEM, local re-clip of the archived statewide .ige to
+      lat 38.797-40.675. NJ land only. scripts/download_3dep.py
+
+usace_nj_2010_v3:
+  data_type: RasterDataset
+  uri: elevation_v3/usace_nj_2010_topobathy_v3.tif
+  driver:
+    name: rasterio
+    options: {}
+  metadata:
+    category: topography
+    crs: 4326
+    unit: m+NAVD88
+    source: 2010 USACE NCMP Topobathy LiDAR DEM (NOAA ID 9456), lat 38.928-40.482 — stops at
+      Cape May Point. scripts/download_pre_sandy_topobathy.py
+
+ehydro_south_v3:
+  data_type: RasterDataset
+  uri: elevation_v3/ehydro_south_v3.tif
+  driver:
+    name: rasterio
+    options: {}
+  metadata:
+    category: topography
+    crs: 32618
+    unit: m+NAVD88
+    source: USACE eHydro, Philadelphia district (+depth, sign handled in the preset), 2015 surveys
+      nearest Sandy (+865..+877 d) — Cape May Canal CM_01_CMC_20150319_CS, Cold Spring Inlet
+      CS_02_CMH_20150313_CS, Absecon Inlet AI_01_AIE_20150325_CS. Sounding plane from NOAA
+      station datums (8536110 -0.920 m, 8534720 -0.796 m) because VDatum's API fails south of
+      Barnegat. Carving tier, water-only (< -1 m). scripts/download_ehydro_nj.py --set south_v3
+
+cn_v3:
+  data_type: RasterDataset
+  uri: infiltration_v3/cn_v3.nc
+  driver:
+    name: raster_xarray
+    options: {}
+  metadata:
+    category: infiltration
+    crs: 4326
+    source: NRCS Curve Number from NLCD 2012 x SSURGO HSG (USDA SDA, tiled 0.25 deg), v3 bbox.
+      scripts/build_cn_nj.py
+
+aorc_sandy_v3:
+  data_type: RasterDataset
+  uri: precip_v3/aorc_sandy_v3.nc
+  driver:
+    name: raster_xarray
+    options: {}
+  metadata:
+    category: meteo
+    crs: 4326
+    source: NOAA AORC v1.1 hourly precipitation, Oct 28-31 2012, v3 bbox.
+      scripts/download_aorc_sandy_precip.py
+
+usgs_sandy_tidal_v3:
+  data_type: GeoDataset
+  uri: gtsm/usgs_sandy_tidal_v3.nc
+  driver:
+    name: geodataset_xarray
+    options: {}
+  metadata:
+    category: ocean
+    crs: 4326
+    unit: m+NAVD88
+    source: USGS NWIS iv parameter 72279, 15 stations — v1's 4 + 11 south of Barnegat, most
+      running THROUGH the Sandy peak. scripts/download_usgs_sandy_tidal.py under NJ_DOMAIN=v3
+
+sandy_storm_tide_south:
+  data_type: GeoDataset
+  uri: gtsm/sandy_storm_tide_south.nc
+  driver:
+    name: geodataset_xarray
+    options: {}
+  metadata:
+    category: ocean
+    crs: 4326
+    unit: m+NAVD88
+    source: USGS STN event 24 SSS sensors 2244/2245 (Great Bay), 2246 (Great Egg Harbor Bay),
+      2247/2248 (Cape May), 2261 (Barnegat Inlet). ⚠️ 2245 and 2261 read ~4.45 m from their
+      first sample and never higher — suspect; 2248 is 3 h long. See docs/STATUS.md.
+
+bed_v3_coarse_25m:
+  data_type: RasterDataset
+  uri: elevation_v3/bed_v3_coarse_25m.tif
+  driver:
+    name: rasterio
+    options: {}
+  metadata:
+    category: topography
+    crs: 32618
+    unit: m+NAVD88
+    source: >-
+      The v3 tiers (V3_ELEVATION_LIST order, minus the NoData-only northern carving tiers)
+      warped to 25 m / EPSG:32618 with -r average and stacked, with 50/100/200 m overviews.
+      🔴 FOR QUADTREE REFINEMENT GATING ONLY, never the bed: hydromt's refine_in_polygon
+      merges EVERY tier onto the polygon's bbox grid at each level (merge_multi_dataarrays),
+      and on v3's 130 x 200 km bbox at 25 m that is 11 tiers x 42 M cells — the first probe
+      reached 164 GB RSS in two minutes and was killed (2026-08-24). The subgrid samples the
+      native tiers, chunked, and is unaffected. Built by scripts/build_v3_coarse_bed.sh
+      (base tiers bilinear, carving tiers MIN so 5 m channels survive a 25 m cell).
+
+cudem_nj_v3:
+  data_type: RasterDataset
+  uri: elevation_v3/cudem_nj_v3.vrt
+  driver:
+    name: rasterio
+    options: {}
+  metadata:
+    category: topography
+    unit: m+NAVD88
+    source: >-
+      The archived cudem_nj.vrt (NOAA 1/9" CUDEM, lat 38.75-41.5) re-declared as a LOCAL VRT
+      over the same archive tiles, so that external overviews (cudem_nj_v3.vrt.ovr, 2..64x,
+      average) can be built beside it — the archive is read-only. Same data. Overviews are
+      what let hydromt's `zoom=(res, "meter")` read the subgrid's coarse levels at ~25 m
+      instead of native 3 m over the whole v3 bbox (docs/STATUS.md, 2026-08-24).
+

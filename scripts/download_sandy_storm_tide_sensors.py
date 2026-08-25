@@ -75,7 +75,20 @@ RARITAN_INSTRUMENTS = [
     2270,  # SSS-NY-KIN-001WL  Narrows, Brooklyn side    — marginal, 3.46 km
 ]
 
+# v3 south (2026-08-24): every Sandy SSS instrument the STN service lists in NJ between
+# lat 38.85 and 39.80 east of lon -75.05, minus the Maurice River pair (Delaware Bay,
+# outside the ring). One site can carry two instruments; both are pulled.
+SOUTH_INSTRUMENTS = [
+    2244,  # NJATL00001  39.5531,-74.4628  Great Bay / lower Mullica
+    2245,  # NJATL00001  same site, second deployment
+    2246,  # NJCAP00001  39.2883,-74.6275  Great Egg Harbor Bay
+    2247,  # NJCAP00035  38.9364,-74.8656  Cape May
+    2248,  # NJCAP00035  same site
+    2261,  # NJOCE00001  39.7636,-74.1042  Barnegat Inlet (site 7727), second instrument
+]
 PRESETS = {
+    "south": (SOUTH_INSTRUMENTS, "sandy_storm_tide_south.nc",
+              "USGS storm-tide (SSS) sensors, NJ shore south of Barnegat — Hurricane Sandy"),
     "nj": (INSTRUMENTS, "sandy_storm_tide_nj.nc",
            "USGS storm-tide (SSS) sensors, NJ open coast — Hurricane Sandy"),
     "raritan": (RARITAN_INSTRUMENTS, "sandy_storm_tide_raritan.nc",

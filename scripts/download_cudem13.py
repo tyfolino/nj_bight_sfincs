@@ -55,8 +55,14 @@ URLLIST = (
 )
 
 ROOT = Path(__file__).resolve().parents[1]
-RAW_DIR = ROOT / "data" / "elevation" / "cudem13" / "raw"
-VRT_OUT = ROOT / "data" / "elevation" / "cudem13_nj.vrt"
+
+# 🔴 PER-DOMAIN OUTPUT. `data/elevation` is a symlink into the READ-ONLY archive, so the
+# fixed path this script used to carry (`data/elevation/cudem13_nj.vrt`) fails EPERM the
+# moment a new domain needs tiles — the freeze working as designed. `acquisition_dir`
+# refuses the built domains outright and gives a new one its own directory.
+_OUT_DIR = _domain.acquisition_dir("elevation")
+RAW_DIR = _OUT_DIR / "cudem13" / "raw"
+VRT_OUT = _OUT_DIR / f"cudem13_{_domain.active().name}.vrt"
 
 # ncei13_n40x00_w074x00_2014v1.tif -> NORTH edge 40.00, WEST edge -74.00, 0.25 deg
 TILE_RE = re.compile(r"ncei13_n(\d+)x(\d+)_w(\d+)x(\d+)_[0-9]+v[0-9]+\.tif$")

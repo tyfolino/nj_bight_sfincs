@@ -142,8 +142,16 @@ class BaseConfig:
     mask_zmin: float = field(default_factory=lambda: _domain.active().mask_zmin)
 
     # ── Elevation merge ──────────────────────────────────────────────────────
-    elevation_list: tuple[dict, ...] = DEFAULT_ELEVATION_LIST
+    elevation_list: tuple[dict, ...] = field(
+        default_factory=lambda: (
+            _domain.active().elevation_list or DEFAULT_ELEVATION_LIST
+        )
+    )
 
+    #: See Domain.coarse_elevation_list. Falls back to `elevation_list`.
+    coarse_elevation_list: tuple[dict, ...] | None = field(
+        default_factory=lambda: _domain.active().coarse_elevation_list
+    )
     # ── Simulation window (Hurricane Sandy) ──────────────────────────────────
     tref: datetime = datetime(2012, 10, 28)
     tstart: datetime = datetime(2012, 10, 28)
@@ -169,6 +177,10 @@ class BaseConfig:
     def elevation(self) -> list[dict]:
         """A fresh mutable copy of the elevation list for the hydromt API."""
         return [dict(d) for d in self.elevation_list]
+
+    def coarse_elevation(self) -> list[dict]:
+        """The list the quadtree refinement gates on (the bed itself by default)."""
+        return [dict(d) for d in (self.coarse_elevation_list or self.elevation_list)]
 
 
 @dataclass(frozen=True)

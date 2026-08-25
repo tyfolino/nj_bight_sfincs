@@ -55,7 +55,11 @@ VRT_URL = (
 )
 
 ROOT = Path(__file__).resolve().parents[1]
-OUTPUT = ROOT / "data" / "elevation" / "usace_nj_2010_topobathy_clip.tif"
+# 🔴 PER-DOMAIN OUTPUT — see nj_sfincs.domain.acquisition_dir. The archived clip stops
+# at lat 39.680.
+from nj_sfincs import domain as _domain  # noqa: E402
+OUTPUT = (_domain.acquisition_dir("elevation")
+          / f"usace_nj_2010_topobathy_{_domain.active().name}.tif")
 
 
 def _clamp_to_source(bbox: tuple[float, float, float, float]) -> tuple[float, float, float, float]:

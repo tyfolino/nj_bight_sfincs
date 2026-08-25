@@ -1,0 +1,245 @@
+{
+ "type": "FeatureCollection",
+ "features": [
+  {
+   "type": "Feature",
+   "properties": {
+    "site_no": "01408029",
+    "name": "Manasquan River near Allenwood NJ",
+    "role": "Manasquan \u2014 INSIDE, src at v1.5 point"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -74.12222222,
+     40.14666667
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "site_no": "01408120",
+    "name": "North Branch Metedeconk River near Lakewood NJ",
+    "role": "Metedeconk \u2014 ring passes WEST of it; src moves here"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -74.1525,
+     40.09166667
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "site_no": "01408500",
+    "name": "Toms River near Toms River NJ",
+    "role": "Toms \u2014 ring passes WEST of it; src moves here"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -74.2233333,
+     39.98638889
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "site_no": "01408900",
+    "name": "Cedar Creek at Western Blvd near Lanoka Harbor NJ",
+    "role": "Cedar Ck \u2014 inside, src here"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -74.1905556,
+     39.87916667
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "site_no": "01409095",
+    "name": "Oyster Creek near Brookville NJ",
+    "role": "Oyster Ck \u2014 inside, src here"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -74.25027778,
+     39.7983333
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "site_no": "01409210",
+    "name": "Mill Ck at Manahawkin NJ",
+    "role": "Mill Ck Manahawkin \u2014 inside, src here"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -74.2597222,
+     39.69527778
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "site_no": "01409280",
+    "name": "Westecunk Creek at Stafford Forge NJ",
+    "role": "Westecunk \u2014 inside, src here"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -74.32027778,
+     39.66666667
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "site_no": "01409400",
+    "name": "Mullica River near Batsto NJ",
+    "role": "Mullica nr Batsto \u2014 ring passes WEST of it"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -74.665,
+     39.67444444
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "site_no": "01409500",
+    "name": "Batsto River at Batsto NJ",
+    "role": "Batsto R \u2014 NO Sandy record; keep inside anyway"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -74.65027778,
+     39.64166667
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "site_no": "01409810",
+    "name": "West Branch Wading River near Jenkins NJ",
+    "role": "W Br Wading (Jenkins) \u2014 ring passes WEST of it"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -74.5480556,
+     39.68805556
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "site_no": "01410000",
+    "name": "Oswego River at Harrisville NJ",
+    "role": "Oswego (Harrisville) \u2014 inside"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -74.52344444,
+     39.66394444
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "site_no": "01410150",
+    "name": "East Branch Bass River near New Gretna NJ",
+    "role": "E Br Bass \u2014 inside"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -74.44138889,
+     39.62305556
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "site_no": "01410500",
+    "name": "Absecon Creek at Absecon NJ",
+    "role": "Absecon Ck \u2014 inside"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -74.5205556,
+     39.43027778
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "site_no": "01411000",
+    "name": "Great Egg Harbor River at Folsom NJ",
+    "role": "Great Egg at Folsom \u2014 src here, 20 km above Mays Landing; ring may pass EAST (leave it out) or west"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -74.85166667,
+     39.59472222
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "site_no": "01411300",
+    "name": "Tuckahoe River at Head of River NJ",
+    "role": "Tuckahoe Head of River \u2014 ring passes WEST of it"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -74.8205556,
+     39.30694444
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "site_no": "8536110",
+    "name": "NOAA Cape May",
+    "role": "ON the canal's Delaware Bay mouth \u2014 forcing input; wedge goes round it"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -74.96,
+     38.9683
+    ]
+   }
+  }
+ ]
+}

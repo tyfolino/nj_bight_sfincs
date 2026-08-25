@@ -33,6 +33,13 @@ SAFETY.
 
 NOTE the parse cache (_sandy_parsed.npz) keys on zip count+mtimes, so the repack
 invalidates it and the next read re-parses. That is correct, just slower once.
+
+MERGE (2026-08-24). A later CHS pull lands as a new CHSFileDownload_*.zip beside the
+canonical zips. The existing naccs_repack_*.zip are then read as SOURCES too: their
+CSV/ members join the inventory under the same CRC-identity assert (a re-requested
+node must match byte-for-byte what we already hold), and their PROVENANCE/ tree is
+carried through verbatim. The outputs are a verified superset; the previous canonical
+zips go to _originals_pending_delete/ with the CHS zip, never overwritten in place.
 """
 
 from __future__ import annotations
@@ -66,7 +73,7 @@ def inventory(zips: list[Path]) -> tuple[dict, list, dict]:
     kept per-source rather than asserted identical.
     """
     members: dict[str, dict] = {}
-    provenance: list[tuple[str, str, int, int]] = []
+    provenance: list[tuple[str, str, int, int, bool]] = []
     per_zip = {}
     for z in zips:
         zf = zipfile.ZipFile(z)
@@ -76,7 +83,10 @@ def inventory(zips: list[Path]) -> tuple[dict, list, dict]:
             if i.is_dir():
                 continue
             if not i.filename.startswith(("CSV/", "H5/")):
-                provenance.append((z.name, i.filename, i.CRC, i.file_size))
+                # a canonical zip's PROVENANCE/ tree is already in its final layout
+                key = None if z.name.startswith("naccs_repack_") else z.name
+                provenance.append((key or z.name, i.filename, i.CRC, i.file_size,
+                                   key is None))
                 continue
             rec = members.get(i.filename)
             if rec is None:
@@ -120,10 +130,9 @@ def plan_outputs(members: dict, provenance: list) -> dict[str, dict[str, tuple]]
         else:
             print(f"  ?? CSV member without a product token, kept as-is: {name}")
             outputs["naccs_repack_provenance.zip"][name] = (None, name)
-    for src_zip, name, _crc, _size in provenance:
-        outputs["naccs_repack_provenance.zip"][
-            f"PROVENANCE/{src_zip}/{name}"
-        ] = (src_zip, name)
+    for src_zip, name, _crc, _size, verbatim in provenance:
+        out_name = name if verbatim else f"PROVENANCE/{src_zip}/{name}"
+        outputs["naccs_repack_provenance.zip"][out_name] = (src_zip, name)
     print(f"[plan] H5 members dropped: {dropped_h5}")
     return dict(outputs)
 
@@ -178,8 +187,12 @@ def main() -> None:
     ap.add_argument("--apply", action="store_true", help="write + swap (default: report)")
     args = ap.parse_args()
 
-    zips = sorted(NACCS.glob(SOURCE_GLOB))
-    if not zips:
+    new = sorted(NACCS.glob(SOURCE_GLOB))
+    canon = sorted(NACCS.glob("naccs_repack_*.zip")) if new else []
+    zips = new + canon
+    if canon:
+        print(f"[merge] {len(new)} new CHS zip(s) + {len(canon)} canonical zips as sources")
+    if not new:
         # after a completed swap the originals live in PENDING; report that state
         done = sorted(NACCS.glob("naccs_repack_*.zip"))
         if done:
@@ -193,7 +206,7 @@ def main() -> None:
 
     print(f"[scan] {len(zips)} source zips in {NACCS}")
     members, provenance, per_zip = inventory(zips)
-    prov_crc = {(z, n): crc for z, n, crc, _s in provenance}
+    prov_crc = {(z, n): crc for z, n, crc, _s, _v in provenance}
     n_dup = sum(len(r["sources"]) - 1 for r in members.values())
     dup_bytes = sum(
         r["size"] * (len(r["sources"]) - 1) for r in members.values()
@@ -203,7 +216,7 @@ def main() -> None:
           f"{len(provenance)} provenance members kept per-source")
 
     outputs = plan_outputs(members, provenance)
-    prov_size = {(z, n): s for z, n, _c, s in provenance}
+    prov_size = {(z, n): s for z, n, _c, s, _v in provenance}
     for out_name in sorted(outputs):
         mapping = outputs[out_name]
         size = sum(
@@ -244,9 +257,13 @@ def main() -> None:
 
     # swap: repacked zips into data/NACCS/, originals out of the reader's glob
     PENDING.mkdir(exist_ok=True)
+    for zf in by_zip.values():
+        zf.close()
+    for z in canon:
+        z.replace(PENDING / f"{z.stem}.pre-merge-{new[-1].stem[-19:]}.zip")
     for out_name in sorted(outputs):
         (REPACK / out_name).replace(NACCS / out_name)
-    for z in zips:
+    for z in new:
         z.replace(PENDING / z.name)
     print(f"[swap] {len(outputs)} repacked zips -> {NACCS}")
     print(f"[swap] {len(zips)} originals -> {PENDING} (NOT deleted)")

@@ -26,7 +26,7 @@ CRS write. Invoke with the data dirs exported in the shell:
 (In-script os.environ assignment is too late — the GDAL shared lib has already
 initialised by the time Python runs the assignment.)
 
-Output: data/validation/sandy_motf_extent.tif  (uint8, 1=flooded, 0=dry; EPSG:32618).
+Output: the active domain's `motf_tif` (uint8, 1=flooded, 0=dry; EPSG:32618).
 """
 import io
 import os
@@ -68,14 +68,31 @@ w, s, e, n = dom.total_bounds
 W, H = int(round((e - w) / RES)), int(round((n - s) / RES))
 print(f"domain bbox (EPSG:{EPSG}): {w:.0f},{s:.0f},{e:.0f},{n:.0f}  -> {W}x{H} @ {RES} m")
 
-r = requests.get(EXPORT, params={
-    "bbox": f"{w},{s},{e},{n}", "bboxSR": str(EPSG), "imageSR": str(EPSG),
-    "size": f"{W},{H}", "layers": "show:0",
-    "format": "png32", "transparent": "true", "f": "image",
-}, timeout=180)
-r.raise_for_status()
-rgba = np.array(Image.open(io.BytesIO(r.content)).convert("RGBA"))
-flooded = (rgba[..., 3] > 10).astype("uint8")   # any non-transparent fill = surge extent
+# ⚠️ The service caps a single export at maxImageWidth/Height = 4096 px (its own
+# service JSON). v1.5's bbox fit in one call; v3's superset rectangle is ~9,300 x 13,100
+# at 15 m, so the render is TILED: each tile is requested on its own exact bbox and
+# pasted into the full array. Tile edges are pixel-aligned, so no seam and no resampling.
+TILE = 4000
+flooded = np.zeros((H, W), dtype="uint8")
+ntile = 0
+for r0 in range(0, H, TILE):
+    for c0 in range(0, W, TILE):
+        r1, c1 = min(r0 + TILE, H), min(c0 + TILE, W)
+        tw, th = c1 - c0, r1 - r0
+        tb = (w + c0 * RES, n - r1 * RES, w + c1 * RES, n - r0 * RES)
+        r = requests.get(EXPORT, params={
+            "bbox": ",".join(f"{v:.3f}" for v in tb), "bboxSR": str(EPSG),
+            "imageSR": str(EPSG), "size": f"{tw},{th}", "layers": "show:0",
+            "format": "png32", "transparent": "true", "f": "image",
+        }, timeout=300)
+        r.raise_for_status()
+        rgba = np.array(Image.open(io.BytesIO(r.content)).convert("RGBA"))
+        if rgba.shape[:2] != (th, tw):
+            raise SystemExit(f"tile {ntile}: server returned {rgba.shape[:2]}, "
+                             f"asked {(th, tw)} -- refusing to resample an extent mask")
+        flooded[r0:r1, c0:c1] = (rgba[..., 3] > 10)   # non-transparent = surge extent
+        ntile += 1
+print(f"{ntile} tiles of <= {TILE} px")
 print(f"rendered flooded pixels: {flooded.sum()} ({flooded.mean() * 100:.1f}%) "
       f"= {flooded.sum() * RES * RES / 1e6:.1f} km2")
 

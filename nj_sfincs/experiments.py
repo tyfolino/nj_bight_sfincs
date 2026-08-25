@@ -133,6 +133,10 @@ EXPERIMENTS_BY_DOMAIN: dict[str, dict[str, Experiment]] = {
     # Frozen archive fixture, score-only (scripts/score_v2_barnegat.py): its five
     # archived runs are RESCORED in place, never staged from a config.
     "v2_barnegat": {},
+    # ⏳ BUILDING (see nj_sfincs/domain.py): the polygon is drawn and gated, the mesh is
+    # not frozen. Arms (`naccs-premier`, `naccs-nowaves`) are registered at the freeze,
+    # once there is a fingerprint for premier.py to check them against.
+    "v3": {},
 }
 
 

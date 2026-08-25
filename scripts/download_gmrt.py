@@ -42,7 +42,10 @@ _w, _s, _e, _n = _domain.active().bbox_ll(buffer_deg=0.10)
 BBOX = dict(minlongitude=_w, maxlongitude=_e, minlatitude=_s, maxlatitude=_n)
 
 BASE_URL = "https://www.gmrt.org/services/GridServer"
-OUT = Path(__file__).resolve().parents[1] / "data" / "elevation" / "gmrt_nj.tif"
+# 🔴 PER-DOMAIN OUTPUT — `data/elevation` is a read-only symlink into the archive.
+# See nj_sfincs.domain.acquisition_dir.
+from nj_sfincs import domain as _domain  # noqa: E402
+OUT = _domain.acquisition_dir("elevation") / f"gmrt_{_domain.active().name}.tif"
 
 
 def main(force=False):

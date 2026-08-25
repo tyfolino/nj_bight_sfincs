@@ -4,29 +4,275 @@
 12 KB "current state" memory file and its 26 reverse-chronological campaign logs; the point
 of the format is that a reader gets the current state without replaying how it was reached.
 
-Last updated: **2026-08-21** (⭐ SEICHE QUESTION ANSWERED, FINDINGS §40 — the Raritan Bay
-sub-hourly motion is a real coherent oscillation, `zsmax` scoring stands for a single arm;
-the "transect did not take" entry was wrong, no re-run needed ·
-rain ground truth measured, FINDINGS §39 — classifier precision 0.99 · weir decision
-inputs measured, FINDINGS §38 — pocket caps to ~2.45 m · diag runs accepted by user,
-re-audit waived · the bay rings differently between ARMS on the 10-min his ·
-advisor notebook clone executed · env tarball rebuilt + deployed · paired bootstrap
-was missing the region clip, fixed)
+Last updated: **2026-08-24** (⭐ v3 WIRED + ALL DATA PULLED + CLEAN MESH PROBE 3.31 M faces — Steps 0–2 done, see PICK UP; earlier: MOTF sheet, inland ring, canal uncut; v3 REGION DRAWN + GATED — `region_v3_EDITED.geojson`
+passes `validate_region_v3.py`; ⭐ `acquisition_only` domain state, v3 REGISTERED, all
+five+one downloaders domain-aware, **v3 DATA ACQUISITION COMPLETE** (4.2 G);
+Toms River src moved onto its cut · 🔴 **PAUSED ON A SCOPE DECISION: the ring currently
+excludes Mays Landing and Batsto and that is NOT accepted** — see PICK UP · 2026-08-21:
+seiche FINDINGS §40 · weir FINDINGS §38 · rain FINDINGS §39)
 
 ## ⏳ PICK UP — next session
 
-1. ⭐ **v3 data acquisition — scoped, blocked, ready to go.** Read the "DATA
-   ACQUISITION" subsection in the v3 section below FIRST: it names the two blockers
-   (downloaders write into the read-only archive; v3 cannot be registered before it
-   has a polygon + mesh) and the one decision that gates the pulls. The southern
-   terminus is DECIDED (stop at Cape May, do not cross to Delaware) with the NACCS
-   coverage table that settles it.
-2. User: the **v3 QGIS polygon**; the full checklist is in the v3 section below.
-   ⚠️ It also settles the **Cape May Canal** question — the one real design choice
-   the southern terminus forces.
-3. Optional, cheap: a **weir-era fasthis** re-run if the bay phase question is ever
-   pushed further — see the ANSWERED section below for why it was not needed to
-   settle the seiche-vs-chatter question.
+### ✅ 2026-08-24 (latest) — THE RING IS DRAWN (`region_v3_EDITED_inland.geojson`) and the Cape May NACCS gap is filled
+
+**`data/region_v3_EDITED_inland.geojson` is the v3 ring** (user, QGIS, from the inland
+draft). 54 vertices, 52 verbatim from the draft. Gate: **exit 0, 17 declared reaches,
+ZERO wet river cuts** — `toms_river`, `great_egg_tuckahoe`, `mullica_lower` boxes all
+match nothing (retire them with the domain wiring). 15 of 16 gauges inside; Folsom
+`01411000` outside by design (+19 m, 20 km above Mays Landing — src goes at the Great Egg
+cut above Lake Lenape). The user's two Monmouth moves (v37 → −74.125, 40.353; v38 →
+−74.119, 40.158) bring the **Manasquan gauge inside** (my draft had it 1.7 km OUT — only
+v1.5's src point was in) and take in more Navesink headwater; all three touched segments
+are dry at 10 m (min +2.95 / +10.1 / +17.9 m). ⚠️ So "v1.5's ring verbatim" now means
+its **forced cuts** (ocean arm, Narrows, Arthur Kill) — the landward Monmouth edge moved
+~2.5 km west on dry ground. Toms cut moved to its gauge too (decision reversed from the
+morning: MOTF surge reaches lon −74.226, the gauge is at −74.222, a N–S line there is dry
+at +3.6 m; the Wrangle Brook confluence is now inside).
+
+**NACCS merge — `repack_naccs_zips.py` now MERGES:** a new `CHSFileDownload_*.zip` is
+inventoried WITH the canonical `naccs_repack_*.zip` as sources (same CRC-identity assert;
+the PROVENANCE/ tree passes through verbatim); previous canonical zips go to
+`_originals_pending_delete/` as `*.pre-merge-<stamp>.zip`. Applied 2026-08-24 on the
+user's Cape May pull: 63 ADCIRC members, 29 re-requests (CRC-identical), **34 new save
+points → 1,321 total**; STWAVE03 301 → 335 (parked, unread). Gate reproduced:
+`--report-only --no-cache` under v1_monmouth → 1,321 points, **support sha16
+21f967f9798a6945 unchanged**. `_originals_pending_delete/` (646 MB) is safe to delete —
+user's call. Figure `reports/figures/naccs_cape_may_after_merge.png`.
+Where the new points are: a **cluster of 5 on the canal mouth** (around NOAA 8536110),
+a nearshore line up the Villas shore (15258, 11168, 11205, 13425, 11169; 1–6 m, two of
+them ≤ 0 m and will be dry-screened as usual), and 5 deep-bay anchors 15–30 km west
+(11013/11014/7168, 10–14 m). The wedge's N–S leg at lon −74.985 still has no point ON it
+south of the mouth; nearest support is the mouth cluster (~1 km) and 7548 / 15260 at the
+Point — **adequate for a 2-node interpolant along a 4 km leg, and the user has pulled what
+the webtool offers there.** Not a gap to chase further.
+
+## ✅ STEPS 0 + 1 DONE — 2026-08-24 evening. v3 is `building`; every Step-1 input is on disk
+
+**Step 0.** `Domain.building` is a new registry state (real polygon, no mesh) between
+`acquisition_only` and sealed: fingerprint / basin-rule / support-count guards skip it,
+`assert_buildable` passes it, `_check_building` refuses a PROVISIONAL region or a
+`mesh_key`. v3: `region=region_v3_EDITED_inland`, `latitude=39.74`,
+`discharge_geodataset=usgs_sandy_discharge_v3`, own `hwm_geojson`. The three river
+`CROSSINGS` boxes are retired (gate: exit 0, `river cuts declared: []`). **89 tests OK.**
+
+**Step 1 — pulled (all under `NJ_DOMAIN=v3`):**
+
+| input | file | what landed | ⚠️ |
+|---|---|---|---|
+| discharge | `discharge_v3/usgs_sandy_discharge_v3.nc` | **17 sources at their NWIS gauge coordinates** (snapped — my hand copies were 100–770 m off) | Folsom's src is at the Mays Landing cut (gauge outside). Batsto R / Middle R ungauged. |
+| HWMs | `validation_v3/sandy_hwms_v3.geojson` | **185 marks** in the ring bbox (q1 48 · q2 79 · q3 33 · q4 25), 1.34–5.79 m | src-contamination 500 m check still to run (needs the mesh's src faces) |
+| USGS tidal | `gtsm/usgs_sandy_tidal_v3.nc` | **15 stations**: v1's 4 + 11 southern (param 72279). Most run THROUGH the peak (n≈960); Cape May Harbor stops 10-30 03:54, Absecon Channel n=480 | Sluice Creek is Delaware-Bay side, outside the ring (region clip drops it) |
+| STN sensors | `gtsm/sandy_storm_tide_south.nc` | 6 instruments, preset `south` | 🔴 **2245 (Great Bay) and 2261 (Barnegat Inlet) read 4.47 / 4.45 m at their FIRST sample and never higher — not a surge shape; likely a barometric or mis-datumed file. Do not use without looking.** 2248 (Cape May) has 3 h only. 2244 (2.39 m), 2246 (2.10 m), 2247 (2.24 m) look real. |
+| CORA waves | `waves_v3/cora_waves_v3.nc` | 11,594 nodes × 121 h, offshore of the ring | `build_cora_waves.py` now writes to `acquisition_dir("waves")` for a non-archived domain |
+| curve numbers | `infiltration_v3/cn_v3.nc` | 16.6 M land cells, CN 30–95, mean 71.6 | SDA returned 413 on the v3 bbox → `build_cn_nj.py` now tiles the query (0.25°, dedup on mukey+wkt) |
+| eHydro south | `elevation_v3/ehydro_south_v3.tif` | Cape May Canal + Cold Spring (Cape May) Inlet + Absecon Inlet, 30,312 carved cells at 5 m, −19.3..−1.1 m; **12,783 cells in the canal, −12.6..−1.1 m** | 🔴 CENAP ships **+depth** — `PRESETS` now carry a sign (5th element). 🔴 **VDatum is unusable south of Barnegat** (every region errors); planes come from NOAA station datums (Cape May −0.920 m, Atlantic City −0.796 m), declared in `STATION_PLANE_M`. Surveys are 2015 (+865..+877 d) — nothing nearer exists. Great Egg / Townsends / Hereford inlets are unsurveyed (non-federal). |
+| MOTF, NACCS, precip, wind, roughness, elevation tiers | — | already covered | — |
+
+Quota 70.3 G of 100 G. `data/NACCS/_originals_pending_delete/` (646 MB) still awaits the user.
+
+🔴 **STEP 2 FINDINGS — the v3 quadtree build, 2026-08-24 evening.** Four things, each
+measured, each now in code:
+
+1. **hydromt's block loop is bbox-proportional in memory.** `compute_quadtree` chunks by
+   `nrmax=2000` CELLS, so at level 0 (200 m) one chunk is the whole 130 × 200 km bbox and
+   `merge` clip+LOADS every native tier for it (`workflows/merge.py:264-273`). The first
+   probes hit **158 GB / 164 GB / 166 GB RSS** and were killed — in refinement gating AND
+   again in face elevation; splitting the 25 m polygon into 14 pieces changed nothing.
+   Fix: `Domain.coarse_elevation_list` (new; `BaseConfig.coarse_elevation()`) — v3 gates
+   refinement AND merges face `z` from **one 25 m raster**, `bed_v3_coarse_25m`, built by
+   `scripts/build_v3_coarse_bed.sh` (base tiers bilinear = hydromt's own face method;
+   carving tiers MIN so a 5 m channel survives a 25 m cell — bilinear paved 69 Shark-inlet
+   faces). Peak RSS after: ~3 GB. The finest face is 25 m, so a 25 m face bed loses
+   nothing. ⚠️ The SUBGRID still needs the native tiers: that is what the overviews are for
+   — `gdaladdo -ro` (2..64×, average) on every v3 tier + a local `cudem_nj_v3.vrt` over
+   the archive tiles, because hydromt picks an overview from `zoom=(res,"meter")` and the
+   subgrid asks for `dx/8` per level (25 m at level 0). Not yet measured on the subgrid.
+2. 🔴 **The NJ lidar reads 0.0 over water and its rectangle covers the shelf.** The model
+   applies `zmin=0.001` to it; the first coarse bed did not, and **817,718 offshore faces
+   were paved to z = 0** and dropped as an "island". The build script thresholds it now.
+3. 🔴 **v3 must inherit v1.5's mask boxes.** Without `always_active_boxes_ll` the Lower
+   Bay / Raritan Bay channels deeper than −10 m sever the Raritan lobe and
+   `_drop_detached_islands` removed it (41k + 20k + 11k cells). `always_active_boxes_ll`,
+   `dry_land_boxes_ll` (Ward Point) and `no_waterlevel_boxes` (the Raritan cut) are now
+   `V1_5_RARITAN.<same>` on V3 — and **`STATIONS_V3` had dropped the two Raritan sources
+   at that cut; restored, 19 sources.**
+4. The paved-channel invariant checked only the archive's Shark survey; it now checks
+   every `ehydro*`/`shrewsbury*` tier in the active domain's list. `build_static` no
+   longer dies on a domain with no `obs_gauges` (warns; the freeze must assert them).
+
+✅ **THE CLEAN PROBE (2026-08-24, last run): FACES 3,312,567 · active 1,704,096 ·
+water-level BC 6,835 in 4 runs over 4 declared arms · outflow 1,800, none on water ·
+every invariant OK.** Per arm: ocean 1,155 [1000..1400] · narrows 59 [45..85] ·
+arthur_kill 23 [16..40] · **ocean_south 5,598 [5000..6200]** (new arm: isobath south of
+lat 40.15 + Cape May closure + Delaware Bay wedge). Active by depth: −20..−10 26k ·
+−10..−2 627k · −2..0 305k · land 741k. v1 footprint 313k active. Figure
+`reports/figures/v3_probe_mask.png`. **Projected SnapWave ≈ 18 h per run** (×6.05 v1's
+faces) — the runtime is now the v3 cost; a 24 h SLURM window is the minimum.
+Levers if that is too much: L2 `low_water` zmax 3 → 2 m and L1 `inland_floodplain` 6 → 5 m
+(the L2 ring-wide 50 m gate is the driver). ⚠️ Peak RSS of the probe ≈ 3 GB; **the SUBGRID
+build has not been run yet** — with the new overviews it should stay bounded, but it must
+be MEASURED (run the template build under a memory watch) before it goes on a SLURM node.
+
+**Outflow edges vs the head-of-tide sources, measured on the probe:** every source's
+nearest free-outflow cell is on ground above +7 m except the Raritan cut (+2.3 m bank,
+same as v1.5) and **Tuckahoe (+1.22 m, 480 m from the source)** → `land_boxes`
+`tuckahoe_head_of_tide` walls it (73 cells inactive). The Delaware Bay shore leg north of
+the canal carries 34 outflow cells at −0.94..+3 m and is left open, declared, in the box's
+`why`. 40 water-level BC cells fell outside every arm and were demoted to interior
+(hydromt's own rim cells around filled holes) — the invariant then held.
+
+⏳ **OPEN, for the user:** (1) accept ~3.3 M faces / ~18 h, or pull the two levers;
+(2) an ICW eHydro tier — the only southern channel surveys are 2021–2024 sparse
+cross-sections (`IW_*_XC`, ~50–150 m between soundings, post the Sandy-funded dredging);
+eHydro has NO Mullica / Great Egg / Metedeconk / Townsends / Hereford surveys (not federal
+channels). Worth it for the causeway bridges the ICW passes; declare it as its own tier
+(`bed-icw` arm-able), never folded silently into the premier bed.
+
+**NEXT = Step 2:** `data_catalog.yml` keys for the v3 tiers (`cudem13_v3`, `gmrt_v3`,
+`nj_10ft_dem_v3`, `usace_nj_2010_v3`, `ehydro_south_v3`, `cora_waves_v3`, `cn_v3`,
+`usgs_sandy_tidal_v3`, `sandy_storm_tide_south`) + a v3 `elevation_list` (eHydro above
+CUDEM); `refinement_v3.geojson`; `probe_mesh_size.py` → coarse-cell decision.
+
+## ⭐ THE v3 BUILD PLAN — written 2026-08-24, measured against what is on disk
+
+The ring is lat 38.855–40.62, lon −75.0–−73.55. Every input was checked for its southern
+(and, for the Delaware Bay wedge, western) extent. ✅ = already covers v3; 🔴 = must be
+pulled/rebuilt before the mesh; 🟡 = wait for the mesh.
+
+**Step 0 — wire the domain (Claude, next).** `Domain.region` → `region_v3_EDITED_inland`,
+clear `acquisition_only`, `latitude` from the real ring, retire the three river
+`CROSSINGS` boxes, `STATIONS_V3` = every source AT ITS GAUGE (Toms override dropped),
+`obs_gauges`/`hwm_rules` stubs, tests. Everything below selects on the ACTIVE region's
+bbox, so it runs AFTER this and not before.
+
+**Step 1 — data pulls that do NOT need the mesh (all bbox-driven; run as one sweep):**
+
+| input | on disk | v3 needs | action |
+|---|---|---|---|
+| ✅ CUDEM 1/9″, GMRT v3, nj_10ft v3, USACE 2010 v3 | to 38.75 / 38.75 / 38.80 / 38.93 | 38.855 | done. ⚠️ USACE stops at 38.928 = Cape May Point; the Point + wedge sit on 1/9″ CUDEM only. cudem13 1/3″ ends at lon −74.75 — same fallback. |
+| 🔴 eHydro channels | `ehydro_south.tif` stops at **39.66** | Barnegat Inlet is in; **Absecon, Great Egg, Townsends, Hereford, Cape May Inlet + CANAL, Cold Spring** are not | new preset(s) in `download_ehydro_nj.py`; 🔴 Philadelphia district = **positive depths** (needs the per-preset sign field). The canal's bed is the one channel a hand-drawn ring made a forcing argument about — survey it. |
+| 🔴 HWMs | `sandy_hwms.geojson` 95 marks to 39.71; v1.5's 107 to 40.17 | whole shore | `download_sandy_hwms.py` under v3 → `validation_v3/`. Then re-run the 500 m src-contamination check (FINDINGS §40, per-domain). |
+| ✅ MOTF | `sandy_motf_extent_v3.tif` | — | done (superset). `motf_exclude_boxes_ll`: none needed — no NY land; Delaware Bay shore inside the wedge is NJ. |
+| 🔴 USGS tidal gauges | `usgs_sandy_tidal_nj.nc` 4 stations, ≥ 39.76 | Atlantic City, Great Egg, Tuckerton, Cape May Harbor, Barnegat Bay | extend the hardcoded list in `download_usgs_sandy_tidal.py` south (NWIS site sweep, site_tp ST-TS / ES). |
+| 🔴 STN storm-tide sensors | `sandy_storm_tide_nj.nc` 3, ≥ 39.76 | the southern deployment (Sandy STN had ~20 in Atlantic/Cape May counties) | `download_sandy_storm_tide_sensors.py` south. |
+| ✅ NOAA | Battery, Atlantic City, **Cape May** (forcing subset); Sandy Hook in the validation file | — | Cape May is a **forcing input** on v3 (on the canal mouth), Atlantic City is the interior holdout. `n_waterlevel_support` asserted on the mesh, not now. |
+| 🔴 discharge | `usgs_sandy_discharge_v1_5.nc`, 8 sources | 6 southern + 5 coastal-creek + Manasquan/Metedeconk at their gauges | `download_usgs_sandy_discharge.py` under v3 → `discharge_v3/`. Daily means only (2012). |
+| 🔴 CORA waves | `cora_waves_nj.nc` ≥ **39.35** | 38.85 | `build_cora_waves.py` re-clip; check CORA's grid actually reaches Delaware Bay's mouth. |
+| 🔴 curve numbers | `cn_nj.nc` stops at **39.556** | 38.85 | `build_cn_nj.py` under v3 (already domain-aware). |
+| ✅ NLCD roughness, AORC precip v3, ERA5 wind (37–42) | | | done. |
+| ✅ NACCS | 1,321 pts, Delaware Bay wedge filled | | done; boundary build is 🟡. |
+
+**Step 2 — catalog + template.** v3 `elevation_list` in `data_catalog.yml` (v3 tiers +
+southern eHydro, eHydro ABOVE CUDEM), `refinement_v3.geojson` (bay fringe gate — raise
+zmax past 2.0, the Keansburg lesson), `probe_mesh_size.py` → face count. ⚠️ v1.5 was
+696k faces on 5,700 km²; v3 is 15,087 km², mostly coarse upland — expect ~1.5–2 M and
+SnapWave to be the cost. Decide the coarse-cell size from the probe, not by analogy.
+
+🔴 **Step 3, FIRST: the bridge-as-dam sweep (user, 2026-08-24).** Lidar puts a bridge deck
+on the bed and the model reads a causeway as an earthen dam — the Shrewsbury lesson
+(`shrewsbury_ehydro_2015` exists because of it). On v3 the exposure is far larger: the
+whole ICW, the Route 72 (Manahawkin), Route 52 (Ocean City), Parkway (Mullica, Great Egg,
+Cape May Canal), Route 30/40/322 (Absecon) and Townsends/Corson's inlet crossings, plus
+the canal's three bridges. eHydro covers the canal and the two inlets; everything else is
+CUDEM. Sweep the probe's merged bed along every estuary axis and the ICW for ridges that
+rise above −1 m across a wet channel, BEFORE freezing — a dam found after the freeze is a
+new domain.
+
+**Step 3 — mesh-dependent (🟡).** `build_naccs_boundary.py` under v3 (support selection
+reads `mask==2`; assert the 3-gauge NOAA support count here), `no_waterlevel_boxes` = none
+on rivers (all dry) — only the canal-mouth/wedge check that NOAA and NACCS agree there,
+`check_naccs_vs_sensors.py` south, src-contamination sweep on the HWMs, dry-crossing
+creek sweep (which gauged creeks cross the ring on land with no source — Absecon is
+inside now, re-run the list), then freeze + fingerprint + `EXPECTED["v3"]`.
+
+**Step 4 — arms.** `naccs-premier`, `naccs-nowaves`. Pre-registration before the scorer:
+the interior holdouts are Atlantic City + the southern USGS tidal gauges; the flanking
+check at Cape May is a FORCING diagnostic (it is on the boundary).
+
+### ✅ 2026-08-24 (later) — the inland move is DRAFTED, MEASURED and GATED; the user draws the real ring
+
+**The v3 MOTF sheet is rendered** — `data/validation_v3/sandy_motf_extent_v3.tif`, 1,443 km²
+on the acquisition rectangle (deliberately a superset: the sheet is a domain-DESIGN input;
+scoring restricts to the run's own `msk`, so no re-render when the polygon lands). The
+renderer is now **tiled** — the Rutgers service caps one export at 4096 px and v3 needs
+9,256 × 13,173 at 15 m. Figure: `reports/figures/motf_v3_vs_ring_EDITED.png`.
+
+**What the EDITED ring excludes, measured:** 588 km² of MOTF surge lies outside it. Only
+two patches are ours — **Great Egg + Tuckahoe up to Mays Landing / Head of River,
+122 km²** and **Mullica + Wading + Bass up to Batsto, 116 km²**. The rest is Delaware Bay
+shore (200 km² at Dennis/Maurice), the tidal Delaware at Trenton (62 km²) and the Raritan
+above v1.5's cuts — all out of scope. Plus 2.8 km² above the Toms cut and 1.9 km² at the
+Metedeconk.
+
+⭐ **The head-of-tide insight: moving the landward edge to the gauges turns every southern
+river cut DRY.** The DEM under each head-of-tide gauge is ≥ +1 m (Tuckahoe 1.0, E Br
+Bass 1.9, Batsto 3.6/4.2, Oswego 4.9, W Br Wading 6.3), so a ring through them crosses
+the rivers on `bed ≥ 0` — the validator classes it LAND, hydromt puts NO water-level or
+outflow BC there, and the discharge source sits at the gauge, inside. No
+`no_waterlevel_box`, no pumping, no Navesink drain. This is strictly better than the
+Raritan pattern where the geography allows it; the Raritan pattern stays for Toms (and
+for v1.5, whose cuts are on tidal water by necessity).
+
+**`data/region_v3_DRAFT_inland.geojson`** — 53 vertices, vertices 0–40 identical to the
+EDITED ring, then: W Br Wading at Jenkins (−74.555, 39.700) → west of the Mullica gauge
+(−74.690, 39.690) → west of Batsto (−74.680, 39.620) → above Lake Lenape / Mays Landing
+(−74.745, 39.478) → west of Head of River (−74.835, 39.322) → EDITED v42, v43 → land N of
+the canal's Delaware Bay mouth (−74.958, 38.985) → Delaware Bay (−74.985, 38.975) →
+(−74.985, 38.880) → EDITED v46. Area 13,628 → 14,786 km² (+1,157, pine barrens above
++3 m — mostly inactive cells). Figure `reports/figures/region_v3_draft_inland.png`.
+🔴 **It is a DRAFT for QGIS, not the ring** — the user draws the ring (v1.5 rule).
+
+**Gate on the draft: `validate_region_v3.py --region data/region_v3_DRAFT_inland.geojson`
+→ exit 0, 18 declared reaches.** `great_egg_tuckahoe` and `mullica_lower` boxes match
+NO reach (the cuts are dry now — retire those boxes when the real ring lands).
+`toms_river` is the only wet river cut left. MOTF inside 1,003 → **1,254 km²**; the only
+surge left outside on the Atlantic side is the 2.8 km² above Toms and 1.9 km² Metedeconk.
+
+🔴 **THE CAPE MAY CANAL WAS BEING CUT, and the validator could not see it.** A 10 m walk of
+the EDITED ring's seg 43→44 on 1/9″ CUDEM finds **110 m wet, bed −4.23 m at (−74.924,
+38.962)** — mid-canal, 2.5 km from its bay end. The validator resamples the bed to 3″
+(~75 m) with `-r max`, which erases any channel narrower than that; it now lists
+sub-threshold reaches with a `CHANNEL?` tag, but a 100 m canal on a 75 m max-grid is still
+invisible. 🔴 **Any hand-drawn segment near a canal or tidal creek needs a 10 m walk on
+1/9″ CUDEM** (the snippet is in this session's log; worth a `--fine` flag).
+⭐ **NOAA 8536110 Cape May sits ON the canal's Delaware Bay mouth, (−74.960, 38.968)** —
+it is in `noaa_sandy_nj.nc` already. So it is a forcing INPUT on v3, like the Battery on
+v1.5, NOT an interior holdout; `n_waterlevel_support` reasoning must reflect that.
+
+**The draft's Cape May answer (user's rule: do not cut the canal):** leave land north of
+the canal mouth (draft seg 47→48 walked at 10 m: **0 % wet, min +1.02 m**), step into
+Delaware Bay and run a **forced wedge** ~1.5 km offshore round Cape May Point to the south
+closure — `cape_may_bay` box in `CROSSINGS`, 12.25 km, min bed −9.8 m. Both canal ends are
+then inside the domain and the bay end sees the forced Delaware Bay level. NACCS on the
+wedge is THIN: sp7548 (4.8 m) and sp15260 (8.4 m) only, 2 pts within 6 km at lat 39.0.
+⭐ **Ask of the user (they offered): NACCS save points lon −75.00..−74.94, lat
+38.90..39.00** — the wedge and the canal mouth — plus 2–3 north along Villas (39.00–39.05)
+for margin. The MOTF flooding on the Delaware Bay shore NORTH of the canal mouth stays
+outside (Delaware Bay coast, out of scope — say so in the write-up).
+
+**Gauge sweep (PICK UP #4, done once, 117 NWIS sites in the box, 61 with a Sandy daily
+record; table in the session log):** peak southern inflows are small — Manasquan 18.4,
+W Br Wading 17.7, Toms 13.9, Oswego 12.5, Great Egg/Folsom 10.1, Mullica/Batsto 8.0,
+Tuckahoe 7.1, Cedar 6.1, Mill/Manahawkin 4.6, Westecunk 3.7, Absecon 3.5, Oyster 3.3,
+E Br Bass 2.0 m³/s. **River flow is not why these valleys flood; the sources exist so the
+model does not DRAIN them.** 🔴 **`01409500` Batsto R at Batsto (67.8 mi²) has NO Sandy
+record**, so the Mullica's gauged ~211 mi² is a lower bound (Batsto R is ungauged for
+Sandy, like the Middle River and Wrangle Brook). Cedar, Oyster, Mill, Westecunk, Absecon
+gauges are already INSIDE the ring — they become in-domain sources at the gauge.
+
+⚠️ **Metedeconk:** the inherited seg 38→39 crosses its tidal reach in a 54 m wet reach,
+bed −1.07 m at (−74.134, 40.065) — sub-threshold, undeclared, same family. v1.5's
+Metedeconk src (−74.115, 40.056) is 1.6 km INSIDE it. Fix in the same QGIS pass: swing the
+segment west of the Lakewood dam (Lake Carasaljo, −74.21, 40.09) so the cut is dry, and
+move the src to the gauge (`01408120`, +3.7 m). Manasquan src (−74.095, 40.114) is inside
+by 1.3 km and its crossing is dry — leave it.
+
+**Then, in order:** (1) user redraws in QGIS from the draft; (2) gate it; (3) sources:
+Tuckahoe `01411300`, Great Egg `01411000` (at Folsom, 20 km above Mays Landing — place the
+src at the gauge, it is inside), Mullica `01409400`, W Br Wading `01409810`, Oswego
+`01410000`, E Br Bass `01410150`, plus the five coastal creeks above, all AT THE GAUGE;
+`no_waterlevel_box` only on Toms; (4) retire the two river boxes; (5) clear
+`acquisition_only`, refinement, `probe_mesh_size.py`.
 
 ✅ Deletion manifest EXECUTED 2026-08-21 on the user's sign-off — 10.5 G reclaimed,
 quota 65.22 G, details at the top of
@@ -641,45 +887,215 @@ Arthur Kill cuts) verbatim, NOT v2's straight lat-40.52 line; no Manahawkin wall
 extend to Cape May Point. Consider raising the `bay_fringe` refinement gate zmax
 (2.0 excludes every berm crest — the Keansburg lesson, FINDINGS §38).
 
-#### ✅ SOUTHERN TERMINUS DECIDED 2026-08-21 — stop at Cape May, do NOT cross to Delaware
+#### ✅ THE v3 RING IS DRAWN AND PASSES ITS GATE — 2026-08-24
 
-User's call, and the measured evidence backs it. **Do not run the boundary from Cape May
-Point across the Delaware Bay mouth to Cape Henlopen.** Four reasons, strongest first:
+`data/region_v3_EDITED.geojson` (user, hand-edited in QGIS from the draft). 48 vertices,
+valid, simple, **38 identical to v1.5's ring**. The user replaced the draft's box-corner
+west edge with a coast-following diagonal and pulled the Cape May vertices east onto land.
 
-1. 🔴 **NACCS support fails on the Delaware end.** Measured against the repo's own
-   1,287-point set (`data/NACCS/_sandy_parsed.npz`), nearest ADCIRC save point:
+⭐ **`scripts/validate_region_v3.py` — the gate. Reads, never writes.** Same rule and
+shape as `validate_region_v1_5.py`: it ignores segment structure entirely (a hand-drawn
+vertex is not hydrography) and walks the ring at 50 m steps against the merged bed,
+classifying three ways — LAND (`bed ≥ 0`), **WET+ACTIVE (`mask_zmin ≤ bed < 0`)**, DEEP
+(`bed < mask_zmin`). Only the middle class can carry `mask==2`; every reach ≥150 m of it
+must fall inside exactly one declared `CROSSINGS` box or the script FAILS.
 
-   | candidate | nearest pt | within 2 km | gate-1 (2.0 km) |
-   |---|---|---|---|
-   | Cape May Inlet | 0.23 km | 26 | **PASS** |
-   | Cape May Harbor | 0.47 km | 6 | **PASS** |
-   | Cape May Point (DelBay shore) | 0.69 km | 2 | **PASS** |
-   | offshore Cape May (~−10 m) | 1.37 km | 4 | **PASS** |
-   | mid Delaware Bay mouth | 0.72 km | 2 | PASS |
-   | **Cape Henlopen, DE** | **9.00 km** | **0** | 🔴 **FAIL** |
-   | Cape May Canal, DelBay end | 2.43 km | 0 | ⚠️ marginal FAIL |
+**Result on the edited ring: 595.8 km walked, 24.7 km WET+ACTIVE in 22 reaches, ALL
+DECLARED, exit 0.** ✅ All 1,429 vertices of the −10 m isobath are INSIDE the ring, so
+`create_active` decides the boundary everywhere, not the cursor. ✅ All 5 NACCS STWAVE
+points deeper than 20 m are inside (62 fall outside, every one ≤10.2 m and hard against
+the ring).
 
-   The set stops at lat 38.832; Cape Henlopen is 38.79. A mouth crossing would have one
-   supported half and one bare half — the "0 points on Arthur Kill" failure that
-   `build_naccs_boundary.py`'s per-arm reporting exists to catch. ⚠️ Indicative only,
-   same caveat as the v1.5 gate-1 entry: sketch points, not `mask==2` cells on a mesh
-   that does not exist, so these are an UPPER bound on surviving support.
-2. **Validation is NJ-only, and Delaware land would repeat the Staten Island defect
-   exactly.** The MOTF sheet is an NJ statewide render whose pixels are {0,1} with no
-   nodata, so non-NJ land reads as *confidently dry* and every model-wet Delaware pixel
-   books a false alarm the sheet cannot adjudicate (FINDINGS §37–38 — this already cost
-   one rebaseline). `nj_10ft_dem` is NJ-only too.
-3. ⭐ **Conversely, stopping at Cape May keeps the BEST topo tier for the whole domain.**
-   `data/elevation/raw/Rast_statewide_10ft_DEM.ige` (16.5 G) is the **statewide NJ**
-   10 ft LiDAR mosaic — Cape May is inside it. Cross into Delaware and the finest tier
-   simply stops.
-4. **Cost with no NJ deliverable**, and it commits the Delaware Bay in/out decision now
-   rather than leaving it open.
+⚠️ **The `ocean_arm` box had to reach lon −73.98, not −73.96** — the Rockaway closure runs
+NW from (−73.9364, 40.5497) to (−73.9732, 40.5794) and a tighter box left 3.00 km
+undeclared. That was the validator catching its own declaration, which is the point.
 
-⚠️ **This is NOT "the Raritan mistake" and must not be argued as one.** Raritan's defect
-was cutting a basin in HALF so its interior maximum was structurally unreachable. Putting
-the whole of Delaware Bay outside the domain is a legitimate topology; the objections are
-the four above.
+**THREE NEW RIVER CUTS, introduced by the coast-following diagonal.** 🔴 This is the
+Navesink failure family — v1's west edge once cut the Navesink mid-channel, hydromt put a
+free-outflow BC on the 5 m face, and the model drained 92.5% of the estuary's inflow.
+⚠️ Names for the first two are INFERRED FROM GAUGE PROXIMITY, not a hydrography layer:
+
+| cut | width | bed | nearest gauge | dist | DA |
+|---|---|---|---|---|---|
+| Toms River (−74.189, 39.944) | 0.40 km | −1.72 m | `01408500` | 2.7 km | **123 mi²** ✅ |
+| head of Great Egg Harbor Bay / Tuckahoe (−74.648, 39.303) | 1.15 km | −4.96 m | `01411300` Tuckahoe at Head of River | 14.9 km | 30.8 mi² ⚠️ partial |
+| lower Mullica / Bass River (−74.44, 39.55) | 0.70 km | −1.24 m | `01410150` E Br Bass R | 8.1 km | **8.11 mi²** 🔴 |
+
+All three are tidally connected to the open Atlantic (flood-fill, not assumed).
+
+**Decision taken: the RARITAN PATTERN, with the cut placed deliberately.** Moving the ring
+inland to cross only land is NOT cheaper — an estuary inside with no wet crossing needs the
+ring west of its head of tide (Batsto 20 km inland, Head of River 15 km west), it still
+needs a discharge source there, and the alternative (ring east of the rivers) would drop
+Great Egg Harbor Bay and the Mullica estuary, real Jersey-shore flood targets. So: cross
+the river, `no_waterlevel_box` on the cut (an imposed level PUMPS a tidal river), discharge
+source AT the cut from the upstream gauge — and choose WHERE to cross so the gauge is good.
+
+#### 🔴 THE THREE RIVER CUTS — one settled, two open, all subject to the inland move
+
+⚠️ **All of this is on the CURRENT ring and must be re-checked after the inland move
+(PICK UP #1).** The cut locations will change; the gauge inventory will not.
+
+**✅ TOMS RIVER — SETTLED 2026-08-24.** Cut at (−74.1878, 39.9460), bed −1.72 m, 0.40 km.
+The src moved ONTO the cut (`STATIONS_V3` in `download_usgs_sandy_discharge.py`).
+⭐ **A src point is a property of the RING, not of the river.** v1.5's Toms src at
+(−74.170, 39.945) was placed for a different ring and sits 1.5 km EAST of v3's cut —
+i.e. INSIDE it — which would leave the reach between cut and src with no inflow while the
+cut carried a water-level BC. Measured: old src bed −2.29 m, the cut −1.72 m, and 200 m
+further east already −0.08 m (too shallow — do not drift east).
+⚠️ **123 mi² is a LOWER BOUND.** `01408500` is the ONLY Toms River gauge with an Oct-2012
+record (checked over the basin, daily AND instantaneous). **Wrangle Brook is ungauged**
+and the cut lies BELOW its confluence (user, from imagery), so that catchment is outside
+the domain and its flow is missing. Moving the cut ABOVE the confluence was considered and
+rejected: with no gauge it buys no data and turns one crossing into two, the second wholly
+ungauged.
+
+**⏳ GREAT EGG / TUCKAHOE — geometry identified by the user 2026-08-24, sources not built.**
+The two reaches are **two DIFFERENT rivers**, not one channel crossed twice:
+
+| cut | width / bed | what it is | gauge |
+|---|---|---|---|
+| NE (−74.6456, 39.3059) | 0.90 km, −4.96 m | **Great Egg Harbor River**, just downstream of where the **Middle River** joins | `01411000` at Folsom, DA 57.1 mi² |
+| SW (−74.6586, 39.2912) | 0.25 km, −1.58 m | **Tuckahoe River**, just before it enters Great Egg Harbor Bay | `01411300` at Head of River, DA 30.8 mi² |
+
+🔴 **So it is TWO sources, not one sum.** The wider NE cut is **upstream of the Tuckahoe
+confluence**, so the two rivers do not combine above the ring. ⚠️ The **Middle River is
+ungauged** and joins above the NE cut, so 57.1 mi² is a lower bound there too.
+Both gauges are outside the ring (correct — upstream). Mays Landing and Tuckahoe village
+are currently outside too, which is what PICK UP #1 overturns.
+
+**⏳ MULLICA — still open, and the earlier recommendation was WRONG.** I first said "move
+the cut, the nearest gauge is only DA 8.11 mi²". Plotting it showed the cuts at lat 39.55
+sit **downstream of the whole gauge cluster** (39.62–39.69), so the v1.5 Raritan
+multi-gauge pattern applies instead — inject the sum at the cut, no ring move needed for
+that reason:
+
+| gauge | DA |
+|---|---|
+| `01409400` Mullica R nr Batsto | 46.7 mi² |
+| `01409810` W Br Wading R nr Jenkins | 84.1 mi² |
+| `01410000` Oswego R at Harrisville | 72.5 mi² |
+| `01410150` E Br Bass R nr New Gretna | 8.11 mi² |
+| **total** | **≈ 211 mi²** |
+
+⚠️ **Still unresolved:** the two cuts, (−74.4389, 39.5550) 0.45 km and (−74.4453, 39.5470)
+0.25 km, are 0.9 km apart and may be two channels (Mullica main stem vs Bass River). If
+so the sources split between them. Needs imagery. ⚠️ And Batsto is currently OUTSIDE the
+ring — PICK UP #1.
+
+**The pattern for all of them (v1.5 Raritan):** cross the river, `no_waterlevel_box` on the
+cut (an imposed level PUMPS a tidal river; a free-outflow DRAINS it — the Navesink lost
+92.5% of its inflow that way), discharge source AT the cut fed by the upstream gauge(s).
+⚠️ Moving the ring inland to cross only land is NOT the cheaper alternative: an estuary
+inside with no wet crossing needs the ring west of its head of tide, it still needs a
+source there, and the discharge is DAILY-mean only (USGS archived nothing finer for these
+gauges in 2012) — fine for streams peaking at a few m³/s, worth re-examining for the
+Mullica's ~211 mi².
+
+#### ⭐ THE v3 REGION DRAFT — `scripts/build_region_v3_draft.py`, 2026-08-24
+
+🔴 **THE REGION IS NOT THE BOUNDARY, AND THIS COST MOST OF A SESSION.** `build_static`
+runs `create_active(zmin=mask_zmin)` **before** the region clip, so the ocean boundary
+lands on the −10 m isobath whether or not the polygon traces it. Measured on v1: its
+region box reaches lon −73.45 while its `mask==2` stops at −73.91. **That is why v1 is 7
+vertices and v2 is 9**, and why `region_v2_barnegat.geojson`'s own properties record
+`"offshore_edge_lon": -73.45`. Nobody ever traced a contour. The archive's v1 notebook
+says it outright: *"Cells with z ≥ CONFIG['mask_zmin'] (-10 m) become active — the NJ
+shelf is shallow enough that the -10 m contour is a good seaward edge."*
+⚠️ A traced-isobath polygon is actively WORSE than a box: where the trace lands even
+slightly landward of the true isobath, the region clip wins and the boundary is wherever
+the cursor went.
+
+`data/region_v3_DRAFT.geojson` — **48 vertices: 38 inherited from v1.5, 9 new.**
+Figure `reports/figures/region_v3_draft.png`. Shape = v1.5's ring from its NE corner
+round the Narrows / Staten Island / Arthur Kill mouth and back down the NJ side, then
+v2's step at lat 40.150, then south.
+
+**Offshore edge trimmed to lon −73.55** (user, 2026-08-24; v1/v1.5/v2 used −73.45).
+⚠️ The obvious reading — "those are inactive cells, so who cares" — is wrong: the
+quadtree fills the region's **rotated bounding box** (model.py:705) and the clip only
+DEACTIVATES afterwards, so offshore cells ARE built, refined and stored. On the frozen
+v1.5 mesh 284,176 of 696,230 faces (40.8%) are `mask==0`; 182,890 (26.3%) sit east of
+lon −73.95.
+
+🔴 **WHAT SETS THE EDGE IS THE WAVE FORCING, NOT THE WATER-LEVEL BOUNDARY.** Three
+constraints, weakest first:
+
+| constraint | east limit | margin at −73.55 |
+|---|---|---|
+| −10 m isobath (`mask_zmin`, the SFINCS mask) | −73.9946 | +37.8 km |
+| −30 m isobath (`snapwave_mask_zmin`) | −73.6438 | +8.0 km |
+| ⭐ **NACCS STWAVE save points** (planned wave forcing) | **−73.8300** | **+23.8 km** |
+
+The STWAVE set is 1,387 points over STWAVE02/03/07, lon −75.1227..−73.8300, depths to
+**31.5 m** (parsed from the repacked zips; each CSV carries its own lat/lon/depth).
+🔴 **−73.85 was tried and REVERTED**: it put 2 of 1,387 outside, and they are the **two
+DEEPEST in the whole set** (25–35 m, both at lon −73.8300) — precisely the points a
+STWAVE-forced wave boundary wants. −73.55 keeps all 1,387 inside and leaves
+`decouple_snapwave` possible.
+⚠️ v1.5's NE vertex (−73.45, 40.45) is clamped to −73.55, so the inheritance is no longer
+bit-for-bit. One constant restores it.
+
+⚠️ **`snapwave_mask_zmin = −30.0` IS A DORMANT DEFAULT — do not read it as a rule.**
+`decouple_snapwave` is **False on all six registered arms**, so SnapWave currently shares
+the SFINCS mask at −10 m. The −30 m number came from the archive's 2026-07 `wave-deep30`
+campaign, fixing **ERA5** imposing Hs 8.624 m at the ~10 m contour — γ 0.86–0.89, above
+the 0.78 depth-limited breaking cap, physically inadmissible. That campaign records
+itself as *"likely SUPERSEDED by wave-cora"*: CORA's shelf-resolving SWAN gives
+4.98–6.11 m there (γ 0.50–0.63, admissible), and CORA is the adopted wave source. It is a
+**wave-source property, not a boundary-depth rule** — the exact confusion MEMORY.md
+already warns about. ⚠️ **Not a literature number either**: Grimley and Leijnse both
+concern the WATER-LEVEL boundary (Leijnse, Parker-corrected GTSM at −10 m; Grimley, drawn
+from a curated NHD shapefile). Neither sets a SnapWave mask depth.
+
+**West staircase** placed against measured land extent (CUDEM 1/9", land = z ≥ 0): the
+Cape May peninsula's Delaware Bay shore is lon −74.885 at lat 39.15, −74.929 at 39.05,
+−74.969 at 38.95. South edge lat 38.855, ~8.5 km past Cape May Point (38.930).
+🔴 **Wrapping the peninsula puts ~1 km of Delaware Bay inside the ring at lat 38.95–39.05
+— a WET ring crossing that must be DECLARED** (`closed` per the terminus decision, or
+forced). Same decision as the Cape May Canal. An undeclared wet crossing is imposed ocean
+level somewhere nobody looked — what `validate_region_v1_5.py` exists to catch.
+
+#### THE ISOBATH REFERENCE LINE — `scripts/build_v3_isobath_seed.py` (NOT the ring)
+
+`data/region_v3_seed_isobath10m.geojson` shows WHERE `create_active` will put the
+boundary. It is a reference layer for drawing against, **not** the polygon. Built on the
+merged bed at CUDEM **1/9" native (~3.4 m)** — 🔴 note `cudem_nj.vrt` is 1/9", the
+`ncei19_*` tiles, NOT 1 arc-second; a first cut decimated it to 93 m and threw away a
+factor of 27. For scale, v1.5's ocean arm is 1,074 faces at 25–50 m.
+1,429 vertices primary + 149 slack past Cape May Point + a `ring_edge_smoothed` variant
+(rolling max ±2 km then +1 km seaward, 121 vertices, clearance 1.0–10.4 km).
+Cross-check: at lat 40.1536 v1.5's frozen `mask==2` sits at lon −74.0165, the line says
+−74.017.
+
+⚠️ **Three screens were tried; two failed. Do not re-try them.** (a) components touching
+the corridor's landward wall — at 3 m an ebb channel severs a shoal from shore, so the
+line pinned to the wall, 5 km of artefact; (b) a pure run-length filter with no topology
+— the envelope hopped onto every detached shoal, **1,500 flagged jumps against 25**.
+What works is seeding pass 2's components from pass 1's own crossing.
+A raw contour is unusable: **317 components, 952 km** over this window.
+
+#### ✅ THE CAPE MAY CLOSURE — measured 2026-08-24, recommend closing DUE WEST to the beach
+
+The seed's south terminus is (−74.8670, 38.9304); lat 38.930 is the southernmost latitude
+at which NJ Atlantic land still exists in CUDEM (easternmost land there, lon −74.9121).
+Three candidate closures, measured on the same 3″ CUDEM:
+
+| closure | length | bed | verdict |
+|---|---|---|---|
+| **(a) due WEST at lat 38.930, terminus → Cape May beach** | **4.55 km sampled, ~3.9 km of it water** | min −9.9 m, **0.00 km deeper than −10 m**, one single water run | ⭐ **recommended** |
+| (c) cut at Cape May Inlet, lat 38.9496 | 5.12 km | min −10.4 m, and it crosses land–water–land–water: **two** separate wet reaches | rejected — two crossings, and it drops Cape May city |
+| (b) carry on around Cape May Point into Delaware Bay | — | — | rejected by the terminus decision above |
+
+(a) is the **Rockaway analogue**: v1.5 closed its ocean arm on an 11.13 km drawn line, and
+this is the same move at 4.55 km. It is one contiguous wet reach entirely shallower than
+10 m, so `validate_region_v3.py` will see exactly one crossing to declare. NACCS support is
+the best on the whole southern end — **Cape May Inlet 0.23 km to the nearest ADCIRC save
+point, 26 points within 2 km** (table above).
+
+⚠️ Consequence, and it is the reason the next item exists: closing at lat 38.930 puts Cape
+May Harbour and the whole Cape May Canal INSIDE the domain, so the ring must then cross the
+peninsula and meet the canal's Delaware Bay end near (−74.958, 38.968).
 
 🔴 **The one real design question the terminus forces: the CAPE MAY CANAL.** It is a real
 navigable tidal connection from Delaware Bay through to Cape May Harbour. If v3 includes
@@ -695,76 +1111,66 @@ Three options, to settle against bathymetry + the polygon:
 - (c) cut on the Atlantic side at Cape May Inlet — cleanest topology, but drops Cape May
   city, a real NJ flood target.
 
-#### ⏳ DATA ACQUISITION — scoped 2026-08-21, NOT started (two blockers found)
+#### ✅ DATA ACQUISITION — UNBLOCKED AND RUNNING, 2026-08-24
 
-Southern extent of every existing elevation source, measured. Only the 1-arcsec CUDEM
-reaches Cape May:
+Both 2026-08-21 blockers are cleared. Nothing here waits on the polygon any more.
 
-| source | southern limit | reaches Cape May (38.93)? |
+**BLOCKER 2 — v3 is REGISTERED, via a new `acquisition_only` domain state.**
+`Domain.acquisition_only` (nj_sfincs/domain.py) is the deliberate, narrow exemption
+STATUS scoped as option (ii): the three registry guards that need a mesh or a polygon
+skip such a domain, and `_check_acquisition_only` replaces them with **harder** ones —
+no `mesh_key`, `frozen` off, no `boundary_arms`, no `hwm_rules`, and
+`n_waterlevel_support` **must stay None** (it has to be asserted against what hydromt
+actually selects on the real mesh, not guessed from a rectangle). `assert_buildable()`
+refuses to build/stage/probe/freeze one. 🔴 **No placeholder fingerprint was invented** —
+`premier.EXPECTED` deliberately has no `v3` key, and a test pins that it never gets one.
+`EXPERIMENTS_BY_DOMAIN["v3"] = {}`. **82 tests OK** (73 + 9 new in `TestAcquisitionOnly`).
+
+v3's `region` is `data/region_v3_PROVISIONAL_acquisition_bbox.geojson`, lon[−75.05,
+−73.45] lat[38.85, 40.62] — a superset rectangle, and a test asserts it stays a
+5-vertex rectangle so nobody can point the flag at a real polygon without clearing it.
+**Clearing `acquisition_only` is exactly the moment the drawn polygon lands.**
+
+**BLOCKER 1 — the five downloaders are domain-aware.** New helper
+`nj_sfincs.domain.acquisition_dir(kind)` is the single place that decides where a new
+domain's pulls land (`data/elevation_v3/`, `data/precip_v3/`); it refuses
+`ARCHIVED_TIER_DOMAINS` outright, so a sixth puller cannot quietly reintroduce the fixed
+archive path. Patched: `download_cudem13`, `download_gmrt`, `download_3dep`,
+`download_pre_sandy_topobathy`, `download_aorc_sandy_precip`.
+⚠️ `download_3dep`'s RAW_DIR deliberately still points into the archive — the 16.5 GB
+statewide `.ige` is already there and is only READ; the southern extension is a local
+**re-clip**, not a download.
+
+**Pull status:**
+
+| tier | old southern limit | state |
 |---|---|---|
-| `cudem_nj.vrt` (1″) | 38.750 | ✅ |
-| `cudem13_nj.vrt` (1/3″) | 39.499 | ❌ |
-| `gmrt_nj.tif` | 39.600 | ❌ |
-| `nj_10ft_dem.tif` | 39.645 | ❌ (source mosaic IS statewide — local re-clip, no download) |
-| `ehydro_south.tif` | 39.661 | ❌ (Philadelphia district ⇒ **positive depths**, per-preset sign field) |
-| `usace_nj_2010_topobathy_clip.tif` | 39.680 | ❌ |
+| `cudem13` 1/3″ | 39.499 | ✅ **DONE** — 14 tiles (6 new southern), `data/elevation_v3/cudem13_v3.vrt`, 255 MB, now lat **38.749**–40.50 |
+| `gmrt` ~50 m | 39.600 | ✅ `gmrt_v3.tif` 15.3 MB, lat **38.75**–40.72 (timed out twice, landed on retry 3) |
+| `usace_nj_2010` 1 m | 39.680 | ✅ 750 MB, lat **38.928**–40.482 |
+| AORC precip | — | ✅ `precip_v3/aorc_sandy_v3.nc`, 8.8 MB |
+| `nj_10ft_dem` 3 m | 39.645 | ✅ 3.4 GB, lat **38.797**–40.675 (local re-clip) |
 
-⚠️ STATUS previously read "CUDEM … already reach lat 38.75 (Cape May ✅ — no extension)".
-True of the 1″ VRT, **false of the 1/3″ VRT**, which is the tier that matters nearshore.
+⭐ **GMRT was NOT optional.** Before it landed, 131.8 km of the v3 ring (22.1%) read NoData
+— the outer shelf south of lat 39.6, where the 1/3" tiles do not reach lon −73.55 and the
+archived `gmrt_nj` stops at 39.60. With `gmrt_v3` in the stack the ring walk is **0.0%
+NoData** and all 131.8 km resolves to DEEP, leaving the 22 wet reaches unchanged.
 
-🔴 **BLOCKER 1 — the downloaders write to FIXED paths inside the READ-ONLY archive.**
-`download_3dep.py` → `data/elevation/nj_10ft_dem.tif`, `download_cudem13.py` →
-`data/elevation/cudem13_nj.vrt`, `download_gmrt.py` → `data/elevation/gmrt_nj.tif`,
-`download_aorc_sandy_precip.py` → `data/precip/aorc_sandy_nj.nc`, `download_ehydro_nj.py`
-→ `data/elevation/ehydro_nj.tif`. Both `data/elevation` and `data/precip` are symlinks
-into the frozen archive and are `dr-xr-xr-x`, so every one of these fails EPERM — the
-freeze working as designed. **They need per-domain outputs first** (`data/elevation_v3/`,
-`data/precip_v3/` + catalog keys), the same treatment `download_sandy_hwms.py`,
-`download_sandy_motf_extent.py` and `build_cn_nj.py` already have. None have CLI
-bbox/region overrides; all resolve extent from `active().region`'s **bbox only**.
+Totals: `data/elevation_v3` 4.2 G + `data/precip_v3` 8.5 M; quota 69.4 G of 100 G.
 
-🔴 **BLOCKER 2 — v3 cannot be registered in `domain.py` yet, and the guards are right.**
-Registering it was attempted and **reverted**: 5 tests fail, and 3 of them cannot be
-satisfied honestly before the mesh and polygon exist — `test_every_domain_has_a_fingerprint`
-and `test_expected_resolves_per_domain` need a fingerprint (no mesh), and
-`test_basin_rules_are_named_and_unique` needs real basins (no polygon). Only the
-EXPERIMENTS_BY_DOMAIN key and the PINNED support count could be declared. **A placeholder
-fingerprint is exactly the "success message over a no-op" this project keeps paying for —
-do not invent one.** The registry is enforcing polygon-first, which is the checklist order.
+⚠️ **Measured gap in the 1/3″ product:** `cudem13_v3.vrt`'s western edge is lon −74.75,
+so the Cape May peninsula west of that has **no 1/3″ tile at all** — there is no
+`n39x00_w075x00` in NOAA's own urllist. Cape May stays on 1/9″ `cudem_nj` there, which
+does cover it. Not a download anyone skipped.
 
-**Decision needed before pulls start:** either (i) accept polygon-first and pull after the
-QGIS polygon lands (simplest, and the registry's intent), or (ii) add an explicit
-`acquisition_only` state to `Domain` so those 3 guards skip it deliberately, paired with a
-NEW invariant that such a domain has no `mesh_key`, declares no arms, and cannot be built.
-⭐ A superset acquisition footprint is already prepared and measured —
-`data/region_v3_PROVISIONAL_acquisition_bbox.geojson`, lon[−75.05, −73.45]
-lat[38.85, 40.62] — a deliberate superset of any plausible v3 polygon, so pulls driven
-from it stay valid once the real polygon replaces it. It is an input, not a modelling
-region; nothing references it yet.
+**Still to do, and these DO wait on the polygon:** catalog keys + a v3
+`elevation_list`; the eHydro **southern** preset (Philadelphia district ⇒ **positive
+depths**, needs a per-preset sign field); extending the hardcoded USGS tidal + STN sensor
+lists southward; HWMs and the MOTF render (both select on the ACTIVE region's bbox, so
+they should be pulled on the REAL polygon, not the superset rectangle);
+`build_cn_nj.py`; CORA waves.
 
-Quota at scoping time: **65.22 G of 100 G soft** (~35 G headroom). The new elevation is
-the bulk and is NJ-land-only, so ocean compresses to nothing — v1.5's clip is 573 MB for
-~0.9°×0.9°, so expect roughly 1–2.5 G total for the southern extension.
-
-**Then, in order** (the v1.5 template, files named): register `v3` in `domain.py`
-(own `mesh_key`, `hwm_geojson=data/validation_v3/…`, `motf_tif=data/validation_v3/…`,
-bounded basin rules with `unclassified` as the alarm) → `NJ_DOMAIN=v3` data pulls
-(domain-aware: usace_nj_2010, **3DEP re-clip from the 16.5 G raw `.ige` — verify, then
-that file unblocks on the deletion manifest**, cudem13, gmrt, AORC, CORA, HWMs, MOTF
-render, `build_cn_nj.py`) → extend hardcoded lists (USGS tidal + STN sensor sets
-southward; `download_ehydro_nj.py` southern preset with a **per-preset sign field** —
-Philadelphia district ships positive depths) → `validate_region_v3.py` (from
-`validate_region_v1_5.py`, declared Crossings: Barnegat/Little Egg/Absecon/Great
-Egg/Corson/Townsends/Hereford/Cold Spring inlets all interior now) →
-`probe_mesh_size.py` (expect ~2.2–2.6 M faces, SnapWave ~12–15 h ⇒ `--time=18:00:00`)
-→ `plot_waterlevel_boundary.py` and LOOK → iterate arms/boxes → quota gate (D+E
-reclaim; freeze needs 4–6 G) → `freeze_mesh.py` → `accept_domain.py` → fingerprint in
-`premier.EXPECTED`+`KNOWN`+`PINNED` → seal → smoke → sweep → `--validate-only`.
-
-⚠️ Standing scars that apply: re-verify `build_naccs_boundary.py --report-only
---no-cache` on the v3 footprint (ET00-by-code, mixed-product zips); per-arm NACCS
-coverage, not aggregate; obs-point accepted-count check (log lines vs `wc -l
-sfincs.obs`); `sacct NodeList` = `hal*` on every job; three-clock check on output.
+Quota 65.27 G of 100 G soft at launch (~35 G headroom).
 
 ### 🔴 Two infrastructure traps that ate five submissions, 2026-08-14
 

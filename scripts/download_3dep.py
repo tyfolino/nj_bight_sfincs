@@ -40,8 +40,15 @@ BBOX_WGS84 = _domain.active().bbox_ll(buffer_deg=0.05)  # west, south, east, nor
 
 # ── paths ─────────────────────────────────────────────────────────────────────
 ROOT = Path(__file__).resolve().parents[1]
+# RAW_DIR stays in the archive: the 16.5 GB statewide `.ige` mosaic already lives there
+# and is READ-only, which is fine — this script only reads it. ⭐ It is STATEWIDE, so the
+# southern extension is a local RE-CLIP, not a download.
 RAW_DIR = ROOT / "data" / "elevation" / "raw"
-OUTPUT = ROOT / "data" / "elevation" / "nj_10ft_dem.tif"
+
+# 🔴 PER-DOMAIN OUTPUT. The archived `nj_10ft_dem.tif` clip stops at lat 39.645 and is
+# what the frozen domains were built against; a new domain gets its own, bigger clip.
+from nj_sfincs import domain as _domain  # noqa: E402
+OUTPUT = _domain.acquisition_dir("elevation") / f"nj_10ft_dem_{_domain.active().name}.tif"
 
 # ── S3 source ─────────────────────────────────────────────────────────────────
 BUCKET = "njogis-elevation"

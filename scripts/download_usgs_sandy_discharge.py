@@ -49,8 +49,19 @@ ROOT = Path(os.environ.get("NJ_ROOT", Path(__file__).resolve().parents[1]))
 # The archived `discharge/usgs_sandy_discharge.nc` feeds v1_monmouth and the port-
 # verification fixture is pinned against it, so this script must never be able to
 # rewrite it. Same rule, and same reason, as `data/elevation` vs `data/elevation_v1_5`.
-OUT_DIR = ROOT / "data/discharge_v1_5"
-OUT = OUT_DIR / "usgs_sandy_discharge_v1_5.nc"
+# 🔴 PER-DOMAIN OUTPUT AND PER-DOMAIN SITE LIST.
+# This script used ONE global SITES list and ONE hardcoded output path. Running it under
+# a new domain would therefore have silently rewritten v1.5's forcing file with a
+# different set of sources — invisibly changing a frozen domain's inputs. v1_5_raritan
+# keeps its literal path and its list byte-identical; anything new gets its own.
+from nj_sfincs import domain as _domain_out  # noqa: E402
+_DOM = _domain_out.active()
+if _DOM.name == "v1_5_raritan":
+    OUT_DIR = ROOT / "data/discharge_v1_5"
+    OUT = OUT_DIR / "usgs_sandy_discharge_v1_5.nc"
+else:
+    OUT_DIR = _domain_out.acquisition_dir("discharge")
+    OUT = OUT_DIR / f"usgs_sandy_discharge_{_DOM.name}.nc"
 
 CFS_TO_CMS = 0.0283168466
 
@@ -62,7 +73,7 @@ API = "https://waterservices.usgs.gov/nwis/dv/"
 
 # site = USGS gauge id; (src_lat, src_lon) = inflow cell into the ACTIVE domain
 # (wet estuary cell, NOT the gauge location — see module docstring).
-STATIONS = [
+STATIONS_V1_5 = [
     {"id": "01407705", "name": "Shark River nr Neptune City",
      "src_lon": -74.035, "src_lat": 40.195},
     {"id": "01407500", "name": "Swimming River nr Red Bank (Navesink)",
@@ -101,6 +112,80 @@ STATIONS = [
     {"id": "01405030", "name": "Lawrence Brook at Westons Mills",
      "src_lon": -74.2960, "src_lat": 40.5085},  # bed -2.09 m (coned_sw_raritan)
 ]
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# v3 — the full Jersey shore. Same gauges, but the SRC POINTS move with the ring.
+# ═══════════════════════════════════════════════════════════════════════════════
+# 🔴 A SRC POINT IS NOT A PROPERTY OF THE RIVER, IT IS A PROPERTY OF THE RING. It has to
+# sit ON the cut where the region boundary crosses the channel. v1.5's Toms River src at
+# (-74.170, 39.945) was placed for a different ring and lies 1.5 km EAST of — i.e. INSIDE
+# — v3's cut, which would leave the reach between cut and src with no inflow while the cut
+# itself carried a water-level BC. Measured on the merged bed, 2026-08-24:
+#     old src  (-74.1700, 39.9450)  bed -2.29 m   ← inside v3's ring, wrong side of the cut
+#     v3 cut   (-74.1878, 39.9460)  bed -1.72 m   ← WET+ACTIVE, and where the ring crosses
+#     +200 m E (-74.1855, 39.9460)  bed -0.08 m   ← too shallow, do not drift east
+#
+# ⚠️ THE UNGAUGED REMAINDER FOR TOMS RIVER. `01408500` is DA 123 mi2 and is the ONLY Toms
+# River gauge with an Oct-2012 record — checked against NWIS over the basin, both daily
+# and instantaneous. **Wrangle Brook is ungauged**, and the user confirmed (2026-08-24,
+# from imagery) that the v3 cut lies BELOW its confluence, so Wrangle Brook's catchment is
+# outside the domain and its flow is missing. Moving the cut ABOVE the confluence was
+# considered and rejected: with no Wrangle Brook gauge it buys no data and turns one
+# declared crossing into two, the second wholly ungauged. State it as a lower bound, the
+# way 01403060 is stated for the Raritan.
+# ⭐ v3 (2026-08-24): the ring crosses EVERY river at its head of tide on dry ground, so
+# there is no cut to put a source on — each source sits AT ITS GAUGE, inside the ring.
+# Coordinates are NWIS `dec_lat_va/dec_long_va`. Two v1.5 sources stay at their v1.5
+# points (Shark, Navesink) because that stretch of ring is unchanged.
+# Lower bounds, declared: Toms excludes nothing now (Wrangle Brook joins INSIDE the ring,
+# ungauged but rained on); the Mullica sum omits Batsto River (01409500, 67.8 mi2 — NO
+# Sandy record) and the Great Egg omits the Middle River (ungauged).
+STATIONS_V3 = [
+    # The Raritan cut is v1.5's, verbatim: same ring vertices, same NoWaterLevelBox, same
+    # two sources AT THE CUT (it is the one crossing on v3 that is still on tidal water).
+    {"id": "01403060", "name": "Raritan R below Calco Dam at Bound Brook",
+     "src_lon": -74.2997, "src_lat": 40.5090},
+    {"id": "01405030", "name": "Lawrence Brook at Westons Mills",
+     "src_lon": -74.2960, "src_lat": 40.5085},
+    {"id": "01407705", "name": "Shark River nr Neptune City",
+     "src_lon": -74.035, "src_lat": 40.195},
+    {"id": "01407500", "name": "Swimming River nr Red Bank (Navesink)",
+     "src_lon": -74.045, "src_lat": 40.370},
+    {"id": "01408029", "name": "Manasquan River nr Allenwood",
+     "src_lon": -74.1222, "src_lat": 40.1467},   # at the gauge (ring moved west of it)
+    {"id": "01408120", "name": "N Br Metedeconk R nr Lakewood",
+     "src_lon": -74.1525, "src_lat": 40.0917},   # at the gauge
+    {"id": "01408151", "name": "S Br Metedeconk R at New Hampshire Av nr Lakewood",
+     "src_lon": -74.1797, "src_lat": 40.0831},
+    {"id": "01408500", "name": "Toms River nr Toms River",
+     "src_lon": -74.2233, "src_lat": 39.9864},   # at the gauge; cut is dry (+3.6 m)
+    {"id": "01408900", "name": "Cedar Creek at Western Blvd nr Lanoka Harbor",
+     "src_lon": -74.1906, "src_lat": 39.8792},
+    {"id": "01409095", "name": "Oyster Creek nr Brookville",
+     "src_lon": -74.2503, "src_lat": 39.7983},
+    {"id": "01409210", "name": "Mill Ck at Manahawkin",
+     "src_lon": -74.2597, "src_lat": 39.6953},
+    {"id": "01409280", "name": "Westecunk Creek at Stafford Forge",
+     "src_lon": -74.3203, "src_lat": 39.6667},
+    {"id": "01409810", "name": "W Br Wading River nr Jenkins",
+     "src_lon": -74.5481, "src_lat": 39.6881},
+    {"id": "01410000", "name": "Oswego River at Harrisville",
+     "src_lon": -74.5234, "src_lat": 39.6639},
+    {"id": "01409400", "name": "Mullica River nr Batsto",
+     "src_lon": -74.6650, "src_lat": 39.6744},
+    {"id": "01410150", "name": "E Br Bass River nr New Gretna",
+     "src_lon": -74.4414, "src_lat": 39.6231},
+    {"id": "01410500", "name": "Absecon Creek at Absecon",
+     "src_lon": -74.5206, "src_lat": 39.4303},
+    {"id": "01411000", "name": "Great Egg Harbor River at Folsom",
+     "src_lon": -74.7350, "src_lat": 39.4650},   # gauge OUTSIDE; src at the Mays Landing cut
+    {"id": "01411300", "name": "Tuckahoe River at Head of River",
+     "src_lon": -74.8206, "src_lat": 39.3069},
+]
+STATIONS_BY_DOMAIN = {"v1_5_raritan": STATIONS_V1_5, "v3": STATIONS_V3}
+#: ⚠️ Unknown domains fall back to the v1.5 list rather than to an empty one: an empty
+#: list would write a VALID NetCDF with no sources, i.e. a silent no-river run.
+STATIONS = STATIONS_BY_DOMAIN.get(_DOM.name, STATIONS_V1_5)
 
 # 🔴 THE UNGAUGED REMAINDER, DECLARED RATHER THAN ABSORBED.
 #
