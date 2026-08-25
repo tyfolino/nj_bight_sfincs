@@ -4,7 +4,7 @@
 12 KB "current state" memory file and its 26 reverse-chronological campaign logs; the point
 of the format is that a reader gets the current state without replaying how it was reached.
 
-Last updated: **2026-08-24** (⭐ v3 WIRED + ALL DATA PULLED + CLEAN MESH PROBE 3.31 M faces — Steps 0–2 done, see PICK UP; earlier: MOTF sheet, inland ring, canal uncut; v3 REGION DRAWN + GATED — `region_v3_EDITED.geojson`
+Last updated: **2026-08-25** (⭐ v3 PRE-FREEZE PASS: levers pulled (−1.3%, the driver is the 25 m surf band), dam sweep → 4 candidates, VDatum fallback, build-QC notebook; SUBGRID MEMORY PROBE running — see PICK UP; 2026-08-24: v3 WIRED + ALL DATA PULLED + CLEAN MESH PROBE 3.31 M faces — Steps 0–2 done, see PICK UP; earlier: MOTF sheet, inland ring, canal uncut; v3 REGION DRAWN + GATED — `region_v3_EDITED.geojson`
 passes `validate_region_v3.py`; ⭐ `acquisition_only` domain state, v3 REGISTERED, all
 five+one downloaders domain-aware, **v3 DATA ACQUISITION COMPLETE** (4.2 G);
 Toms River src moved onto its cut · 🔴 **PAUSED ON A SCOPE DECISION: the ring currently
@@ -121,7 +121,59 @@ the canal carries 34 outflow cells at −0.94..+3 m and is left open, declared, 
 `why`. 40 water-level BC cells fell outside every arm and were demoted to interior
 (hydromt's own rim cells around filled holes) — the invariant then held.
 
-⏳ **OPEN, for the user:** (1) accept ~3.3 M faces / ~18 h, or pull the two levers;
+### ✅ 2026-08-25 — the pre-freeze pass (user decisions: pull the levers, defer ICW, sweep, measure)
+
+**The two levers DID NOT MOVE THE COUNT.** `low_water` zmax 3→2 and `inland_floodplain`
+6→5 (recorded in each polygon's `why`, with the restore condition) took the probe from
+3,312,567 → **3,267,861 faces (−1.3%)**, active 1,704,096 → 1,659,778; BC 6,835, outflow
+1,664, every invariant OK, 4:57 wall, 7.9 GB RSS. The realised-size map in the notebook
+says why: **971k of the active faces are 25 m, in the ring-wide `surf_dune_*` band**
+(2.5 km buffer, z −8..+3); L2 50 m is 656k, L1 100 m 40k, base 37k. The cell-count lever
+is the surf band's buffer width / zmax, not L1/L2. ⏳ user decision: keep the 25 m surf
+band (≈18 h/run) or narrow it. Added resolution later is fine as long as it is noted here.
+
+**Bridge-as-dam sweep done** — `scripts/sweep_bed_dams.py` (reads the 25 m coarse bed
+inside the ring; wet = z < −1 m; 4-connected bodies; ocean = largest; reports every other
+body's wall thickness to the ocean and the lowest bed in that wall). `reports/bed_dams_v3.csv`
++ `reports/figures/bed_dams_v3.png`. 47 bodies ≥ 0.02 km² behind a wall < 300 m; 43 have
+a crest in −1..0 m (shoals). **Four crests above 0 m — the candidates, user to judge:**
+| body | crest | wall | area | where |
+|---|---|---|---|---|
+| 1450 | +1.00 m (max 2.15) | 125 m | 0.06 km² | 39.092 N −74.736 — Grassy Sound / N. Wildwood causeway |
+| 980 | +0.66 m (max 2.05) | 135 m | 0.41 km² | 39.392 N −74.407 — Absecon / Brigantine |
+| 62 | +0.56 m | 50 m | 0.25 km², −7.7 m basin | 40.353 N −73.976 — Shrewsbury, with `shrewsbury_ehydro_2015` in the list |
+| 157 | +0.42 m (max 1.72) | 266 m | 0.02 km² | 40.023 N −74.059 — Point Pleasant Canal |
+
+**VDatum fallback in `build_naccs_boundary.py`** — the service is broken south of lat
+~39.34 (`contiguous` = "Uncaught error" at every point tested; named regions rejected;
+/regions 404) — 70 of v3's 190 support points. `datum_offsets()` no longer exits: a point
+VDatum cannot place takes the nearest NOAA station's MSL→NAVD88 plane
+(`STATION_MSL_PLANE_M`: Atlantic City −0.122, Cape May −0.137 m, mdapi datums, 1983–2001)
+and the cache CSV records `source`; those rows are re-queried every run. Warns, never gates.
+
+**Build-QC notebook** `notebooks/v3/sandy-v3-build-qc-2026-08-25.ipynb` — 4 plots off the
+probe: boundary + NACCS support, realised face size, 33 gauges vs the NACCS product, sites.
+The two "flat NACCS node" panels (NOAA Cape May → node 7549, dry 1,877 samples; USGS
+1411350 → 13483) are plot artefacts: neither node passes the 8 m screen, neither is in
+the forcing set. The notebook's matcher now requires never-dry as well as deep.
+
+**ICW eHydro tier: deferred (user).** Add later as its own `bed-icw` arm, never silently.
+
+🔴 **SUBGRID MEMORY — STILL NOT MEASURED.** The 2026-08-25 attempt (full `build_static`
+into `experiments/v3/_subgrid_probe` under `/usr/bin/time -v`) was killed with the session
+before it left the quadtree stage; the partial dir is gitignored junk. **Rerun first thing
+tomorrow, detached from the session** (`nohup`/`sbatch`, not a foreground shell):
+```bash
+NJ_DOMAIN=v3 PYTHONPATH=$PWD NJ_ROOT=$PWD nohup /usr/bin/time -v python -c "
+from dataclasses import replace; import nj_sfincs
+from nj_sfincs import model; from nj_sfincs.config import ROOT, BaseConfig
+model.build_static(replace(BaseConfig(), frozen_mesh=None), ROOT/'experiments/v3/_subgrid_probe')
+" > reports/subgrid_probe_v3.log 2>&1 &
+```
+Result goes here: peak RSS, wall, `sfincs.sbg` size. ⚠️ Do it on the mesh you intend to
+freeze — the surf-band decision above changes the mesh.
+
+⏳ **OPEN, for the user:** (1) surf-band width (see above);
 (2) an ICW eHydro tier — the only southern channel surveys are 2021–2024 sparse
 cross-sections (`IW_*_XC`, ~50–150 m between soundings, post the Sandy-funded dredging);
 eHydro has NO Mullica / Great Egg / Metedeconk / Townsends / Hereford surveys (not federal

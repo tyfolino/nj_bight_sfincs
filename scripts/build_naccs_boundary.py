@@ -429,39 +429,71 @@ def _vdatum(lon: float, lat: float) -> float:
     return tz if tz > -1000 else float("nan")
 
 
+#: 🔴 VDatum's `contiguous` LMSL grid answers "Uncaught error" for every point south of
+#: lat ~39.34 (measured 2026-08-24/25 at Cape May, Great Egg, the Atlantic City shelf and
+#: the Delaware Bay wedge; the named regional grids are rejected outright and /regions is
+#: a 404). North of that the same query works. So a save point VDatum cannot place gets
+#: the MSL->NAVD88 separation of the NEAREST NOAA station below, from the CO-OPS mdapi
+#: (`stations/<id>/datums.json`, feet, epoch 1983-2001, MSL minus NAVD88), and the cache
+#: CSV records which (`source` column) so the row can be re-queried when VDatum recovers.
+#: A station plane ignores the along-shore gradient VDatum was built to carry; between
+#: Atlantic City and Cape May that gradient is 0.015 m, which is inside DATUM_TOL.
+STATION_MSL_PLANE_M: dict[int, tuple[float, float, float]] = {
+    # id: (lon, lat, NAVD88 height of MSL [m])
+    8534720: (-74.4181, 39.3553, (7.17 - 7.57) * 0.3048),   # Atlantic City  -0.122
+    8536110: (-74.9600, 38.9683, (4.99 - 5.44) * 0.3048),   # Cape May       -0.137
+}
+
+
+def _station_plane(lon: float, lat: float) -> tuple[float, str]:
+    sid = min(STATION_MSL_PLANE_M, key=lambda s: np.hypot(
+        (lon - STATION_MSL_PLANE_M[s][0]) * np.cos(np.deg2rad(lat)),
+        lat - STATION_MSL_PLANE_M[s][1]))
+    return STATION_MSL_PLANE_M[sid][2], f"noaa {sid}"
+
+
 def datum_offsets(ids, lon, lat, refresh: bool = False) -> np.ndarray:
-    """Per-save-point MSL->NAVD88, cached. Fails loudly, never silently constant."""
-    cache = {}
+    """Per-save-point MSL->NAVD88, cached. Never a silent constant: every point VDatum
+    cannot place is filled from the nearest NOAA station plane, WARNED about, and
+    written to the cache with its `source` so it stays distinguishable."""
+    cache, source = {}, {}
     if VDATUM_CACHE.exists() and not refresh:
         with VDATUM_CACHE.open() as f:
             for row in csv.DictReader(f):
-                cache[int(row["sp_id"])] = float(row["offset_navd88_m"])
+                sp = int(row["sp_id"])
+                cache[sp] = float(row["offset_navd88_m"])
+                source[sp] = row.get("source", "vdatum")
 
-    todo = [i for i in ids if i not in cache]
+    # station-plane rows are re-queried every run, so VDatum recovering heals the cache
+    todo = [i for i in ids if i not in cache or source.get(i, "vdatum") != "vdatum"]
     if todo:
         print(f"[datum] querying NOAA VDatum at {len(todo)} save points "
               f"({len(cache)} cached) ...")
         for n, sp in enumerate(todo, 1):
             k = ids.index(sp)
-            cache[sp] = _vdatum(lon[k], lat[k])
+            cache[sp], source[sp] = _vdatum(lon[k], lat[k]), "vdatum"
+            if not np.isfinite(cache[sp]):
+                cache[sp], source[sp] = _station_plane(lon[k], lat[k])
             if n % 25 == 0:
                 print(f"   {n}/{len(todo)}")
             time.sleep(0.10)
         VDATUM_CACHE.parent.mkdir(parents=True, exist_ok=True)
         with VDATUM_CACHE.open("w", newline="") as f:
             w = csv.writer(f)
-            w.writerow(["sp_id", "offset_navd88_m"])
+            w.writerow(["sp_id", "offset_navd88_m", "source"])
             for sp in sorted(cache):
-                w.writerow([sp, f"{cache[sp]:.4f}"])
+                w.writerow([sp, f"{cache[sp]:.4f}", source.get(sp, "vdatum")])
 
     off = np.array([cache[i] for i in ids], dtype="float64")
-    bad = ~np.isfinite(off)
-    if bad.any():
-        sys.exit(f"VDatum returned no offset at {int(bad.sum())} of {len(ids)} points "
-                 f"(e.g. SP{ids[int(np.argmax(bad))]}). Refusing to fall back to a "
-                 "constant — the MSL-NAVD88 separation drifts across Raritan Bay, "
-                 "which is the limb this campaign is about. Re-run to retry; delete "
-                 f"{VDATUM_CACHE.name} to refresh.")
+    fb = np.array([source.get(i, "vdatum") != "vdatum" for i in ids])
+    if fb.any():
+        fl = lat[fb]
+        by = {}
+        for i in np.flatnonzero(fb):
+            by[source[ids[i]]] = by.get(source[ids[i]], 0) + 1
+        print(f"[datum] ⚠️  VDatum gave no LMSL->NAVD88 at {int(fb.sum())} of {len(ids)} "
+              f"points (lat {fl.min():.3f}..{fl.max():.3f}); filled from the nearest NOAA "
+              f"station plane: {by}. Declared in {VDATUM_CACHE.name} `source`.")
 
     # Cross-check against the independently known value at Sandy Hook.
     a = DATUM_ANCHOR
