@@ -42,10 +42,11 @@ the mask==2 line by ``Domain.waterlevel_buffer`` — 100 km on v1. An unscreened
 file hands SFINCS all 401 points, including deep interior Raritan Bay ones. The
 buffer is a domain invariant guarding every other arm; do not retune it for one.
 
-**5. MSL(1992) -> NAVD88 per point, from NOAA VDatum.** Also Grimley et al.'s
-method. A scalar will not do — the separation drifts 0.065 m across the domain,
-concentrated in the limb this campaign is about. Cached to
-``data/NACCS/vdatum_lmsl_navd88.csv``.
+**5. MSL(1992) -> NAVD88 per point, from NOAA VDatum's SEPARATION GRIDS, sampled
+offline** (``data/NACCS/vdatum_grids/*_tss.gtx``; see ``VDATUM_GRIDS`` for why not the
+web service). Also Grimley et al.'s method. A scalar will not do — the separation
+drifts 0.065 m across v1.5 and ~0.09 m across v3 (Great Egg +0.045 .. Cape May
++0.137). Cached to ``data/NACCS/vdatum_lmsl_navd88.csv`` with a ``source`` column.
 
 ⚠️ The epochs differ: NACCS ships MSL epoch 1992, VDatum's LMSL is 1983-2001. The
 script cross-checks itself at Sandy Hook against the independently known -0.073 m
@@ -295,11 +296,22 @@ def _step_minutes(t: np.ndarray) -> float:
 DEFAULT_MIN_DEPTH = 8.0  # metres; open-coast points shallower than this are dropped
 
 
-def boundary_cells(dom) -> tuple[np.ndarray, np.ndarray]:
-    """(x, y) of every mask==2 cell of the frozen mesh, in the domain CRS."""
-    mesh = dom.frozen_mesh_dir() / "sfincs.nc"
+def boundary_cells(dom, mesh: Path | None = None) -> tuple[np.ndarray, np.ndarray]:
+    """(x, y) of every mask==2 cell of the frozen mesh, in the domain CRS.
+
+    ``mesh`` overrides the frozen mesh: a ``sfincs.nc`` or a probe's
+    ``domain_dryrun.npz`` (a `building` domain has no frozen mesh yet; the probe's
+    mask==2 line is the same line the freeze will carry).
+    """
+    mesh = Path(mesh).resolve() if mesh else dom.frozen_mesh_dir() / "sfincs.nc"
     if not mesh.exists():
         sys.exit(f"missing frozen mesh {mesh}")
+    if mesh.suffix == ".npz":
+        z = np.load(mesh)
+        sel = z["mask"] == 2
+        print(f"[mesh] probe {mesh.name}: {z['mask'].size:,} faces, "
+              f"{int(sel.sum()):,} mask==2")
+        return z["x"][sel], z["y"][sel]
     ds = xr.open_dataset(mesh)
     sel = ds["mask"].values == 2
     if not sel.any():
@@ -330,6 +342,7 @@ def screen(
     max_dist: float,
     crs_epsg: int,
     min_depth: float = DEFAULT_MIN_DEPTH,
+    mesh: Path | None = None,
 ):
     """Keep points that (a) serve the boundary, (b) are wet all window, and (c) are deep
     enough IF they sit on the open coast.
@@ -341,7 +354,7 @@ def screen(
     lon = np.array([pts[i]["lon"] for i in ids])
     dep = np.array([pts[i]["depth"] for i in ids])
 
-    bx, by = boundary_cells(dom)
+    bx, by = boundary_cells(dom, mesh)
     tr = pyproj.Transformer.from_crs("EPSG:4326", f"EPSG:{crs_epsg}", always_xy=True)
     px, py = tr.transform(lon, lat)
     d = np.hypot(bx[:, None] - px[None, :], by[:, None] - py[None, :])
@@ -414,8 +427,9 @@ def screen(
 # ──────────────────────────────────────────────────────────────────────────────
 # 3. MSL(1992) -> NAVD88 via NOAA VDatum
 # ──────────────────────────────────────────────────────────────────────────────
-def _vdatum(lon: float, lat: float) -> float:
-    """NAVD88 height of 0 m LMSL at (lon, lat), i.e. the offset to ADD."""
+def _vdatum_web(lon: float, lat: float) -> float:
+    """NAVD88 height of 0 m LMSL at (lon, lat) from the VDatum WEB service — the
+    offset to ADD. Cross-check only since 2026-08-26; see VDATUM_GRIDS."""
     url = ("https://vdatum.noaa.gov/vdatumweb/api/convert?"
            f"s_x={lon:.6f}&s_y={lat:.6f}&s_z=0&region=contiguous&s_coor=geo"
            "&s_h_frame=NAD83_2011&s_v_frame=LMSL&s_v_unit=m"
@@ -424,20 +438,63 @@ def _vdatum(lon: float, lat: float) -> float:
         with urllib.request.urlopen(url, timeout=30) as r:
             tz = float(json.load(r)["t_z"])
     except Exception as exc:  # noqa: BLE001
-        print(f"   !! VDatum failed at ({lon:.4f},{lat:.4f}): {exc}")
+        print(f"   !! VDatum web failed at ({lon:.4f},{lat:.4f}): {exc}")
         return float("nan")
     return tz if tz > -1000 else float("nan")
 
 
-#: 🔴 VDatum's `contiguous` LMSL grid answers "Uncaught error" for every point south of
-#: lat ~39.34 (measured 2026-08-24/25 at Cape May, Great Egg, the Atlantic City shelf and
-#: the Delaware Bay wedge; the named regional grids are rejected outright and /regions is
-#: a 404). North of that the same query works. So a save point VDatum cannot place gets
-#: the MSL->NAVD88 separation of the NEAREST NOAA station below, from the CO-OPS mdapi
-#: (`stations/<id>/datums.json`, feet, epoch 1983-2001, MSL minus NAVD88), and the cache
-#: CSV records which (`source` column) so the row can be re-queried when VDatum recovers.
-#: A station plane ignores the along-shore gradient VDatum was built to carry; between
-#: Atlantic City and Cape May that gradient is 0.015 m, which is inside DATUM_TOL.
+#: ⭐ PRIMARY SOURCE since 2026-08-26: NOAA's own VDatum separation grids, sampled
+#: offline. `tss.gtx` is "topography of the sea surface" = NAVD88 height MINUS LMSL
+#: height, so the offset to ADD to an MSL water level is `-tss`. These are the 2019
+#: (NAD83 / NAVD88-referenced) release from vdatum.noaa.gov/download/data/<name>.zip,
+#: lon 0..360. Verified 2026-08-26: Atlantic City +0.120/+0.122 (gauge 0.122), Cape May
+#: +0.137 (gauge 0.137), Lewes +0.121 (gauge 0.122), and identical to the mm to the web
+#: service's t_z wherever the web service still answers (v1/v1.5 area).
+#: 🔴 Why not the web service: it answers "Uncaught error" for every point south of lat
+#: ~39.34-39.47, which is exactly the footprint of NOAA's MARCH 2024 grids
+#: (NJscstemb32 / NJVAmab33 / DEdelbay33). Those new grids' tss reads +0.44 m at Atlantic
+#: City against a 0.12 m gauge — referenced to a different geoid (IGS14 / xGEOID), not
+#: NAVD88 — so they are NOT interchangeable with these and are deliberately not used.
+#: Order matters where grids overlap: embayment grids first, the offshore `mab` grid
+#: for the shelf, `delbay` for the wedge. Overlaps agree to ~2 mm.
+VDATUM_GRIDS = NACCS / "vdatum_grids"
+VDATUM_GRID_ORDER = ("NJncstemb11_8301", "NYNJhbr33_8301", "NJscstemb21_8301",
+                     "NJcstemb12_8301", "DEdelbay22_8301", "NJVAmab22_8301")
+
+
+def _grid_offsets(lon, lat):
+    """(offset_to_add, source) per point from the offline grids; nan where none covers."""
+    import rasterio
+    off = np.full(len(lon), np.nan)
+    src = np.array([""] * len(lon), dtype=object)
+    for name in VDATUM_GRID_ORDER:
+        f = VDATUM_GRIDS / f"{name}_tss.gtx"
+        if not f.exists():
+            print(f"[datum] ⚠️  grid missing: {f.relative_to(ROOT)}")
+            continue
+        with rasterio.open(f) as d:
+            todo = np.flatnonzero(~np.isfinite(off))
+            if not len(todo):
+                break
+            x = lon[todo] % 360.0
+            inb = ((d.bounds.left <= x) & (x <= d.bounds.right)
+                   & (d.bounds.bottom <= lat[todo]) & (lat[todo] <= d.bounds.top))
+            if not inb.any():
+                continue
+            k = todo[inb]
+            v = np.array([s[0] for s in d.sample(zip(x[inb], lat[k]))], dtype="float64")
+            ok = v > -80.0  # -88.8888 is the grid's nodata
+            off[k[ok]] = -v[ok]
+            src[k[ok]] = f"grid {name}"
+    return off, src
+
+
+#: Station planes: the LAST fallback, for a point no grid covers AND the web service
+#: cannot place. MSL->NAVD88 from the CO-OPS mdapi (`stations/<id>/datums.json`, feet,
+#: epoch 1983-2001). ⚠️ The grids show the along-shore gradient this ignores is 2-3 cm
+#: on the shelf and up to 8 cm in the back bays (Great Egg +0.045 vs Atlantic City
+#: +0.122) — larger than the 0.015 m first assumed. A row filled this way is re-queried
+#: every run and declared in the cache CSV `source`.
 STATION_MSL_PLANE_M: dict[int, tuple[float, float, float]] = {
     # id: (lon, lat, NAVD88 height of MSL [m])
     8534720: (-74.4181, 39.3553, (7.17 - 7.57) * 0.3048),   # Atlantic City  -0.122
@@ -452,10 +509,12 @@ def _station_plane(lon: float, lat: float) -> tuple[float, str]:
     return STATION_MSL_PLANE_M[sid][2], f"noaa {sid}"
 
 
-def datum_offsets(ids, lon, lat, refresh: bool = False) -> np.ndarray:
-    """Per-save-point MSL->NAVD88, cached. Never a silent constant: every point VDatum
-    cannot place is filled from the nearest NOAA station plane, WARNED about, and
-    written to the cache with its `source` so it stays distinguishable."""
+def datum_offsets(ids, lon, lat, refresh: bool = False,
+                  check_web: bool = False) -> np.ndarray:
+    """Per-save-point MSL->NAVD88, cached. Offline VDatum grids first; a point no grid
+    covers goes to the web service, then to the nearest NOAA station plane, WARNED
+    about, and written to the cache with its `source` so it stays distinguishable.
+    Only `grid` rows are trusted across runs; everything else is re-derived."""
     cache, source = {}, {}
     if VDATUM_CACHE.exists() and not refresh:
         with VDATUM_CACHE.open() as f:
@@ -464,18 +523,20 @@ def datum_offsets(ids, lon, lat, refresh: bool = False) -> np.ndarray:
                 cache[sp] = float(row["offset_navd88_m"])
                 source[sp] = row.get("source", "vdatum")
 
-    # station-plane rows are re-queried every run, so VDatum recovering heals the cache
-    todo = [i for i in ids if i not in cache or source.get(i, "vdatum") != "vdatum"]
+    todo = [i for i in ids if i not in cache or not source.get(i, "").startswith("grid")]
     if todo:
-        print(f"[datum] querying NOAA VDatum at {len(todo)} save points "
-              f"({len(cache)} cached) ...")
-        for n, sp in enumerate(todo, 1):
-            k = ids.index(sp)
-            cache[sp], source[sp] = _vdatum(lon[k], lat[k]), "vdatum"
+        kk = np.array([ids.index(sp) for sp in todo])
+        g, gs = _grid_offsets(lon[kk], lat[kk])
+        print(f"[datum] offline VDatum grids placed {int(np.isfinite(g).sum())} of "
+              f"{len(todo)} save points ({len(ids) - len(todo)} already cached as grid)")
+        for j, sp in enumerate(todo):
+            if np.isfinite(g[j]):
+                cache[sp], source[sp] = float(g[j]), str(gs[j])
+                continue
+            k = kk[j]
+            cache[sp], source[sp] = _vdatum_web(lon[k], lat[k]), "vdatum-web"
             if not np.isfinite(cache[sp]):
                 cache[sp], source[sp] = _station_plane(lon[k], lat[k])
-            if n % 25 == 0:
-                print(f"   {n}/{len(todo)}")
             time.sleep(0.10)
         VDATUM_CACHE.parent.mkdir(parents=True, exist_ok=True)
         with VDATUM_CACHE.open("w", newline="") as f:
@@ -484,16 +545,31 @@ def datum_offsets(ids, lon, lat, refresh: bool = False) -> np.ndarray:
             for sp in sorted(cache):
                 w.writerow([sp, f"{cache[sp]:.4f}", source.get(sp, "vdatum")])
 
-    off = np.array([cache[i] for i in ids], dtype="float64")
-    fb = np.array([source.get(i, "vdatum") != "vdatum" for i in ids])
+    if check_web:
+        # optional cross-check of the grids against the web service where it answers
+        d = []
+        for sp in ids:
+            k = ids.index(sp)
+            w_ = _vdatum_web(lon[k], lat[k])
+            if np.isfinite(w_):
+                d.append(w_ - cache[sp])
+            time.sleep(0.10)
+        d = np.array(d)
+        print(f"[datum] web cross-check: {len(d)} of {len(ids)} answered; grid-web "
+              f"mean {d.mean():+.4f} max|.| {np.abs(d).max():.4f} m" if len(d)
+              else "[datum] web cross-check: the web service answered nowhere")
+
+    fb = np.array([not source.get(i, "").startswith("grid") for i in ids])
     if fb.any():
         fl = lat[fb]
         by = {}
         for i in np.flatnonzero(fb):
             by[source[ids[i]]] = by.get(source[ids[i]], 0) + 1
-        print(f"[datum] ⚠️  VDatum gave no LMSL->NAVD88 at {int(fb.sum())} of {len(ids)} "
-              f"points (lat {fl.min():.3f}..{fl.max():.3f}); filled from the nearest NOAA "
-              f"station plane: {by}. Declared in {VDATUM_CACHE.name} `source`.")
+        print(f"[datum] ⚠️  no offline grid covers {int(fb.sum())} of {len(ids)} "
+              f"points (lat {fl.min():.3f}..{fl.max():.3f}); filled from: {by}. "
+              f"Declared in {VDATUM_CACHE.name} `source`.")
+
+    off = np.array([cache[i] for i in ids], dtype="float64")
 
     # Cross-check against the independently known value at Sandy Hook.
     a = DATUM_ANCHOR
@@ -540,8 +616,15 @@ def main() -> int:
                          "1992 MSL epoch to 2012 conditions. Writes a SEPARATE file "
                          "(<name>_epoch.nc) so the uncorrected arm stays intact. "
                          f"Measured value: {EPOCH_RISE:.3f} m (see EPOCH_RISE).")
+    ap.add_argument("--mesh", type=Path,
+                    help="mask source instead of the frozen mesh: a sfincs.nc or a "
+                         "probe's domain_dryrun.npz (for a `building` domain)")
     ap.add_argument("--report-only", action="store_true",
                     help="screen and report; write nothing")
+    ap.add_argument("--check-vdatum-web", action="store_true",
+                    help="also query the VDatum web service at every kept point and "
+                         "report grid-minus-web (slow; the service is broken south of "
+                         "lat ~39.4)")
     ap.add_argument("--refresh-datum", action="store_true",
                     help="re-query VDatum instead of using the cache")
     ap.add_argument("--no-cache", action="store_true",
@@ -559,7 +642,8 @@ def main() -> int:
 
     crs_epsg = 32618                     # the mesh `crs` var carries no usable epsg attr
     kept, near, rep = screen(
-        pts, times, dom, args.max_dist, crs_epsg, min_depth=args.min_depth
+        pts, times, dom, args.max_dist, crs_epsg, min_depth=args.min_depth,
+        mesh=args.mesh,
     )
 
     print(f"\n[screen] {rep['n_total']} save points -> "
@@ -599,7 +683,8 @@ def main() -> int:
 
     lat = np.array([pts[i]["lat"] for i in kept])
     lon = np.array([pts[i]["lon"] for i in kept])
-    off = datum_offsets(kept, lon, lat, refresh=args.refresh_datum)
+    off = datum_offsets(kept, lon, lat, refresh=args.refresh_datum,
+                        check_web=args.check_vdatum_web)
 
     tt = np.array([datetime.strptime(str(s), "%Y%m%d%H%M") for s in times])
     win = (tt >= PAD_START) & (tt <= PAD_STOP)

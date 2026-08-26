@@ -4,7 +4,7 @@
 12 KB "current state" memory file and its 26 reverse-chronological campaign logs; the point
 of the format is that a reader gets the current state without replaying how it was reached.
 
-Last updated: **2026-08-25** (⭐ v3 PRE-FREEZE PASS: levers pulled (−1.3%, the driver is the 25 m surf band), dam sweep → 4 candidates, VDatum fallback, build-QC notebook; SUBGRID MEMORY PROBE running — see PICK UP; 2026-08-24: v3 WIRED + ALL DATA PULLED + CLEAN MESH PROBE 3.31 M faces — Steps 0–2 done, see PICK UP; earlier: MOTF sheet, inland ring, canal uncut; v3 REGION DRAWN + GATED — `region_v3_EDITED.geojson`
+Last updated: **2026-08-26** (levers restored, subgrid probe job 60979984 running, dam-candidate maps; 2026-08-25: ⭐ v3 PRE-FREEZE PASS: levers pulled (−1.3%, the driver is the 25 m surf band), dam sweep → 4 candidates, VDatum fallback, build-QC notebook; SUBGRID MEMORY PROBE running — see PICK UP; 2026-08-24: v3 WIRED + ALL DATA PULLED + CLEAN MESH PROBE 3.31 M faces — Steps 0–2 done, see PICK UP; earlier: MOTF sheet, inland ring, canal uncut; v3 REGION DRAWN + GATED — `region_v3_EDITED.geojson`
 passes `validate_region_v3.py`; ⭐ `acquisition_only` domain state, v3 REGISTERED, all
 five+one downloaders domain-aware, **v3 DATA ACQUISITION COMPLETE** (4.2 G);
 Toms River src moved onto its cut · 🔴 **PAUSED ON A SCOPE DECISION: the ring currently
@@ -159,19 +159,85 @@ the forcing set. The notebook's matcher now requires never-dry as well as deep.
 
 **ICW eHydro tier: deferred (user).** Add later as its own `bed-icw` arm, never silently.
 
-🔴 **SUBGRID MEMORY — STILL NOT MEASURED.** The 2026-08-25 attempt (full `build_static`
-into `experiments/v3/_subgrid_probe` under `/usr/bin/time -v`) was killed with the session
-before it left the quadtree stage; the partial dir is gitignored junk. **Rerun first thing
-tomorrow, detached from the session** (`nohup`/`sbatch`, not a foreground shell):
-```bash
-NJ_DOMAIN=v3 PYTHONPATH=$PWD NJ_ROOT=$PWD nohup /usr/bin/time -v python -c "
-from dataclasses import replace; import nj_sfincs
-from nj_sfincs import model; from nj_sfincs.config import ROOT, BaseConfig
-model.build_static(replace(BaseConfig(), frozen_mesh=None), ROOT/'experiments/v3/_subgrid_probe')
-" > reports/subgrid_probe_v3.log 2>&1 &
-```
-Result goes here: peak RSS, wall, `sfincs.sbg` size. ⚠️ Do it on the mesh you intend to
-freeze — the surf-band decision above changes the mesh.
+### 2026-08-26 — levers RESTORED (user); subgrid probe SUBMITTED; dam-candidate maps
+
+**Levers undone.** `low_water` zmax back to 3 m, `inland_floodplain` back to 6 m
+(`why` records the try and the restore) — 1.3% was not worth the resolution. The v3
+mesh to freeze is therefore the 3,312,567-face clean probe of 08-24.
+
+**Subgrid probe** submitted as SLURM job **60979984** (`hpc/subgrid_probe_v3.slurm`,
+hal-only, 180 G, 12 h, `/usr/bin/time -v`, log `logs/subgrid_probe_v3_<job>.out`) on the
+restored mesh. Result (peak RSS, wall, `sfincs.sbg` size) goes here.
+
+**Dam-candidate maps** `reports/figures/bed_dam_{1450,980,62,157}.png` from
+`scripts/plot_bed_dam_candidates.py` (lidar vs the 25 m coarse bed, 1.5 km window, lon/lat
+frame for Google Maps; green = the body's cells, yellow = the wall segment the CSV crest
+refers to). ⚠️ The CSV's lon/lat is the body cell NEAREST the ocean, not the wall, and the
+wall is the nearest approach — for a long channel that is not necessarily the blocked one.
+Read with the user: **1450** — a marsh creek behind the lagoon block; the 125 m wall is the
+lagoon's real bank; its NE outlet is a −1..0 m marsh channel pinched by the threshold. Not
+a dam. **62** — lagoon opens to the Shrewsbury over −1..0 m flats; threshold artefact.
+**157** — one lagoon pocket whose thin channel the 25 m averaging paved; subgrid carries
+it. **980** — the flagged wall
+is the Brigantine Blvd causeway (real land); the channel's SW end (`bed_dam_980_sw.png`,
+`--centre -74.4165 39.3875`) meets Absecon Inlet across a 150 m band of −1..0 m flats —
+threshold again; the +8 m ridge there is the Route 87 bridge RAMP on the peninsula, not a
+deck. ✅ **Sweep closed: no bridge-as-dam carve on v3's premier bed.** All four are the
+−1 m threshold reading shallow flats as a wall, or real land on the nearest-approach line.
+
+**VDatum: the web service is REPLACED by NOAA's own separation grids, sampled offline.**
+The web failure south of lat ~39.4 is exactly the footprint of NOAA's March-2024 grids
+(`NJscstemb32` / `NJVAmab33` / `DEdelbay33`), whose `tss` reads +0.44 m at Atlantic City
+against a 0.12 m gauge — a different geoid reference, not NAVD88. The previous (2019,
+NAD83/NAVD88) release is still at `vdatum.noaa.gov/download/data/<name>.zip`; six
+`*_tss.gtx` now live in `data/NACCS/vdatum_grids/` (67 MB, gitignored; `.met` beside
+each). `tss` = NAVD88 − LMSL, offset to add = −tss, lon 0..360. **Verified:** grid −
+web = 0.0000 mean, 0.0009 m max over all 144 v1.5 cached points; Atlantic City +0.120,
+Cape May +0.137, Lewes +0.121 vs gauges 0.122 / 0.137 / 0.122. Of the 1,308 save points
+in the v3 bbox the grids place 1,251 (871 ncstemb, 340 scstemb, 40 delbay); the 57
+uncovered are back-bay/marsh points that the grid models as land — they fall to
+web → station plane with a warning, and are unlikely to be on the `mask==2` line.
+`datum_offsets()` now: grids → web → station plane, `source` per row, only `grid` rows
+trusted across runs; `--check-vdatum-web` cross-checks against the service. ⚠️ The
+station-plane error is 2–3 cm on the shelf and up to 8 cm in the bays (Great Egg
++0.045 vs AC +0.122), not the 0.015 m assumed on 08-25. Old web cache kept as
+`vdatum_lmsl_navd88.web-2026-08-25.csv`. vyperdatum (NOAA's package) does the same
+thing with extra machinery — not needed.
+
+✅ **v3 NACCS BOUNDARY BUILT — `data/gtsm/naccs_sandy_v3.nc`, 224 support points,
+support sha16 `19f53cfd4cb804fb`** (built on the 08-25 levers-pulled probe via the new
+`--mesh data/probe_mesh_v3/domain_dryrun.npz`; its `mask==2` line is 6,835 cells,
+identical to the clean probe's — the line is set by `mask_zmin` and the boxes, not the
+refinement — so the freeze will not change the support). Datum: all 224 from the offline
+grids, Sandy Hook anchor −0.077 vs −0.073 known (diff −0.004), offsets −0.045..−0.136 m
+(spread 0.090). Peak +4.119 m NAVD88 at 10-30 00:45.
+🔴 **Found and fixed on the first build: V3 had no `open_coast_max_y`,** so the 8 m
+depth screen hit ALL 406 candidates and the v1.5 limb was under-supported — ocean arm
+29 pts (v1.5: 43), Narrows 4 (13), Arthur Kill 5 (15). Now `V1_5_RARITAN.open_coast_max_y`
+verbatim → ocean 44 · narrows 13 · arthur_kill 15 · ocean_south 154; 89 tests OK.
+⏳ **OPEN (user): the Delaware Bay wedge / Cape May canal mouth is screened as OPEN
+COAST.** A northing cannot exempt it. The canal-mouth cluster of 5 (1–6 m) and the
+Villas nearshore line are dropped as < 8 m, leaving the largest gaps on the whole
+boundary exactly there: 5.97 km at −74.961, 38.984 (bed −1.2 m, the canal mouth), 5.88 /
+5.78 km on the two wedge legs at lat 38.88, 4.15 km at −74.985, 38.964. 854 of 6,835
+cells sit > 2 km from support, nearly all on the wedge; the rest of `ocean_south` is
+86% < 2 km. With the screen off entirely (`--min-depth 0`) the wedge max gap is still
+5.88 km (no point ON the legs), so the shallow cluster buys the canal mouth, not the legs.
+Options: (a) a wedge exemption box for the depth screen (NACCS's wave setup is small in
+the bay, which is the screen's rationale); (b) accept the interpolant — the wedge is a
+closure, not the forcing that matters. **DECIDED 2026-08-26 (user: either): (b) — accept the interpolant, no exemption
+box.** The wedge is a temporary closure; the planned Delaware Bay expansion re-draws that
+edge. Revisit the screen then, not now.
+
+✅ **SUBGRID MEASURED — job 60979984, hal0164, 2026-08-26: peak RSS 30.4 GB, wall
+1:06:35 (quadtree ~10 min + subgrid ~55 min over 4 levels, 12/40/160/434 blocks), on
+the RESTORED-lever mesh: faces 3,312,567 · active 1,704,096 · mask==2 6,835 · outflow
+1,800 — the clean-probe fingerprint counts exactly.** Output `experiments/v3/_subgrid_probe`:
+`sfincs.nc` 1.51 GB, `sfincs_subgrid.nc` 1.08 GB (np 3,312,567 × 10 levels, npuv
+6,653,590), `roughness.nc` 1.20 GB, `subgrid/*.tif` 2.3 GB — 7.2 GB total. Quota 49.5 G
+of 100 G after. sacct says FAILED only because the batch script's final `ls *.sbg` glob
+matched nothing (hydromt writes `sfincs_subgrid.nc`, not `.sbg`); `/usr/bin/time` exit 0.
+Any 64 G node builds this; `hpc/subgrid_probe_v3.slurm` can drop to `--mem=64G`.
 
 ⏳ **OPEN, for the user:** (1) surf-band width (see above);
 (2) an ICW eHydro tier — the only southern channel surveys are 2021–2024 sparse

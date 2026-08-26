@@ -1137,6 +1137,13 @@ V3 = Domain(
     no_waterlevel_boxes=V1_5_RARITAN.no_waterlevel_boxes,  # the Raritan River cut
     elevation_list=V3_ELEVATION_LIST,
     coarse_elevation_list=({"elevation": "bed_v3_coarse_25m"},),
+    # v1.5's value verbatim: the Raritan / Narrows / Arthur Kill limb is not open coast,
+    # so its NACCS support is exempt from the 8 m depth screen. Left unset on 08-24 the
+    # screen was applied to ALL 406 candidates and the ocean arm kept 29 points where
+    # v1.5 keeps 43, the Narrows 4 vs 13 (found 2026-08-26 on the first v3 boundary
+    # build). ⚠️ A northing cannot exempt the Delaware Bay wedge — that is a separate
+    # question, see STATUS.
+    open_coast_max_y=V1_5_RARITAN.open_coast_max_y,
     precip_dataset="aorc_sandy_v3",
     cn_dataset="cn_v3",
     cora_waves=DATA / "waves_v3" / "cora_waves_v3.nc",
