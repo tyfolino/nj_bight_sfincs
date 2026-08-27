@@ -140,6 +140,45 @@ ENDSSH
 fi
 # ─────────────────────────────────────────────────────────────────────────────
 
+# ── Persist extensions + machine settings across allocations ─────────────────
+# The laptop-side `remote.SSH.serverInstallPath: {"amarel-job": "/mnt/scratch/$USER"}`
+# is what keeps the agent-host unpack under its hard 300 s timeout — but it relocates
+# the ENTIRE .vscode-server tree to node-local disk, not just the server binaries.
+# So every fresh allocation starts with `extensions.json == []` (all 15 extensions
+# re-download from the marketplace, ~880 MB) and an empty data/Machine (git.path
+# disappears, so the git integration dies). Symlink exactly those two back to the
+# GPFS home copy — every node mounts it, so they now survive a new node for free.
+# Server binaries and logs stay node-local, which is the part that has to be fast.
+#
+# NOTE: this makes $HOME/.vscode-server/extensions load-bearing. Do not delete it
+# when pruning the old GPFS server tree — extensions/ and data/Machine/ are now the
+# masters; cli/ and data/logs/ there are the disposable leftovers.
+echo "Linking persistent VSCode dirs on $node ..."
+ssh -o StrictHostKeyChecking=no "$node" bash -s "$HOME/.vscode-server" "/mnt/scratch/$USER/.vscode-server" <<'ENDSSH'
+  set -uo pipefail
+  HOME_VSC="$1"; LOCAL_VSC="$2"
+
+  link_one(){  # $1 = path relative to .vscode-server
+    local rel="$1" src="$HOME_VSC/$1" dst="$LOCAL_VSC/$1"
+    mkdir -p "$src" "$(dirname "$dst")" || return 1
+    if [[ -L "$dst" ]]; then
+      [[ "$(readlink -f "$dst")" == "$(readlink -f "$src")" ]] && { echo "  = $rel"; return 0; }
+      rm -f "$dst"
+    elif [[ -d "$dst" ]]; then
+      # Re-running after a connect: fold anything the node installed back into the
+      # GPFS master before replacing the dir, so a mid-session run can't lose an
+      # extension. cp -n, so a half-written node copy never clobbers a good one.
+      cp -an "$dst"/. "$src"/ 2>/dev/null
+      rm -rf "$dst"
+    fi
+    ln -s "$src" "$dst" && echo "  → $rel"
+  }
+
+  link_one extensions      || echo "  ! could not link extensions — they will re-download"
+  link_one data/Machine    || echo "  ! could not link data/Machine — git.path may be missing"
+ENDSSH
+# ─────────────────────────────────────────────────────────────────────────────
+
 # ── Validate the VSCode remote server install ────────────────────────────────
 # An extraction interrupted by a job ending (download finishes, tar never
 # completes) leaves a truncated non-executable `node` and no bin/ under

@@ -4,7 +4,7 @@
 12 KB "current state" memory file and its 26 reverse-chronological campaign logs; the point
 of the format is that a reader gets the current state without replaying how it was reached.
 
-Last updated: **2026-08-26** (⭐ v3 FROZEN, 25 gauges + 17 basins wired, 3 arms staged+submitted overnight, offline VDatum grids, STWAVE wave file; levers restored, subgrid 30 GB/1 h, dam sweep closed; 2026-08-25: ⭐ v3 PRE-FREEZE PASS: levers pulled (−1.3%, the driver is the 25 m surf band), dam sweep → 4 candidates, VDatum fallback, build-QC notebook; SUBGRID MEMORY PROBE running — see PICK UP; 2026-08-24: v3 WIRED + ALL DATA PULLED + CLEAN MESH PROBE 3.31 M faces — Steps 0–2 done, see PICK UP; earlier: MOTF sheet, inland ring, canal uncut; v3 REGION DRAWN + GATED — `region_v3_EDITED.geojson`
+Last updated: **2026-08-27** (⭐ ALL THREE v3 ARMS COMPLETED CLEAN on hal nodes, 4/4 premier OK, HWM 6044 src-flagged, `--validate-only` running; 2026-08-26: ⭐ v3 FROZEN, 25 gauges + 17 basins wired, 3 arms staged+submitted overnight, offline VDatum grids, STWAVE wave file; levers restored, subgrid 30 GB/1 h, dam sweep closed; 2026-08-25: ⭐ v3 PRE-FREEZE PASS: levers pulled (−1.3%, the driver is the 25 m surf band), dam sweep → 4 candidates, VDatum fallback, build-QC notebook; SUBGRID MEMORY PROBE running — see PICK UP; 2026-08-24: v3 WIRED + ALL DATA PULLED + CLEAN MESH PROBE 3.31 M faces — Steps 0–2 done, see PICK UP; earlier: MOTF sheet, inland ring, canal uncut; v3 REGION DRAWN + GATED — `region_v3_EDITED.geojson`
 passes `validate_region_v3.py`; ⭐ `acquisition_only` domain state, v3 REGISTERED, all
 five+one downloaders domain-aware, **v3 DATA ACQUISITION COMPLETE** (4.2 G);
 Toms River src moved onto its cut · 🔴 **PAUSED ON A SCOPE DECISION: the ring currently
@@ -158,6 +158,45 @@ The two "flat NACCS node" panels (NOAA Cape May → node 7549, dry 1,877 samples
 the forcing set. The notebook's matcher now requires never-dry as well as deep.
 
 **ICW eHydro tier: deferred (user).** Add later as its own `bed-icw` arm, never silently.
+
+### ✅ 2026-08-27 morning — ALL THREE v3 ARMS COMPLETED CLEAN; validation running
+
+**The runs are real.** Every check on the morning checklist passed, per arm
+(`naccs-premier` 60995929 hal0290 5 h 36 · `wave-stwave` 60995930 hal0308 5 h 39 ·
+`naccs-nowaves` 60995931 hal0360 43 min):
+- **no `halk`** in any final job; GPFS three-clock test clean (creation 18:35–18:36 =
+  the job that made the file, mtime = ctime = job end — no late clobber);
+- `sfincs.log` ends `Closing off SFINCS`, no NaN/instability, all SnapWave iterations
+  converged at 100 % ok; only warning is the expected `manningfile ignored (sbgfile)`;
+- `sfincs_his.nc` 10-28 00:00 → 10-31 00:00, 433 steps, **25 stations, zero NaN**;
+  `sfincs_map.nc` 73 steps, `zsmax` finite on exactly the active fraction (0.508) in all
+  three — no all-fill map. The `zsmax` max of 100.85 m is bed on a never-wet face
+  (`zb` max 100.84), not a blow-up;
+- `python -m nj_sfincs.premier` → **4/4 OK on v3, output WHOLE**;
+- the 18:01 `FAILED 11:0` attempts left nothing (re-staged over at 18:24–18:35).
+Peaks (premier): Great Kills 3.92 m, Sandy Hook 3.82, Narrows 3.66–3.69, Arthur Kill mouth
+3.43, Sea Bright ~2.9, Absecon Creek 2.92.
+
+**Runtime was NOT anomalously fast** — the 18 h projection was wrong, not the runs.
+v3 has 1.70 M active z points vs v1.5's 412 k (4.1×), same average dt (0.69 s), 64
+threads both. Waves-off scaled with cell count (2,587 s vs 795 s = 3.3×); premier
+20,064 s vs 8,328 s = **2.4×** because SnapWave's share fell 89 % → 83 % (the new inland
+and lagoon cells cost SnapWave little). MaxRSS 12.4 G (wave arms) / 1.3 G — `--mem=180G`
+can drop to ~32 G next time; `--time=30:00:00` to ~8 h.
+
+**§40 src-contamination sweep on the 185 v3 HWMs — DONE (against the staged src faces,
+UTM 18N):** **1 of 185 within 500 m** — HWM **6044** ("rip-rap on dam exterior",
+39.4306 N −74.5202, 2.316 m, q4) sits **49 m from the Absecon Creek source**
+(USGS 01410500, Qmax 3.5 m³/s — small injection, but it reads the injection, FINDINGS
+§40). Next nearest: 6102 at 674 m, 6101 at 921 m (the Raritan src, Qmax 110). ⏳ Wire
+`src_contaminated` as a column in the v3 scorer / report so 6044 is flagged, not dropped
+(warn, never gate).
+
+⏳ **`--validate-only` on all three arms launched 2026-08-27 ~15:10** (background from
+the vscode session, log in the session scratchpad). Results → `experiments/v3/metrics.csv`
++ `report.html`. Still TODO after that: read the metrics (⚠️ the southern USGS gauges
+with pre-storm "peaks" — Ship Bottom, Sea Isle, Stone Harbor — read the series first),
+the dry-crossing creek sweep, refine the HWM basin partition south of LBI once n is known.
 
 ### 🔵 2026-08-26 evening — v3 IS FROZEN AND THE THREE ARMS ARE GOING OVERNIGHT
 
