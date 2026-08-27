@@ -1092,6 +1092,130 @@ V3_ELEVATION_LIST: tuple[dict, ...] = (
     {"elevation": "gmrt_v3"},
 )
 
+
+# ── v3 validation ─────────────────────────────────────────────────────────────
+# Wired 2026-08-26 (the freeze). The northern eight are v1.5's VERBATIM (same files,
+# same notes); the south is the 2026-08-24 pulls. Names are unique substrings for the
+# his matcher. Pre-registration (STATUS): the interior holdouts are Atlantic City and
+# the southern USGS/STN gauges; ⚠️ Cape May 8536110 sits ON the wedge forcing line at
+# the canal mouth, so it is a FORCING diagnostic like the Battery on v1.5, never a
+# holdout. Sluice Creek 1411435 is on the Delaware Bay side outside the ring — not
+# listed. STN 2245 / 2261 read 4.47 / 4.45 m at their FIRST sample (STATUS 08-24): not a
+# surge shape, not listed; 2248 has 3 h — not listed.
+_V3_USGS = "gtsm/usgs_sandy_tidal_v3.nc"
+_V3_STN = "gtsm/sandy_storm_tide_south.nc"
+_NOAA_ATLANTIC_CITY = ObsGauge(
+    "noaa_atlantic_city", -74.4181, 39.3550, "surge",
+    "gtsm/noaa_sandy_validation.nc", "waterlevel", 8534720,
+    survives_crest=True, series_source="his",
+    note="NOAA CO-OPS 8534720, Steel Pier. ⭐ THE southern interior holdout: hourly, "
+    "complete, observed peak 1.88 m NAVD88 at 10-30 00:00. Sits ~1.8 km inside the ocean "
+    "arm, so it tests the nearshore/setup step the boundary product does not carry.",
+)
+_NOAA_CAPE_MAY = ObsGauge(
+    "noaa_cape_may", -74.9600, 38.9683, "surge",
+    "gtsm/noaa_sandy_validation.nc", "waterlevel", 8536110,
+    survives_crest=True, series_source="his",
+    note="NOAA CO-OPS 8536110, Cape May Harbor / canal mouth. ⚠️ ON THE WEDGE FORCING "
+    "LINE — a forcing-product diagnostic (CLAUDE.md §6), NOT a model holdout. Observed "
+    "peak 1.75 m at 10-29 13:00 (the Delaware Bay side peaks half a day before the coast).",
+)
+
+
+def _usgs_v3(name, lon, lat, sid, kind="surge", survives=True, record_ends=None, note=""):
+    return ObsGauge(name, lon, lat, kind, _V3_USGS, None, sid, survives_crest=survives,
+                    record_ends=record_ends, series_source="his", note=note)
+
+
+_V3_USGS_GAUGES = (
+    _usgs_v3("usgs_tidal_mantoloking", -74.0544, 40.0406, 1408168,
+             note="01408168 Barnegat Bay at Mantoloking. Complete through the window; "
+             "peak 2.11 m at 10-30 06:18 — the bay peaks HOURS after the coast, and the "
+             "Mantoloking breach is 1 km away. Barnegat/Manasquan conveyance holdout."),
+    _usgs_v3("usgs_tidal_barnegat_light", -74.1106, 39.7608, 1409125,
+             note="01409125 Barnegat Bay at Barnegat Light, inside the inlet. Peak 1.59 m "
+             "at 10-30 00:24. Complete."),
+    _usgs_v3("usgs_tidal_ship_bottom", -74.1858, 39.6542, 1409146,
+             note="01409146 East Thorofare at Ship Bottom (LBI bay side). ⚠️ 596 of 1081 "
+             "samples and its recorded peak (1.02 m, 10-29 02:54) is the pre-storm tide — "
+             "the crest is in a GAP. Score with care; the peak comparison is not valid."),
+    _usgs_v3("usgs_tidal_tuckerton", -74.3247, 39.5089, 1409335,
+             note="01409335 Little Egg Inlet near Tuckerton. Peak 1.59 m at 10-30 04:00. "
+             "841 samples, through the window."),
+    _usgs_v3("usgs_tidal_absecon_creek", -74.5000, 39.4231, 1410510,
+             note="01410510 Absecon Creek at Absecon — head of the Absecon back bay. Peak "
+             "1.87 m at 10-30 04:00 (Absecon src is upstream; check dist_nearest_src_m)."),
+    _usgs_v3("usgs_tidal_inside_thorofare", -74.4569, 39.3536, 1410560,
+             note="01410560 Inside Thorofare at Atlantic City — the AC back bay, 3.5 km "
+             "from the NOAA ocean-side gauge: the ocean-vs-bay pair. Peak 1.71 m at "
+             "10-30 04:00."),
+    _usgs_v3("usgs_tidal_absecon_channel", -74.4236, 39.3778, 1410600, kind="tide",
+             survives=False, record_ends="2012-10-29 03:54",
+             note="01410600 Absecon Channel at Atlantic City. DIED 10-29 03:54 on the "
+             "rising limb — pre-storm tide only."),
+    _usgs_v3("usgs_tidal_ocean_city", -74.5756, 39.2858, 1411320,
+             note="01411320 Great Egg Harbor Bay at Ocean City (9th St bridge). Peak "
+             "2.21 m at 10-30 00:00 — the highest southern gauge. 601 samples."),
+    _usgs_v3("usgs_tidal_sea_isle", -74.6978, 39.1578, 1411350,
+             note="01411350 Ludlum Thorofare at Sea Isle City. ⚠️ Recorded peak 1.58 m at "
+             "10-29 01:18 is the pre-storm tide; the crest is likely in a gap (841 samples "
+             "but check before scoring the peak)."),
+    _usgs_v3("usgs_tidal_avalon", -74.7419, 39.1086, 1411355,
+             note="01411355 Ingram Thorofare at Avalon. Peak 1.14 m at 10-30 04:00 — LOW "
+             "for a back bay at the crest; 601 samples. Read the series before trusting."),
+    _usgs_v3("usgs_tidal_stone_harbor", -74.7650, 39.0569, 1411360,
+             note="01411360 Great Channel at Stone Harbor. ⚠️ Recorded peak 1.55 m at "
+             "10-29 01:12 — pre-storm tide; check for a crest gap."),
+    _usgs_v3("usgs_tidal_cape_may_harbor", -74.8889, 38.9483, 1411390,
+             record_ends="2012-10-30 03:54",
+             note="01411390 Cape May Harbor. Stops 10-30 03:54; peak 1.80 m at 10-29 "
+             "12:42 — the Delaware-Bay-timed crest, which it does catch. 2.6 km from the "
+             "canal-mouth forcing: half holdout, half forcing check."),
+)
+_V3_STN_GAUGES = (
+    ObsGauge("sss_great_bay", -74.4628, 39.5533, "surge", _V3_STN, "stormtide_m", 2244,
+             survives_crest=True, series_source="his",
+             note="NJATL00001, Great Bay / lower Mullica. Peak 2.39 m at 10-30 02:00; "
+             "467 samples to 10-30 18:30. The Mullica conveyance holdout."),
+    ObsGauge("sss_great_egg", -74.6275, 39.2883, "surge", _V3_STN, "stormtide_m", 2246,
+             survives_crest=True, series_source="his",
+             note="NJCAP00001, Great Egg Harbor Bay. Peak 2.10 m at 10-30 00:36; 638 "
+             "samples through 10-31."),
+    ObsGauge("sss_cape_may", -74.8656, 38.9364, "surge", _V3_STN, "stormtide_m", 2247,
+             survives_crest=True, record_ends="2012-10-30 03:12", series_source="his",
+             note="NJCAP00035, Cape May. 140 samples 10-29 .. 10-30 03:12, peak 2.24 m at "
+             "10-29 13:48 — catches the Delaware-Bay-timed crest, then dies."),
+)
+
+# ── v3 HWM basins. FIRST MATCH WINS; the south is declared FIRST because v2's
+# barnegat_* rules and v1's south_coast are open to the south (ymax only) and would
+# otherwise swallow the whole shore. Boxes from the 185-mark pull (2026-08-24), read
+# against the marks' descriptions/coordinates on 2026-08-26 — a first partition by
+# county-scale basin, NOT yet an ocean-front/back-bay split south of LBI (n is small
+# there: 5–12 marks per basin). Refine after the first score, never silently.
+_LBI_LINE = dict(slope_x0=563_168, slope_y0=4_375_852, slope=0.340)  # Holgate→Barnegat Light
+_V3_SOUTH_RULES = (
+    BasinRule("delaware_bay_shore", xmax=515_000, ymin=4_318_000, ymax=4_345_000,
+              why="Reeds Beach / Villas — the Delaware Bay shore inside the wedge. Water "
+              "delivered by the bay, timed half a day before the coast."),
+    BasinRule("cape_may", ymax=4_320_000,
+              why="Cape May city + Point: ocean-front beach marks and the town behind."),
+    BasinRule("cape_may_back_bays", ymin=4_320_000, ymax=4_340_000,
+              why="Wildwood / Stone Harbor / Avalon behind Hereford and Townsends inlets — "
+              "a conveyance basin on unsurveyed (non-federal) inlets."),
+    BasinRule("great_egg", ymin=4_340_000, ymax=4_352_000,
+              why="Ocean City / Somers Point / Great Egg Harbor Bay."),
+    BasinRule("absecon_atlantic_city", ymin=4_352_000, ymax=4_367_000,
+              why="Atlantic City, Ventnor, Margate, Brigantine, Absecon — ocean front and "
+              "Absecon back bay together (split later if n allows)."),
+    BasinRule("lbi_barrier", ymin=4_367_000, ymax=4_412_000, side=+1, **_LBI_LINE,
+              why="Long Beach Island ocean front, Holgate to Barnegat Light: east of the "
+              "Holgate→Barnegat Light line."),
+    BasinRule("great_bay_mullica", ymin=4_367_000, ymax=4_412_000,
+              why="Mainland behind LBI: Tuckerton, Manahawkin, Great Bay, the Mullica up "
+              "to Green Bank — fed through Little Egg Inlet, a conveyance test."),
+)
+
 V3 = Domain(
     name="v3",
     region=DATA / "region_v3_EDITED_inland.geojson",
@@ -1149,9 +1273,19 @@ V3 = Domain(
     cora_waves=DATA / "waves_v3" / "cora_waves_v3.nc",
     epsg=32618,
     latitude=39.74,  # (38.855 + 40.62) / 2, the drawn ring's mid-latitude
-    building=True,
+    # FROZEN 2026-08-26: data/frozen_mesh_v3 (no mesh_key — one boundary depth so far),
+    # fingerprint premier.V3. `building` cleared the same pass.
+    # The BASE (NOAA) water-level selection on the template: noaa_sandy_nj holds the
+    # Battery, Atlantic City and Cape May, all within the 100 km buffer of the line →
+    # 3. Asserted at the template build. The arms override with the NACCS 224.
+    n_waterlevel_support=3,
     discharge_geodataset="usgs_sandy_discharge_v3",
     hwm_geojson=DATA / "validation_v3" / "sandy_hwms_v3.geojson",
+    obs_gauges=(*V1_5_RARITAN.obs_gauges, _NOAA_ATLANTIC_CITY, _NOAA_CAPE_MAY,
+                *_V3_USGS_GAUGES, *_V3_STN_GAUGES),
+    # south first (bounded), then v2's Barnegat rules (ymax 4,444,000 → effectively
+    # 4,412,000..4,444,000 after the south), then v1.5's northern rules + catch-all.
+    hwm_rules=_V3_SOUTH_RULES + _V2_SOUTH_RULES + _V1_5_BASIN_RULES,
     # ⭐ Rendered on the acquisition RECTANGLE on purpose (2026-08-24): on v3 the MOTF
     # extent was a DOMAIN-DESIGN input — it decided how far up the Great Egg / Mullica
     # the ring had to reach — so it covers more ground than the ring. Scoring restricts

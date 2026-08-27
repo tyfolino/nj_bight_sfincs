@@ -126,6 +126,55 @@ _V1_5_RARITAN: dict[str, Experiment] = {
 #: one run directory is copied out of the archive and RESCORED, never staged from a
 #: config and never re-run. An empty dict is the honest statement of that — a populated
 #: one would invite `--experiments all` to try.
+# ── v3 ────────────────────────────────────────────────────────────────────────
+# The full Jersey shore. Frozen 2026-08-26; three arms (user, 2026-08-26): CORA waves,
+# NACCS STWAVE waves, waves off. Same NACCS 224-point water level on all three.
+_V3_CORA = DATA / "waves_v3" / "cora_waves_v3.nc"
+_V3_STWAVE = DATA / "waves_v3" / "naccs_stwave_v3.nc"
+# v1.5 put 7 wave support points on a 25 km open-coast edge. v3's open-coast boundary
+# runs ~178 km of northing (y 4,298,500 .. 4,476,000), so 7 would be one point per
+# 25 km; 36 keeps ~5 km, the CORA/STWAVE nearest-node limit in model._point_wave_bnd.
+_V3_WAVE_N = 36
+_V3_WL = dict(
+    waterlevel_geodataset="naccs_sandy_v3",
+    # Measured 2026-08-26 on the v3 mask==2 line (6,835 cells): 1,321 NACCS save points
+    # -> 406 within 2 km -> 224 after the dry (-67) and open-coast depth (-115) screens.
+    # Per arm: ocean 44, narrows 13, arthur_kill 15, ocean_south 154. Declared on the
+    # ARM, never by relaxing Domain.n_waterlevel_support.
+    n_waterlevel_support=224,
+)
+_V3: dict[str, Experiment] = {
+    "naccs-premier": Experiment(
+        "naccs-premier",
+        WaveConfig(use_waves=True, wave_wind=True, wave_igwaves=False, tune_physics=True,
+                   wave_point_dataset=_V3_CORA, wave_n_support=_V3_WAVE_N),
+        "THE v3 PREMIER: NACCS/CHS ADCIRC storm tide on v1.5's three cuts plus the "
+        "isobath to Cape May and the Delaware Bay wedge, with CORA per-support-point "
+        "waves (v1.5's premier wave config verbatim). Every back bay from Raritan Bay to "
+        "Cape May Harbor is COMPUTED.",
+        **_V3_WL,
+    ),
+    "wave-stwave": Experiment(
+        "wave-stwave",
+        WaveConfig(use_waves=True, wave_wind=True, wave_igwaves=False, tune_physics=True,
+                   wave_point_dataset=_V3_STWAVE, wave_n_support=_V3_WAVE_N),
+        "Premier with the wave boundary from NACCS's OWN STWAVE save points instead of "
+        "CORA — the same CSTORM-MS system that produced the water level, so the waves "
+        "and the surge are internally consistent. ⚠️ STWAVE's `alpham` is read as a "
+        "nautical FROM direction by inference, not documentation "
+        "(scripts/build_naccs_stwave_waves.py).",
+        **_V3_WL,
+    ),
+    "naccs-nowaves": Experiment(
+        "naccs-nowaves",
+        WaveConfig(use_waves=False),
+        "Premier with SnapWave OFF. Extent metrics flagged extent_admissible=False, "
+        "never ranked against a waves-on arm (CLAUDE.md §6).",
+        **_V3_WL,
+    ),
+}
+
+
 EXPERIMENTS_BY_DOMAIN: dict[str, dict[str, Experiment]] = {
     "v1_monmouth": {},
     "v1_5_raritan": _V1_5_RARITAN,
@@ -136,7 +185,7 @@ EXPERIMENTS_BY_DOMAIN: dict[str, dict[str, Experiment]] = {
     # ⏳ BUILDING (see nj_sfincs/domain.py): the polygon is drawn and gated, the mesh is
     # not frozen. Arms (`naccs-premier`, `naccs-nowaves`) are registered at the freeze,
     # once there is a fingerprint for premier.py to check them against.
-    "v3": {},
+    "v3": _V3,
 }
 
 

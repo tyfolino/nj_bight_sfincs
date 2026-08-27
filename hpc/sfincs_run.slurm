@@ -54,6 +54,15 @@ MODEL="${1:-model_quadtree}"
 SIF="${SFINCS_SIF:-$REPO/sfincs-cpu.sif}"
 
 export OMP_NUM_THREADS="${SLURM_CPUS_PER_TASK:-1}"
+# 🔴 STACK. SFINCS/SnapWave size Fortran automatic arrays by the face count. At v1.5's
+# 696k faces one such array is 5.6 MB and fits the 8 MB default stack; at v3's 3.31 M
+# faces it is 26 MB and the solver SIGSEGVs at start-up (2026-08-26: all three v3 arms,
+# the waves-off one in 14 s with an EMPTY sfincs.log, the wave arms right after the
+# SnapWave banner at 11 GB RSS — nowhere near the 180 G allocation). Singularity
+# inherits the caller's rlimits; OMP_STACKSIZE covers the worker threads' own stacks.
+ulimit -s unlimited || ulimit -s $(ulimit -H -s)
+export OMP_STACKSIZE="${OMP_STACKSIZE:-1G}"
+echo "stack: ulimit -s $(ulimit -s)  OMP_STACKSIZE=$OMP_STACKSIZE"
 
 echo "host=$(hostname)  job=${SLURM_JOB_ID:-none}  threads=$OMP_NUM_THREADS"
 echo "model=$MODEL  sif=$SIF"

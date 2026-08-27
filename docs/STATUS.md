@@ -4,7 +4,7 @@
 12 KB "current state" memory file and its 26 reverse-chronological campaign logs; the point
 of the format is that a reader gets the current state without replaying how it was reached.
 
-Last updated: **2026-08-26** (levers restored, subgrid probe job 60979984 running, dam-candidate maps; 2026-08-25: ⭐ v3 PRE-FREEZE PASS: levers pulled (−1.3%, the driver is the 25 m surf band), dam sweep → 4 candidates, VDatum fallback, build-QC notebook; SUBGRID MEMORY PROBE running — see PICK UP; 2026-08-24: v3 WIRED + ALL DATA PULLED + CLEAN MESH PROBE 3.31 M faces — Steps 0–2 done, see PICK UP; earlier: MOTF sheet, inland ring, canal uncut; v3 REGION DRAWN + GATED — `region_v3_EDITED.geojson`
+Last updated: **2026-08-26** (⭐ v3 FROZEN, 25 gauges + 17 basins wired, 3 arms staged+submitted overnight, offline VDatum grids, STWAVE wave file; levers restored, subgrid 30 GB/1 h, dam sweep closed; 2026-08-25: ⭐ v3 PRE-FREEZE PASS: levers pulled (−1.3%, the driver is the 25 m surf band), dam sweep → 4 candidates, VDatum fallback, build-QC notebook; SUBGRID MEMORY PROBE running — see PICK UP; 2026-08-24: v3 WIRED + ALL DATA PULLED + CLEAN MESH PROBE 3.31 M faces — Steps 0–2 done, see PICK UP; earlier: MOTF sheet, inland ring, canal uncut; v3 REGION DRAWN + GATED — `region_v3_EDITED.geojson`
 passes `validate_region_v3.py`; ⭐ `acquisition_only` domain state, v3 REGISTERED, all
 five+one downloaders domain-aware, **v3 DATA ACQUISITION COMPLETE** (4.2 G);
 Toms River src moved onto its cut · 🔴 **PAUSED ON A SCOPE DECISION: the ring currently
@@ -158,6 +158,87 @@ The two "flat NACCS node" panels (NOAA Cape May → node 7549, dry 1,877 samples
 the forcing set. The notebook's matcher now requires never-dry as well as deep.
 
 **ICW eHydro tier: deferred (user).** Add later as its own `bed-icw` arm, never silently.
+
+### 🔵 2026-08-26 evening — v3 IS FROZEN AND THE THREE ARMS ARE GOING OVERNIGHT
+
+**Frozen:** `data/frozen_mesh_v3` = the subgrid probe adopted by `mv` (same
+`build_static(frozen_mesh=None)` call `freeze_mesh.py` makes; rebuilding would only risk
+the ~18-cell drift). `premier.V3 = (3312567, 4010, "ae28ac5ef3aeb599")`, `building`
+cleared, `n_waterlevel_support=3` (base NOAA: Battery + AC + Cape May). 89 tests OK.
+
+**Validation wired on V3** (`domain.py`): v1.5's 8 gauges verbatim + NOAA Atlantic City
+(⭐ southern holdout) + NOAA Cape May (⚠️ ON the wedge forcing line — forcing diagnostic,
+not a holdout) + 12 USGS v3 tidal gauges + 3 STN (2244 Great Bay, 2246 Great Egg, 2247
+Cape May) = **25**. Sluice Creek, STN 2245/2261/2248 deliberately not listed (notes say
+why). ⚠️ Several southern USGS gauges show a pre-storm-tide "peak" (Ship Bottom, Sea Isle,
+Stone Harbor) — likely crest GAPS; read the series before scoring their peaks.
+**HWM basins:** `_V3_SOUTH_RULES` (7, bounded, FIRST) + `_V2_SOUTH_RULES` + `_V1_5_BASIN_RULES`;
+all 185 marks assigned, none `unassigned`: lower_bay_si_shore 42 · raritan_bay 31 ·
+shrewsbury_navesink 15 · great_bay_mullica 15 · absecon_atlantic_city 13 · manasquan 12 ·
+barnegat_bay 10 · atlantic_oceanfront 9 · lbi_barrier 7 · sandy_hook_bay 6 ·
+cape_may_back_bays 5 · cape_may 5 · south_coast 5 · shark_river 4 · great_egg 3 ·
+delaware_bay_shore 2 · barnegat_barrier 1. A first county-scale partition; no
+ocean-front/back-bay split south of LBI yet (n too small) — refine after the first score.
+
+**Three arms (user):** `naccs-premier` (CORA waves), `wave-stwave` (NACCS STWAVE waves),
+`naccs-nowaves`. All: `naccs_sandy_v3` (224 pts), `wave_n_support=36` (~5 km on a 178 km
+open-coast edge; v1.5 used 7 on 25 km).
+**STWAVE file** `data/waves_v3/naccs_stwave_v3.nc` from `scripts/build_naccs_stwave_waves.py`:
+274 nodes ≥ 8 m (1,095 shallower grid-points dropped), 193 half-hour steps 10-28..11-01,
+hold-padded to 10-27. 🔴 **The three STWAVE grids DISAGREE where they overlap** — median
+max|ΔHs| 2.5 m (02∩03), 2.6 m (02∩07), 3.7 m (03∩07); 07 (NY Bight) runs low. Shared
+points take the grid whose centre they are nearest (most interior); `grid` is a per-node
+coord. ⚠️ `alpham` read as nautical-FROM by inference (10-28 00:00: waves 28°, wind 64°),
+not documentation. Hs max 9.74 m at SP1197 (19 m). Kept by grid 02: 89 · 03: 86 · 07: 99.
+
+🔴 **FIRST SUBMISSION (jobs 60995570/71/72) SIGSEGV'd on all three arms within 70 s** —
+the waves-off arm in 14 s with an EMPTY `sfincs.log`, the wave arms just past the SnapWave
+banner at 11 GB RSS; the initial `sfincs_map.nc` (10 MB) and `sfincs_his.nc` were written,
+so the solver died on the first time step. Not the stack (`ulimit -s unlimited` +
+`OMP_STACKSIZE=1G`, now in `hpc/sfincs_run.slurm`, changed nothing). Three staging gaps
+found by inspection, all fixed and re-staged (job 60995740, `--rebuild-template`):
+1. 🔴 **The Raritan source (Qmax 110 m³/s) sat on an INACTIVE face** — hydromt snaps a
+   source to the nearest face by distance alone; on v3's slightly different mesh the
+   nearest face 24 m from the cut is mask 0 (on v1.5 it was active, 7 m). A source on
+   mask 0 is a first-step segfault in SFINCS. `model._snap_sources_to_active_faces`
+   (new, in `add_forcing`) moves any such source to the nearest active face, prints the
+   move, raises over 300 m, and re-checks. The other 18 sources were on active faces.
+2. **No `sfincs.obs`** — the frozen mesh was built by the probe BEFORE the gauges were
+   wired, and obs points are written in `build_static` only. Wrote the 25 points into
+   `data/frozen_mesh_v3/sfincs.obs` (`sync_obs_points.render`, format round-trip OK) and
+   `obsfile = sfincs.obs` into its `sfincs.inp`.
+3. **No `sfincs.weir`** — the Keansburg line (FINDINGS §38) lives in v1.5's frozen mesh
+   dir; copied verbatim to `data/frozen_mesh_v3/` (all 89 vertices on active v3 faces,
+   ≤ 35 m). `_ensure_weirfile_key` re-adds the inp key.
+Neither 2 nor 3 can segfault; 1 is the diagnosis. If the re-stage still dies, the next
+suspects are the 25 obs points (any outside the grid?) and an index overflow in the
+6.65 M-uv-point subgrid — bisect with the waves-off arm, it fails in 14 s.
+
+✅ **RUNNING since 18:35 — jobs 60995929 (naccs-premier, hal0290) · 60995930
+(wave-stwave, hal0308) · 60995931 (naccs-nowaves, hal0360).** Re-staged from a deleted
+template (the sealed-template guard refuses `--rebuild-template` by design — delete
+deliberately). Staged arms carry `obsfile` (25) + `weirfile` (89 vertices) +
+`[src] 1 of 19 sources moved; all 19 now on active faces` (Raritan src now at
+559361, 4484475). 10 min in: map/his growing on all three, RSS 12.4 G (wave arms) /
+1.3 G (waves-off); first-look rate ≈ 2 model-h per 3 min waves-off, ≈ 1.5 model-h per
+4 min with SnapWave — far under the 18 h projection so far, but the crest will be slower.
+Quota 52 G of 100 G after dedupe (mmlsquota lags ~10 min after hard-linking: it read
+88.8 G right after `dedupe --apply` both times, then 52 G).
+
+Cleanup 2026-08-26 evening: `data/probe_mesh_v3/` (the 08-25 dry-run npz) deleted — the
+frozen mesh supersedes it; `build_naccs_boundary.py --mesh` now takes
+`data/frozen_mesh_v3/sfincs.nc`. Scratch VDatum zips removed (the six `*_tss.gtx` under
+`data/NACCS/vdatum_grids/` are the keepers). `data/NACCS/_originals_pending_delete/` deleted (user, 2026-08-26).
+
+**Submitted via** `hpc/stage_and_submit_v3.slurm` (hal-only): stages the three arms with
+`--no-run`, hard-links duplicated inputs (`dedupe_experiment_inputs.py --apply`), then
+`run.submit_slurm(dir, sif=sfincs-desktop.sif, --time=30:00:00 --mem=180G)` per arm.
+Log `logs/stage_v3_<job>.out`; solves `logs/sfincs_<job>.out`. Projected ~18 h SnapWave
+per wave arm. Disk before staging 49.5 G / 100 G; template + 3 arms ≈ +28 G before
+dedupe. ⏳ **Morning checklist:** `sacct --format=JobID,JobName,NodeList,State,Elapsed`
+(no halk!), quota, then `--validate-only` on each arm; then the §40 src-contamination
+sweep on the 185 HWMs (needs the staged src faces) and the dry-crossing creek sweep —
+both still TODO.
 
 ### 2026-08-26 — levers RESTORED (user); subgrid probe SUBMITTED; dam-candidate maps
 

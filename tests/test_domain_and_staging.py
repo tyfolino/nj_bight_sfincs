@@ -375,6 +375,10 @@ class TestWaterlevelSupportOverride(_DomainEnv):
             # Frozen archive fixture (score-only): the archive's own 60 km buffer
             # keeps Battery + Atlantic City and excludes Cape May by ~39 km.
             "v2_barnegat": 2,
+            # The BASE selection on v3, 2026-08-26: noaa_sandy_nj = Battery + Atlantic
+            # City + Cape May, all inside the 100 km buffer of a 178 km line. The three
+            # arms force from the NACCS 224, declared on each Experiment.
+            "v3": 3,
         }
         self.assertEqual(
             set(PINNED),
@@ -782,9 +786,11 @@ class TestAcquisitionOnly(_DomainEnv):
         return {n: d for n, d in domain.DOMAINS.items() if d.acquisition_only}
 
     def test_v3_has_left_this_state(self):
-        """v3 was the acquisition domain 2026-08-24 a.m.; its polygon landed p.m."""
+        """v3 was the acquisition domain 2026-08-24 a.m.; its polygon landed p.m.; it
+        was FROZEN 2026-08-26 (fingerprint in premier.EXPECTED)."""
         self.assertNotIn("v3", self._acq())
-        self.assertTrue(domain.DOMAINS["v3"].building)
+        self.assertFalse(domain.DOMAINS["v3"].building)
+        self.assertIn("v3", premier.EXPECTED)
 
     def test_inert_fields(self):
         """Re-asserts domain._check_acquisition_only from outside the module.
@@ -858,8 +864,10 @@ class TestBuilding(_DomainEnv):
     def _bld(self):
         return {n: d for n, d in domain.DOMAINS.items() if d.building}
 
-    def test_v3_is_building(self):
-        self.assertEqual(set(self._bld()), {"v3"})
+    def test_no_domain_is_building(self):
+        """v3 was the building domain 2026-08-24..26; it froze 2026-08-26. A domain that
+        appears here again must be a NEW one, added deliberately."""
+        self.assertEqual(set(self._bld()), set())
 
     def test_one_state_at_a_time(self):
         for name, dom in domain.DOMAINS.items():
@@ -874,7 +882,11 @@ class TestBuilding(_DomainEnv):
             self.assertNotIn("PROVISIONAL", dom.region.name, name)
             self.assertIsNone(dom.mesh_key, name)
             self.assertIsNone(dom.n_waterlevel_support, name)
-        bad = dataclasses.replace(domain.DOMAINS["v3"], mesh_key="borrowed")
+        # the guard itself, exercised on a synthetic building domain
+        synthetic = dataclasses.replace(domain.DOMAINS["v3"], building=True,
+                                        n_waterlevel_support=None)
+        domain._check_building(synthetic)
+        bad = dataclasses.replace(synthetic, mesh_key="borrowed")
         with self.assertRaises(ValueError):
             domain._check_building(bad)
 

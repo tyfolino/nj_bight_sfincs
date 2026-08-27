@@ -1085,7 +1085,69 @@ def add_forcing(base: BaseConfig, sf: SfincsModel) -> None:
     _dom = _domain.active()
     sf.precipitation.create(precip=_dom.precip_dataset, cumulative_input=True, aggregate=False)
     sf.discharge_points.create(geodataset=base.discharge_geodataset, merge=False)
+    _snap_sources_to_active_faces(sf)
     sf.quadtree_infiltration.create_cn(cn=_dom.cn_dataset, antecedent_moisture=None, nrmax=2000)
+
+
+def _snap_sources_to_active_faces(sf: SfincsModel, max_move_m: float = 300.0) -> None:
+    """Move every discharge source that hydromt put on an INACTIVE face to the nearest
+    active one.
+
+    🔴 hydromt snaps a source to the nearest face by distance alone. A source on a
+    mask==0 face is not a warning in SFINCS — it is a SIGSEGV on the first time step
+    (2026-08-26: all three v3 arms; the Raritan source, 24 m from the cut, landed on an
+    inactive face that on v1.5's slightly different mesh had been active; the initial
+    map was written and the solver died with an empty log). Every source is checked
+    and a move is printed with its distance; a move over ``max_move_m`` raises, because
+    a source that far from open water is a domain question, not a snap.
+    """
+    from scipy.spatial import cKDTree
+
+    dp = sf.discharge_points
+    if dp.nr_points == 0:
+        print("[src] no discharge sources")
+        return
+    ds = dp.data
+    gdf = ds.vector.to_gdf()
+    fc = sf.quadtree_grid.data.grid.face_coordinates
+    mask = sf.quadtree_grid.data["mask"].values
+    active = mask > 0
+    t_all = cKDTree(fc)
+    t_act = cKDTree(fc[active])
+    xy = np.c_[gdf.geometry.x.values, gdf.geometry.y.values]
+    d0, i0 = t_all.query(xy)
+    moved = []
+    for k, on in enumerate(i0):
+        if active[on]:
+            continue
+        d1, j = t_act.query(xy[k])
+        nx, ny = fc[active][j]
+        moved.append(k)
+        print(f"[src] ⚠️ source {k} ({gdf.index[k]}) sits on an INACTIVE face "
+              f"(mask {mask[on]}, {d0[k]:.0f} m away) — moved {d1:.0f} m to the nearest "
+              f"active face ({nx:.0f}, {ny:.0f})")
+        if d1 > max_move_m:
+            raise RuntimeError(
+                f"discharge source {k} is {d1:.0f} m from the nearest ACTIVE face "
+                f"(limit {max_move_m:.0f}). That is not a snap — the source is outside "
+                "the wet domain; fix the domain or the source coordinate."
+            )
+        gdf.loc[gdf.index[k], "geometry"] = Point(nx, ny)
+    if not moved:
+        print(f"[src] {len(gdf)} discharge sources, all on active faces")
+        return
+    # hydromt names the variable `dis` (the catalog's `discharge` is renamed on read)
+    var = [v for v in ds.data_vars if "time" in ds[v].dims][0]
+    df = ds[var].to_pandas()
+    if df.shape[1] != len(gdf):
+        df = df.T
+    dp.set(df=df, gdf=gdf, merge=False)
+    # re-check what hydromt actually holds now
+    g2 = dp.data.vector.to_gdf()
+    _, i2 = t_all.query(np.c_[g2.geometry.x.values, g2.geometry.y.values])
+    if not active[i2].all():
+        raise RuntimeError("a discharge source is STILL on an inactive face after snapping")
+    print(f"[src] {len(moved)} of {len(gdf)} sources moved; all {len(g2)} now on active faces")
 
 
 def _point_wave_bnd(wcfg: WaveConfig, base: BaseConfig, sf: SfincsModel, pts):

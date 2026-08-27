@@ -135,10 +135,18 @@ V1_5_RARITAN_Z10 = DomainFingerprint(696230, 1652, "2a23667dd16e449c")
 V2_BARNEGAT = DomainFingerprint(1143357, 2164, "3b1356b9590c59ff")
 V2_BARNEGAT_PREMASK = DomainFingerprint(1143357, 2164, "9ccbab0bc7a9fc0d")
 
+#: v3 — the full Jersey shore, Raritan Bay -> Cape May + Delaware Bay wedge. FROZEN
+#: 2026-08-26 from the subgrid probe (job 60979984, hal0164: same build_static call as
+#: freeze_mesh.py, adopted by `mv` rather than rebuilt — see STATUS). Restored-lever
+#: refinement (low_water zmax 3, inland_floodplain 6); 25 m surf band kept.
+#: faces 3,312,567 · active 1,704,096 · mask==2 6,835 · outflow 1,800.
+V3 = DomainFingerprint(3312567, 4010, "ae28ac5ef3aeb599")
+
 EXPECTED: dict[str, DomainFingerprint] = {
     "v1_monmouth": V1_MONMOUTH,
     "v1_5_raritan": V1_5_RARITAN_Z10,
     "v2_barnegat": V2_BARNEGAT,
+    "v3": V3,
 }
 
 KNOWN = {
@@ -151,6 +159,8 @@ KNOWN = {
         "v2_barnegat FROZEN (post inlet-mask repair 2026-07-30) — archive fixture, "
         "score-only"
     ),
+    V3: "v3 FROZEN 2026-08-26 — full Jersey shore, NACCS 224-point boundary (sha16 "
+        "19f53cfd4cb804fb), 4 arms (v1.5's three + ocean_south)",
     V2_BARNEGAT_PREMASK: (
         "v2_barnegat PRE-repair mask — the 2026-07-26..29 campaign arms; not "
         "comparable to post-repair runs"

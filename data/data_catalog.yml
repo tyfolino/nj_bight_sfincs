@@ -1012,3 +1012,19 @@ cudem_nj_v3:
       what let hydromt's `zoom=(res, "meter")` read the subgrid's coarse levels at ~25 m
       instead of native 3 m over the whole v3 bbox (docs/STATUS.md, 2026-08-24).
 
+
+naccs_sandy_v3:
+  data_type: GeoDataset
+  uri: gtsm/naccs_sandy_v3.nc
+  driver:
+    name: geodataset_xarray
+    options: {}
+  metadata:
+    category: ocean
+    crs: 4326
+    unit: m+NAVD88
+    source: NACCS/CHS ADCIRC SimB1HT storm 001 (Sandy), 224 save points (ocean 44,
+      narrows 13, arthur_kill 15, ocean_south 154; support sha16 19f53cfd4cb804fb),
+      MSL(1992)->NAVD88 from NOAA VDatum's 2019 separation grids sampled offline
+      (data/NACCS/vdatum_grids). Built 2026-08-26 by scripts/build_naccs_boundary.py
+      on the v3 mesh (mask==2 line identical between the probe and the freeze).
