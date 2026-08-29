@@ -135,6 +135,16 @@ def main() -> None:
                   f"{time.time() - t0:.0f}s", flush=True)
     tmp.replace(out)
 
+    # The downscale pipeline opens the dep by OVERVIEW level ("Cannot open overview
+    # level 0" without them), so overviews are part of the product, not a nicety.
+    # Same ladder as hydromt puts on the per-level tifs.
+    from rasterio.enums import Resampling
+
+    with rasterio.Env(COMPRESS_OVERVIEW="DEFLATE", PREDICTOR_OVERVIEW="3"):
+        with rasterio.open(out, "r+") as r:
+            r.build_overviews((2, 4, 8, 16, 32, 64, 128, 254), Resampling.average)
+    print(f"overviews built ({time.time() - t0:.0f}s)")
+
     with rasterio.open(out) as r:
         a = r.read(1, out_shape=(r.height // 16, r.width // 16))
     print(f"wrote {out} ({out.stat().st_size / 1e9:.2f} GB); "
