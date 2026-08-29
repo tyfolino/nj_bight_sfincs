@@ -4,7 +4,10 @@
 12 KB "current state" memory file and its 26 reverse-chronological campaign logs; the point
 of the format is that a reader gets the current state without replaying how it was reached.
 
-Last updated: **2026-08-27** (⭐ ALL THREE v3 ARMS COMPLETED CLEAN on hal nodes, 4/4 premier OK, HWM 6044 src-flagged, `--validate-only` running; 2026-08-26: ⭐ v3 FROZEN, 25 gauges + 17 basins wired, 3 arms staged+submitted overnight, offline VDatum grids, STWAVE wave file; levers restored, subgrid 30 GB/1 h, dam sweep closed; 2026-08-25: ⭐ v3 PRE-FREEZE PASS: levers pulled (−1.3%, the driver is the 25 m surf band), dam sweep → 4 candidates, VDatum fallback, build-QC notebook; SUBGRID MEMORY PROBE running — see PICK UP; 2026-08-24: v3 WIRED + ALL DATA PULLED + CLEAN MESH PROBE 3.31 M faces — Steps 0–2 done, see PICK UP; earlier: MOTF sheet, inland ring, canal uncut; v3 REGION DRAWN + GATED — `region_v3_EDITED.geojson`
+Last updated: **2026-08-29** (v3 results notebook
+`notebooks/v3/sandy-v3-viz-2026-08-29.ipynb` executed — v1_5-viz layout on the three v3
+arms, GIFs embedded statically; `V3.plot_window` + `map_windows` added in `domain.py`,
+plot metadata only, 89 tests OK; 2026-08-27: ⭐ ALL THREE v3 ARMS COMPLETED CLEAN on hal nodes, 4/4 premier OK, HWM 6044 src-flagged, FIRST v3 SCORES in (premier HWM RMSE 0.355 / CSI 0.828; quota hit hard limit mid-validate, reclaimed); 2026-08-26: ⭐ v3 FROZEN, 25 gauges + 17 basins wired, 3 arms staged+submitted overnight, offline VDatum grids, STWAVE wave file; levers restored, subgrid 30 GB/1 h, dam sweep closed; 2026-08-25: ⭐ v3 PRE-FREEZE PASS: levers pulled (−1.3%, the driver is the 25 m surf band), dam sweep → 4 candidates, VDatum fallback, build-QC notebook; SUBGRID MEMORY PROBE running — see PICK UP; 2026-08-24: v3 WIRED + ALL DATA PULLED + CLEAN MESH PROBE 3.31 M faces — Steps 0–2 done, see PICK UP; earlier: MOTF sheet, inland ring, canal uncut; v3 REGION DRAWN + GATED — `region_v3_EDITED.geojson`
 passes `validate_region_v3.py`; ⭐ `acquisition_only` domain state, v3 REGISTERED, all
 five+one downloaders domain-aware, **v3 DATA ACQUISITION COMPLETE** (4.2 G);
 Toms River src moved onto its cut · 🔴 **PAUSED ON A SCOPE DECISION: the ring currently
@@ -192,11 +195,102 @@ UTM 18N):** **1 of 185 within 500 m** — HWM **6044** ("rip-rap on dam exterior
 `src_contaminated` as a column in the v3 scorer / report so 6044 is flagged, not dropped
 (warn, never gate).
 
-⏳ **`--validate-only` on all three arms launched 2026-08-27 ~15:10** (background from
-the vscode session, log in the session scratchpad). Results → `experiments/v3/metrics.csv`
-+ `report.html`. Still TODO after that: read the metrics (⚠️ the southern USGS gauges
-with pre-storm "peaks" — Ship Bottom, Sea Isle, Stone Harbor — read the series first),
-the dry-crossing creek sweep, refine the HWM basin partition south of LBI once n is known.
+✅ **FIRST v3 SCORES — `--validate-only`, 2026-08-27 afternoon** (`experiments/v3/metrics.csv`,
+`report.html`, floodmaps 2.48 GB each). 🔴 The first pass **failed on `wave-stwave` with
+"Write failed"** — home had hit the **110 G hard quota** (three 2.5 GB floodmaps) and the
+TIFF was truncated at 1.35 GB. Truncated cache deleted, `dedupe_home.py --apply` reclaimed
+5.5 GB (20 hard-links), re-run clean. ✅ **Reclaim EXECUTED 2026-08-29 (user):** v1.5 `diag-nowaves-fasthis`
+2.0 G + `diag-premier-norain` 1.4 G (both banked — FINDINGS §40 / §39 +
+`reports/rain/rain_share.csv`), v1.5 `floodmaps/` 1.1 G (regenerable via
+`--validate-only`), and the two v3 `snapwave.upw` 2.3 G each (staging input — re-stage
+before re-launching those dirs). ≈9 G → back under the 100 G soft limit; premier audit
+4/4 (v3) and 6/6 (v1.5) after. `preweir-*` banked runs kept.
+
+HWMs: **median, 50 m, q≤2 → n=63** (140 of 185 in region — 45 clipped as outside;
+88 wet / 52 dry in-domain; 0 dry among the scored). MOTF `excluded_boxes = 0 km²` — ⚠️ v3
+declares no NY-validity boxes yet; the SI shore is out of the model so it may be moot,
+but check before quoting CSI beside v1.5's.
+
+| arm | HWM RMSE | bias | within 0.5 | CSI | POD | FAR | CSI_conn | admissible |
+|---|---|---|---|---|---|---|---|---|
+| naccs-premier (CORA) | **0.355** | **−0.123** | **0.873** | 0.828 | 0.871 | 0.056 | 0.855 | yes |
+| wave-stwave | 0.358 | −0.217 | 0.873 | **0.830** | 0.872 | 0.055 | 0.856 | yes |
+| naccs-nowaves | 0.402 | −0.288 | 0.794 | 0.807 | 0.843 | 0.049 | 0.831 | flagged |
+
+Read: waves are worth ΔRMSE ≈ 0.045 m / ΔCSI 0.02 again (same size as on v1.5); the two
+wave sources are a wash on extent and differ on bias, and the difference is **in the
+Raritan lobe**: Great Kills peak err −0.07 (CORA) vs −0.60 (STWAVE) vs −0.59 (off),
+Arthur Kill mouth −0.39 / −0.69 / −0.66 — consistent with STWAVE grid 07 (NY Bight)
+running low. Not yet PAIRED — `paired_hwm_bootstrap.py` is the next call, not this table.
+
+Gauges (19 with a real peak; premier / nowaves / stwave mean |err| 0.39 / 0.42 / 0.41 m):
+- ⚠️ **Sea Isle, Ship Bottom, Stone Harbor peak lag ≈ +1450 min** — the "obs peak" is the
+  pre-storm-tide gap artefact noted 08-26; their `peak_err` (+0.25/+0.64/+0.31) is against
+  the wrong peak and means nothing until the obs series is trimmed.
+- ⚠️ **Absecon Creek +1.04 m in all three** — its obs face bed is 0.00 m AND the gauge is
+  the Absecon Creek src (01410500) — reads the injection, same as HWM 6044 beside it.
+- 🔴 **Five obs faces sit ABOVE MSL and show no tide** — Cape May NOAA (bed +1.39 m,
+  modelled range 0.05 vs 1.56 obs), Barnegat Light (+1.07; 0.06 vs 1.00), Great Bay
+  (+0.56), Inside Thorofare (+0.40; 0.16 vs 1.22), Absecon Creek (0.00). The 50 m obs
+  face is the pier/bank. **Not an inlet problem**: `usgs_tidal_cape_may_harbor` next door
+  (bed −1.30) carries a full 1.39 m range. ⏳ Fix on the validation side: score each
+  gauge against the nearest face with bed < −0.5 m (an obs-snap analogue of
+  `_snap_sources_to_active_faces`); no re-run needed for the peak, but the obs points in
+  `data/frozen_mesh_v3/sfincs.obs` should move before the next solve.
+- Real signal so far: **Atlantic City NOAA +0.49 m (all arms, oceanfront — a forcing
+  question, NACCS is the input there)**; Sea Bright storm-tide −0.5; Mantoloking / Ocean
+  City −0.3 / −0.4; southern back-bays Avalon +0.76, Tuckerton +0.59 high.
+
+⏳ **NEXT:** (1) ✅ quota reclaimed 2026-08-29; (2) paired bootstrap premier vs stwave vs nowaves;
+(3) obs-face snap in the scorer + trim the three gap-artefact obs series; (4) wire
+`src_contaminated` (HWM 6044, Absecon Creek gauge); (5) MOTF validity boxes for v3;
+(6) ✅ ANSWERED 2026-08-29 — great_bay_mullica's marks sit on 50 m faces with no lev3
+DEM coverage, see the 08-29 section below; (7) dry-crossing creek sweep.
+
+### 🔴 2026-08-29 — THE LEV3 FLOODMAP DEM DOES NOT COVER 51 OF v3'S 140 IN-REGION HWMs
+
+Found from the viz notebook's grey backdrop (user: "why is Raritan Bay cut off?"). The
+HWM/MOTF pipeline downscales zsmax onto `subgrid/dep_subgrid_lev3.tif`, which hydromt
+writes **only under level-3 (25 m) faces** — on v3 that is the surf band + low-water
+areas, 10% of the raster rectangle. The scorer's "is this mark on this model's grid"
+test is *finite dep within the 50 m radius* (`_sample_hwm.mod_ground`), so an in-region
+mark over a coarser face is silently classed OUT OF DOMAIN, exactly like a mark outside
+the mesh. Measured on `naccs-premier` (nearest-active-face lookup on the map file):
+
+- **51 of 140 in-region marks have no lev3 coverage. All 51 sit on an ACTIVE face**
+  (50 within 40 m, worst 67 m); **49 are WET at face level; 31 are q≤2** — the scored
+  n=63 would be ~94 with them in. The current CSV is not wrong, it under-samples.
+- The (553–560 km E, 4378–4388 km N) cluster is Tuckerton / Great Bay — this is why
+  `great_bay_mullica` scored 0 of its 15 assigned marks (NEXT #6). The Keansburg pocket
+  marks 6155/6156/6133 (FINDINGS §38) are also among the 51 on v3.
+- **v1_5 measured CLEAN — 0 of 69 in-region marks uncovered** — which is why the
+  "lev3 covers every mark" assumption held until now. It is a per-domain fact of the
+  refinement scheme, like §40 src-contamination.
+- ⚠️ **The MOTF extent scores share the exposure:** the downscaled floodmap paints only
+  lev3-covered ground, so a WET coarse face reads model-dry to the extent comparison →
+  artifact misses inside `simulated_mask`. Not yet quantified; do so before quoting v3
+  CSI against v1.5's.
+
+Fix options (user to pick; either re-baselines the v3 CSV — decide deliberately):
+(a) build a merged all-level dep mosaic (lev0–3 on the lev3 grid, coarser levels
+nearest-filled) and downscale onto that — fixes HWMs AND the MOTF extent in one move;
+(b) scorer-side fallback to face-level sampling where dep is NaN — fixes HWMs only.
+The viz-notebook backdrop itself is only cosmetic: the grey is `dep_subgrid_lev3`, the
+holes are coarser faces, the region ring and mask are intact (premier 4/4).
+
+✅ **DECIDED (user, 2026-08-29): (a).** Executed the same day:
+`scripts/build_merged_subgrid_dep.py` builds `subgrid/dep_subgrid_merged.tif` (exact
+nearest fill — the four levels share one rotated lattice, ratios asserted powers of 2);
+built once in `_template_sealed/subgrid/`, hard-linked into the three arms.
+`load_floodmap` and `plots.load_cached_floodmap` prefer the merged raster and fall back
+to lev3 (v1.5 unchanged, bit-for-bit); floodmap-cache freshness now also checks the dep
+mtime, so the merge self-invalidates the old caches. Old CSV banked as
+`metrics_2026-08-29_pre_depmerge_rebaseline.csv`.
+**Pre-registration (written before the re-score):** hwm_n_scored 63 → ≈94 (the 31
+q≤2 uncovered marks come in; 6411 should score dry-at-ground); `great_bay_mullica`
+n_scored rises from 0; MOTF misses drop in the back-bay marsh on all three arms.
+No prediction on the direction of RMSE/bias/CSI — the new marks are back-bay
+conveyance tests the old sample never saw, and that is the point of scoring them.
 
 ### 🔵 2026-08-26 evening — v3 IS FROZEN AND THE THREE ARMS ARE GOING OVERNIGHT
 

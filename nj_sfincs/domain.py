@@ -1273,6 +1273,18 @@ V3 = Domain(
     cora_waves=DATA / "waves_v3" / "cora_waves_v3.nc",
     epsg=32618,
     latitude=39.74,  # (38.855 + 40.62) / 2, the drawn ring's mid-latitude
+    # Plot metadata only — no bearing on the mesh or the fingerprint. The whole drawn
+    # ring in UTM 18N as the default frame; v1.5's windows verbatim (the northern ring
+    # is v1.5's) plus one window per southern back-bay compartment.
+    plot_window=(498_000, 623_000, 4_301_000, 4_498_000),
+    map_windows={
+        **V1_5_RARITAN.map_windows,
+        "barnegat": (564_000, 587_000, 4_395_000, 4_435_000),
+        "great_bay": (543_000, 564_000, 4_367_000, 4_389_000),
+        "absecon": (539_000, 559_000, 4_352_000, 4_367_000),
+        "great_egg": (522_000, 541_000, 4_341_000, 4_356_000),
+        "cape_may": (498_000, 524_000, 4_303_000, 4_328_000),
+    },
     # FROZEN 2026-08-26: data/frozen_mesh_v3 (no mesh_key — one boundary depth so far),
     # fingerprint premier.V3. `building` cleared the same pass.
     # The BASE (NOAA) water-level selection on the template: noaa_sandy_nj holds the

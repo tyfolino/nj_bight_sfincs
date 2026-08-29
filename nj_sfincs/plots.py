@@ -110,7 +110,11 @@ def load_cached_floodmap(run_dir, window=None):
     """
     run_dir = Path(run_dir)
     tif = run_dir / "floodmap_hmax_lev3.tif"
-    dep_fn = run_dir / "subgrid" / "dep_subgrid_lev3.tif"
+    # Same preference as validate.load_floodmap: the merged all-level DEM when it
+    # exists, the finest-level raster otherwise (STATUS 2026-08-29).
+    dep_fn = run_dir / "subgrid" / "dep_subgrid_merged.tif"
+    if not dep_fn.exists():
+        dep_fn = run_dir / "subgrid" / "dep_subgrid_lev3.tif"
     if not tif.exists() or not dep_fn.exists():
         return None, None
     hmax = rioxarray.open_rasterio(tif, masked=True).squeeze(drop=True)

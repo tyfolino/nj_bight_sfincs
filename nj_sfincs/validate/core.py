@@ -607,11 +607,24 @@ def load_floodmap(
         key = (model_dir, fm_p.stat().st_mtime if fm_p.is_file() else None)
         if key in _FLOODMAP_MEMO:
             return _FLOODMAP_MEMO[key]
-    depfile = str(model_dir / "subgrid" / "dep_subgrid_lev3.tif")
+    # Prefer the ALL-LEVEL merged DEM (scripts/build_merged_subgrid_dep.py). The
+    # per-level lev3 raster covers only faces refined to the finest level; on v3 that
+    # silently classed 51 in-region HWMs — all on active faces — as off-grid, and left
+    # wet coarse faces unpainted in the MOTF extent (STATUS 2026-08-29). Falling back
+    # to lev3 keeps v1.5 (measured clean: 0 of 69 marks uncovered) bit-for-bit.
+    dep_p = model_dir / "subgrid" / "dep_subgrid_merged.tif"
+    if not dep_p.is_file():
+        dep_p = model_dir / "subgrid" / "dep_subgrid_lev3.tif"
+    depfile = str(dep_p)
     floodmap_fn = str(model_dir / "floodmap_hmax_lev3.tif")
 
     fm, mp = Path(floodmap_fn), model_dir / "sfincs_map.nc"
-    fresh = fm.is_file() and (not mp.is_file() or fm.stat().st_mtime >= mp.stat().st_mtime)
+    # Freshness is against BOTH inputs of the downscale: a rebuilt/merged dep must
+    # invalidate a cache computed on the old raster, exactly like a re-run does.
+    fresh = fm.is_file() and (
+        (not mp.is_file() or fm.stat().st_mtime >= mp.stat().st_mtime)
+        and fm.stat().st_mtime >= dep_p.stat().st_mtime
+    )
 
     mod = None
     if need_model or force or not fresh:
