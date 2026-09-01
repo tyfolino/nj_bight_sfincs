@@ -1304,6 +1304,11 @@ V3 = Domain(
     # to the run's own `msk` (validate.simulated_mask), so a superset raster costs
     # nothing there. No re-render needed.
     motf_tif=DATA / "validation_v3" / "sandy_motf_extent_v3.tif",
+    # v1.5's two NY-validity boxes VERBATIM (2026-09-01, STATUS 09-01 NEXT #4): the MOTF
+    # source layer is NJ-only and renders NY land as confidently dry, and v3 shares
+    # v1.5's northern geometry (Narrows + Arthur Kill cuts, ocean arm to Rockaway
+    # Point). Quote `motf_km2_excluded_boxes` beside any CSI.
+    motf_exclude_boxes_ll=V1_5_RARITAN.motf_exclude_boxes_ll,
 )
 
 

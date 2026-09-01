@@ -477,6 +477,40 @@ Live campaign state is in [STATUS.md](STATUS.md). This file is for what is settl
     14. The acceptance check (log lines vs `wc -l`) is still the right guard and now
     passes; no re-run was needed.
 
+41. 🔴 **Bay-margin refinement is a WAVE-SETUP control, so a refinement change is a
+    PHYSICS change — never just a sampling change.** When `refinement_v3.geojson`
+    silently dropped v1.5's 25 m `bay_fringe` / `shrewsbury_navesink` /
+    `coastal_corridor` bands (STATUS 08-31), SnapWave generated ~+0.5 m of setup at the
+    peak inside the enclosed bays where v1.5 has ≈0 (Sandy Hook +0.51, Great Kills
+    +0.52, premier − nowaves peak-to-peak) — waves breaking on a 50 m-resolved bay
+    shore instead of 25 m. Restoring the bands VERBATIM and re-running (2026-09-01)
+    **halved it** (0.19 / 0.26; open-coast control Sea Bright 0.14 → 0.13, unmoved —
+    the pre-registered signature), pulled the spurious pre-storm tide-range deficit
+    from −0.40 m to −0.04 m at Sandy Hook (setup was propping up the low waters), cut
+    HWM RMSE ~0.03 m on every arm, and erased the systematic v3-above-v1.5 offset on
+    the 46 shared marks (mean paired delta +0.122 → −0.065; Monmouth-side sign-test
+    P 0.011 → 0.152). ⚠️ A residual ~+0.2 m of bay setup vs v1.5's ≈0 REMAINS,
+    unattributed — candidates are the still-coarser bay interior (≈50 m vs ≈36 m mean
+    face) and the 36-point wave boundary. Conditions: v3 vs v1_5_raritan, premier /
+    nowaves arms, Sandy window, his-file peaks; STATUS 09-01. The operational rule this
+    bought: **when a domain claims comparability with a predecessor, diff the two
+    refinement polygon LISTS by name before freezing** (CLAUDE.md §5) — every
+    fingerprint guard passed while the meshes disagreed, because the fingerprint seals
+    the mesh you BUILT, not the one you meant.
+
+42. **The two admissible wave sources are NOT separated on v3 HWM RMSE — the tie is
+    paired-measured, not assumed.** CORA − STWAVE ΔRMSE −0.0156 m, 95% CI
+    [−0.0407, +0.0107] on the 94 shared marks (B=200k,
+    `logs/paired_bootstrap_v3_prem_stwave.log`, 2026-09-01): CORA leads every point
+    estimate and the CI includes zero, the same shape as the v1.5 boundary comparison —
+    quote the point estimate WITH the CI, argue any preference structurally. Where they
+    DO differ is bias (−0.156 vs −0.218) and it is concentrated in the Raritan lobe
+    (Great Kills peak err −0.07 CORA vs −0.60 STWAVE), consistent with STWAVE grid 07
+    (NY Bight) running low against the other grids where they overlap (STATUS 08-26).
+    Waves-on vs waves-OFF, by contrast, IS separated: ΔRMSE −0.0463,
+    CI [−0.0718, −0.0170], P(better) = 0.998 — waves are real skill on this coast;
+    which admissible product supplies them is (so far) not decidable from these marks.
+
 ### Closed — do not re-open
 
 Each of these cost a campaign and is settled. The evidence is in the archive's
