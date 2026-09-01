@@ -118,6 +118,14 @@ not trip that guard. Do not run the sweep driver to "just rebuild" a template.
 
 ## 5. Traps that have actually cost runs
 
+- 🔴 **A ported refinement recipe silently drops polygons, and nothing catches it.**
+  `refinement_v3.geojson` was built without v1.5's `bay_fringe` / `shrewsbury_navesink` /
+  `coastal_corridor` bands — the bay margin ran at 50 m where v1.5 had 25 m, the wave
+  setup there changed by +0.5 m, and all three 08-27 v3 arms were voided (STATUS 08-31).
+  Every guard passed: the fingerprint seals whatever mesh you built, not the one you
+  meant. When a new domain claims comparability with a predecessor, **diff the two
+  refinement polygon LISTS by name** before freezing. Also: staging's transient is ~3
+  full template copies BEFORE `dedupe_experiment_inputs` runs — budget ~25 G free.
 - **A roughness or elevation change needs a SUBGRID rebuild on the frozen mesh.**
   `build_static` copies the frozen mesh and returns early, so it will silently produce a
   no-op template. A *mask* change is the opposite: no subgrid rebuild, but the fingerprint

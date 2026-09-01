@@ -4,7 +4,10 @@
 12 KB "current state" memory file and its 26 reverse-chronological campaign logs; the point
 of the format is that a reader gets the current state without replaying how it was reached.
 
-Last updated: **2026-08-29** (v3 results notebook
+Last updated: **2026-08-31** (🔴 v3 MESH REBUILD IN PROGRESS — the bay-side 25 m
+refinement bands were silently dropped from `refinement_v3.geojson`; restored verbatim,
+old v3 runs void by decision, see the 08-31 section. Also: Monmouth HWM overshoot vs
+v1.5 traced to SnapWave setup; v3 results notebook
 `notebooks/v3/sandy-v3-viz-2026-08-29.ipynb` executed — v1_5-viz layout on the three v3
 arms, GIFs embedded statically; `V3.plot_window` + `map_windows` added in `domain.py`,
 plot metadata only, 89 tests OK; 2026-08-27: ⭐ ALL THREE v3 ARMS COMPLETED CLEAN on hal nodes, 4/4 premier OK, HWM 6044 src-flagged, FIRST v3 SCORES in (premier HWM RMSE 0.355 / CSI 0.828; quota hit hard limit mid-validate, reclaimed); 2026-08-26: ⭐ v3 FROZEN, 25 gauges + 17 basins wired, 3 arms staged+submitted overnight, offline VDatum grids, STWAVE wave file; levers restored, subgrid 30 GB/1 h, dam sweep closed; 2026-08-25: ⭐ v3 PRE-FREEZE PASS: levers pulled (−1.3%, the driver is the 25 m surf band), dam sweep → 4 candidates, VDatum fallback, build-QC notebook; SUBGRID MEMORY PROBE running — see PICK UP; 2026-08-24: v3 WIRED + ALL DATA PULLED + CLEAN MESH PROBE 3.31 M faces — Steps 0–2 done, see PICK UP; earlier: MOTF sheet, inland ring, canal uncut; v3 REGION DRAWN + GATED — `region_v3_EDITED.geojson`
@@ -16,7 +19,92 @@ seiche FINDINGS §40 · weir FINDINGS §38 · rain FINDINGS §39)
 
 ## ⏳ PICK UP — next session
 
-### ✅ 2026-08-24 (latest) — THE RING IS DRAWN (`region_v3_EDITED_inland.geojson`) and the Cape May NACCS gap is filled
+### 🔵 2026-08-31 — Monmouth/Sandy Hook Bay HWMs read HIGHER in v3 than v1.5: REAL, and it is SnapWave SETUP, not seiche phase
+
+Asked by the user off the v3 viz notebook (premier median −0.08 vs v1.5's low bias in
+Monmouth). Measured premier-vs-premier on the 46 marks scored in BOTH domains (same
+estimator/radius as `hwm_metrics`, via the `paired_hwm_bootstrap.residuals` mirror):
+
+- **Paired, it is real.** v1.5 median residual −0.108 vs v3 +0.064; mean paired delta
+  +0.122 m. Monmouth-side basins (sandy_hook_bay / shrewsbury_navesink /
+  atlantic_oceanfront / south_coast / shark_river): **18 of 24 marks up, sign-test
+  P = 0.011**; sandy_hook_bay mean delta +0.52 (4/4 up, min +0.35).
+- **Not a seiche/tide phase change.** Pre-storm tide at the 8 shared his stations is in
+  phase to < 10 min (the output interval); the surge peak arrives 10–80 min *earlier*
+  in v3, and the v3−v1.5 difference series is a peak-shape dipole, not a phase flip.
+- **The mechanism is SnapWave setup.** Waves-OFF the two domains agree at the bay
+  stations (Sandy Hook −0.10, Great Kills −0.16, Sea Bright storm tide +0.00 peak
+  delta); premier differs +0.44 / +0.46 there. Setup at the peak (premier − nowaves):
+  **v1.5 ≈ 0 in the bay** (Sandy Hook −0.03, Great Kills −0.10) vs **v3 ≈ +0.5 m**
+  (Sandy Hook +0.51, Great Kills +0.52, Narrows +0.36; Sea Bright only +0.14).
+- **Not the wave forcing.** `snapwave.{bnd,bhs,btp,bwd}` at the 7 shared northern
+  points are near-identical at the peak (Hs within ~0.2 m, same Tp and direction);
+  `sfincs.inp` identical except `latitude` and weirfile line order. The extra setup is
+  generated on the mesh — v3's coarser bay refinement (≈50 m vs ≈36 m mean face in the
+  Sandy Hook Bay box), the ring-wide 25 m surf band, and a wave boundary spanning the
+  whole shelf (36 pts vs v1.5's 7 on 25 km). Bay-interior `hm0` max median:
+  raritan_bay_mid 0.82 (v1.5) → 1.27 m (v3).
+- **Verdict vs obs is mixed, so this is not simply an error:** Great Kills −0.53 →
+  −0.07 (much better), Narrows +0.07 → +0.24/+0.37 (worse), Arthur Kill mouth −0.16 →
+  −0.39 (worse), Sea Bright storm tide −0.60 → −0.53 (low in both).
+- ⚠️ 23 of the 46 common marks are lev3-UNCOVERED on v3 (scored off the merged fill —
+  a sampling change riding on the hydro change; the raritan_bay per-mark scatter,
+  −1.34..+1.08, is dominated by these). The station-based conclusion uses the his
+  files only and does not depend on them; covered-only Monmouth deltas hold
+  (+0.38 sandy_hook_bay, +0.14 shrewsbury_navesink).
+- Unexplained side observation: v3 premier's pre-storm TIDAL RANGE at the shared
+  stations is smaller (Sandy Hook −0.40 m vs v1.5, but only −0.13 waves-off) —
+  setup raising the low waters is the suspect; worth a look beside §40.
+
+🔴 **Follow-up (same day, user: "resolution should be the same in v1_5 and v3"): it is
+NOT, and the difference was never decided.** `refinement_v3.geojson` carries v1.5's
+L2 50 m rule ring-wide (`low_water` = "v1.5's bay_water, ring-wide") and the ocean-shore
+25 m `surf_dune_*` buffers + the two cuts — but v1.5's OTHER three overlap-region
+polygons are absent: **`bay_fringe` (25 m on the bay margin, −1..+2), `shrewsbury_navesink`
+(25 m through the behind-barrier estuaries), and `coastal_corridor` (50 m)**. The written
+plan said the opposite — Step 2 (STATUS) and FINDINGS §38 both say *raise* the
+`bay_fringe` zmax past 2.0 (the Keansburg lesson), not delete the band. Measured at the
+marks: 6154 / 6153 / 6142 / Navesink cluster sit on ≈25 m faces in v1.5 and ≈51 m faces
+in v3; this is exactly why 23 of the 46 shared marks are lev3-uncovered on v3 (the
+merged-dep fix SCORES them correctly — the mesh under them is still coarser), and it is
+a concrete, unplanned candidate for the SnapWave-setup difference above (bay-margin
+breaking resolved at 50 m vs 25 m).
+
+🔴 **DECIDED (user, 2026-08-31): the v3↔v1.5 bay numbers are NOT comparable and the mesh
+gets REBUILT with the bands restored before anything else moves.** The paired bootstrap
+(NEXT #2) waits for the new runs. `bay_fringe` restored **VERBATIM (zmax 2.0)** — the
+user chose exact v1.5 parity over the §38 zmax raise; comparability is the point of the
+rebuild (the berm-crest raise can be its own deliberate change later). Campaign, in order:
+1. ✅ `refinement_v3.geojson` → 23 polygons: `coastal_corridor` / `shrewsbury_navesink` /
+   `bay_fringe` appended verbatim from `refinement_v1_5_raritan.geojson`, `why` fields
+   carry the restore note. 89 tests OK.
+2. ✅ Disk: `experiments/v3/floodmaps/` (7.0 G, regenerable) deleted; `metrics.csv` banked
+   as `metrics_2026-08-31_pre_refinement_rebaseline.csv`. Quota 94.4 G of 100 G.
+3. ✅ Probe on the restored recipe: **FACES 3,412,470 (+99,903 / +3.0%) · active
+   1,764,488 · mask==2 6,836 (ocean arm 1,156, +1 cell, in range) · outflow 1,961 ·
+   every invariant OK · 25 obs points.** The NACCS boundary file needs no rebuild —
+   support interpolates onto the mask==2 line at staging.
+4. ✅ Subgrid build job **61095299, hal0121, 1:02:51, peak RSS 24.4 GB, exit 0**;
+   three-clock test clean. Adopted by `mv` → `data/frozen_mesh_v3` (old mesh deleted at
+   adoption); `keansburg_weir.weir` copied in (staging re-adds the inp key);
+   `sfincs.obs` written by `build_static` itself (gauges wired since 08-26).
+   **`premier.V3` = (3412470, 4108, "5ad01a84978a87f8")**, 89 tests OK. Audit now reads
+   the old template + three 08-27 arms as UNRECOGNISED — correct, they are void.
+5. ⏳ Template deleted deliberately (9.3 G); staging job 61098904 **FAILED at 5 min on
+   quota** — the hard 110 G limit, mid-copy of wave-stwave (the template build itself
+   completed and its fingerprint verifies against the new `premier.V3`). ⚠️ The staging
+   transient is ~3 full template copies BEFORE `dedupe_experiment_inputs` runs; budget
+   ~25 G free, not ~10. Reclaimed to **79.6 G**: the three arm dirs deleted (one partial,
+   two void old-mesh) + `dedupe_home.py --apply` (5.7 G — the new template vs
+   `data/frozen_mesh_v3` duplication). **Resubmitted as job 61102453** — re-stages the
+   three arms from the verified sealed template, dedupes, submits the solves
+   (`--time=30:00:00 --mem=180G`, sif explicit). Then the 08-27 morning checklist (no halk, three-clock,
+   premier audit 4/4), **rebuild `dep_subgrid_merged.tif` on the NEW template**
+   (`build_merged_subgrid_dep.py --subgrid-dir experiments/v3/_template_sealed/subgrid`,
+   hard-link into the arms — the merged raster is mesh-derived and the old one died with
+   the template), `--validate-only` → new baseline → paired bootstrap on THAT.
+
+### ✅ 2026-08-24 — THE RING IS DRAWN (`region_v3_EDITED_inland.geojson`) and the Cape May NACCS gap is filled
 
 **`data/region_v3_EDITED_inland.geojson` is the v3 ring** (user, QGIS, from the inland
 draft). 54 vertices, 52 verbatim from the draft. Gate: **exit 0, 17 declared reaches,
@@ -291,6 +379,43 @@ q≤2 uncovered marks come in; 6411 should score dry-at-ground); `great_bay_mull
 n_scored rises from 0; MOTF misses drop in the back-bay marsh on all three arms.
 No prediction on the direction of RMSE/bias/CSI — the new marks are back-bay
 conveyance tests the old sample never saw, and that is the point of scoring them.
+
+✅ **RE-BASELINED SCORES (merged dep, 2026-08-29; 2h11m, peak RSS 120 GB).**
+Pre-reg: n 63 → **94** exact; `great_bay_mullica` 0 → **9 scored** (RMSE 0.44–0.48,
+bias ≈ −0.03 — the basin is FINE, it was never scored); POD up 0.871 → 0.895 (misses
+down) ✓. Missed: 6411 scored WET, not dry-at-ground (0 dry of 94). The merged tif
+needed a gdaladdo overview ladder (the pipeline opens the dep by overview level) —
+now in the build script.
+
+| arm | HWM RMSE | bias | within 0.5 | CSI | POD | FAR | FARc | CSIc |
+|---|---|---|---|---|---|---|---|---|
+| naccs-premier | **0.418** | **−0.065** | **0.872** | 0.704 | 0.895 | 0.232 | 0.118 | 0.799 |
+| wave-stwave | 0.426 | −0.225 | 0.840 | **0.706** | 0.894 | 0.230 | 0.113 | 0.803 |
+| naccs-nowaves | 0.458 | −0.281 | 0.766 | 0.703 | 0.875 | 0.219 | 0.102 | 0.796 |
+
+Read, and the caveats that must travel with these numbers:
+- **The old CSI 0.83 was flattered by the truncated dep** — the extent comparison was
+  confined to the lev3 band (the surf zone, where the model is best). On the full
+  frame CSI is 0.70 — coincidentally v1.5's 0.704, but now measured over 15k km².
+  🔴 Never quote the 0.83-row and the 0.70-row as the same metric. The same truncation
+  hid model SKILL, not just error: hits 359 → **702 km²** (premier) — the back-bay
+  flooding the model gets right was invisible to the old comparison.
+- FA grew 21 → ≈212 km²: painting coarse faces is the model's real claim (a wet
+  face's level intersected with the fine bed — the same rule lev3 pixels always
+  used), and MOTF is a bathtub that cannot contain rain. 119 km² of the FA is
+  never-sea-connected (tan, §39 rain family); connected-only FARc is 0.102–0.118.
+- `motf_km2_unsimulated` 61 → 7,818 km² is the screen finally seeing the whole
+  rectangle (upland inactive faces under the now-covered dep), not a regression;
+  `unsim_motfwet` 3.8 → 184 km² is MOTF-wet ground v3 does not simulate — worth a
+  look when drawing the next domain.
+- HWM: premier still best on every column; waves worth ≈0.04 RMSE; the 31 new marks
+  pull premier's bias from −0.123 to −0.065. Waves-on extent separation shrank to
+  ≈0.003 CSI (extent is now dominated by back-bay/inland ground where SnapWave
+  matters less).
+- ⏳ The paired bootstrap (NEXT #2) must run on THIS baseline, not the banked one.
+  Quota after: 101.4 G — over soft again (7-day grace); the three `floodmaps/`
+  gallery tifs (2.48 G each, regenerable at next validate) are the obvious reclaim,
+  user's call.
 
 ### 🔵 2026-08-26 evening — v3 IS FROZEN AND THE THREE ARMS ARE GOING OVERNIGHT
 

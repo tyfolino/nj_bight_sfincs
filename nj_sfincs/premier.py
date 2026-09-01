@@ -135,12 +135,15 @@ V1_5_RARITAN_Z10 = DomainFingerprint(696230, 1652, "2a23667dd16e449c")
 V2_BARNEGAT = DomainFingerprint(1143357, 2164, "3b1356b9590c59ff")
 V2_BARNEGAT_PREMASK = DomainFingerprint(1143357, 2164, "9ccbab0bc7a9fc0d")
 
-#: v3 — the full Jersey shore, Raritan Bay -> Cape May + Delaware Bay wedge. FROZEN
-#: 2026-08-26 from the subgrid probe (job 60979984, hal0164: same build_static call as
-#: freeze_mesh.py, adopted by `mv` rather than rebuilt — see STATUS). Restored-lever
-#: refinement (low_water zmax 3, inland_floodplain 6); 25 m surf band kept.
-#: faces 3,312,567 · active 1,704,096 · mask==2 6,835 · outflow 1,800.
-V3 = DomainFingerprint(3312567, 4010, "ae28ac5ef3aeb599")
+#: v3 — the full Jersey shore, Raritan Bay -> Cape May + Delaware Bay wedge. RE-FROZEN
+#: 2026-08-31 (job 61095299, hal0121, adopted by `mv`): the 08-26 mesh was missing
+#: v1.5's bay-side refinement bands (`bay_fringe`, `shrewsbury_navesink`,
+#: `coastal_corridor` — dropped unrecorded from refinement_v3.geojson), so the bay
+#: margin ran at 50 m where v1.5 had 25 m and the two domains were NOT comparable
+#: there (STATUS 08-31). Bands restored VERBATIM (user). Runs on the 08-26 mesh
+#: (fingerprint 3312567/4010/ae28ac5ef3aeb599) are void by that decision.
+#: faces 3,412,470 · active 1,764,488 · mask==2 6,836 · outflow 1,961.
+V3 = DomainFingerprint(3412470, 4108, "5ad01a84978a87f8")
 
 EXPECTED: dict[str, DomainFingerprint] = {
     "v1_monmouth": V1_MONMOUTH,
