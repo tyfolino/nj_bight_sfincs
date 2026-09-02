@@ -4,7 +4,7 @@
 12 KB "current state" memory file and its 26 reverse-chronological campaign logs; the point
 of the format is that a reader gets the current state without replaying how it was reached.
 
-Last updated: **2026-09-02** (rain-off arm `diag-premier-norain` registered on v3 and RUNNING, solve 61190532 → validate 61190533 — see the 09-02 section; 2026-09-01: ⭐ v3 REBUILD LANDED AND RE-SCORED — three arms clean on
+Last updated: **2026-09-02** (⏳ DISK plan: `experiments/` → `/scratch/tpj8` (1 TB, verified) after the rain-off run, desktop rsync backup — see the DISK section; rain-off arm `diag-premier-norain` registered on v3 and RUNNING, solve 61190532 → validate 61190533 — see the 09-02 section; 2026-09-01: ⭐ v3 REBUILD LANDED AND RE-SCORED — three arms clean on
 hal nodes, premier 4/4 on the new fingerprint, merged dep rebuilt, HWM RMSE
 0.384/0.400/0.431, extent unchanged; bay SnapWave setup HALVED and the v3↔v1.5 Monmouth
 offset is GONE (sign-test P 0.011 → 0.152), Sandy Hook tide-range gap healed
@@ -23,6 +23,37 @@ excludes Mays Landing and Batsto and that is NOT accepted** — see PICK UP · 2
 seiche FINDINGS §40 · weir FINDINGS §38 · rain FINDINGS §39)
 
 ## ⏳ PICK UP — next session
+
+### ⏳ 2026-09-02 — DISK: move `experiments/` to SCRATCH after the rain-off run finishes (user decision, deferred)
+
+**Fact established today:** `/scratch/tpj8` exists, is writable, and carries the standard
+Amarel allowance — **1 TB soft / 2 TB hard** (`mmlsquota -u $USER --block-size auto
+scratch`). It held one file. Verified by writing and removing a 200 MB probe. Home is
+95.6 G / 100 G soft. ⚠️ The shared `/scratch` pool is 99% full campus-wide (~8 T free of
+601 T), so the quota is a ceiling, not a reservation. Scratch is NOT backed up and files
+untouched ~90 days are purged (user's understanding; confirm on the OARC page).
+
+**Plan agreed, nothing done yet** (user: wait for `diag-premier-norain` 61190532/61190533):
+
+1. **Snapshot first.** From the desktop (1 TB HDD), `rsync` over SSH pulling home's
+   inputs (frozen meshes, `data/elevation_*`, NACCS, gtsm, era5, `~/sfincs_data`) and the
+   current `experiments/` tree. Off campus: VPN first. Globus Connect Personal is the
+   click-driven alternative; start with rsync.
+2. **Move `experiments/` to `/scratch/tpj8/nj_bight_sfincs/experiments`** and symlink it
+   back. `hpc/sfincs_run.slurm` binds `realpath "$MODEL"`, so the solver is indifferent.
+   `tests/test_repo_hygiene.py::test_experiments_is_a_real_directory` forbids the symlink
+   for the wrong reason (its docstring says "the archive is read-only"); loosen it to
+   "target is writable and not inside `~/nj_coast_sfincs`".
+3. **Backup policy by tier:** code/docs → git (done); irreplaceable inputs stay in HOME
+   and get one desktop copy plus occasional re-sync; solver output lives on scratch and
+   only *scored* arms (numbers in STATUS/FINDINGS) get pulled to the desktop. A desktop
+   HDD is a copy, not an archive. Do NOT rely on `touch`-ing files to dodge the purge.
+4. Write a short pull script that lives on the desktop and lists what it mirrors.
+
+**Smaller wins inside home, independent of the move:** `dedupe_experiment_inputs
+--apply` on v3 once the rain-off run completes (its `subgrid/` is 6.2 G un-linked);
+and look at why waves-on `sfincs_map.nc` is 5.2 G per arm — map interval / variable list
+wider than validation reads?
 
 ### ⏳ 2026-09-02 — v3 RAIN-OFF arm registered, staged and RUNNING (solve 61190532 → validate 61190533)
 
