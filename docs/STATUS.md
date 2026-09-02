@@ -4,7 +4,7 @@
 12 KB "current state" memory file and its 26 reverse-chronological campaign logs; the point
 of the format is that a reader gets the current state without replaying how it was reached.
 
-Last updated: **2026-09-01** (⭐ v3 REBUILD LANDED AND RE-SCORED — three arms clean on
+Last updated: **2026-09-02** (rain-off arm `diag-premier-norain` registered on v3 and RUNNING, solve 61190532 → validate 61190533 — see the 09-02 section; 2026-09-01: ⭐ v3 REBUILD LANDED AND RE-SCORED — three arms clean on
 hal nodes, premier 4/4 on the new fingerprint, merged dep rebuilt, HWM RMSE
 0.384/0.400/0.431, extent unchanged; bay SnapWave setup HALVED and the v3↔v1.5 Monmouth
 offset is GONE (sign-test P 0.011 → 0.152), Sandy Hook tide-range gap healed
@@ -24,88 +24,50 @@ seiche FINDINGS §40 · weir FINDINGS §38 · rain FINDINGS §39)
 
 ## ⏳ PICK UP — next session
 
-### ⭐ 2026-09-01 — v3 REBUILD LANDED: runs clean, re-scored, comparability restored
+### ⏳ 2026-09-02 — v3 RAIN-OFF arm registered, staged and RUNNING (solve 61190532 → validate 61190533)
 
-**The runs are real** (61102511 naccs-premier hal0432 5:10 · 61102512 wave-stwave
-hal0433 5:17 · 61102513 naccs-nowaves hal0434 0:40): no halk anywhere; three-clock
-clean on all six output files (creation 15:51 = the staging job's submit, mtime = ctime
-= job end — no late clobber); every `sfincs.log` ends `Closing off SFINCS`; his 10-28 →
-10-31, 433 steps, 25 stations, zero NaN; `zsmax` finite on exactly the active fraction
-(0.516) in all three; `python -m nj_sfincs.premier` → **4/4 OK** on
-`(3412470, 4108, "5ad01a84978a87f8")`.
+**Ask (user):** the v3 premier with rain off, to see what it does to CSI. Registered as
+`diag-premier-norain` on v3 (same name as the v1.5 diagnostic so
+`scripts/measure_rain_share.py` runs unchanged with `NJ_DOMAIN=v3`): premier waves,
+water level, wind, pressure, rivers verbatim; `Experiment.rain=False` makes `finalize`
+drop `netamprfile` from `sfincs.inp` and unlink the copied `sfincs_netampr.nc` — written,
+not merely not-written, the waves-off lesson. `--check` passes on the sealed template
+(`5ad01a84978a87f8`). Tests +6 (rain declared/stripped/staged; metrics merge).
 
-`dep_subgrid_merged.tif` **rebuilt on the new template** (2.80 GB, finite fraction at
-16× overview 0.999, gdaladdo ladder included; ~8 min on the vscode node), hard-linked
-into the three arms. Two `snapwave.upw` staging inputs (2.55 G each) deleted by the
-user post-run — re-stage before re-launching those dirs.
+**Pre-registration (before the scorer runs).** MOTF is a surge-only extent, so rain-fed
+wet pixels are false alarms the reference cannot contain; on v1.5 75.7% of premier FA
+was rain-true (FINDINGS §39). Predict, premier → norain: `motf_far` DOWN by roughly the
+disconnected-FA share (`motf_far_disconnected`), `motf_pod` ≈ unchanged or slightly
+down (rain-triggered marginal cells), `motf_csi` UP; HWM RMSE ≈ unchanged at coastal
+marks, worse at any rain-fed inland mark. Waves are ON, so `extent_admissible=True`;
+but rain-off is a diagnostic, not a candidate — Sandy's rain happened. A CSI gain here
+measures the reference's blind spot, not model skill.
 
-**RE-SCORED (merged dep, rebuilt mesh; `--validate-only`, ~2 h on a 128 G vscode node):**
+**Disk, then launch.** Home was 102.4 G / 100 G soft / 110 G hard. Reclaimed: the
+score-banked retired v1.5 dirs `noaa-2node`, `preweir-naccs-premier`,
+`preweir-naccs-nowaves` (Claude, −2.4 G net — inputs were hard-links) and the three
+regenerable `experiments/v3/floodmaps/*.tif` gallery copies (user, −7.0 G; the notebook
+reads each arm's own `floodmap_hmax_lev3.tif`, which stays). Checked and NOT useful:
+`v1_monmouth/faber-waves-premier` is already a hard-link of the archive (nlink 2);
+`data/v2_barnegat_runs` is a symlink INTO the read-only archive; `dedupe_home.py` finds
+nothing. User has authorised deleting the live v1.5 `sfincs_map.nc` files (1.3 G) if
+needed — not done.
 
-| arm | HWM RMSE | bias | CSI | POD | FAR | FARc | CSIc |
-|---|---|---|---|---|---|---|---|
-| naccs-premier | **0.384** | **−0.156** | 0.705 | 0.894 | 0.231 | 0.116 | 0.800 |
-| wave-stwave | 0.400 | −0.218 | **0.706** | 0.894 | 0.230 | 0.113 | 0.803 |
-| naccs-nowaves | 0.431 | −0.270 | 0.702 | 0.875 | 0.219 | 0.102 | 0.796 |
+**Launched 14:27 via `sbatch hpc/stage_and_submit_v3.slurm diag-premier-norain`**
+(job 61190511, hal0139): quota guard saw 18 G headroom; staged; `[rain] OFF` logged;
+`dedupe_experiment_inputs --apply` linked 13 files, −9.8 G → 91.8 G; solve **61190532**
+on hal0305 (12 h / 64 G, `sfincs-desktop.sif` explicit, ~5 h expected); validation
+**61190533** `afterok` on it (128 G, `--validate-only`, merges its row into
+`metrics.csv`). Staged deck verified: no `netamprfile`, no `sfincs_netampr.nc`,
+provenance says precipitation ABSENT; on-disk rain-off test passes.
 
-n=94 all arms, same marks as the banked baseline
-(`metrics_2026-08-31_pre_refinement_rebaseline.csv`). Read: **RMSE down ~0.03 m on
-every arm**; extent metrics statistically unmoved (back-bay-dominated, as expected);
-premier bias −0.065 → −0.156 — the old mesh's spurious bay setup was propping up a
-real low bias, so honest errors are smaller AND more negative. ✅ **NY-validity boxes
-added same day (NEXT #4):** `V3.motf_exclude_boxes_ll = V1_5_RARITAN`'s two boxes
-verbatim; re-scored (old CSV banked `metrics_2026-09-01_pre_nyboxes_rebaseline.csv`),
-**`motf_km2_excluded_boxes` = 14.04** (> v1.5's 4.50 — the v3 render covers more NY),
-FAR 0.2306 → 0.2240, CSI 0.7048 → **0.7103** (premier; all arms +≈0.006), FARc
-0.1155 → 0.1069, HWM columns bit-identical ✓ (pre-registered: small excluded area,
-FAR down, CSI up ≤ ~0.005 — landed at 0.0055). 89 tests OK. The table above is the
-PRE-BOX extent baseline; quote the boxed numbers with the 14.04 km² beside them.
-
-**The 08-31 SnapWave-setup excess HALVED with the restored bands** (his-only,
-peak-to-peak premier − nowaves; pre-registered: bands-were-the-cause predicts a drop
-toward v1.5's ≈0, control station shouldn't move): Sandy Hook 0.51 → **0.19**, Great
-Kills 0.52 → **0.26**, Narrows-SI 0.36 → **0.18**; Sea Bright open-coast control
-0.14 → 0.13 (unmoved ✓). Not all the way to v1.5's ≈0 — a residual ~+0.2 m stands;
-candidates: bay interior still ≈50 m (v1.5 ≈36 m mean face), the 36-pt wave boundary.
-The STWAVE arm's bay setup is ≈0 at the same stations (grid 07 runs low, consistent
-with 08-26). **The pre-storm tide-range gap healed too**: Sandy Hook premier range
-2.16 vs v1.5's 2.20 (−0.04 m, was −0.40); waves-off −0.11 (was −0.13) — the spurious
-setup was indeed the distorter suspected on 08-31.
-
-**v3↔v1.5 paired (46 shared marks, `paired_hwm_bootstrap.residuals` mirror, premier
-vs premier): the systematic Monmouth elevation is GONE.** v1.5 median −0.108 / new v3
-−0.029 (old mesh: +0.064); mean paired delta **−0.065** (was +0.122); Monmouth-side
-16 of 24 up, sign-test **P = 0.152** (was 18/24, P = 0.011); sandy_hook_bay mean delta
-+0.109 (was +0.52). ⚠️ New eye-catcher: raritan_bay paired delta **−0.233** on 19
-marks (v3 now BELOW v1.5 there) — NEXT #6.
-
-**Paired bootstrap on THIS baseline** (`logs/paired_bootstrap_v3_2026-09-01.log`):
-premier − nowaves ΔRMSE **−0.0463 m, 95% CI [−0.0718, −0.0170]**, P(premier better)
-= 0.998 — waves are a real win on v3, not noise. premier − stwave ΔRMSE **−0.0156 m,
-95% CI [−0.0407, +0.0107]**, P(premier better) = 0.887
-(`logs/paired_bootstrap_v3_prem_stwave.log`) — CORA leads every point estimate but the
-CI includes zero: **the two wave SOURCES are not separated on HWM RMSE**; they differ
-on bias (−0.156 vs −0.218) and in the Raritan lobe stations (08-27 read stands). Same
-shape as the v1.5 boundary comparison — quote the point estimate WITH the CI. (🔴 ops:
-do not run two floodmap-loading jobs in one 128 G window; each unpacks ~60+ G of
-rasters — the first attempt OOM-killed.)
-
-Disk: 102.2 G of 100 G soft (7-day grace) after the floodmap regeneration — the three
-`floodmaps/` tifs (2.48 G each) are the regenerable reclaim, user's call. 🔴 **Raw
-statewide DEM (`~/sfincs_data/elevation/raw/Rast_statewide_10ft_DEM.ige`, 16 G) is
-KEPT deliberately** (user, 09-01): every processed clip stops at lon −75.116 and a v4
-Delaware Bay domain needs a re-clip out to ~−75.5. Retire it only after a full-state
-clip exists. `sfincs-env.tar.gz` in the toolchain dir is the VSCode-node fast-deploy
-env — load-bearing, never a reclaim candidate. The 57 CUDEM tiles in
-`~/sfincs_data/elevation/cudem/raw/` are read directly by both cudem VRTs at
-subgrid-build time — load-bearing.
-
-⏳ **NEXT:** (1) ✅ premier-vs-stwave CI in, above; (2) obs-face snap in the
-scorer + trim the three gap-artefact obs series (Ship Bottom, Sea Isle, Stone Harbor);
-(3) wire `src_contaminated` column (HWM 6044, Absecon Creek gauge); (4) ✅ NY-validity
-boxes in, measured 14.04 km² — see above; (5) dry-crossing creek sweep; (6) look at
-the raritan_bay −0.233 paired delta vs v1.5; (7) ✅ FINDINGS §41 (refinement is a
-wave-setup control; comparability restored) + §42 (wave sources tied on v3, waves-on
-vs off separated).
+⏳ **NEXT (09-03 morning):** `sacct -j 61190532,61190533 --format=JobID,NodeList,State,Elapsed`
+(no halk; if the validate job shows DependencyNeverSatisfied the solve failed — read
+`logs/sfincs_61190532.out`); three clocks on the outputs; quota; then read the
+`diag-premier-norain` row in `experiments/v3/metrics.csv` against the pre-registration
+above, and `NJ_DOMAIN=v3 python scripts/measure_rain_share.py` for the FA rain share.
+Gallery tifs for the other three arms are gone until a full `--validate-only` regenerates
+them (7 G — check quota first); `report.html`'s gallery is empty for them meanwhile.
 
 ### 🔵 2026-08-31 — Monmouth/Sandy Hook Bay HWMs read HIGHER in v3 than v1.5: REAL, and it is SnapWave SETUP, not seiche phase
 

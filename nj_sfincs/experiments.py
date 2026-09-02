@@ -172,6 +172,25 @@ _V3: dict[str, Experiment] = {
         "never ranked against a waves-on arm (CLAUDE.md §6).",
         **_V3_WL,
     ),
+    # Same name as the v1.5 diagnostic on purpose: scripts/measure_rain_share.py keys on
+    # it, so NJ_DOMAIN=v3 re-runs the FINDINGS §39 measurement unchanged.
+    "diag-premier-norain": Experiment(
+        "diag-premier-norain",
+        WaveConfig(
+            use_waves=True, wave_wind=True, wave_igwaves=False, tune_physics=True,
+            wave_point_dataset=_V3_CORA, wave_n_support=_V3_WAVE_N,
+        ),
+        "The premier with RAIN OFF (no netamprfile; waves, wind, pressure, tide and "
+        "rivers unchanged). Asked 2026-09-02: how much of the premier's MOTF "
+        "false-alarm area is rain? MOTF is a SURGE-only extent, so rain-fed wet pixels "
+        "are false alarms the reference structurally cannot contain — on v1.5, 75.7% "
+        "of premier FA was rain-true and the disconnected-FA classifier caught it with "
+        "precision 0.991 (FINDINGS §39). Pre-registered read (STATUS 09-02): FAR down, "
+        "POD ≈ same or a little down, CSI up; HWM RMSE ≈ unchanged at the coast. "
+        "⚠️ Rain-off is a diagnostic, not a candidate premier: Sandy's rain was real.",
+        rain=False,
+        **_V3_WL,
+    ),
 }
 
 

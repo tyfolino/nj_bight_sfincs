@@ -9,8 +9,12 @@
 #   sbatch hpc/run_experiments.slurm --experiments baseline_no_waves --tstop 2012-10-29
 #
 # Any args after the script name pass straight through to run_experiments.py.
-# Target main-redhat (RHEL 9.6) — see hpc/amarel_bootstrap.md.
-#SBATCH -p main-redhat
+# Target `main` (main-redhat was merged INTO it 2026-08-20; submitting to main-redhat now
+# fails outright) and exclude the halk* nodes, which cannot write /cache/home and whose
+# late flushes clobber good runs (CLAUDE.md §5). Also used as the dependent VALIDATION job
+# by hpc/stage_and_submit_v3.slurm (`--validate-only`, 128 G).
+#SBATCH -p main
+#SBATCH --exclude=halk[0001-0159]
 #SBATCH -c 32
 #SBATCH --mem=100G
 #SBATCH -t 12:00:00
@@ -23,8 +27,14 @@ set -euo pipefail
 # for why (the login profile exports PROJ=$HOME/nj_sandy_sfincs, the toolchain dir).
 cd "${SLURM_SUBMIT_DIR:-$PWD}"
 REPO="$PWD"
-MM="$REPO/micromamba/bin/micromamba"
-ENV="$REPO/micromamba/envs/sfincs"
+# The toolchain lives in the TOOLCHAIN repo, not this one (memory: reference_repo_layout).
+TOOLCHAIN="${NJ_TOOLCHAIN:-$HOME/nj_sandy_sfincs}"
+MM="$TOOLCHAIN/micromamba/bin/micromamba"
+ENV="$TOOLCHAIN/micromamba/envs/sfincs"
+export PYTHONPATH="$REPO" NJ_ROOT="$REPO"
+# NJ_DOMAIN is inherited from the submitter's environment (sbatch exports it); default
+# to the domain this script is used for when it is not set.
+export NJ_DOMAIN="${NJ_DOMAIN:-v3}"
 
 # All cores for SnapWave (it scales across both sockets; run_sfincs interleaves
 # memory). PROJ/GDAL data dirs for the GeoTIFF read/write in build + downscale.
@@ -37,6 +47,7 @@ echo "args: $*"
 # run_experiments.py runs each SFINCS solve locally via Singularity here (no
 # nested sbatch), sequentially, then aggregates. Runs from the repo root so
 # NJ_ROOT resolves and experiments/ lands next to model/.
+echo "domain=$NJ_DOMAIN"
 "$MM" run -n sfincs python run_experiments.py "$@"
 
 echo "done — see experiments/metrics.csv and experiments/report.html"

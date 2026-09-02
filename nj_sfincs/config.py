@@ -281,6 +281,18 @@ class Experiment:
     #: excludes it from ``--experiments all``, and keeps its metrics out of metrics.csv.
     bracket: str | None = None
 
+    #: Rain ON by default. ``False`` stages the arm WITHOUT the precipitation forcing:
+    #: ``finalize`` drops the ``netamprfile`` line from ``sfincs.inp`` and removes the
+    #: copied ``sfincs_netampr.nc``, so the solver is never handed the field. Everything
+    #: else (mesh, mask, tide, wind, pressure, discharge, waves) is the template's — the
+    #: same recipe as the v1.5 ``diag-premier-norain`` diagnostic (FINDINGS §39), now
+    #: declared on the arm instead of hand-edited. ⚠️ Not a wave switch: a rain-off
+    #: arm with waves on is a legitimate configuration, and its extent metrics stay
+    #: ``extent_admissible=True``. What changes is the QUESTION the CSI answers — MOTF
+    #: is a surge-only reference, so rain-off measures how much of the model's
+    #: false-alarm area was rain the reference structurally cannot contain.
+    rain: bool = True
+
 
 def with_window(base: BaseConfig, tstop: datetime) -> BaseConfig:
     """Return a copy of ``base`` with a shorter run window (for smoke tests)."""

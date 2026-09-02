@@ -540,6 +540,118 @@ class TestWavesOffIsWrittenNotAssumed(_DomainEnv):
                     )
 
 
+class TestRainOffIsWrittenNotMerelyNotWritten(_DomainEnv):
+    """Same shape as the waves-off bug: the template has rain ON, so an arm that merely
+    does not ADD rain inherits it. ``Experiment.rain=False`` must strip the key and the
+    file from the staged copy — and a norain arm must be the premier in every other
+    respect, or its CSI delta is not a rain delta.
+    """
+
+    def test_rain_defaults_on(self):
+        from nj_sfincs.config import Experiment, WaveConfig
+
+        e = Experiment("x", WaveConfig(use_waves=False))
+        self.assertTrue(e.rain)
+
+    def test_norain_arms_declare_rain_false_and_premier_waves(self):
+        seen = 0
+        for dname, arms in EXPERIMENTS_BY_DOMAIN.items():
+            for name, exp in arms.items():
+                if "norain" not in name:
+                    continue
+                seen += 1
+                self.assertFalse(
+                    exp.rain, f"{dname}/{name} is named 'norain' but rain is ON"
+                )
+                prem = arms.get("naccs-premier")
+                self.assertIsNotNone(prem, f"{dname}: norain arm but no premier to diff")
+                self.assertEqual(
+                    exp.waves, prem.waves,
+                    f"{dname}/{name} differs from the premier in WAVES, not only rain",
+                )
+                self.assertEqual(exp.waterlevel_geodataset, prem.waterlevel_geodataset)
+        self.assertGreaterEqual(seen, 1, "no norain arm registered on any domain")
+
+    def test_source_has_the_rain_off_branch(self):
+        import inspect
+
+        from nj_sfincs import model
+
+        src = inspect.getsource(model.finalize)
+        self.assertIn("if not rain:", src)
+        self.assertIn("netamprfile", src)
+        self.assertIn("sfincs_netampr.nc", src)
+
+    def test_staged_norain_arms_have_no_precipitation(self):
+        """Read-only; skips arms not currently staged (clean clone)."""
+        checked = 0
+        for dname in domain.DOMAINS:
+            os.environ["NJ_DOMAIN"] = dname
+            root = exp_root()
+            for name, exp in experiments(dname).items():
+                if exp.rain:
+                    continue
+                inp = root / name / "sfincs.inp"
+                if not inp.exists():
+                    continue
+                checked += 1
+                keys = {
+                    ln.split("=")[0].strip()
+                    for ln in inp.read_text().splitlines()
+                    if "=" in ln
+                }
+                self.assertFalse(
+                    keys & {"netamprfile", "amprfile", "precipfile"},
+                    f"{inp} names a precipitation file but '{name}' has rain=False",
+                )
+                self.assertFalse(
+                    (inp.parent / "sfincs_netampr.nc").exists(),
+                    f"sfincs_netampr.nc survived in a rain-off arm at {inp.parent}",
+                )
+        if checked == 0:
+            self.skipTest("no rain-off arms staged on any domain")
+
+
+class TestMetricsMergeKeepsOtherArms(unittest.TestCase):
+    """``--validate-only --experiments X`` updates X's row, not the whole table."""
+
+    def test_merge_replaces_named_rows_and_keeps_the_rest(self):
+        import tempfile
+
+        import pandas as pd
+
+        import run_experiments as rx
+
+        with tempfile.TemporaryDirectory() as td:
+            csv = Path(td) / "metrics.csv"
+            pd.DataFrame(
+                {"motf_csi": [0.71, 0.70], "hwm_rmse": [0.38, 0.43]},
+                index=["naccs-premier", "naccs-nowaves"],
+            ).to_csv(csv)
+            new = pd.DataFrame(
+                {"motf_csi": [0.72, 0.75], "extra": ["x", "y"]},
+                index=["naccs-nowaves", "diag-premier-norain"],
+            )
+            out = rx._merge_metrics(new, csv)
+            self.assertEqual(
+                sorted(out.index),
+                ["diag-premier-norain", "naccs-nowaves", "naccs-premier"],
+            )
+            self.assertEqual(out.loc["naccs-premier", "motf_csi"], 0.71)  # kept
+            self.assertEqual(out.loc["naccs-nowaves", "motf_csi"], 0.72)  # replaced
+            self.assertTrue(pd.isna(out.loc["naccs-nowaves", "hwm_rmse"]))  # not stale
+            self.assertEqual(out.loc["diag-premier-norain", "extra"], "y")
+
+    def test_merge_without_existing_csv_is_identity(self):
+        import pandas as pd
+
+        import run_experiments as rx
+
+        df = pd.DataFrame({"a": [1]}, index=["x"])
+        out = rx._merge_metrics(df, Path("/nonexistent/metrics.csv"))
+        self.assertTrue(out.equals(df))
+
+
 class TestStagingIsSafeBeforeItIsDestructive(_DomainEnv):
     """⭐ THE REGRESSION TEST FOR THE DATA-LOSS BUG.
 

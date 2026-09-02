@@ -1467,11 +1467,18 @@ def finalize(
     sf: SfincsModel,
     model_dir: Path,
     sw: dict | None,
+    rain: bool = True,
 ) -> None:
     """Release handles, write, patch sfincs.inp, write the SnapWave ASCII forcing.
 
     Called for EVERY experiment (waves or not). When ``wcfg.wavemaker`` the ``wvmfile``
     key + ``sfincs.wvm`` are preserved — do NOT strip them.
+
+    ``rain=False`` (``Experiment.rain``) removes the precipitation forcing AFTER
+    ``sf.write()``: the ``netamprfile`` key goes from ``sfincs.inp`` and the copied
+    ``sfincs_netampr.nc`` is unlinked. Done on the written text, like the waves-off
+    branch below, because the template every arm is copied from has rain ON — "not
+    adding" rain would silently inherit it, exactly the shape of the snapwave bug.
     """
     model_dir = Path(model_dir)
 
@@ -1628,6 +1635,20 @@ def finalize(
             "sfincs.wvm",
         ):
             (model_dir / stale).unlink(missing_ok=True)
+
+    # (d) rain OFF: strip every precipitation key and drop the copied field, so the
+    # manifest below (read off disk) records the run the solver actually gets.
+    if not rain:
+        text = (
+            "\n".join(
+                ln
+                for ln in text.splitlines()
+                if not ln.strip().startswith(("netamprfile", "amprfile", "precipfile"))
+            )
+            + "\n"
+        )
+        (model_dir / "sfincs_netampr.nc").unlink(missing_ok=True)
+        print(f"[rain] OFF — netamprfile + netampr.nc removed ({model_dir.name})")
 
     inp.write_text(text)
 

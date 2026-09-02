@@ -193,7 +193,7 @@ def prepare_experiment(name: str, base: BaseConfig) -> Path:
         # Experiment; everything else still gets the domain invariant.
         model.check_waterlevel_support(sf, expect=exp.n_waterlevel_support)
     sw = model.add_waves(exp.waves, base, sf) if exp.waves.use_waves else None
-    model.finalize(exp.waves, base, sf, exp_dir, sw)
+    model.finalize(exp.waves, base, sf, exp_dir, sw, rain=exp.rain)
     # hydromt's writer drops crsfile/storevel; put them back so a staged arm carries the
     # flux cross-sections — which on a relocated-boundary domain are the headline result,
     # not a diagnostic.
@@ -463,10 +463,30 @@ def main(argv=None) -> int:
     return 0
 
 
+def _merge_metrics(df: pd.DataFrame, csv: Path = None) -> pd.DataFrame:
+    """Fold freshly validated rows INTO the existing metrics table.
+
+    ``--validate-only --experiments X`` used to overwrite ``metrics.csv`` with X's row
+    alone, silently dropping every other arm's scores from the table and the report.
+    Re-scoring one arm should update one row. Rows for the arms just validated are
+    replaced; every other arm's row is carried forward untouched (it was scored on the
+    same domain — ``metrics.csv`` is domain-scoped under ``exp_root()``).
+    """
+    csv = METRICS_CSV if csv is None else csv
+    if not Path(csv).exists():
+        return df
+    old = pd.read_csv(csv, index_col=0)
+    old = old.drop(index=[n for n in df.index if n in old.index])
+    if old.empty:
+        return df
+    return pd.concat([old, df], sort=False)
+
+
 def _write_outputs(df: pd.DataFrame) -> None:
     if df.empty:
         print("No metrics to write (no completed runs found).")
         return
+    df = _merge_metrics(df)
     df.to_csv(METRICS_CSV)
     print(f"\nwrote {METRICS_CSV}")
     try:
