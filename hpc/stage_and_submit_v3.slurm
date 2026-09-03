@@ -12,7 +12,8 @@
 # back, the solve writes ~2.5 G of snapwave.upw + ~5 G of output, and validation adds a
 # 2.4 G gallery floodmap — and the quota never says "quota", it truncates the write
 # (STATUS 08-27: a 2.5 G floodmap cut off at 1.35 G, `sacct` COMPLETED). So refuse to
-# stage with less than MIN_FREE_G of headroom to the 110 G HARD limit.
+# stage with less than MIN_FREE_G of headroom to the HARD limit of the fileset that
+# experiments/ resolves to (home 110 G; scratch 2 T since the 2026-09-03 move).
 #SBATCH -p main
 #SBATCH --exclude=halk[0001-0159]
 #SBATCH -c 8
@@ -32,10 +33,19 @@ SOLVE_TIME="${SOLVE_TIME:-12:00:00}"
 SOLVE_MEM="${SOLVE_MEM:-64G}"
 MIN_FREE_G="${MIN_FREE_G:-15}"
 
-HARD_G=110
-USED_G=$(/usr/lpp/mmfs/bin/mmlsquota -u "$USER" --block-size G cache | awk '/USR/ {gsub("G","",$3); print $3}')
+# 2026-09-03: experiments/ is a symlink to /scratch (1 TB soft / 2 TB hard), so the
+# guard checks whichever GPFS fileset the run dirs actually land on. The scratch row
+# of mmlsquota has an extra "Fileset" column, so the used-blocks field is found by
+# position relative to "USR", not by column number.
+EXP_TARGET=$(realpath experiments)
+case "$EXP_TARGET" in
+    /scratch/*) QFS=scratch; HARD_G=2048 ;;
+    *)          QFS=cache;   HARD_G=110 ;;
+esac
+USED_G=$(/usr/lpp/mmfs/bin/mmlsquota -u "$USER" --block-size G "$QFS" \
+    | awk '{for (i = 1; i <= NF; i++) if ($i == "USR") {v = $(i+1); gsub("G", "", v); print int(v)}}')
 FREE_G=$(( HARD_G - USED_G ))
-echo "quota: ${USED_G} G used of ${HARD_G} G hard -> ${FREE_G} G headroom (need ${MIN_FREE_G})"
+echo "quota[$QFS] (experiments -> $EXP_TARGET): ${USED_G} G used of ${HARD_G} G hard -> ${FREE_G} G headroom (need ${MIN_FREE_G})"
 if [ "$FREE_G" -lt "$MIN_FREE_G" ]; then
     echo "REFUSING to stage: ${FREE_G} G headroom < ${MIN_FREE_G} G. Reclaim first" >&2
     echo "(scripts/dedupe_home.py --apply; regenerable experiments/v3/floodmaps/*.tif)." >&2
@@ -48,7 +58,7 @@ fi
 # experiments/v3/_template_sealed deliberately first and this rebuilds it.
 python run_experiments.py --experiments "$ARMS" --no-run
 python scripts/dedupe_experiment_inputs.py --apply
-/usr/lpp/mmfs/bin/mmlsquota -u $USER --block-size auto cache | tail -1 || true
+/usr/lpp/mmfs/bin/mmlsquota -u $USER --block-size auto "$QFS" | tail -1 || true
 JOBFILE="logs/stage_v3_${SLURM_JOB_ID:-local}.jobs"
 ARMS="$ARMS" SOLVE_TIME="$SOLVE_TIME" SOLVE_MEM="$SOLVE_MEM" JOBFILE="$JOBFILE" python - <<'PY'
 import os

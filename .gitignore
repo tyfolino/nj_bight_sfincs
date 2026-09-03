@@ -1,7 +1,9 @@
 # Experiment sweep output (staged models + solver output + report). Reproducible
-# from run_experiments.py, so it is never tracked. LOCAL DIRECTORY, never a symlink:
-# the floodmap cache and the metrics CSV are WRITES, and the archive is read-only.
-experiments/
+# from run_experiments.py, so it is never tracked. Since 2026-09-03 it is a SYMLINK to
+# /scratch/tpj8/nj_bight_sfincs/experiments (1 TB tier, NOT backed up, purged when idle);
+# the target must stay writable and outside the read-only archive (tests/test_repo_hygiene).
+# No trailing slash: a `dir/` pattern does not match a symlink.
+experiments
 
 # Data. Ignored wholesale, then the small SOURCE files are un-ignored below.
 # The domain definitions — the catalog, the region polygons, the refinement

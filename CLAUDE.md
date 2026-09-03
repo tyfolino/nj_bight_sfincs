@@ -78,7 +78,7 @@ nj_sfincs/          the package
   plots.py animate.py provenance.py run.py report.py gdaltools.py
 run_experiments.py  the sweep driver (stage → run → validate → aggregate)
 scripts/            data acquisition, staging, scoring, verify_port.py
-experiments/<domain>/<arm>/     run dirs (gitignored, LOCAL — never a symlink)
+experiments/<domain>/<arm>/     run dirs (gitignored; SYMLINK → /scratch/tpj8, see STATUS DISK)
 data/               per-subdir symlinks into the archive for bulk; NACCS/ gtsm/ quadtree/ local
 docs/FINDINGS.md    ⭐ what is believed true NOW. No history, no retractions.
 docs/STATUS.md      ⭐ the live campaign state.

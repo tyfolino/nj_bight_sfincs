@@ -388,7 +388,7 @@ Live campaign state is in [STATUS.md](STATUS.md). This file is for what is settl
 39. **The FA "disconnected = rain" classifier is VALIDATED against a rain-off run —
     and the rain share was an undercount.** Measured 2026-08-21,
     `scripts/measure_rain_share.py` (pre-registered in its docstring) →
-    `reports/rain/rain_share.csv`; `naccs-premier` vs `diag-premier-norain`
+    `reports/rain/rain_share_v1_5_raritan.csv`; `naccs-premier` vs `diag-premier-norain`
     (byte-identical staging minus `netamprfile`), on the MOTF grid under the
     `motf_metrics` screens ∧ simulated-in-both. Ground truth: wet-in-premier ∧
     dry-in-norain (`DEPTH_MIN` threshold).
@@ -412,6 +412,19 @@ Live campaign state is in [STATUS.md](STATUS.md). This file is for what is settl
     itself changes it. ⚠️ Runs accepted on the user's visual inspection + the
     `output WHOLE` audit, 2026-08-21, waiving the >26 h three-clock re-audit
     (neither diag run ever had a halk submission against its directory).
+
+    **v3 (2026-09-03, same script, `NJ_DOMAIN=v3`, premier vs `diag-premier-norain`, solve
+    61190532):** FA 202.5 km², rain share **93.7%** (189.7 km²), `disc_precision` 0.992,
+    `disc_recall` **0.620**, flip-marginal 28.2 km², rain share of the whole wet extent
+    27.1%; `motf_csi` 0.710 → 0.809, `motf_pod` 0.894 → 0.824. The PRECISION claim holds
+    on both domains; the RECALL does not carry — on v3, 84 km² of rain-true FA is
+    "connected" (rain-fed marsh and creek cells contiguous with the surge-wet body), so
+    `motf_far_connected` still contains rain there. The script now writes
+    `reports/rain/rain_share_<domain>.csv`, one file per domain. ⚠️ A rain-off run also **re-rings the
+    Raritan Bay seiche (§40)**: with rain OFF the bay peaks moved +0.3–0.4 m (Great Kills
+    3.68 → 4.02 m) while ocean stations did not move, and the his difference is a 40–60
+    min oscillation present from hour 3 of the window, before any rain fell. Never read
+    bay HWM deltas off a rain-on/off pair.
 
 40. ⭐ **The Raritan Bay sub-hourly motion is a REAL, COHERENT basin oscillation — not
     numerical chatter. `zsmax` scoring in the bay STANDS; what is fragile is its PHASE

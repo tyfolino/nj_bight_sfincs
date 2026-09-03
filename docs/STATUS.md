@@ -4,7 +4,7 @@
 12 KB "current state" memory file and its 26 reverse-chronological campaign logs; the point
 of the format is that a reader gets the current state without replaying how it was reached.
 
-Last updated: **2026-09-02** (⏳ DISK plan: `experiments/` → `/scratch/tpj8` (1 TB, verified) after the rain-off run, desktop rsync backup — see the DISK section; rain-off arm `diag-premier-norain` registered on v3 and RUNNING, solve 61190532 → validate 61190533 — see the 09-02 section; 2026-09-01: ⭐ v3 REBUILD LANDED AND RE-SCORED — three arms clean on
+Last updated: **2026-09-03** (⭐ RAIN-OFF SCORED on v3: CSI 0.710 → 0.809, **93.7% of premier's MOTF false alarm is rain**; the bay HWM/peak shifts (+0.3–0.4 m with rain OFF) are SEICHE PHASE (§40), not rain — see the 09-03 section; 💾 `experiments/` MOVED to `/scratch/tpj8` and symlinked, staging quota guard follows it, `scripts/desktop_pull_backup.sh` written, desktop snapshot taken, home copy deleted, home back under quota — see DISK; 2026-09-02: rain-off arm registered, staged and run (solve 61190532 → validate 61190533); 2026-09-01: ⭐ v3 REBUILD LANDED AND RE-SCORED — three arms clean on
 hal nodes, premier 4/4 on the new fingerprint, merged dep rebuilt, HWM RMSE
 0.384/0.400/0.431, extent unchanged; bay SnapWave setup HALVED and the v3↔v1.5 Monmouth
 offset is GONE (sign-test P 0.011 → 0.152), Sandy Hook tide-range gap healed
@@ -24,81 +24,114 @@ seiche FINDINGS §40 · weir FINDINGS §38 · rain FINDINGS §39)
 
 ## ⏳ PICK UP — next session
 
-### ⏳ 2026-09-02 — DISK: move `experiments/` to SCRATCH after the rain-off run finishes (user decision, deferred)
+### 💾 2026-09-03 — DISK: `experiments/` now lives on `/scratch/tpj8` (DONE); desktop snapshot taken, home copy deleted
 
-**Fact established today:** `/scratch/tpj8` exists, is writable, and carries the standard
-Amarel allowance — **1 TB soft / 2 TB hard** (`mmlsquota -u $USER --block-size auto
-scratch`). It held one file. Verified by writing and removing a 200 MB probe. Home is
-95.6 G / 100 G soft. ⚠️ The shared `/scratch` pool is 99% full campus-wide (~8 T free of
-601 T), so the quota is a ceiling, not a reservation. Scratch is NOT backed up and files
-untouched ~90 days are purged (user's understanding; confirm on the OARC page).
+**Fact (2026-09-02):** `/scratch/tpj8` is **1 TB soft / 2 TB hard** (`mmlsquota -u $USER
+--block-size auto scratch`). **Policy confirmed 09-03 (OARC Cluster User Guide, welcome
+page):** /scratch is "not backed-up", and "Files in /scratch that have not been accessed
+for 90 days will be deleted automatically." ⚠️ So a scored arm nobody reads for 90 days
+disappears; the desktop copy is the durable one. The shared pool is ~99% full campus-wide,
+so the quota is a ceiling, not a reservation.
 
-**Plan agreed, nothing done yet** (user: wait for `diag-premier-norain` 61190532/61190533):
+**Done 2026-09-03 (Claude), after the rain-off run completed:**
+- `rsync -aH experiments/ /scratch/tpj8/nj_bight_sfincs/experiments/` — 351 files,
+  39.7 GB moved in ~95 s (84.9 GB apparent; hard links preserved). Verified three ways:
+  `rsync -aHn --itemize-changes` empty, per-file size listing identical, md5 spot checks
+  (his, metrics, floodmap) identical.
+- `experiments` is now a **symlink** to the scratch tree. The home copy was renamed OUT of
+  the repo to `~/experiments_home_2026-09-03_pending_desktop_backup` (37 G, still counted
+  against home: **101.5 G / 100 G soft, 7-day grace running since 09-02**). 🔴 Delete it
+  only AFTER the desktop pull has run — `rm -rf
+  ~/experiments_home_2026-09-03_pending_desktop_backup` frees ~30 G (its template/subgrid
+  files are hard-linked into `data/frozen_mesh_v3`, which stays).
+- Premier audit 5/5 and `--check` pass through the symlink; `hpc/sfincs_run.slurm` binds
+  `realpath "$MODEL"`, so the solver is indifferent. `hpc/stage_and_submit_v3.slurm`'s
+  quota guard now checks **the fileset `experiments/` resolves to** (scratch, 2 T hard; the
+  scratch `mmlsquota` row has an extra Fileset column, so the USR field is found by
+  position). Dry check: 37 G used, 2011 G headroom.
+- Tests: `test_experiments_is_a_real_directory` → `test_experiments_is_writable_and_not_in_the_archive`
+  (target writable, not inside the archive); `.gitignore` pattern `experiments/` →
+  `experiments` (a `dir/` pattern never matches a symlink) and its test; `experiments`
+  declared in `ALLOWED_TOP_LEVEL_LINKS`. CLAUDE.md layout line updated.
+- **`scripts/desktop_pull_backup.sh`** — runs ON THE DESKTOP. Tier 1 = irreplaceable
+  inputs from home (`data/` ~13 G, `~/sfincs_data` 29 G, `~/nj_coast_sfincs` 12 G);
+  tier 2 = SCORED output from scratch (per arm: his, log, inp, provenance,
+  `floodmap_hmax_lev3.tif`, small forcing files, `gis/`; per domain `metrics*.csv`,
+  `report.html`; `--with-maps` adds the 5 G `sfincs_map.nc`; template, subgrid,
+  `snapwave.upw`, `floodmaps/` excluded as regenerable). No `--delete`, ever. Flags:
+  `--list`, `-n`, `--only inputs|archive|runs`, `DEST=`.
 
-1. **Snapshot first.** From the desktop (1 TB HDD), `rsync` over SSH pulling home's
-   inputs (frozen meshes, `data/elevation_*`, NACCS, gtsm, era5, `~/sfincs_data`) and the
-   current `experiments/` tree. Off campus: VPN first. Globus Connect Personal is the
-   click-driven alternative; start with rsync.
-2. **Move `experiments/` to `/scratch/tpj8/nj_bight_sfincs/experiments`** and symlink it
-   back. `hpc/sfincs_run.slurm` binds `realpath "$MODEL"`, so the solver is indifferent.
-   `tests/test_repo_hygiene.py::test_experiments_is_a_real_directory` forbids the symlink
-   for the wrong reason (its docstring says "the archive is read-only"); loosen it to
-   "target is writable and not inside `~/nj_coast_sfincs`".
-3. **Backup policy by tier:** code/docs → git (done); irreplaceable inputs stay in HOME
-   and get one desktop copy plus occasional re-sync; solver output lives on scratch and
-   only *scored* arms (numbers in STATUS/FINDINGS) get pulled to the desktop. A desktop
-   HDD is a copy, not an archive. Do NOT rely on `touch`-ing files to dodge the purge.
-4. Write a short pull script that lives on the desktop and lists what it mirrors.
+✅ **Desktop pull ran and the pending home copy was deleted (user, 2026-09-03 afternoon,
+after a final itemize check against scratch showed only the top-dir mtime differing).**
+Re-run `desktop_pull_backup.sh` whenever an arm is scored. Carried: why waves-on
+`sfincs_map.nc` is 5.2 G per arm.
 
-**Smaller wins inside home, independent of the move:** `dedupe_experiment_inputs
---apply` on v3 once the rain-off run completes (its `subgrid/` is 6.2 G un-linked);
-and look at why waves-on `sfincs_map.nc` is 5.2 G per arm — map interval / variable list
-wider than validation reads?
+### ✅ 2026-09-03 — v3 RAIN-OFF SCORED: rain is 93.7% of premier's MOTF false alarm; the bay HWM shifts are SEICHE PHASE, not rain
 
-### ⏳ 2026-09-02 — v3 RAIN-OFF arm registered, staged and RUNNING (solve 61190532 → validate 61190533)
+**Ask (user, 09-02):** the v3 premier with rain off, to see what it does to CSI. Registered
+as `diag-premier-norain` on v3 (same name as the v1.5 diagnostic so
+`scripts/measure_rain_share.py` runs unchanged with `NJ_DOMAIN=v3`): premier waves, water
+level, wind, pressure, rivers verbatim; `Experiment.rain=False` makes `finalize` drop
+`netamprfile` and unlink `sfincs_netampr.nc` — written, not merely not-written. Staged via
+`hpc/stage_and_submit_v3.slurm` (job 61190511), solve **61190532** hal0305 5:49:35,
+validate **61190533** hal0148 1:10:21, both `COMPLETED 0:0`, no halk; three clocks clean
+(creation inside the job window, mtime = job end); premier audit 5/5 `output WHOLE`; every
+staged forcing file md5-identical to `naccs-premier`, `sfincs.inp` differs only by the
+absent `netamprfile` line.
 
-**Ask (user):** the v3 premier with rain off, to see what it does to CSI. Registered as
-`diag-premier-norain` on v3 (same name as the v1.5 diagnostic so
-`scripts/measure_rain_share.py` runs unchanged with `NJ_DOMAIN=v3`): premier waves,
-water level, wind, pressure, rivers verbatim; `Experiment.rain=False` makes `finalize`
-drop `netamprfile` from `sfincs.inp` and unlink the copied `sfincs_netampr.nc` — written,
-not merely not-written, the waves-off lesson. `--check` passes on the sealed template
-(`5ad01a84978a87f8`). Tests +6 (rain declared/stripped/staged; metrics merge).
+**Pre-registration (written 09-02, before the scorer ran):** MOTF is a surge-only extent,
+so rain-fed wet pixels are false alarms the reference cannot contain. Predicted premier →
+norain: `motf_far` DOWN by roughly the disconnected-FA share, `motf_pod` ≈ unchanged or
+slightly down, `motf_csi` UP; HWM RMSE ≈ unchanged at coastal marks, worse at rain-fed
+inland marks. Rain-off is a diagnostic, not a candidate — Sandy's rain happened.
 
-**Pre-registration (before the scorer runs).** MOTF is a surge-only extent, so rain-fed
-wet pixels are false alarms the reference cannot contain; on v1.5 75.7% of premier FA
-was rain-true (FINDINGS §39). Predict, premier → norain: `motf_far` DOWN by roughly the
-disconnected-FA share (`motf_far_disconnected`), `motf_pod` ≈ unchanged or slightly
-down (rain-triggered marginal cells), `motf_csi` UP; HWM RMSE ≈ unchanged at coastal
-marks, worse at any rain-fed inland mark. Waves are ON, so `extent_admissible=True`;
-but rain-off is a diagnostic, not a candidate — Sandy's rain happened. A CSI gain here
-measures the reference's blind spot, not model skill.
+**Extent — direction right on all three keys; the POD drop was bigger than "slightly":**
 
-**Disk, then launch.** Home was 102.4 G / 100 G soft / 110 G hard. Reclaimed: the
-score-banked retired v1.5 dirs `noaa-2node`, `preweir-naccs-premier`,
-`preweir-naccs-nowaves` (Claude, −2.4 G net — inputs were hard-links) and the three
-regenerable `experiments/v3/floodmaps/*.tif` gallery copies (user, −7.0 G; the notebook
-reads each arm's own `floodmap_hmax_lev3.tif`, which stays). Checked and NOT useful:
-`v1_monmouth/faber-waves-premier` is already a hard-link of the archive (nlink 2);
-`data/v2_barnegat_runs` is a symlink INTO the read-only archive; `dedupe_home.py` finds
-nothing. User has authorised deleting the live v1.5 `sfincs_map.nc` files (1.3 G) if
-needed — not done.
+| key | premier | norain |
+|---|---|---|
+| `motf_csi` | 0.710 | **0.809** |
+| `motf_pod` | 0.894 | 0.824 |
+| `motf_far` | 0.224 | 0.022 |
+| FA km² connected / disconnected | 84.0 / 118.5 | 12.4 / 2.1 |
+| `motf_csi_connected` | 0.807 | 0.811 |
 
-**Launched 14:27 via `sbatch hpc/stage_and_submit_v3.slurm diag-premier-norain`**
-(job 61190511, hal0139): quota guard saw 18 G headroom; staged; `[rain] OFF` logged;
-`dedupe_experiment_inputs --apply` linked 13 files, −9.8 G → 91.8 G; solve **61190532**
-on hal0305 (12 h / 64 G, `sfincs-desktop.sif` explicit, ~5 h expected); validation
-**61190533** `afterok` on it (128 G, `--validate-only`, merges its row into
-`metrics.csv`). Staged deck verified: no `netamprfile`, no `sfincs_netampr.nc`,
-provenance says precipitation ABSENT; on-disk rain-off test passes.
+`measure_rain_share.py` on v3 (`reports/rain/rain_share_v3.csv`; the script now writes one
+file per domain, the v1.5 row is `rain_share_v1_5_raritan.csv`): FA 202.5 km², **rain-true 189.7 km² =
+93.7%** (v1.5: 75.7%); `disc_precision` 0.992, `disc_recall` **0.620** (v1.5: 0.914) —
+on v3, 84 km² of rain-true FA is "connected" (rain-fed marsh and creek cells contiguous
+with the surge-wet body), so `motf_far_connected` still carries rain here; flip-marginal
+28.2 km²; rain share of the whole premier wet extent 27.1%. POD −0.07: 7% of the MOTF-wet
+area is reached only with rain on (marsh platforms; Absecon Creek modelled peak 2.92 →
+1.23 m against obs 1.87).
 
-⏳ **NEXT (09-03 morning):** `sacct -j 61190532,61190533 --format=JobID,NodeList,State,Elapsed`
-(no halk; if the validate job shows DependencyNeverSatisfied the solve failed — read
-`logs/sfincs_61190532.out`); three clocks on the outputs; quota; then read the
-`diag-premier-norain` row in `experiments/v3/metrics.csv` against the pre-registration
-above, and `NJ_DOMAIN=v3 python scripts/measure_rain_share.py` for the FA rain share.
-Gallery tifs for the other three arms are gone until a full `--validate-only` regenerates
-them (7 G — check quota first); `report.html`'s gallery is empty for them meanwhile.
+**HWM — worse where predicted, and SHIFTED where not predicted:**
+- `hwm_rmse_scored` 0.384 → 0.754 with **8 dry scored marks** (south_coast 4/4 dry, bias
+  −2.19 — Monmouth's coastal-lake marks are rain-filled; great_egg 1, great_bay_mullica 1);
+  wet-only `hwm_rmse_m` 0.384 → 0.441. `atlantic_oceanfront` 0.124 → 0.123 as predicted.
+- 🔴 **The Lower Bay / Raritan Bay marks read HIGHER with rain OFF:** sandy_hook_bay bias
+  −0.04 → +0.35, raritan_bay −0.15 → +0.17, shrewsbury_navesink +0.08 → +0.24; station
+  peaks Great Kills 3.68 → 4.02, Sandy Hook 3.50 → 3.91, Narrows 3.49 → 3.77 m. Removing
+  water cannot raise a bay. The his difference (norain − premier) is an **oscillation**:
+  swings of ±0.5–0.9 m, 40–60 min period, near-zero mean, |Δ| > 0.2 m from **03:00 on
+  28 Oct** — three hours into the window, when domain-mean rain is 0.03 mm/h. Ocean
+  stations differ by 0.00 (Atlantic City) / 0.05 m (Sea Bright). This is FINDINGS §40
+  verbatim: a negligible perturbation re-rings the basin, `zsmax` samples a different
+  phase, and the crest peak moves 0.3–0.4 m. The envelope is unchanged (Sandy Hook 3-h
+  high-pass std 0.16 vs 0.18 m).
+- Consequence: **±0.3 m of any single-arm bay HWM or peak number on v3 is seiche phase.**
+  The premier-vs-stwave bay differences (ΔRMSE 0.016) sit inside that. The paired
+  bootstrap already handles it statistically; do not read bay peaks arm-to-arm by eye,
+  and never read bay HWM deltas off a rain-on/off pair.
+
+**Verdict.** The CSI 0.81 measures MOTF's blind spot, not model skill. It does say that
+`motf_csi_connected` (0.807) is the fairer extent number for a compound run on v3, and
+that the connectivity classifier under-catches rain here (recall 0.62). ⏳ Candidate
+follow-up, a real model change: infiltration is effectively OFF (`model.py` strips the CN
+keys; `data/infiltration_v3` exists, 250 M) — switching it on is the physical way to
+shrink rain FA. Gallery tifs for the other three arms are still gone until a full
+`--validate-only` regenerates them (7 G — now on scratch, no longer a quota problem).
+`notebooks/v3/sandy-v3-viz-2026-08-29.ipynb` re-executed 09-03 with `diag-premier-norain` as a
+fourth panel (gauges, HWM, MOTF); headers carry the diagnostic/seiche caveats.
 
 ### 🔵 2026-08-31 — Monmouth/Sandy Hook Bay HWMs read HIGHER in v3 than v1.5: REAL, and it is SnapWave SETUP, not seiche phase
 

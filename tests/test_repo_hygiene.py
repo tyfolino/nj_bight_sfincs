@@ -85,6 +85,9 @@ class TestArchiveIsDataOnly(unittest.TestCase):
         "sfincs-cpu.sif",
         "sfincs-desktop.sif",
         "refs",
+        # 2026-09-03: run dirs live on /scratch/tpj8 (1 TB tier); the target is checked by
+        # test_experiments_is_writable_and_not_in_the_archive below.
+        "experiments",
     }
 
     def test_top_level_symlinks_are_declared(self):
@@ -96,15 +99,26 @@ class TestArchiveIsDataOnly(unittest.TestCase):
                     "ALLOWED_TOP_LEVEL_LINKS with a reason, or put it under data/."
                 )
 
-    def test_experiments_is_a_real_directory(self):
-        """NEVER a symlink. The floodmap cache and metrics.csv are WRITES into it, and the
-        archive is read-only."""
+    def test_experiments_is_writable_and_not_in_the_archive(self):
+        """experiments/ may be a symlink (2026-09-03: it points at /scratch, the 1 TB
+        tier), but its TARGET must be a writable directory outside the read-only archive.
+        The floodmap cache, metrics.csv and every staged model are WRITES into it."""
+        import os
+
         exp = ROOT / "experiments"
-        if exp.exists():
-            self.assertFalse(
-                exp.is_symlink(),
-                "experiments/ is a symlink. It is written to (the floodmap cache, "
-                "metrics.csv, every staged model) and must be local.",
+        if not exp.exists():
+            return
+        target = exp.resolve()
+        self.assertTrue(target.is_dir(), f"experiments/ resolves to a non-directory: {target}")
+        self.assertTrue(
+            os.access(target, os.W_OK),
+            f"experiments/ resolves to a read-only location: {target}",
+        )
+        for name in ARCHIVE_NAMES:
+            self.assertNotIn(
+                name,
+                target.parts,
+                f"experiments/ resolves INTO the archive ({name}): {target}",
             )
 
 
@@ -164,7 +178,9 @@ class TestGitignore(unittest.TestCase):
 
     def test_experiments_and_data_bulk_are_ignored(self):
         gi = (ROOT / ".gitignore").read_text()
-        self.assertIn("experiments/", gi)
+        # No trailing slash: experiments/ is a symlink to /scratch (2026-09-03), and a
+        # `dir/` pattern never matches a symlink.
+        self.assertRegex(gi, r"(?m)^experiments$")
         self.assertIn("data/*", gi)
 
 

@@ -30,7 +30,7 @@ so the band is expected to be far smaller than the premier-vs-nowaves case, but 
 count of flip-marginal pixels is reported so the reader can see the exposure.
 
 Usage:
-    python scripts/measure_rain_share.py            # -> reports/rain/rain_share.csv
+    python scripts/measure_rain_share.py            # -> reports/rain/rain_share_<NJ_DOMAIN>.csv
 """
 
 from __future__ import annotations
@@ -123,7 +123,8 @@ def main() -> int:
         "extent_rain_share": n_wet_rain / n_wet if n_wet else float("nan"),
     }
     df = pd.DataFrame([out])
-    dst = ROOT / "reports" / "rain" / "rain_share.csv"
+    # one file per domain (2026-09-03): the v3 run used to overwrite the v1.5 row
+    dst = ROOT / "reports" / "rain" / f"rain_share_{os.environ['NJ_DOMAIN']}.csv"
     dst.parent.mkdir(parents=True, exist_ok=True)
     df.to_csv(dst, index=False)
     print(df.T.rename(columns={0: "value"}).to_string())
