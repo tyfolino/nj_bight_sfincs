@@ -19,6 +19,7 @@ data/*/*
 !data/flux_crosssections.geojson
 !data/flux_crosssections.crs
 !data/roughness/*.csv
+!data/buildings_*/manifest.json
 !data/roughness/*.md
 
 # Python

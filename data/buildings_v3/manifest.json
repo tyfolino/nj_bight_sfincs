@@ -1,0 +1,47 @@
+{
+  "domain": "v3",
+  "region": "data/region_v3_EDITED_inland.geojson",
+  "bbox_utm18": [
+    499566.0,
+    4298466.6,
+    627588.0,
+    4498823.2
+  ],
+  "buffer_deg": 0.02,
+  "epsg": 32618,
+  "pulled": "2026-09-03",
+  "sources": {
+    "njdep": {
+      "name": "NJDEP Statewide Building Footprints derived from Impervious Surfaces of New Jersey",
+      "service": "https://mapsdep.nj.gov/arcgis/rest/services/Features/Structures/MapServer/8",
+      "statewide_raw": "data/buildings/raw/njdep_building_footprints_nj.fgb",
+      "file": "data/buildings_v3/njdep_footprints.gpkg",
+      "n": 1480227,
+      "area_km2": 351.033,
+      "by_project_year": {
+        "Post Sandy Supplemental | 2014": 540282,
+        "DVRPC | 2015": 339728,
+        "NOAA Post Sandy Topobathy | 2014": 293391,
+        "Atlantic, Ocean, Southern Monmouth | 2010": 172134,
+        "Somerset | 2008": 44167,
+        "Hunterdon | 2007": 26914,
+        "NGA | 2007": 24391,
+        "Highlands | 2008": 13793,
+        "Cape May, Cumberland, CAFRA Salem | 2008": 13028,
+        "Microsoft | Unknown": 12365,
+        "NJDEP 10 Meter DEM | Various": 34
+      },
+      "vintage_note": "LiDAR campaign per polygon (project/year). Coast is mostly 2014 post-Sandy LiDAR + 2010 Atlantic/Ocean/S.Monmouth. 2014 is AFTER the storm: destroyed-and-not-rebuilt houses are missing, rebuilt ones carry post-storm footprints."
+    },
+    "microsoft": {
+      "name": "Microsoft US Building Footprints v2 (New Jersey)",
+      "url": "https://minedbuildings.z5.web.core.windows.net/legacy/usbuildings-v2/NewJersey.geojson.zip",
+      "license": "ODbL",
+      "statewide_raw": "data/buildings/raw/NewJersey.geojson.zip",
+      "file": "data/buildings_v3/microsoft_footprints.gpkg",
+      "n": 1312130,
+      "area_km2": 325.245,
+      "vintage_note": "ML extraction from 2019-2020 imagery (README: focal-area rerun); 7 years post-storm."
+    }
+  }
+}

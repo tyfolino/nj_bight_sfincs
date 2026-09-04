@@ -4,7 +4,7 @@
 12 KB "current state" memory file and its 26 reverse-chronological campaign logs; the point
 of the format is that a reader gets the current state without replaying how it was reached.
 
-Last updated: **2026-09-03** (⭐ RAIN-OFF SCORED on v3: CSI 0.710 → 0.809, **93.7% of premier's MOTF false alarm is rain**; the bay HWM/peak shifts (+0.3–0.4 m with rain OFF) are SEICHE PHASE (§40), not rain — see the 09-03 section; 💾 `experiments/` MOVED to `/scratch/tpj8` and symlinked, staging quota guard follows it, `scripts/desktop_pull_backup.sh` written, desktop snapshot taken, home copy deleted, home back under quota — see DISK; 2026-09-02: rain-off arm registered, staged and run (solve 61190532 → validate 61190533); 2026-09-01: ⭐ v3 REBUILD LANDED AND RE-SCORED — three arms clean on
+Last updated: **2026-09-03** (🏠 BUILDING FOOTPRINTS acquired, NJDEP + Microsoft, statewide raw + v3 clip, see PICK UP; ⭐ RAIN-OFF SCORED on v3: CSI 0.710 → 0.809, **93.7% of premier's MOTF false alarm is rain**; the bay HWM/peak shifts (+0.3–0.4 m with rain OFF) are SEICHE PHASE (§40), not rain — see the 09-03 section; 💾 `experiments/` MOVED to `/scratch/tpj8` and symlinked, staging quota guard follows it, `scripts/desktop_pull_backup.sh` written, desktop snapshot taken, home copy deleted, home back under quota — see DISK; 2026-09-02: rain-off arm registered, staged and run (solve 61190532 → validate 61190533); 2026-09-01: ⭐ v3 REBUILD LANDED AND RE-SCORED — three arms clean on
 hal nodes, premier 4/4 on the new fingerprint, merged dep rebuilt, HWM RMSE
 0.384/0.400/0.431, extent unchanged; bay SnapWave setup HALVED and the v3↔v1.5 Monmouth
 offset is GONE (sign-test P 0.011 → 0.152), Sandy Hook tide-range gap healed
@@ -23,6 +23,52 @@ excludes Mays Landing and Batsto and that is NOT accepted** — see PICK UP · 2
 seiche FINDINGS §40 · weir FINDINGS §38 · rain FINDINGS §39)
 
 ## ⏳ PICK UP — next session
+
+### 🏠 2026-09-03 — BUILDING FOOTPRINTS ACQUIRED (both sources, statewide raw + v3 clip); the `bed-buildings` arm is NOT yet built
+
+**Decision (user + supervisor, 09-03):** represent buildings as **Building Block on the
+subgrid pixels** — burn footprints into the fine subgrid DEM so the 25/50 m solver sees
+them as porosity (less storage, narrower faces, a fully-covered small cell goes dry).
+NOT as mask holes (the Stevens Hoboken recipe, valid at their 1.5 m cells, a lottery on
+25 m cells and a domain change here), NOT as roughness (NLCD already carries developed
+n = 0.10/0.13, and a footprint raised above the flood is dry anyway). Keep the mesh and
+`nr_subgrid_pixels=8` (3.1 m pixels in the 25 m bands, 6.3 m at 50 m); the knob that
+matters once footprints are in is VERTICAL — the builder spaces its `nr_levels=10` by
+equal VOLUME, so cap building height a few metres above local ground and consider
+`nr_levels=20`. Literature framing: Schubert & Sanders 2012 (BB/BH/BR/BP), Fewtrell 2008
+(scale), Dottori 2013 (coarsened DSM caution), Sanders & Schubert 2019 PRIMo (subgrid
+footprints), Yin/Lin/Yu 2016 WRR (Sandy NYC, blocked cells). Expectation for a
+long-duration surge: small paired HWM ΔRMSE, visible local extent change in dense towns.
+
+**Done (Claude):** `scripts/download_building_footprints.py` (domain-aware, two sources,
+atomic writes, count-verified). Run for v3:
+- **NJDEP "Statewide Building Footprints derived from Impervious Surfaces"** — LiDAR-
+  derived, `project`/`year` per polygon. ⚠️ The MapServer IGNORES spatial filters
+  (envelope → count 0 in 4326 and 3857, GET and POST), so the whole state is pulled by
+  objectid pages (1,443 × 2,000, 4 workers, 13 min) and clipped locally; received
+  2,885,707 = server count. Statewide kept as `data/buildings/raw/njdep_building_footprints_nj.fgb`
+  (1.0 G, spatially indexed) so **v4 clips from disk** — 🔴 v4 goes up the Delaware and
+  this layer is NJ-ONLY; Microsoft ships `Pennsylvania` (177 M) / `Delaware` (13 M) zips
+  on the same host if the far bank is ever in the model.
+- **Microsoft US Building Footprints v2** (2019–20 imagery, ODbL) — the Stevens source.
+  Host is now `minedbuildings.z5.web.core.windows.net/legacy/usbuildings-v2/`; the old
+  blob host returns 409.
+- Outputs `data/buildings_v3/{njdep,microsoft}_footprints.gpkg` + `manifest.json`
+  (EPSG:32618, region bbox + 0.02°): NJDEP 1,480,227 polygons / 351.0 km²; Microsoft
+  1,312,130 / 325.2 km². NJDEP vintage in-domain: 56% 2014 post-Sandy LiDAR, 23% 2015
+  DVRPC (Delaware valley), 12% 2010 Atlantic/Ocean/S. Monmouth (pre-storm), rest 2007–08.
+  ⚠️ 2014 is AFTER the storm: destroyed-and-not-rebuilt houses are absent, rebuilt ones
+  carry post-storm footprints. Bounded, and the reason NJDEP is primary anyway — its
+  campaigns are the bed DEM's campaigns.
+- Disk: +2.7 G on home (76 G / 100 G after).
+
+**Next:** (1) the two quick adequacy checks — share of scored HWMs in 25 m vs 50 m cells,
+and per-cell exact footprint fraction vs burned-pixel fraction in the 50 m band;
+(2) rasterise NJDEP footprints onto the 10 ft DEM tier at a capped height, register the
+tier in `data_catalog.yml`, subgrid rebuild on the frozen v3 mesh
+(`scripts/rebuild_subgrid.py`), diff `z_volmax`, premier audit (a fully-covered cell
+moves `z_zmin` → sha); (3) register `bed-buildings` in `experiments.py`; pre-register
+paired HWM Δ + dense-urban CSI subset before scoring.
 
 ### 💾 2026-09-03 — DISK: `experiments/` now lives on `/scratch/tpj8` (DONE); desktop snapshot taken, home copy deleted
 
