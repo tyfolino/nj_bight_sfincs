@@ -976,6 +976,28 @@ sandy_storm_tide_south:
       2247/2248 (Cape May), 2261 (Barnegat Inlet). ⚠️ 2245 and 2261 read ~4.45 m from their
       first sample and never higher — suspect; 2248 is 3 h long. See docs/STATUS.md.
 
+bed_buildings_v3:
+  data_type: RasterDataset
+  uri: elevation_v3/bed_buildings_v3.tif
+  driver:
+    name: rasterio
+    options: {}
+  metadata:
+    category: topography
+    crs: 32618
+    nodata: -9999.0
+    unit: m+NAVD88
+    source: >-
+      BUILDING BLOCK tier for bed-* arms (scripts/burn_building_footprints.py, 2026-09-04):
+      inside every NJDEP "Statewide Building Footprints derived from Impervious Surfaces"
+      polygon (data/buildings_v3/njdep_footprints.gpkg) the value is the v3 sealed
+      template's merged subgrid ground + 4 m; NoData everywhere else. Axis-aligned 3.125 m
+      EPSG:32618 lattice over the template's subgrid bbox. Footprint pixels on ground below
+      0 m NAVD88 (piers, docks) are NOT burned. Overviews are NEAREST (pure subsample) so
+      hydromt reading one for the 50/100/200 m bands cannot dilate a footprint. PREPEND to
+      V3_ELEVATION_LIST with reproj_method nearest (scripts/rebuild_subgrid.py); never
+      use in the quadtree refinement gating list. Provenance beside the file (.json).
+
 bed_v3_coarse_25m:
   data_type: RasterDataset
   uri: elevation_v3/bed_v3_coarse_25m.tif

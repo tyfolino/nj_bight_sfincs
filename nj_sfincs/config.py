@@ -293,6 +293,16 @@ class Experiment:
     #: false-alarm area was rain the reference structurally cannot contain.
     rain: bool = True
 
+    #: ``bed-*`` ARMS ONLY. Name of a dir under ``experiments/<domain>/`` (convention
+    #: ``_subgrid_<what>``, made by ``scripts/rebuild_subgrid.py``) whose
+    #: ``sfincs_subgrid.nc`` and ``subgrid/`` REPLACE the sealed template's after staging.
+    #: A bed or roughness edit can only enter a run this way: ``build_static`` copies the
+    #: frozen mesh and returns early, so a "rebuilt" template is a no-op (CLAUDE.md §5).
+    #: The mesh (``sfincs.nc``) stays the template's, so the fingerprint is unchanged and
+    #: the staging guard still proves the arm is on the domain; the runner additionally
+    #: refuses a subgrid dir whose own ``sfincs.nc`` is not the sealed mesh.
+    subgrid_from: str | None = None
+
 
 def with_window(base: BaseConfig, tstop: datetime) -> BaseConfig:
     """Return a copy of ``base`` with a shorter run window (for smoke tests)."""

@@ -191,6 +191,28 @@ _V3: dict[str, Experiment] = {
         rain=False,
         **_V3_WL,
     ),
+    # Buildings as subgrid porosity (Building Block on the 3.125/6.25 m pixels; STATUS
+    # 09-03/09-04). The premier's mesh, mask, forcing and roughness verbatim; only
+    # sfincs_subgrid.nc + subgrid/*.tif differ, rebuilt on the frozen mesh with
+    # `bed_buildings_v3` (NJDEP footprints at ground + 4 m, ground >= 0 m NAVD88)
+    # prepended to V3_ELEVATION_LIST. Fingerprint unchanged by construction.
+    "bed-buildings": Experiment(
+        "bed-buildings",
+        WaveConfig(use_waves=True, wave_wind=True, wave_igwaves=False, tune_physics=True,
+                   wave_point_dataset=_V3_CORA, wave_n_support=_V3_WAVE_N),
+        "The premier with NJDEP building footprints burned into the subgrid DEM at "
+        "local ground + 4 m (scripts/burn_building_footprints.py → "
+        "scripts/rebuild_subgrid.py). Buildings take storage and narrow the wet cross-"
+        "section inside a cell; a fully covered cell goes dry. Pre-registered read "
+        "(STATUS 09-04): paired HWM ΔRMSE within ±0.02 m with a CI spanning zero, "
+        "town marks a few cm HIGHER, gauges unchanged; raw MOTF CSI DOWN mechanically "
+        "because footprint pixels are dry in the downscaled map and wet in MOTF — the "
+        "fair extent comparison masks footprints out of both. ⚠️ Sandy is the case "
+        "where this matters LEAST (long-duration surge fills behind any wall); the "
+        "arm exists so the porosity is in place for shorter events.",
+        subgrid_from="_subgrid_buildings",
+        **_V3_WL,
+    ),
 }
 
 

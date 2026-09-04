@@ -157,6 +157,41 @@ def check_template_domain(name: str) -> None:
         )
 
 
+def swap_subgrid(exp_dir: Path, src: Path, name: str) -> None:
+    """Replace a staged arm's subgrid products with those of a ``rebuild_subgrid.py`` dir.
+
+    The only way a bed/roughness edit reaches a run (see ``Experiment.subgrid_from``).
+    Hard-links (same filesystem) with a copy fallback; the copytree'd originals are
+    unlinked first, so nothing is written through to the template. Refuses a source
+    built on any mesh but the sealed one — a subgrid table is only meaningful on the
+    mesh it was cut for.
+    """
+    if not (src / "sfincs_subgrid.nc").exists() or not (src / "subgrid").is_dir():
+        raise SystemExit(
+            f"[{name}] subgrid_from={src.name}: no sfincs_subgrid.nc + subgrid/ there — "
+            "build it with scripts/rebuild_subgrid.py first"
+        )
+    premier.assert_sealed_domain(src, context=f"subgrid_from '{src.name}' for '{name}'")
+    prov = src / "provenance.txt"
+    print(f"[{name}] subgrid ← {src}" + (f" ({prov.read_text()[:120]!r}...)" if prov.exists() else ""))
+
+    def _link(a: Path, b: Path) -> None:
+        b.unlink(missing_ok=True)
+        try:
+            os.link(a, b)
+        except OSError:
+            shutil.copy2(a, b)
+
+    _link(src / "sfincs_subgrid.nc", exp_dir / "sfincs_subgrid.nc")
+    shutil.rmtree(exp_dir / "subgrid", ignore_errors=True)
+    (exp_dir / "subgrid").mkdir()
+    for f in sorted((src / "subgrid").iterdir()):
+        _link(f, exp_dir / "subgrid" / f.name)
+    for f in ("subgrid_diff.json", "provenance.txt"):
+        if (src / f).exists():
+            shutil.copy2(src / f, exp_dir / f"subgrid_{f}")
+
+
 def prepare_experiment(name: str, base: BaseConfig) -> Path:
     """Copy the template and apply the experiment's knobs. Returns the exp dir."""
     exp = EXPERIMENTS[name]
@@ -173,6 +208,8 @@ def prepare_experiment(name: str, base: BaseConfig) -> Path:
         premier.assert_bracket(exp_dir, exp.bracket, context=f"staged bracket '{name}'")
     else:
         premier.assert_sealed_domain(exp_dir, context=f"staged '{name}'")
+    if exp.subgrid_from:
+        swap_subgrid(exp_dir, EXP_ROOT / exp.subgrid_from, name)
 
     sf = SfincsModel(str(exp_dir), data_libs=base.data_libs, mode="r+")
     sf.read()
@@ -404,6 +441,12 @@ def main(argv=None) -> int:
             try:
                 check_template_domain(name)
                 verdict = "OK"
+                sub = EXPERIMENTS[name].subgrid_from
+                if sub and not (EXP_ROOT / sub / "sfincs_subgrid.nc").exists():
+                    verdict = (
+                        f"OK but subgrid_from={sub} is NOT BUILT — staging would refuse; "
+                        "run scripts/rebuild_subgrid.py first"
+                    )
             except Exception as e:  # noqa: BLE001 — report every arm, don't stop at one
                 verdict, bad = f"REFUSED — {type(e).__name__}: {e}", bad + 1
             print(f"[check] {name}: {verdict}")

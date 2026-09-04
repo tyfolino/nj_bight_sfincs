@@ -132,6 +132,13 @@ not trip that guard. Do not run the sweep driver to "just rebuild" a template.
   moves.
 - **For any bed edit, diff `z_volmax`, not `z_zmin`.** A carve restores sub-cell relief; it
   is not a uniform lowering, and `z_zmin` shows ~nothing while the run changes.
+- 🔴 **Do not PREPEND a burn raster (footprints, walls) to the elevation list.** hydromt's
+  `merge_multi_dataarrays` forces BILINEAR on every tier but the first, whatever
+  `reproj_method` says, so a NoData-edged raster grows by a pixel at full height; and the
+  FIRST tier defines the lattice every later tier is regridded onto, so the premier's own
+  pixels move (v3, 2026-09-04: 1.25 M faces got a new `z_zmin`, 29 by > 1 m, from a tier
+  that touched 12% of cells). Use `scripts/rebuild_subgrid.py --overlay`, which runs the
+  premier's merge untouched and paints the raster on top with nearest. STATUS 09-04.
 - **eHydro sign convention flips by USACE district.** New York district ships negative
   elevations; Philadelphia ships positive depths. A hardcoded formula produces a silently
   empty raster on the wrong side.

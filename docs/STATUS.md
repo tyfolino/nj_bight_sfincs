@@ -4,7 +4,7 @@
 12 KB "current state" memory file and its 26 reverse-chronological campaign logs; the point
 of the format is that a reader gets the current state without replaying how it was reached.
 
-Last updated: **2026-09-03** (🏠 BUILDING FOOTPRINTS acquired, NJDEP + Microsoft, statewide raw + v3 clip, see PICK UP; ⭐ RAIN-OFF SCORED on v3: CSI 0.710 → 0.809, **93.7% of premier's MOTF false alarm is rain**; the bay HWM/peak shifts (+0.3–0.4 m with rain OFF) are SEICHE PHASE (§40), not rain — see the 09-03 section; 💾 `experiments/` MOVED to `/scratch/tpj8` and symlinked, staging quota guard follows it, `scripts/desktop_pull_backup.sh` written, desktop snapshot taken, home copy deleted, home back under quota — see DISK; 2026-09-02: rain-off arm registered, staged and run (solve 61190532 → validate 61190533); 2026-09-01: ⭐ v3 REBUILD LANDED AND RE-SCORED — three arms clean on
+Last updated: **2026-09-04** (🏠 BUILDINGS: adequacy checks done, `bed_buildings_v3` tier burned (328 km² at ground + 4 m), `bed-buildings` arm registered with `Experiment.subgrid_from`, subgrid rebuild RUNNING as SLURM 61230804 — see the 09-04 section; 2026-09-03: 🏠 BUILDING FOOTPRINTS acquired, NJDEP + Microsoft, statewide raw + v3 clip; ⭐ RAIN-OFF SCORED on v3: CSI 0.710 → 0.809, **93.7% of premier's MOTF false alarm is rain**; the bay HWM/peak shifts (+0.3–0.4 m with rain OFF) are SEICHE PHASE (§40), not rain — see the 09-03 section; 💾 `experiments/` MOVED to `/scratch/tpj8` and symlinked, staging quota guard follows it, `scripts/desktop_pull_backup.sh` written, desktop snapshot taken, home copy deleted, home back under quota — see DISK; 2026-09-02: rain-off arm registered, staged and run (solve 61190532 → validate 61190533); 2026-09-01: ⭐ v3 REBUILD LANDED AND RE-SCORED — three arms clean on
 hal nodes, premier 4/4 on the new fingerprint, merged dep rebuilt, HWM RMSE
 0.384/0.400/0.431, extent unchanged; bay SnapWave setup HALVED and the v3↔v1.5 Monmouth
 offset is GONE (sign-test P 0.011 → 0.152), Sandy Hook tide-range gap healed
@@ -62,13 +62,121 @@ atomic writes, count-verified). Run for v3:
   campaigns are the bed DEM's campaigns.
 - Disk: +2.7 G on home (76 G / 100 G after).
 
-**Next:** (1) the two quick adequacy checks — share of scored HWMs in 25 m vs 50 m cells,
-and per-cell exact footprint fraction vs burned-pixel fraction in the 50 m band;
-(2) rasterise NJDEP footprints onto the 10 ft DEM tier at a capped height, register the
-tier in `data_catalog.yml`, subgrid rebuild on the frozen v3 mesh
-(`scripts/rebuild_subgrid.py`), diff `z_volmax`, premier audit (a fully-covered cell
-moves `z_zmin` → sha); (3) register `bed-buildings` in `experiments.py`; pre-register
-paired HWM Δ + dense-urban CSI subset before scoring.
+**Next (superseded 09-04, see the section below):** adequacy checks → burn → subgrid
+rebuild → arm.
+
+### 🏠 2026-09-04 — BUILDINGS: adequacy checks PASSED, tier burned, arm registered; subgrid rebuild RUNNING (SLURM 61230804)
+
+**Adequacy (`scripts/check_buildings_adequacy.py` → `data/buildings_v3/adequacy_2026-09-04.json`):**
+- **Where the scored marks sit:** of the 94 scored HWMs, 59 are in 25 m cells (3.125 m
+  pixels), 34 in 50 m cells (6.25 m), 1 in a 100 m cell. A third of the evidence sees
+  buildings at 6.25 m pixels — adequate given the next line.
+- **Does the pixel burn keep the buildings?** 3,000 random active cells per band that
+  touch ≥1 footprint, exact vector coverage vs pixel-centre burn: 25 m band bias
+  −0.0003 / RMSE 0.017 / r 0.997; 50 m band bias 0.000 / RMSE 0.017 / r 0.988 (and
+  +0.001 / 0.021 / 0.983 for "burn at 3.125 m then subsample", which is what nearest
+  resampling onto a 6.25 m pixel does). Lost area (cells whose only building falls
+  between pixel centres): 0.12% (25 m) / 0.29% (50 m). Mean coverage of a touched
+  cell: 25% (25 m) / 14% (50 m); 14.2% of active 25 m cells and 8.4% of 50 m cells
+  touch a footprint. Fully covered: 0.8% of touched 25 m cells (~1,200 cells go dry),
+  0.07% at 50 m. **Verdict: `nr_subgrid_pixels=8` is adequate in both bands; no mesh or
+  pixel change.**
+- **The height cap.** Premier hmax over ground > 0.7 m NAVD88 (12.5 m pixels, n 3.8 M):
+  p50 0.50, p90 1.26, p99 2.64, **p99.9 3.20 m**; 238 pixels > 4 m, 30 > 5 m (bulkhead /
+  cliff edges). **Cap = ground + 4 m**: clears 99.994% of wet land pixels. The cost of
+  every extra metre is in the uv tables — hydromt spaces them by EQUAL DEPTH between
+  zmin and zmax (`workflows/subgrid.py`; equal VOLUME is the z/storage table only) —
+  so at 10 levels a building-touching uv point goes from today's dlevel (p50 0.08 m,
+  p90 0.45 m on land) to ~0.44 m, i.e. today's p90. Kept `nr_levels=10` so the arm
+  differs from the premier in ONE thing; a `solver-sbg20` follow-up is the control if
+  the effect looks discretisation-shaped (2× table size).
+
+**Burn (`scripts/burn_building_footprints.py`, 144 s):** `data/elevation_v3/bed_buildings_v3.tif`
++ `.json` provenance, catalog `bed_buildings_v3`. ⚠️ **Deviates from the 09-03 wording
+("onto the 10 ft DEM tier") on purpose:** the ground is the sealed template's
+`subgrid/dep_subgrid_merged.tif` — the exact bed the model runs on whichever tier won
+there (the 10 ft DEM sits BELOW five carving tiers) — nearest-resampled onto an
+AXIS-ALIGNED 3.125 m EPSG:32618 lattice (the template's own lattice is rotated ~0.8°
+with the quadtree; a rotated tier is an untested path in hydromt's raster stack).
+Value = ground + 4.0 m inside NJDEP footprints, NoData (−9999) elsewhere; footprint
+pixels on ground < 0 m NAVD88 skipped (piers/docks: 5,617 px = 0.05 km²); 0.95 M px
+skipped for NaN ground = bbox corners outside the rotated rectangle. **Burned 33.6 M px
+= 328.4 km²** (351 km² in the bbox clip). Verified: value − ground = 4.000 at 3,000
+sampled pixels (p1 = p99 = 4.00); hydromt reads it at zoom 3.125 / 6.25 / 25 m with
+valid share 0.113 / 0.114 / 0.115 in the densest 5 km block → **NEAREST overviews do
+not dilate footprints** (an AVERAGE overview would mark any pixel with one valid child).
+
+**Plumbing:** `Experiment.subgrid_from` (config.py) + `run_experiments.swap_subgrid` —
+a `bed-*` arm is staged from the sealed template as usual, passes the fingerprint
+guard, then its `sfincs_subgrid.nc` + `subgrid/` are hard-linked from
+`experiments/<domain>/_subgrid_<what>/`, whose own `sfincs.nc` must ALSO pass
+`assert_sealed_domain` (a table cut for another mesh is refused). `--check` warns when
+the source is not built. `scripts/rebuild_subgrid.py` (generic; the one-off
+`rebuild_subgrid_h.py` pattern) + `hpc/rebuild_subgrid.slurm`; it writes
+`subgrid_diff.json` (`z_volmax` / `z_zmin` / `uv_zmax` deltas, fully-blocked cell
+count, uv dlevel before/after) and `provenance.txt`. `tests/test_bed_arms.py` pins:
+every `bed-` arm names a `_subgrid_*` source and nothing else does. 99 tests OK.
+
+**⚠️ First rebuild VOIDED (SLURM 61230804, hal0098, 46 min, 20 GB, `--tier` = prepend).**
+It completed clean and passed the fingerprint audit, and its `subgrid_diff.json`
+(kept as `data/buildings_v3/subgrid_diff_VOID_prepend_2026-09-04.json`) failed
+pre-registration item 5: **1.25 M faces got a new `z_zmin`** (12% of active cells touch
+a footprint), 36 k non-footprint cells by > 1 cm, 529 by > 10 cm, 29 by > 1 m; pixel
+diffs in windows with no buildings showed 62–99% of pixels moved by ~1–2 mm. A
+one-block reproduction (deterministic: the same list twice differs by 0.0) isolated
+the cause to hydromt's `merge_multi_dataarrays`: **(a) every tier but the FIRST has
+its `reproj_method` overwritten with bilinear** (`workflows/merge.py`, the
+`else: reproj_method = "bilinear"` branch), so a NoData-edged raster grows by a pixel
+at full building height — in the block, 101 non-footprint pixels changed by > 0.5 m
+(up to 8.4 m), values 3.0–4.3 m beside footprints; **(b) the first tier is what every
+later tier is regridded onto**, so prepending anything moves the premier's own
+pixels (the ~1 mm everywhere). Neither is visible to any guard: the fingerprint seals
+`sfincs.nc`, which the subgrid never touches. **Fix: `rebuild_subgrid.py --overlay`** —
+hydromt's merge runs on exactly the premier's list, then the tier is nearest-painted
+on the merged block where valid (a wrapper around the builder's merge call; the
+toolchain is not edited). Block test: 31 footprint pixels changed by 4.00 m (p1 3.993,
+p99 4.009), **0 non-footprint pixels changed**. CLAUDE.md §5 has the trap.
+
+**Running:** `sbatch hpc/rebuild_subgrid.slurm --dst _subgrid_buildings --overlay bed_buildings_v3 --force`
+= **SLURM 61231337 on hal0147** (started ~11:40 EDT; ~47 min, 20 GB). Item 5 is
+re-read against this build: expect `z_zmin` to change ONLY in footprint cells (a cell's
+minimum pixel is under a building only when the cell is fully covered, so ~851 faces),
+`z_zmax` up by ~4 m in ~213 k faces, no boundary-cell change.
+
+**PRE-REGISTRATION (written before the rebuild finished, before any scoring; a practice,
+not a gate):**
+1. **Paired HWM** (`scripts/paired_hwm_bootstrap.py bed-buildings naccs-premier`, 94
+   marks, `median`, 25 m): ΔRMSE within ±0.02 m, 95% CI spanning 0. Sign of Δbias:
+   POSITIVE (marks a few cm higher) — blocked storage inside towns raises the local
+   water surface. Marks in 25 m town cells move more than 50 m-cell marks.
+2. **Gauges:** every peak within 1 cm of the premier (gauges are in open water).
+3. **MOTF CSI RAW goes DOWN, mechanically, and that is NOT a verdict:** footprint
+   pixels are dry in the downscaled floodmap (bed raised 4 m) and wet in MOTF (an HWM
+   surface on bare earth), so POD drops by up to the footprint share of the wet land.
+   **Measured on the premier BEFORE the arm ran** (`scripts/motf_csi_buildings_masked.py`,
+   → `experiments/v3/motf_csi_buildings_masked.csv`): footprints are **2.83% of the
+   MOTF-wet scored land** (3.93% of all scored land; 328.5 km² of tier on the 15 m
+   MOTF grid, 10.0 km² of it already model-dry), so the raw ΔCSI is bounded at about
+   −0.02 and predicted −0.01 to −0.02. The fair extent comparison masks
+   `bed_buildings_v3` pixels out of BOTH rasters — the script reproduces the scorer's
+   raw CSI to 4 places on all three existing arms (premier raw 0.7103 → masked 0.7148,
+   POD 0.8935 → 0.9035) — predicted masked ΔCSI within ±0.005. Quote both, label which.
+4. **Where any real change lives:** local extent in dense back-bay towns (Seaside
+   Heights / Ortley, Ocean City, the Absecon Island bayside) — a few blocks either
+   way, not km². Sandy is the case where buildings matter LEAST: a 6–8 h surge fills
+   behind any wall (user + supervisor, 09-03). The arm is being built so the porosity
+   is in place for shorter events.
+5. **Subgrid diff sanity:** changes ONLY in footprint-touching cells; NO change in any
+   `mask==2` (boundary) cell; fully-blocked active cells ~1,000–1,500, nearly all in
+   the 25 m band; `uv_zmax` rises by ≤ 4 m + relief. ⚠️ Correction made after the
+   voided first build, before the second: `z_volmax` is the table's storage UP TO
+   `z_zmax`, so it RISES where a building raises `z_zmax` — "falls" was the wrong
+   sign for that key. The storage loss buildings represent is at a given WATER LEVEL,
+   i.e. in `z_level` (the equal-volume levels move up), not in `z_volmax`.
+
+**Next:** when 61230804 lands — read `subgrid_diff.json` against item 5, then
+`python run_experiments.py --experiments bed-buildings --slurm --slurm-args "--time=12:00:00"`,
+validate, `paired_hwm_bootstrap.py`, and a masked-CSI number.
 
 ### 💾 2026-09-03 — DISK: `experiments/` now lives on `/scratch/tpj8` (DONE); desktop snapshot taken, home copy deleted
 
