@@ -4,7 +4,7 @@
 12 KB "current state" memory file and its 26 reverse-chronological campaign logs; the point
 of the format is that a reader gets the current state without replaying how it was reached.
 
-Last updated: **2026-09-04** (🏠 BUILDINGS: adequacy checks done, `bed_buildings_v3` tier burned (328 km² at ground + 4 m), `bed-buildings` arm registered with `Experiment.subgrid_from`, subgrid rebuild RUNNING as SLURM 61230804 — see the 09-04 section; 2026-09-03: 🏠 BUILDING FOOTPRINTS acquired, NJDEP + Microsoft, statewide raw + v3 clip; ⭐ RAIN-OFF SCORED on v3: CSI 0.710 → 0.809, **93.7% of premier's MOTF false alarm is rain**; the bay HWM/peak shifts (+0.3–0.4 m with rain OFF) are SEICHE PHASE (§40), not rain — see the 09-03 section; 💾 `experiments/` MOVED to `/scratch/tpj8` and symlinked, staging quota guard follows it, `scripts/desktop_pull_backup.sh` written, desktop snapshot taken, home copy deleted, home back under quota — see DISK; 2026-09-02: rain-off arm registered, staged and run (solve 61190532 → validate 61190533); 2026-09-01: ⭐ v3 REBUILD LANDED AND RE-SCORED — three arms clean on
+Last updated: **2026-09-04** (🏠 BUILDINGS: adequacy checks done, `bed_buildings_v3` tier burned (328 km² at ground + 4 m), `bed-buildings` arm registered with `Experiment.subgrid_from`, first (prepend) subgrid rebuild VOIDED by a hydromt merge trap, `--overlay` rebuild LANDED (61231337) and item 5 passes, `bed-buildings` staged + solve submitted via 61232044 — see the 09-04 section; 2026-09-03: 🏠 BUILDING FOOTPRINTS acquired, NJDEP + Microsoft, statewide raw + v3 clip; ⭐ RAIN-OFF SCORED on v3: CSI 0.710 → 0.809, **93.7% of premier's MOTF false alarm is rain**; the bay HWM/peak shifts (+0.3–0.4 m with rain OFF) are SEICHE PHASE (§40), not rain — see the 09-03 section; 💾 `experiments/` MOVED to `/scratch/tpj8` and symlinked, staging quota guard follows it, `scripts/desktop_pull_backup.sh` written, desktop snapshot taken, home copy deleted, home back under quota — see DISK; 2026-09-02: rain-off arm registered, staged and run (solve 61190532 → validate 61190533); 2026-09-01: ⭐ v3 REBUILD LANDED AND RE-SCORED — three arms clean on
 hal nodes, premier 4/4 on the new fingerprint, merged dep rebuilt, HWM RMSE
 0.384/0.400/0.431, extent unchanged; bay SnapWave setup HALVED and the v3↔v1.5 Monmouth
 offset is GONE (sign-test P 0.011 → 0.152), Sandy Hook tide-range gap healed
@@ -137,11 +137,29 @@ on the merged block where valid (a wrapper around the builder's merge call; the
 toolchain is not edited). Block test: 31 footprint pixels changed by 4.00 m (p1 3.993,
 p99 4.009), **0 non-footprint pixels changed**. CLAUDE.md §5 has the trap.
 
-**Running:** `sbatch hpc/rebuild_subgrid.slurm --dst _subgrid_buildings --overlay bed_buildings_v3 --force`
-= **SLURM 61231337 on hal0147** (started ~11:40 EDT; ~47 min, 20 GB). Item 5 is
-re-read against this build: expect `z_zmin` to change ONLY in footprint cells (a cell's
-minimum pixel is under a building only when the cell is fully covered, so ~851 faces),
-`z_zmax` up by ~4 m in ~213 k faces, no boundary-cell change.
+**✅ Overlay rebuild LANDED (SLURM 61231337, hal0147, 59 min, 23.6 GB RSS), item 5 PASSES:**
+`experiments/v3/_subgrid_buildings/subgrid_diff.json` — `z_zmax` up in 213,672 active
+faces (p50 +3.99 m), **0 boundary cells changed on any key**, 849 active cells fully
+blocked. `z_zmin` changed in 11,995 active faces (9,475 at 25 m, 1,147 at 50 m, 555 at
+100 m, 818 at 200 m) — not only the 849 fully-blocked ones: a cell's minimum moves
+whenever its LOWEST pixel is under a building, e.g. a house on the lowest lot; 119
+faces whose `z_zmax` did not rise > 0.5 m still show a small `z_zmin` change (a
+building pixel in a cell that already had higher relief). `z_volmax` RISES (p50
++2,461 m³, it is storage up to `z_zmax`) — sign corrected in item 5 before this read.
+The vertical-discretisation cost, measured: in footprint cells the MIDDLE equal-volume
+`z_level` rises by 2.24 m (p50) / 2.39 m (p90) because 10 levels now span
+ground..ground + 4 m + relief; land uv `dlevel` p50 0.08 → 0.21 m, p90 0.45 → 0.66 m.
+That is the `nr_levels=20` question (a `solver-sbg20` follow-up, 2× table), parked so
+this arm differs from the premier in one thing. Small oddity, noted not fixed: `z_zmax`
+FELL in a few faces (min −1.99 m) — the overlay paints ground + 4 with ground taken
+from the merged tif at the nearest axis-aligned lattice point (≤ 1.6 m away), so on a
+> 4 m step (bulkhead, cliff) a footprint pixel can land below its own old value.
+
+**Submitted:** `sbatch hpc/stage_and_submit_v3.slurm bed-buildings` = **stage job 61232044
+(hal0226)** → **solve 61232096**, **validate 61232097** (afterok). Staged copy verified: `sfincs_subgrid.nc` and `subgrid/*.tif` share inodes with `_subgrid_buildings`, `sfincs.inp` byte-identical to the premier's. The
+staged copy's `sfincs_subgrid.nc` + `subgrid/` are hard-links into `_subgrid_buildings`;
+everything else is the premier's byte for byte. ⚠️ Only `naccs-premier` gets a buildings
+twin (user, 09-04) — no wave/rain variants.
 
 **PRE-REGISTRATION (written before the rebuild finished, before any scoring; a practice,
 not a gate):**
@@ -174,9 +192,16 @@ not a gate):**
    sign for that key. The storage loss buildings represent is at a given WATER LEVEL,
    i.e. in `z_level` (the equal-volume levels move up), not in `z_volmax`.
 
-**Next:** when 61230804 lands — read `subgrid_diff.json` against item 5, then
-`python run_experiments.py --experiments bed-buildings --slurm --slurm-args "--time=12:00:00"`,
-validate, `paired_hwm_bootstrap.py`, and a masked-CSI number.
+**Next (pick up 2026-09-05):** (1) `sacct -j 61232096,61232097 --format=JobID,State,NodeList,Elapsed,MaxRSS`
+— both `COMPLETED`, neither on a `halk*` node; three-clock check on
+`experiments/v3/bed-buildings/sfincs_map.nc` (CLAUDE.md §5); `python -m nj_sfincs.premier`
+must say `output WHOLE` for the new dir. (2) Read `experiments/v3/metrics.csv` row
+`bed-buildings` against pre-registration items 1–4: `scripts/paired_hwm_bootstrap.py
+bed-buildings naccs-premier` (item 1), gauge peaks vs premier (item 2),
+`scripts/motf_csi_buildings_masked.py naccs-premier bed-buildings` (item 3: quote raw AND
+masked), and a floodmap difference in Seaside Heights / Ocean City / Absecon Island (item 4).
+(3) Write the read here, in place. If the validate job sits `DependencyNeverSatisfied`,
+the solve failed — `scancel 61232097` and read `logs/sfincs_61232096.out`.
 
 ### 💾 2026-09-03 — DISK: `experiments/` now lives on `/scratch/tpj8` (DONE); desktop snapshot taken, home copy deleted
 
