@@ -4,7 +4,7 @@
 12 KB "current state" memory file and its 26 reverse-chronological campaign logs; the point
 of the format is that a reader gets the current state without replaying how it was reached.
 
-Last updated: **2026-09-08** (🏠 `bed-buildings` RE-SCORED on the merged bed: no measurable Sandy effect outside footprint drying + bay seiche phase; paired ΔRMSE +0.008 [−0.027, +0.041], non-seiche basins +0.001; first score was VOID (lev3-only bed) and the gap is closed in code — see the 09-04 section; 2026-09-04: 🏠 BUILDINGS: adequacy checks done, `bed_buildings_v3` tier burned (328 km² at ground + 4 m), `bed-buildings` arm registered with `Experiment.subgrid_from`, first (prepend) subgrid rebuild VOIDED by a hydromt merge trap, `--overlay` rebuild LANDED (61231337) and item 5 passes, `bed-buildings` staged + solve submitted via 61232044 — see the 09-04 section; 2026-09-03: 🏠 BUILDING FOOTPRINTS acquired, NJDEP + Microsoft, statewide raw + v3 clip; ⭐ RAIN-OFF SCORED on v3: CSI 0.710 → 0.809, **93.7% of premier's MOTF false alarm is rain**; the bay HWM/peak shifts (+0.3–0.4 m with rain OFF) are SEICHE PHASE (§40), not rain — see the 09-03 section; 💾 `experiments/` MOVED to `/scratch/tpj8` and symlinked, staging quota guard follows it, `scripts/desktop_pull_backup.sh` written, desktop snapshot taken, home copy deleted, home back under quota — see DISK; 2026-09-02: rain-off arm registered, staged and run (solve 61190532 → validate 61190533); 2026-09-01: ⭐ v3 REBUILD LANDED AND RE-SCORED — three arms clean on
+Last updated: **2026-09-08** (🌊 LOW-BIAS REVIEW: the SnapWave BOUNDARY IS NOT TRANSMITTING — 43 % of the interior cells touching the southern wave boundary carry NO waves (staircase inner corners), shelf hm0 inside is 15–60 % of imposed, shoreline setup 0.05 m vs 0.2–0.35 theory, back bays 0.2–0.55 m low BEFORE the storm with the ocean gauge matched to 6 mm; pre-registered fix = smoother decoupled SnapWave boundary, success = transmission not score — see the 09-08 section at the top of PICK UP; 🏠 `bed-buildings` RE-SCORED on the merged bed: no measurable Sandy effect outside footprint drying + bay seiche phase; paired ΔRMSE +0.008 [−0.027, +0.041], non-seiche basins +0.001; first score was VOID (lev3-only bed) and the gap is closed in code — see the 09-04 section; 2026-09-04: 🏠 BUILDINGS: adequacy checks done, `bed_buildings_v3` tier burned (328 km² at ground + 4 m), `bed-buildings` arm registered with `Experiment.subgrid_from`, first (prepend) subgrid rebuild VOIDED by a hydromt merge trap, `--overlay` rebuild LANDED (61231337) and item 5 passes, `bed-buildings` staged + solve submitted via 61232044 — see the 09-04 section; 2026-09-03: 🏠 BUILDING FOOTPRINTS acquired, NJDEP + Microsoft, statewide raw + v3 clip; ⭐ RAIN-OFF SCORED on v3: CSI 0.710 → 0.809, **93.7% of premier's MOTF false alarm is rain**; the bay HWM/peak shifts (+0.3–0.4 m with rain OFF) are SEICHE PHASE (§40), not rain — see the 09-03 section; 💾 `experiments/` MOVED to `/scratch/tpj8` and symlinked, staging quota guard follows it, `scripts/desktop_pull_backup.sh` written, desktop snapshot taken, home copy deleted, home back under quota — see DISK; 2026-09-02: rain-off arm registered, staged and run (solve 61190532 → validate 61190533); 2026-09-01: ⭐ v3 REBUILD LANDED AND RE-SCORED — three arms clean on
 hal nodes, premier 4/4 on the new fingerprint, merged dep rebuilt, HWM RMSE
 0.384/0.400/0.431, extent unchanged; bay SnapWave setup HALVED and the v3↔v1.5 Monmouth
 offset is GONE (sign-test P 0.011 → 0.152), Sandy Hook tide-range gap healed
@@ -23,6 +23,114 @@ excludes Mays Landing and Batsto and that is NOT accepted** — see PICK UP · 2
 seiche FINDINGS §40 · weir FINDINGS §38 · rain FINDINGS §39)
 
 ## ⏳ PICK UP — next session
+
+### 🌊 2026-09-08 — THE OPEN-COAST / BACK-BAY LOW BIAS: the SnapWave BOUNDARY IS NOT TRANSMITTING the waves we impose (a defect, not a physics setting)
+
+Asked by the user ("we still have a bit of a low bias on the open coast and back bays").
+Everything below is measured on the 09-01 v3 runs (`naccs-premier`, `naccs-nowaves`,
+`wave-stwave`); log `logs/wave_boundary_ring_v3_premier_2026-09-08.log`; reproduce with
+`scripts/wave_boundary_ring.py`. Plain-English version: big waves pile water up against
+a beach (wave setup, ~a foot during Sandy). The model makes ~2 inches of it, and the
+reason is that the waves are being lost at the edge of the model before they reach the
+beach.
+
+**1. The bias is a MEAN-LEVEL deficit that exists BEFORE the storm, with the tide right.**
+Time-aligned model − obs over the quiet window 10-28 06:00 → 10-29 12:00 (bad obs faces
+per the 08-27 list excluded):
+
+| gauge | obs − model pre-storm mean | tide range mod / obs |
+|---|---|---|
+| Atlantic City NOAA pier (ocean, 7 m deep) | **+0.006** | 1.83 / 1.80 |
+| Sandy Hook | +0.053 | 2.33 / 2.15 |
+| Absecon Channel (USGS, 3 km behind the pier) | +0.246 | 1.70 / 1.63 |
+| Great Egg | +0.397 | 1.23 / 1.22 |
+| Ocean City | +0.554 | 1.30 / 1.13 |
+| Sea Isle | +0.329 | 1.33 / 1.62 |
+| Stone Harbor | +0.277 | 1.68 / 1.64 |
+| Tuckerton | +0.227 | 1.53 / 1.24 |
+| Ship Bottom | +0.179 | 0.89 / 0.87 |
+| Shark River | +0.165 | 1.92 / 1.69 |
+| Sea Bright (USGS, near the surf) | +0.076 | 1.46 / 1.54 |
+
+The ocean gauge is matched to 6 mm, so the NACCS datum, the VDatum conversion and the
+steric term are RIGHT — 🔴 a constant offset would be the wrong fix. Model back-bay means
+all equal the ocean mean (0.59–0.66 m NAVD88); the observed bays sit 0.2–0.55 m ABOVE it,
+high AND low waters low by the same amount, tide range within ~5 % at most stations. Not
+conveyance, not friction: a missing mean-level mechanism. Observed bay-minus-pier
+(12.4 h low-passed) grows 0.3 → 0.5 m as boundary Hs grows 2.3 → 3.8 m and turns
+NEGATIVE on 10-30/31 once the wind goes offshore — the wave-setup / lagoon-superelevation
+signature. SnapWave gives the southern bays +0.00..+0.03 of it (premier − nowaves
+pre-storm means), Sea Bright / Sandy Hook +0.11/+0.12 (the two stations nearest the surf).
+⚠️ Caveat kept: the seven southern stations are one USGS network; a program-wide datum
+error is unlikely (sign and size agree with the two independent northern USGS stations
+and with the wave-height time dependence) but not excluded — the independent check is a
+calm month against the nearest NOAA gauge.
+
+**2. Setup at the beach is ~1/6 of theory.** Shore-normal transects, premier − nowaves zs,
+peak hours 10-29 21:00–10-30 03:00: Atlantic City **0.05 m**, Ocean City **0.05**, Sea Isle
+**0.06**, Sea Bright 0.11–0.26. Stockdon at β_f 0.02–0.03 for the imposed Hs/Tp gives
+0.2–0.35 m. Pre-storm the same transects give 0.01–0.04 (south) vs 0.08–0.13 (Sea Bright).
+FINDINGS §4's "+0.02 m at the open-beach marks" is the same number seen from the marks.
+
+**3. The wave height COLLAPSES immediately inside the wave boundary.** Boundary cells
+(`snapwavemsk == 2`) carry the imposed Hs; shelf cells 100–300 m inside, still at
+zb −9.8..−8.5 where Baldock breaking gives Qb ≈ 0.005 and fw = 0.02 friction is ≪ 10 %,
+carry a fraction of it. IDENTICAL with the STWAVE boundary → not a CORA property:
+
+| site | 10-28 12:00 | 10-29 00:00 | 10-29 12:00 | 10-30 00:00 (peak) |
+|---|---|---|---|---|
+| Ocean City | 0.14 | 0.15 | 0.16 | 0.40 |
+| Atlantic City | 0.30 | 0.30 | 0.25 | 0.51 |
+| Sea Isle | 0.47 | 0.47 | 0.42 | 0.59 |
+| Sea Bright | 0.56 | 0.57 | 0.45 | 0.62 |
+
+**4. The DEAD RING.** Of the 6,556 interior cells that touch a wave-boundary cell, **2,580
+have hm0 = 0, zero wave force AND a fill-value direction (332.96°)** at the peak hour —
+no wave state, on two independent fields. South of v1.5's limit **2,372 of 5,473 (43 %)**;
+north 208 of 1,083 (19 %). Dead cells touch **2.0 boundary cells** on average, live ones
+1.0: they are the INNER CORNERS of the boundary staircase — the −10 m isobath runs
+diagonally across an axis-aligned quadtree, so every step corner is a cell with boundary
+on two sides, and those get nothing. The south is worst because the whole v3 coast is a
+diagonal; v1.5's arms are straighter. ⚠️ v1.5's own scores carried a 19 % version of this.
+
+**5. The solver knows.** `sfincs.log`: **25 of 145** SnapWave calls ended at the iteration
+cap (`snapwave_niter 100` ÷ 4 sweeps = 25) without converging; the non-OK node fraction
+(0.25–0.5 % of 1.76 M ≈ 4–9 k) is the size of the boundary ring (6,464 boundary nodes).
+
+**6. Why this fits the bias pattern.** Half the incident wave height at the beach →
+setup ∝ H² drops to a quarter or less → oceanfront marks low, and the inlet setup that
+lifts a back bay above the ocean before the storm is missing → southern back bays 0.2–0.55
+low, largest exactly where the ring is deadest. One cause, both biases. The ERA5 wind is
+a SECONDARY suspect only (peak 21 m/s at the coast, plausibly 10–20 % low; the archive's
+wind campaign found RTMA shows the same bay/ocean reduction); Ocean City's outsized +0.55
+sits at the downwind end of Great Egg Harbor Bay under the NE wind.
+
+**7. What NOT to do, and why.** Not `snapwave_gamma` / `alpha` / `fw`: retuning breaking on
+a surf zone fed half its energy calibrates the wrong thing. Not IG / a wavemaker now: IG
+energy is computed FROM the incident waves SnapWave delivers, so it inherits the shortage;
+IG adds oscillation about the mean, and the deficit IS the mean (30 h pre-storm); and it
+is a settled null on the sealed v1 domain (≤ 0.01 m on every metric, forced hard).
+Retest IG as a one-flag arm AFTER transmission is fixed — its input changes. Ocean-side
+wavemaker only (archive trap). Not roughness, inlet bathymetry or a boundary offset.
+
+**⏳ NEXT (pre-registered BEFORE any run):**
+1. **Report to Deltares** with a reproducible case: `sfincs.nc` (mesh + masks),
+   `snapwave.{bnd,bhs,btp,bwd,bds}`, the ring statistic. Dead inner-corner cells look
+   like a boundary-handling bug, and the Fortran source is not on this machine to check.
+2. **A v3 arm with a SMOOTHER SnapWave boundary** — the `decouple_snapwave` /
+   `snapwave_mask_zmin` path already in `WaveConfig` (premier.py excludes the SnapWave
+   mask from the seal, so it is a legitimate arm), drawn deeper AND as a cleaner line than
+   the isobath staircase. Companion knob in the same arm: raise `snapwave_niter` so the
+   cap stops masking the ring. Budget: SnapWave is 86 % of runtime and the domain grows.
+3. **Success criterion is TRANSMISSION, not the score:** dead-ring fraction → ≈ 0 and the
+   table-3 ratio ≥ 0.85 at every site and time. Only then read the scores.
+4. **Predictions, in the direction they must land:** peak shoreline setup at Atlantic
+   City / Ocean City / Sea Isle rises from ~0.05 toward 0.2–0.35 m; southern back-bay
+   pre-storm means rise toward the observed; `south_coast`, `absecon_atlantic_city`,
+   `great_egg`, `cape_may_back_bays`, `manasquan`, `barnegat_bay` HWM biases shrink
+   (currently −0.22..−0.39, median 50 m). The Raritan lobe WILL re-ring — compare it
+   paired (§40). Extent may drop: the archive's v1 `wave-deep30` was the best level arm
+   and the worst extent arm. Then retest `wave-ig` as one flag on top.
 
 ### 🏠 2026-09-03 — BUILDING FOOTPRINTS ACQUIRED (both sources, statewide raw + v3 clip); the `bed-buildings` arm is NOT yet built
 
