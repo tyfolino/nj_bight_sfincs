@@ -4,7 +4,7 @@
 12 KB "current state" memory file and its 26 reverse-chronological campaign logs; the point
 of the format is that a reader gets the current state without replaying how it was reached.
 
-Last updated: **2026-09-08** (🔴 `bed-buildings` scored on the lev3-only bed — row VOID, merged dep + re-validate pending, see the 09-04 section; 2026-09-04: 🏠 BUILDINGS: adequacy checks done, `bed_buildings_v3` tier burned (328 km² at ground + 4 m), `bed-buildings` arm registered with `Experiment.subgrid_from`, first (prepend) subgrid rebuild VOIDED by a hydromt merge trap, `--overlay` rebuild LANDED (61231337) and item 5 passes, `bed-buildings` staged + solve submitted via 61232044 — see the 09-04 section; 2026-09-03: 🏠 BUILDING FOOTPRINTS acquired, NJDEP + Microsoft, statewide raw + v3 clip; ⭐ RAIN-OFF SCORED on v3: CSI 0.710 → 0.809, **93.7% of premier's MOTF false alarm is rain**; the bay HWM/peak shifts (+0.3–0.4 m with rain OFF) are SEICHE PHASE (§40), not rain — see the 09-03 section; 💾 `experiments/` MOVED to `/scratch/tpj8` and symlinked, staging quota guard follows it, `scripts/desktop_pull_backup.sh` written, desktop snapshot taken, home copy deleted, home back under quota — see DISK; 2026-09-02: rain-off arm registered, staged and run (solve 61190532 → validate 61190533); 2026-09-01: ⭐ v3 REBUILD LANDED AND RE-SCORED — three arms clean on
+Last updated: **2026-09-08** (🏠 `bed-buildings` RE-SCORED on the merged bed: no measurable Sandy effect outside footprint drying + bay seiche phase; paired ΔRMSE +0.008 [−0.027, +0.041], non-seiche basins +0.001; first score was VOID (lev3-only bed) and the gap is closed in code — see the 09-04 section; 2026-09-04: 🏠 BUILDINGS: adequacy checks done, `bed_buildings_v3` tier burned (328 km² at ground + 4 m), `bed-buildings` arm registered with `Experiment.subgrid_from`, first (prepend) subgrid rebuild VOIDED by a hydromt merge trap, `--overlay` rebuild LANDED (61231337) and item 5 passes, `bed-buildings` staged + solve submitted via 61232044 — see the 09-04 section; 2026-09-03: 🏠 BUILDING FOOTPRINTS acquired, NJDEP + Microsoft, statewide raw + v3 clip; ⭐ RAIN-OFF SCORED on v3: CSI 0.710 → 0.809, **93.7% of premier's MOTF false alarm is rain**; the bay HWM/peak shifts (+0.3–0.4 m with rain OFF) are SEICHE PHASE (§40), not rain — see the 09-03 section; 💾 `experiments/` MOVED to `/scratch/tpj8` and symlinked, staging quota guard follows it, `scripts/desktop_pull_backup.sh` written, desktop snapshot taken, home copy deleted, home back under quota — see DISK; 2026-09-02: rain-off arm registered, staged and run (solve 61190532 → validate 61190533); 2026-09-01: ⭐ v3 REBUILD LANDED AND RE-SCORED — three arms clean on
 hal nodes, premier 4/4 on the new fingerprint, merged dep rebuilt, HWM RMSE
 0.384/0.400/0.431, extent unchanged; bay SnapWave setup HALVED and the v3↔v1.5 Monmouth
 offset is GONE (sign-test P 0.011 → 0.152), Sandy Hook tide-range gap healed
@@ -227,8 +227,63 @@ one (`missing_merged_dep`; `--check` reports the same), and `_write_outputs` pri
 (`hwm_count_mismatches`). `hpc/merge_subgrid_dep.slurm` builds the merged raster for a
 subgrid dir and hard-links it into the named arms.
 
-**Submitted 09-08:** merge job **61307050** (hal0138) → validate **61307051** (afterok,
-`--validate-only bed-buildings`, 128 G). Then the pre-registration read, items 1–4.
+**✅ RE-SCORED 09-08:** merge job **61307050** (hal0138, 10:41, `dep_subgrid_merged.tif`
+built + hard-linked into the arm; `--check` now says `OK`) → validate **61307051**
+(hal0115, 55:38, `COMPLETED`, no halk). `hwm_n_scored` 94 = premier's, `motf_km2_unsimulated`
+identical, the new 🔴 count check silent. THE ROW IS COMPARABLE.
+
+**THE READ, against the pre-registration (items 1–5 above):**
+
+| key | premier | bed-buildings |
+|---|---|---|
+| `hwm_rmse_scored_m` | 0.384 | 0.392 |
+| `hwm_bias_scored_m` | −0.156 | −0.079 |
+| `hwm_within0.5_scored` | 0.872 | 0.872 |
+| `motf_csi` / `motf_pod` / `motf_far` (raw) | 0.710 / 0.894 / 0.224 | 0.699 / 0.870 / 0.220 |
+| masked CSI / POD / FAR (footprints out of BOTH) | 0.715 / 0.904 / 0.226 | 0.713 / 0.893 / 0.220 |
+
+1. **Paired HWM ✓ (`paired_hwm_bootstrap.py`, 94 common marks, median, 50 m):** ΔRMSE
+   **+0.008 m, 95% CI [−0.027, +0.041]**, P(Δ > 0.01) 0.45 — within ±0.02, CI spans 0
+   as predicted. Δbias **+0.077 [+0.054, +0.101]** — POSITIVE as predicted, **but for the
+   wrong reason**: `scripts/paired_hwm_basin_split.py` puts ALL of it in the Raritan/Lower
+   Bay seiche system (raritan_bay + sandy_hook_bay + lower_bay_si_shore +
+   shrewsbury_navesink, 38 marks, 37 of 38 UP, Δbias **+0.196 [+0.167, +0.223]**, ΔRMSE
+   +0.017 [−0.065, +0.093]); the other **56 marks: ΔRMSE +0.001 [−0.005, +0.009], Δbias
+   −0.004 [−0.012, +0.004]** — zero. At 25 m the same picture (non-seiche ΔRMSE +0.012
+   [−0.003, +0.031]). Per basin outside the bay: atlantic_oceanfront +0.04 (3 marks),
+   south_coast −0.05 (4), everything else |Δ| < 0.01. The "town storage raises the local
+   surface" mechanism is NOT what moved the bias; the 25 m-vs-50 m sub-prediction was
+   not tested (moot at these magnitudes).
+2. **Gauges ✗ at 5 of 25, ✓ at 20:** every ocean / back-bay peak within 0.024 m
+   (Atlantic City 0.000), but Sandy Hook **+0.28**, Great Kills +0.26, Arthur Kill mouth
+   +0.22, Narrows +0.22 / +0.15 m. That is the **09-03 seiche signature verbatim** (§40):
+   his difference |Δ| > 0.2 m from **01:50 on 28 Oct** (two hours into the window, 44 h
+   before the crest), mean Δ −0.005 m, swings ±0.5 m at Sandy Hook / ±1.7 m at the
+   Narrows, 3-h high-pass envelope unchanged (0.175 vs 0.180 m). Δpeak at the bay
+   gauges is now measured for four perturbations of the premier: norain +0.27..+0.41,
+   nowaves −0.18..−0.26, stwave −0.11..−0.26, buildings +0.15..+0.28 — **±0.3 m of any
+   single-arm bay peak or bay HWM bias on v3 is phase.** Only the paired basin split
+   reads through it.
+3. **MOTF ✓ both ways (`motf_csi_buildings_masked.py` →
+   `experiments/v3/motf_csi_buildings_masked.csv`, raw column reproduces metrics.csv to
+   4 places):** raw ΔCSI **−0.012** (predicted −0.01 to −0.02: footprint pixels dry by
+   construction; MOTF-wet footprint that is model-dry 9.97 → 20.29 km² of a 22 km²
+   MOTF-wet footprint); masked ΔCSI **−0.002** (predicted within ±0.005). Masked POD
+   −0.011 is a small real loss outside footprints (a house on the lowest lot raises
+   `z_zmin`, so the cell's fringe pixels dry) — noted, inside the raw/masked gap.
+4. **Towns (`scripts/town_floodmap_diff.py` → `reports/figures/buildings/item4_*.png`):**
+   Seaside/Ortley wet 10.92 → 9.05 km² (lost 1.89, gained 0.02), Ocean City 17.79 →
+   16.25 (lost 1.55, gained 0.01), Absecon Island 24.45 → 21.93 (lost 2.63, gained 0.11);
+   median Δdepth where both wet **0.000 ± 0.005 m**. The lost area IS the footprints;
+   the streets are white. No blocks change either way.
+5. ✓ (above).
+
+**Verdict (user, 09-08: "not super important for a surge-dominated event" — agreed):**
+buildings-as-subgrid-porosity has **no measurable effect on the Sandy hindcast** outside
+the mechanical footprint drying and the bay seiche phase. The arm stays on the shelf for
+shorter events; the masked-CSI screen is the fair extent metric for any buildings run.
+`naccs-premier` remains the premier. ⏳ `solver-sbg20` (nr_levels=20 control) is NOT
+worth a solve on this evidence. Re-run `desktop_pull_backup.sh` (arm scored).
 
 ### 💾 2026-09-03 — DISK: `experiments/` now lives on `/scratch/tpj8` (DONE); desktop snapshot taken, home copy deleted
 
