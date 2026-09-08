@@ -4,7 +4,7 @@
 12 KB "current state" memory file and its 26 reverse-chronological campaign logs; the point
 of the format is that a reader gets the current state without replaying how it was reached.
 
-Last updated: **2026-09-04** (🏠 BUILDINGS: adequacy checks done, `bed_buildings_v3` tier burned (328 km² at ground + 4 m), `bed-buildings` arm registered with `Experiment.subgrid_from`, first (prepend) subgrid rebuild VOIDED by a hydromt merge trap, `--overlay` rebuild LANDED (61231337) and item 5 passes, `bed-buildings` staged + solve submitted via 61232044 — see the 09-04 section; 2026-09-03: 🏠 BUILDING FOOTPRINTS acquired, NJDEP + Microsoft, statewide raw + v3 clip; ⭐ RAIN-OFF SCORED on v3: CSI 0.710 → 0.809, **93.7% of premier's MOTF false alarm is rain**; the bay HWM/peak shifts (+0.3–0.4 m with rain OFF) are SEICHE PHASE (§40), not rain — see the 09-03 section; 💾 `experiments/` MOVED to `/scratch/tpj8` and symlinked, staging quota guard follows it, `scripts/desktop_pull_backup.sh` written, desktop snapshot taken, home copy deleted, home back under quota — see DISK; 2026-09-02: rain-off arm registered, staged and run (solve 61190532 → validate 61190533); 2026-09-01: ⭐ v3 REBUILD LANDED AND RE-SCORED — three arms clean on
+Last updated: **2026-09-08** (🔴 `bed-buildings` scored on the lev3-only bed — row VOID, merged dep + re-validate pending, see the 09-04 section; 2026-09-04: 🏠 BUILDINGS: adequacy checks done, `bed_buildings_v3` tier burned (328 km² at ground + 4 m), `bed-buildings` arm registered with `Experiment.subgrid_from`, first (prepend) subgrid rebuild VOIDED by a hydromt merge trap, `--overlay` rebuild LANDED (61231337) and item 5 passes, `bed-buildings` staged + solve submitted via 61232044 — see the 09-04 section; 2026-09-03: 🏠 BUILDING FOOTPRINTS acquired, NJDEP + Microsoft, statewide raw + v3 clip; ⭐ RAIN-OFF SCORED on v3: CSI 0.710 → 0.809, **93.7% of premier's MOTF false alarm is rain**; the bay HWM/peak shifts (+0.3–0.4 m with rain OFF) are SEICHE PHASE (§40), not rain — see the 09-03 section; 💾 `experiments/` MOVED to `/scratch/tpj8` and symlinked, staging quota guard follows it, `scripts/desktop_pull_backup.sh` written, desktop snapshot taken, home copy deleted, home back under quota — see DISK; 2026-09-02: rain-off arm registered, staged and run (solve 61190532 → validate 61190533); 2026-09-01: ⭐ v3 REBUILD LANDED AND RE-SCORED — three arms clean on
 hal nodes, premier 4/4 on the new fingerprint, merged dep rebuilt, HWM RMSE
 0.384/0.400/0.431, extent unchanged; bay SnapWave setup HALVED and the v3↔v1.5 Monmouth
 offset is GONE (sign-test P 0.011 → 0.152), Sandy Hook tide-range gap healed
@@ -192,16 +192,43 @@ not a gate):**
    sign for that key. The storage loss buildings represent is at a given WATER LEVEL,
    i.e. in `z_level` (the equal-volume levels move up), not in `z_volmax`.
 
-**Next (pick up 2026-09-05):** (1) `sacct -j 61232096,61232097 --format=JobID,State,NodeList,Elapsed,MaxRSS`
-— both `COMPLETED`, neither on a `halk*` node; three-clock check on
-`experiments/v3/bed-buildings/sfincs_map.nc` (CLAUDE.md §5); `python -m nj_sfincs.premier`
-must say `output WHOLE` for the new dir. (2) Read `experiments/v3/metrics.csv` row
-`bed-buildings` against pre-registration items 1–4: `scripts/paired_hwm_bootstrap.py
-bed-buildings naccs-premier` (item 1), gauge peaks vs premier (item 2),
-`scripts/motf_csi_buildings_masked.py naccs-premier bed-buildings` (item 3: quote raw AND
-masked), and a floodmap difference in Seaside Heights / Ocean City / Absecon Island (item 4).
-(3) Write the read here, in place. If the validate job sits `DependencyNeverSatisfied`,
-the solve failed — `scancel 61232097` and read `logs/sfincs_61232096.out`.
+**✅ Solve + validate COMPLETED (checked 2026-09-08):** solve 61232096 hal0263 5:59:48,
+validate 61232097 hal0148 0:22:18, both `COMPLETED`, no halk; three clocks clean on
+`sfincs_map.nc` (creation 12:06 inside the job, mtime = job end 18:05); premier audit
+7/7, `bed-buildings` `output WHOLE`.
+
+🔴 **The `bed-buildings` row in `metrics.csv` (written 09-04 18:24) is VOID — scored on
+the WRONG BED RASTER.** `scripts/rebuild_subgrid.py` writes hydromt's per-level
+`subgrid/dep_subgrid_lev{0..3}.tif` but NOT `dep_subgrid_merged.tif`; `swap_subgrid`
+then replaced the staged arm's `subgrid/` wholesale, so the premier's merged raster went
+with it. `validate.load_floodmap` fell back to `dep_subgrid_lev3.tif` — the exact
+08-29 trap (lev3 covers only the finest-level faces): `hwm_n_scored` 94 → **83**
+(`great_bay_mullica` 9 → 0, `manasquan` 10 → 8, all on coarse faces), floodmap valid
+share 9.38% → 6.13%, `motf_km2_unsimulated` 7819 → 305, and the "CSI 0.795 / FAR
+0.056" is the truncated-frame number (compare the 08-27 0.83 that the merge exposed).
+None of it is a building effect. Nothing in the run itself is wrong; only the
+downscale is. Every guard passed because the fingerprint seals `sfincs.nc`, and the
+scorer's fallback is silent by design (it keeps v1.5 bit-for-bit).
+
+**Next (pick up):** (1) `NJ_DOMAIN=v3 python scripts/build_merged_subgrid_dep.py
+--subgrid-dir experiments/v3/_subgrid_buildings/subgrid` (on a compute node; the
+premier's took a SLURM slot, see 08-29), then hard-link the result into
+`experiments/v3/bed-buildings/subgrid/`. The merged raster's mtime is newer than the
+floodmap cache, so `load_floodmap` self-invalidates. (2) `--validate-only` for
+`bed-buildings` via the sweep slurm (~2 h, ~120 GB RSS). (3) THEN the pre-registration
+items 1–4 above: `scripts/paired_hwm_bootstrap.py bed-buildings naccs-premier`, gauge
+peaks vs premier, `scripts/motf_csi_buildings_masked.py naccs-premier bed-buildings`
+(raw AND masked), the Seaside Heights / Ocean City / Absecon floodmap difference.
+(4) ✅ Gap closed (09-08, 101 tests OK): `rebuild_subgrid.py` now calls
+`build_merged_subgrid_dep.build_merged` on its own output; `run_experiments.swap_subgrid`
+REFUSES a `subgrid_from` source without `dep_subgrid_merged.tif` when the template has
+one (`missing_merged_dep`; `--check` reports the same), and `_write_outputs` prints a
+🔴 line for any arm whose `hwm_n_scored` differs from the premier's
+(`hwm_count_mismatches`). `hpc/merge_subgrid_dep.slurm` builds the merged raster for a
+subgrid dir and hard-links it into the named arms.
+
+**Submitted 09-08:** merge job **61307050** (hal0138) → validate **61307051** (afterok,
+`--validate-only bed-buildings`, 128 G). Then the pre-registration read, items 1–4.
 
 ### 💾 2026-09-03 — DISK: `experiments/` now lives on `/scratch/tpj8` (DONE); desktop snapshot taken, home copy deleted
 

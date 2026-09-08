@@ -41,7 +41,13 @@ hydromt's ``_parse_datasets_elevation`` (which copies ``merge_method``) to the w
 ``--tier`` (plain prepend) is kept for tiers that are meant to be merged, e.g. a
 bathymetry survey, and is the trapped path for a burn.
 
-Cost on v3: ~47 min, ~20 GB RSS (SLURM 61230804). Submit ``hpc/rebuild_subgrid.slurm``
+The output dir also gets ``subgrid/dep_subgrid_merged.tif`` (built by
+``build_merged_subgrid_dep``), the all-level bed the floodmap downscale prefers —
+staging REFUSES a source without it when the template has one, because the scorer's
+lev3 fallback is silent.
+
+Cost on v3: ~47 min, ~20 GB RSS (SLURM 61230804), plus the merge. Submit
+``hpc/rebuild_subgrid.slurm``
 rather than running on a login node:
 
     sbatch hpc/rebuild_subgrid.slurm --dst _subgrid_buildings --overlay bed_buildings_v3
@@ -60,6 +66,9 @@ from pathlib import Path
 import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+
+from build_merged_subgrid_dep import build_merged  # noqa: E402
 
 import pyproj  # noqa: F401,E402  (before hydromt_sfincs: native double-free)
 import xarray as xr  # noqa: E402
@@ -238,6 +247,13 @@ def main(argv=None) -> int:
     sf.quadtree_subgrid.write()
     print(f"    subgrid built + written in {time.time() - t1:.0f}s", flush=True)
     del sf
+
+    # The all-level bed the floodmap downscale needs. hydromt writes only the per-level
+    # tifs; without this the scorer falls back to lev3 SILENTLY and scores the arm on
+    # the finest-level faces alone (STATUS 2026-09-08: bed-buildings, row voided).
+    t2 = time.time()
+    build_merged(dst / "subgrid")
+    print(f"    dep_subgrid_merged.tif built in {time.time() - t2:.0f}s", flush=True)
 
     premier.assert_sealed_domain(dst, context="rebuild_subgrid output")
     diff = diff_subgrid(dst, template, dst / "sfincs.nc")

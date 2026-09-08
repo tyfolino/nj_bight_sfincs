@@ -157,6 +157,30 @@ def check_template_domain(name: str) -> None:
         )
 
 
+MERGED_DEP = Path("subgrid") / "dep_subgrid_merged.tif"
+
+
+def missing_merged_dep(src: Path, template: Path | None = None) -> str | None:
+    """Why ``src`` cannot replace the template's subgrid, or None when it can.
+
+    ``validate.load_floodmap`` prefers ``subgrid/dep_subgrid_merged.tif`` (every active
+    face) and falls back SILENTLY to ``dep_subgrid_lev3.tif`` (finest-level faces only).
+    A swapped-in subgrid without the merged raster therefore scores on a truncated
+    bed: on v3 that was 94 → 83 marks and a CSI that looked like a win (STATUS
+    2026-09-08). The rule is coverage parity: if the template carries a merged raster,
+    the source must too. A domain whose template has none (v1.5, where lev3 covers
+    every mark) is unaffected.
+    """
+    template = TEMPLATE if template is None else Path(template)
+    if (template / MERGED_DEP).is_file() and not (Path(src) / MERGED_DEP).is_file():
+        return (
+            f"{Path(src).name} has no {MERGED_DEP} but the template does — the scorer "
+            "would fall back to the lev3-only bed; run "
+            f"scripts/build_merged_subgrid_dep.py --subgrid-dir {Path(src) / 'subgrid'}"
+        )
+    return None
+
+
 def swap_subgrid(exp_dir: Path, src: Path, name: str) -> None:
     """Replace a staged arm's subgrid products with those of a ``rebuild_subgrid.py`` dir.
 
@@ -171,6 +195,9 @@ def swap_subgrid(exp_dir: Path, src: Path, name: str) -> None:
             f"[{name}] subgrid_from={src.name}: no sfincs_subgrid.nc + subgrid/ there — "
             "build it with scripts/rebuild_subgrid.py first"
         )
+    gap = missing_merged_dep(src)
+    if gap:
+        raise SystemExit(f"[{name}] subgrid_from refused: {gap}")
     premier.assert_sealed_domain(src, context=f"subgrid_from '{src.name}' for '{name}'")
     prov = src / "provenance.txt"
     print(f"[{name}] subgrid ← {src}" + (f" ({prov.read_text()[:120]!r}...)" if prov.exists() else ""))
@@ -447,6 +474,8 @@ def main(argv=None) -> int:
                         f"OK but subgrid_from={sub} is NOT BUILT — staging would refuse; "
                         "run scripts/rebuild_subgrid.py first"
                     )
+                elif sub and (gap := missing_merged_dep(EXP_ROOT / sub)):
+                    verdict = f"OK but staging would refuse: {gap}"
             except Exception as e:  # noqa: BLE001 — report every arm, don't stop at one
                 verdict, bad = f"REFUSED — {type(e).__name__}: {e}", bad + 1
             print(f"[check] {name}: {verdict}")
@@ -525,6 +554,34 @@ def _merge_metrics(df: pd.DataFrame, csv: Path = None) -> pd.DataFrame:
     return pd.concat([old, df], sort=False)
 
 
+def hwm_count_mismatches(
+    df: pd.DataFrame, ref: str = premier.PREMIER_NAME
+) -> list[str]:
+    """Arms whose ``hwm_n_scored`` differs from the premier's — one line each.
+
+    On one domain every arm scores the SAME marks; the count moves only when the
+    scorer's view of the grid moved, and that has meant a wrong bed raster every time
+    (STATUS 2026-08-29: lev3-only dep, 63 marks; 2026-09-08: bed-buildings, 83). A
+    different count is not a result, it is a warning, and it is printed as one.
+    """
+    col = "hwm_n_scored"
+    if col not in df.columns or ref not in df.index:
+        return []
+    n_ref = df.loc[ref, col]
+    if pd.isna(n_ref):
+        return []
+    out = []
+    for name, n in df[col].items():
+        if name == ref or pd.isna(n) or int(n) == int(n_ref):
+            continue
+        out.append(
+            f"🔴 {name}: hwm_n_scored={int(n)} but {ref} scores {int(n_ref)} — the "
+            "scorer saw a different grid (missing subgrid/dep_subgrid_merged.tif?); "
+            "this row is NOT comparable until that is explained"
+        )
+    return out
+
+
 def _write_outputs(df: pd.DataFrame) -> None:
     if df.empty:
         print("No metrics to write (no completed runs found).")
@@ -532,6 +589,8 @@ def _write_outputs(df: pd.DataFrame) -> None:
     df = _merge_metrics(df)
     df.to_csv(METRICS_CSV)
     print(f"\nwrote {METRICS_CSV}")
+    for line in hwm_count_mismatches(df):
+        print(line)
     try:
         rpt = report.generate_html_report(df, EXP_ROOT)
         print(f"wrote {rpt}")

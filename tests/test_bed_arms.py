@@ -11,6 +11,7 @@ Nothing here reads a run dir or a raster.
 from __future__ import annotations
 
 import unittest
+from pathlib import Path
 
 from nj_sfincs.config import Experiment, WaveConfig
 from nj_sfincs.experiments import EXPERIMENTS_BY_DOMAIN
@@ -45,6 +46,42 @@ class TestBedArms(unittest.TestCase):
                 with self.subTest(domain=dom, arm=name):
                     self.assertTrue(exp.subgrid_from.startswith("_subgrid_"))
                     self.assertNotIn("/", exp.subgrid_from)
+
+    def test_swap_refuses_a_source_without_the_merged_dep(self):
+        """The scorer falls back to lev3 SILENTLY; staging is where it must be loud."""
+        import tempfile
+
+        import run_experiments as rx
+
+        with tempfile.TemporaryDirectory() as td:
+            tpl, src = Path(td) / "tpl", Path(td) / "_subgrid_x"
+            for d in (tpl, src):
+                (d / "subgrid").mkdir(parents=True)
+            # template without a merged dep (v1.5-like): nothing to match, no refusal
+            self.assertIsNone(rx.missing_merged_dep(src, tpl))
+            (tpl / rx.MERGED_DEP).write_bytes(b"x")
+            msg = rx.missing_merged_dep(src, tpl)
+            self.assertIsNotNone(msg)
+            self.assertIn("dep_subgrid_merged.tif", msg)
+            self.assertIn("build_merged_subgrid_dep", msg)
+            (src / rx.MERGED_DEP).write_bytes(b"x")
+            self.assertIsNone(rx.missing_merged_dep(src, tpl))
+
+    def test_hwm_count_mismatch_is_flagged_not_hidden(self):
+        import pandas as pd
+
+        import run_experiments as rx
+
+        df = pd.DataFrame(
+            {"hwm_n_scored": [94, 94, 83, float("nan")]},
+            index=["naccs-premier", "wave-stwave", "bed-buildings", "BRACKET+x"],
+        )
+        lines = rx.hwm_count_mismatches(df)
+        self.assertEqual(len(lines), 1)
+        self.assertIn("bed-buildings", lines[0])
+        self.assertIn("83", lines[0])
+        self.assertEqual(rx.hwm_count_mismatches(df.drop(index="naccs-premier")), [])
+        self.assertEqual(rx.hwm_count_mismatches(pd.DataFrame(index=["a"])), [])
 
     def test_v3_bed_buildings_registered(self):
         exp = EXPERIMENTS_BY_DOMAIN["v3"]["bed-buildings"]

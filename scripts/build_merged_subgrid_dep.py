@@ -56,18 +56,16 @@ def _check_aligned(base, src, lev: int) -> None:
         sys.exit(f"lev{lev} CRS {src.crs} != lev3 CRS {base.crs}")
 
 
-def main() -> None:
-    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    ap.add_argument("--subgrid-dir", required=True, type=Path)
-    ap.add_argument("--out", type=Path, default=None,
-                    help="default: <subgrid-dir>/dep_subgrid_merged.tif")
-    ap.add_argument("--force", action="store_true",
-                    help="overwrite an existing merged raster")
-    args = ap.parse_args()
+def build_merged(sg: Path, out: Path | None = None, force: bool = False) -> Path:
+    """Write ``<sg>/dep_subgrid_merged.tif`` (or ``out``) from ``dep_subgrid_lev*.tif``.
 
-    sg = args.subgrid_dir
-    out = args.out or sg / "dep_subgrid_merged.tif"
-    if out.exists() and not args.force:
+    Called by ``scripts/rebuild_subgrid.py`` on every rebuilt subgrid dir, so a
+    ``bed-*`` arm can never be staged without the merged raster again (STATUS
+    2026-09-08: one was, scored on the lev3-only bed, and every guard passed).
+    """
+    sg = Path(sg)
+    out = Path(out) if out else sg / "dep_subgrid_merged.tif"
+    if out.exists() and not force:
         sys.exit(f"{out} exists — pass --force to rebuild it")
 
     srcs = {}
@@ -151,6 +149,18 @@ def main() -> None:
           f"finite fraction at 16x: {np.isfinite(a).mean():.3f}")
     for s in srcs.values():
         s.close()
+    return out
+
+
+def main() -> None:
+    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    ap.add_argument("--subgrid-dir", required=True, type=Path)
+    ap.add_argument("--out", type=Path, default=None,
+                    help="default: <subgrid-dir>/dep_subgrid_merged.tif")
+    ap.add_argument("--force", action="store_true",
+                    help="overwrite an existing merged raster")
+    args = ap.parse_args()
+    build_merged(args.subgrid_dir, args.out, args.force)
 
 
 if __name__ == "__main__":
