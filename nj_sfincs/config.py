@@ -232,6 +232,16 @@ class WaveConfig:
     # from the domain hash, so only one variable moves.
     decouple_snapwave: bool = False
     snapwave_mask_zmin: float = -30.0  # SnapWave-only depth cut [m]
+    # ── GRID-ALIGNED stepped SnapWave boundary (STATUS 2026-09-08) ───────────
+    # Name of a `SnapWaveSteps` table in `nj_sfincs.domain.SNAPWAVE_STEPS`. When set, the
+    # SnapWave mask is the SFINCS mask PLUS the submerged band out to a boundary drawn
+    # along quadtree rows/columns, and the wave boundary is that band's seaward edge.
+    # Exists because SnapWave zeroes every cell touching >= 2 boundary cells, and an
+    # isobath boundary on an axis-aligned quadtree is a staircase of exactly those
+    # corners (43 % of the ring on v3's diagonal south coast). Takes precedence over
+    # `decouple_snapwave`. Support points are sampled along the stepped line instead of
+    # binned by northing, so the E-W steps and the bottom edge are forced too.
+    snapwave_domain: str | None = None
     wavemaker_line: Path = DATA / "wavemakers" / "wavemaker_line.geojson"
     dtwave: float = 1800.0  # SnapWave coupling interval [s]
 

@@ -4,7 +4,7 @@
 12 KB "current state" memory file and its 26 reverse-chronological campaign logs; the point
 of the format is that a reader gets the current state without replaying how it was reached.
 
-Last updated: **2026-09-08** (🌊 LOW-BIAS REVIEW: the SnapWave BOUNDARY IS NOT TRANSMITTING — 43 % of the interior cells touching the southern wave boundary carry NO waves (staircase inner corners), shelf hm0 inside is 15–60 % of imposed, shoreline setup 0.05 m vs 0.2–0.35 theory, back bays 0.2–0.55 m low BEFORE the storm with the ocean gauge matched to 6 mm; pre-registered fix = smoother decoupled SnapWave boundary, success = transmission not score — see the 09-08 section at the top of PICK UP; 🏠 `bed-buildings` RE-SCORED on the merged bed: no measurable Sandy effect outside footprint drying + bay seiche phase; paired ΔRMSE +0.008 [−0.027, +0.041], non-seiche basins +0.001; first score was VOID (lev3-only bed) and the gap is closed in code — see the 09-04 section; 2026-09-04: 🏠 BUILDINGS: adequacy checks done, `bed_buildings_v3` tier burned (328 km² at ground + 4 m), `bed-buildings` arm registered with `Experiment.subgrid_from`, first (prepend) subgrid rebuild VOIDED by a hydromt merge trap, `--overlay` rebuild LANDED (61231337) and item 5 passes, `bed-buildings` staged + solve submitted via 61232044 — see the 09-04 section; 2026-09-03: 🏠 BUILDING FOOTPRINTS acquired, NJDEP + Microsoft, statewide raw + v3 clip; ⭐ RAIN-OFF SCORED on v3: CSI 0.710 → 0.809, **93.7% of premier's MOTF false alarm is rain**; the bay HWM/peak shifts (+0.3–0.4 m with rain OFF) are SEICHE PHASE (§40), not rain — see the 09-03 section; 💾 `experiments/` MOVED to `/scratch/tpj8` and symlinked, staging quota guard follows it, `scripts/desktop_pull_backup.sh` written, desktop snapshot taken, home copy deleted, home back under quota — see DISK; 2026-09-02: rain-off arm registered, staged and run (solve 61190532 → validate 61190533); 2026-09-01: ⭐ v3 REBUILD LANDED AND RE-SCORED — three arms clean on
+Last updated: **2026-09-08** (🌊 `wave-shelf-steps` STAGED + SUBMITTED (job 61313672, 14 h): SnapWave boundary redrawn along quadtree rows/columns at 25–30 m, 38 predicted dead ring cells vs 2,580, 60 CORA support points, `snapwave_niter` 200 — success is TRANSMISSION (`scripts/wave_boundary_ring.py`), then score; 🌊 LOW-BIAS REVIEW: the SnapWave BOUNDARY IS NOT TRANSMITTING — 43 % of the interior cells touching the southern wave boundary carry NO waves (staircase inner corners), shelf hm0 inside is 15–60 % of imposed, shoreline setup 0.05 m vs 0.2–0.35 theory, back bays 0.2–0.55 m low BEFORE the storm with the ocean gauge matched to 6 mm; pre-registered fix = smoother decoupled SnapWave boundary, success = transmission not score — see the 09-08 section at the top of PICK UP; 🏠 `bed-buildings` RE-SCORED on the merged bed: no measurable Sandy effect outside footprint drying + bay seiche phase; paired ΔRMSE +0.008 [−0.027, +0.041], non-seiche basins +0.001; first score was VOID (lev3-only bed) and the gap is closed in code — see the 09-04 section; 2026-09-04: 🏠 BUILDINGS: adequacy checks done, `bed_buildings_v3` tier burned (328 km² at ground + 4 m), `bed-buildings` arm registered with `Experiment.subgrid_from`, first (prepend) subgrid rebuild VOIDED by a hydromt merge trap, `--overlay` rebuild LANDED (61231337) and item 5 passes, `bed-buildings` staged + solve submitted via 61232044 — see the 09-04 section; 2026-09-03: 🏠 BUILDING FOOTPRINTS acquired, NJDEP + Microsoft, statewide raw + v3 clip; ⭐ RAIN-OFF SCORED on v3: CSI 0.710 → 0.809, **93.7% of premier's MOTF false alarm is rain**; the bay HWM/peak shifts (+0.3–0.4 m with rain OFF) are SEICHE PHASE (§40), not rain — see the 09-03 section; 💾 `experiments/` MOVED to `/scratch/tpj8` and symlinked, staging quota guard follows it, `scripts/desktop_pull_backup.sh` written, desktop snapshot taken, home copy deleted, home back under quota — see DISK; 2026-09-02: rain-off arm registered, staged and run (solve 61190532 → validate 61190533); 2026-09-01: ⭐ v3 REBUILD LANDED AND RE-SCORED — three arms clean on
 hal nodes, premier 4/4 on the new fingerprint, merged dep rebuilt, HWM RMSE
 0.384/0.400/0.431, extent unchanged; bay SnapWave setup HALVED and the v3↔v1.5 Monmouth
 offset is GONE (sign-test P 0.011 → 0.152), Sandy Hook tide-range gap healed
@@ -131,6 +131,49 @@ wavemaker only (archive trap). Not roughness, inlet bathymetry or a boundary off
    (currently −0.22..−0.39, median 50 m). The Raritan lobe WILL re-ring — compare it
    paired (§40). Extent may drop: the archive's v1 `wave-deep30` was the best level arm
    and the worst extent arm. Then retest `wave-ig` as one flag on top.
+
+**⏳ ARM STAGED AND SUBMITTED 2026-09-08 — `wave-shelf-steps` (job 61313672, 14 h limit).**
+Design decision, measured before choosing: "touches ≥ 2 boundary cells" is a DETERMINISTIC
+death rule — 3,841 of 3,841 ring cells with ONE boundary neighbour carry waves, 95–100 % of
+those with two or more carry none — so a deeper isobath (the archive's `wave-deep30` path,
+`decouple_snapwave`) would rebuild the same staircase at 30 m. The boundary is therefore
+drawn along quadtree ROWS AND COLUMNS. ⚠️ The v3 grid is rotated 359.183°, so "x = const"
+is not a column; everything is in level-1 (200 m) index space (`nj_sfincs/snapwave_domain.py`,
+table `domain.SNAPWAVE_STEPS["v3_shelf_steps"]`).
+
+| rows (level-1) | max column | where | boundary bed |
+|---|---|---|---|
+| 1–90 | 275 | off Cape May / Wildwood, x ≈ 556 km | −29..−38 m |
+| 91–190 | 345 | off Avalon / Ocean City, x ≈ 570 km | −21..−35 m |
+| 191–290 | 435 | off Atlantic City / Brigantine, x ≈ 588 km | −27..−34 m |
+| 291–883 | 490 | LBI → Sandy Hook, x ≈ 600–601 km | −21..−48 m (p5 −34) |
+| bottom row 1 | cols 20–275 | y ≈ 4303.5 km, from x ≈ 505 km (Cape May Point) east | −12..−34 m, median −16 |
+
+Pre-flight on the frozen mesh (`scripts/check_snapwave_domain.py v3_shelf_steps --waves
+data/waves_v3/cora_waves_v3.nc`): band **1,118,274** SnapWave-only cells (active 1.81 M →
+2.88 M, so expect ~1.6× the premier's 5.2 h SnapWave time → ~8–9 h), boundary **5,267**
+cells, 0 SFINCS cells poke through, 494 bottom-row edge cells shallower than 12 m left
+unforced (west of x ≈ 511 km), 149 boundary cells demoted north of `open_coast_max_y`.
+**Ring report: 38 of 2,381 ring cells touch ≥ 2 boundary cells (1.6 %) vs 2,580 of 6,556
+(39 %) on the isobath boundary** — the three inner corners (two cells each), the
+bottom-right corner, and ~30 places where a 200 m interior cell sits west of two 100 m
+boundary cells (a seaward shoal). 60 support points sampled ALONG the 271 km line (not
+binned by northing — an E-W step and the 46 km bottom edge would otherwise be one point
+each); nearest CORA node median 1.0 km, max 2.5 km, node depths 11–48 m. Second knob in
+the same arm, declared: `snapwave_niter` 100 → 200 (25 → 50 iterations), because 25 of
+145 premier calls hit the cap and the unconverged nodes were the ring. SFINCS mask,
+water-level boundary, mesh, subgrid, roughness: premier verbatim (fingerprint unchanged
+by construction; `--check` OK). 114 tests OK (`tests/test_snapwave_domain.py` pins the
+band limit, edge rules, "SFINCS cells are never wave-boundary", and the corner count).
+
+**When it finishes (in this order):** (1) `sacct -j 61313672 --format=NodeList,Elapsed,MaxRSS,State`
+— hal, not halk; (2) `python scripts/wave_boundary_ring.py experiments/v3/wave-shelf-steps
+--setup experiments/v3/naccs-nowaves` — success = dead-ring fraction ≈ 0.016 (the 38) and
+table-2 ratio ≥ 0.85 everywhere; ⚠️ table 2's "shelf 100–300 m inside" strip is defined
+relative to the OLD −10 m boundary cells, which are now interior — read the ratio as
+"−9 m shelf hm0 / CORA-imposed hm0" and expect it to be well above the premier's 0.14–0.62;
+(3) only then `--validate-only`, the paired bootstrap vs premier, the pre-storm bay-mean
+table and the setup transects.
 
 ### 🏠 2026-09-03 — BUILDING FOOTPRINTS ACQUIRED (both sources, statewide raw + v3 clip); the `bed-buildings` arm is NOT yet built
 

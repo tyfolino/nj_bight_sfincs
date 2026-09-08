@@ -191,6 +191,37 @@ _V3: dict[str, Experiment] = {
         rain=False,
         **_V3_WL,
     ),
+    # The wave boundary drawn along quadtree rows/columns instead of the -10 m isobath
+    # staircase (STATUS 2026-09-08, nj_sfincs/snapwave_domain.py). Premier verbatim
+    # otherwise; the SFINCS mask, water-level boundary, mesh and subgrid are untouched
+    # (snapwave_mask is outside the fingerprint by design).
+    "wave-shelf-steps": Experiment(
+        "wave-shelf-steps",
+        WaveConfig(
+            use_waves=True, wave_wind=True, wave_igwaves=False, tune_physics=True,
+            wave_point_dataset=_V3_CORA,
+            snapwave_domain="v3_shelf_steps",
+            # ~275 km of stepped line at ~4.6 km — the CORA nearest-node limit is 5 km.
+            wave_n_support=60,
+            # 17 % of the premier's SnapWave calls hit the 25-iteration cap with the
+            # unconverged nodes ≈ the boundary ring; a higher cap keeps convergence from
+            # masking whether the ring is fixed. Costs time only on calls that need it.
+            snapwave_niter=200,
+        ),
+        "The premier with SnapWave's boundary moved out to ~25-30 m and drawn as FOUR "
+        "grid-aligned segments (three inner corners instead of ~2,400). Measured on the "
+        "premier, SnapWave zeroes every cell touching >= 2 boundary cells; the isobath "
+        "boundary is a staircase of such corners, the shelf received 15-60 % of the "
+        "imposed Hs and the beaches ~0.05 m of setup vs 0.2-0.35 theory. Pre-registered "
+        "SUCCESS IS TRANSMISSION, NOT SCORE (STATUS 09-08): dead-ring fraction -> ~0 "
+        "and shelf-inside/imposed hm0 >= 0.85 at every site and time "
+        "(scripts/wave_boundary_ring.py). Only then read: southern shoreline setup "
+        "toward 0.2-0.35 m, southern back-bay pre-storm means up, south_coast / "
+        "absecon_atlantic_city / great_egg / cape_may_back_bays / manasquan / "
+        "barnegat_bay HWM biases shrink; Raritan lobe re-rings (compare paired); "
+        "extent may drop (v1 wave-deep30 precedent). Then retest wave-ig on top.",
+        **_V3_WL,
+    ),
     # Buildings as subgrid porosity (Building Block on the 3.125/6.25 m pixels; STATUS
     # 09-03/09-04). The premier's mesh, mask, forcing and roughness verbatim; only
     # sfincs_subgrid.nc + subgrid/*.tif differ, rebuilt on the frozen mesh with

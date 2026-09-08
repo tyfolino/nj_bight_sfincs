@@ -1312,6 +1312,36 @@ V3 = Domain(
 )
 
 
+# ── SnapWave-only domains with a GRID-ALIGNED stepped seaward boundary ────────────────
+# See nj_sfincs/snapwave_domain.py for why (STATUS 2026-09-08: a wave boundary that
+# follows an isobath across the quadtree is a staircase, and SnapWave zeroes every cell
+# in an inner corner). Rows/columns are LEVEL-1 (200 m) indices of the frozen v3 mesh,
+# 1-based like sfincs.nc: x ≈ x0 + (m - 0.5)·200 m, y ≈ y0 + (n - 0.5)·200 m, with
+# x0 501149 / y0 4303462 and a 359.183° rotation that tilts a column ~2.85 m east per
+# row (12.8 km over the mesh). Columns were chosen on the frozen mesh so every segment
+# sits in 20–35 m of water (scripts/check_snapwave_domain.py prints the profile);
+# re-run that script before trusting a changed table.
+from nj_sfincs.snapwave_domain import SnapWaveSteps  # noqa: E402
+
+SNAPWAVE_STEPS: dict[str, SnapWaveSteps] = {
+    "v3_shelf_steps": SnapWaveSteps(
+        name="v3_shelf_steps",
+        # (row_lo, row_hi, max_column) — south to north. Four N–S segments, three steps.
+        steps=(
+            (1, 90, 275),  # y 4303–4322k: off Cape May / Wildwood, ~x 556 km
+            (91, 190, 345),  # y 4322–4342k: off Avalon / Ocean City, ~x 570 km
+            (191, 290, 435),  # y 4342–4362k: off Atlantic City / Brigantine, ~x 588 km
+            (291, 883, 490),  # y 4362–4480k: LBI to Sandy Hook, ~x 599–601 km
+        ),
+        m_west=20,  # x >= ~505 km: keeps the Delaware Bay mouth west of Cape May Point out
+        n_top=883,  # y ≈ 4480 km, just north of open_coast_max_y (4,476,000)
+        why="v3's whole ocean edge at ~25–30 m depth with THREE inner corners instead of "
+        "~2,400; the bottom row (y ≈ 4303.5 km) is forced too so Cape May is not in "
+        "the shadow of waves from the south.",
+    ),
+}
+
+
 DOMAINS: dict[str, Domain] = {
     d.name: d for d in (V1_MONMOUTH, V1_5_RARITAN, V2_BARNEGAT, V3)
 }

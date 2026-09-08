@@ -28,6 +28,7 @@ from hydromt_sfincs import SfincsModel
 from shapely.geometry import Point
 
 from . import domain as _domain
+from . import snapwave_domain
 from .config import ROOT, BaseConfig, WaveConfig
 
 # HDF5/netCDF file locking off before any netCDF-backed write on /cache (a failed lock
@@ -67,6 +68,17 @@ PAVED_SURVEY_WATER = -2.0
 # enough to read at a glance and fine enough that a 2–3 km intrusion lands in its own band
 # instead of being averaged into 40 km of open coast.
 BC_REPORT_BAND_DEG = 0.05
+
+
+def _grid_attrs(sf: SfincsModel) -> dict:
+    """``x0 y0 dx dy rotation`` of the quadtree — from memory if hydromt kept them, else
+    from the model's own ``sfincs.nc`` (the frozen mesh writes them as global attrs)."""
+    keys = ("x0", "y0", "dx", "dy", "rotation")
+    attrs = dict(getattr(sf.quadtree_grid.data, "attrs", {}) or {})
+    if all(k in attrs for k in keys):
+        return {k: attrs[k] for k in keys}
+    with xr.open_dataset(Path(sf.root) / "sfincs.nc") as ds:
+        return {k: ds.attrs[k] for k in keys}
 
 
 def _open_coast_max_y() -> float:
@@ -1258,7 +1270,39 @@ def add_waves(wcfg: WaveConfig, base: BaseConfig, sf: SfincsModel) -> dict:
     Adds the tuned physics params when ``wcfg.tune_physics`` and the ocean-side wavemaker
     when ``wcfg.wavemaker`` (both no-ops otherwise).
     """
-    if wcfg.decouple_snapwave:
+    if wcfg.snapwave_domain is not None:
+        # GRID-ALIGNED STEPPED BOUNDARY (STATUS 2026-09-08). SnapWave zeroes every cell
+        # that touches >= 2 wave-boundary cells, and an isobath boundary on an
+        # axis-aligned quadtree is a staircase of exactly those inner corners (43 % of
+        # the ring on v3's south coast; shelf hm0 inside 15-60 % of imposed). So the
+        # SnapWave domain is the SFINCS domain PLUS the submerged band out to a boundary
+        # drawn along quadtree rows/columns — see nj_sfincs/snapwave_domain.py. The
+        # SFINCS mask is untouched; only snapwave_mask (outside the fingerprint) moves.
+        steps = _domain.SNAPWAVE_STEPS[wcfg.snapwave_domain]
+        # Instantiate the variable the way the coupled path does, then overwrite it.
+        sf.quadtree_snapwave_mask.create_active(zmin=base.mask_zmin, copy_sfincsmask=False)
+        _g = sf.quadtree_grid.data
+        _swm_new, _info = snapwave_domain.build_snapwave_mask(
+            _g["n"].values, _g["m"].values, _g["level"].values, _g["z"].values,
+            _g["mask"].values, steps, base.mask_zmin,
+        )
+        if _info["n_sfincs_outside_band"]:
+            raise RuntimeError(
+                f"snapwave_domain {steps.name}: {_info['n_sfincs_outside_band']} "
+                "SFINCS-active cells lie seaward of the band limit — the water-level and "
+                "wave boundaries would not be decoupled. Move that step's column east."
+            )
+        sf.quadtree_grid.data["snapwave_mask"] = _g["snapwave_mask"].copy(
+            data=_swm_new.astype(_g["mask"].values.dtype)
+        )
+        print(
+            f"[waves] snapwave_domain {steps.name}: band {_info['n_band']:,} cells, "
+            f"active {_info['n_active']:,}, boundary {_info['n_boundary']:,} at "
+            f"{_info['boundary_z_max']:.1f}..{_info['boundary_z_min']:.1f} m; "
+            f"{_info['n_edge_too_shallow']} edge cells left unforced (shallower than "
+            f"{snapwave_domain.BND_ZMAX} m)"
+        )
+    elif wcfg.decouple_snapwave:
         # DECOUPLED: the wave solver gets its own, DEEPER domain. The SFINCS mask (and
         # with it the water-level boundary) is left untouched, so tide/surge forcing stays
         # at the coast while waves are imposed out on the shelf.
@@ -1320,7 +1364,7 @@ def add_waves(wcfg: WaveConfig, base: BaseConfig, sf: SfincsModel) -> dict:
     N = wcfg.wave_n_support
     _fc = sf.quadtree_grid.data.grid.face_coordinates
     _z = sf.quadtree_grid.data["z"].values
-    _bnd_src = "snapwave_mask" if wcfg.decouple_snapwave else "mask"
+    _bnd_src = "snapwave_mask" if (wcfg.decouple_snapwave or wcfg.snapwave_domain) else "mask"
     _atl = (
         (sf.quadtree_grid.data[_bnd_src].values == 2)
         & np.isfinite(_z)
@@ -1335,15 +1379,26 @@ def add_waves(wcfg: WaveConfig, base: BaseConfig, sf: SfincsModel) -> dict:
             "whose ocean arm wraps around a spit it is what separates the open Atlantic "
             "edge from the enclosed corner."
         )
-    _ybins = np.linspace(_bxy[:, 1].min(), _bxy[:, 1].max(), N + 1)
-    snapwave_pts = np.array(
-        [
-            grp[np.argmax(grp[:, 0])]
-            for k in range(N)
-            for grp in [_bxy[(_bxy[:, 1] >= _ybins[k]) & (_bxy[:, 1] <= _ybins[k + 1])]]
-            if len(grp)
-        ]
-    )
+    if wcfg.snapwave_domain is not None:
+        # Sample ALONG the stepped line, not by northing bins: a northing bin sees an
+        # E-W step (and the whole bottom edge) as one point at its east end, and SFINCS
+        # distance-weights support points onto boundary cells, so a 46 km bottom edge
+        # would be forced from one corner.
+        _poly = snapwave_domain.boundary_polyline(
+            _domain.SNAPWAVE_STEPS[wcfg.snapwave_domain], _grid_attrs(sf)
+        )
+        snapwave_pts = snapwave_domain.support_points(_poly, _bxy, N)
+    else:
+        _ybins = np.linspace(_bxy[:, 1].min(), _bxy[:, 1].max(), N + 1)
+        snapwave_pts = np.array(
+            [
+                grp[np.argmax(grp[:, 0])]
+                for k in range(N)
+                for grp in [_bxy[(_bxy[:, 1] >= _ybins[k]) & (_bxy[:, 1] <= _ybins[k + 1])]]
+                if len(grp)
+            ]
+        )
+    print(f"[waves] {len(snapwave_pts)} wave support points on the {_bnd_src} boundary")
 
     if wcfg.wave_point_dataset is not None:
         snapwave_t, snapwave_hs, snapwave_tp, snapwave_wd, snapwave_ds = _point_wave_bnd(
