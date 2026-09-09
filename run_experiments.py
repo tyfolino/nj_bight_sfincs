@@ -582,9 +582,30 @@ def hwm_count_mismatches(
     return out
 
 
+BRACKET_METRICS_CSV = EXP_ROOT / "bracket_metrics.csv"
+
+
+def _split_brackets(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """(candidate rows, bracket rows). A bracket row is stamped ``domain=BRACKET:...``."""
+    if "domain" not in df.columns:
+        return df, df.iloc[0:0]
+    is_brk = df["domain"].astype(str).str.startswith("BRACKET:")
+    return df[~is_brk], df[is_brk]
+
+
 def _write_outputs(df: pd.DataFrame) -> None:
     if df.empty:
         print("No metrics to write (no completed runs found).")
+        return
+    # Bracket rows NEVER enter metrics.csv or the report: an inadmissible bound beside
+    # candidate numbers is exactly the table that once ranked a known-wrong boundary first.
+    df, brk = _split_brackets(df)
+    if not brk.empty:
+        brk = _merge_metrics(brk, BRACKET_METRICS_CSV)
+        brk.to_csv(BRACKET_METRICS_CSV)
+        print(f"\nwrote {BRACKET_METRICS_CSV} ({len(brk)} INADMISSIBLE bracket row(s), "
+              "kept out of metrics.csv)")
+    if df.empty:
         return
     df = _merge_metrics(df)
     df.to_csv(METRICS_CSV)

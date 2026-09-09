@@ -197,9 +197,41 @@ class Bracket:
     bound: str  # "upper" | "lower" — which way it is wrong, stated up front
     inadmissible_why: str
     bounds_what: str
+    #: A FORCING bracket: the sealed base domain with an inadmissible boundary FORCING
+    #: (a wave-setup term on the water level, say). Forcing does not enter
+    #: ``sha(z, mask)``, so its fingerprint IS the base domain's — ``fingerprint`` must
+    #: equal ``EXPECTED[base_domain]`` (asserted in tests), ``bracket_of`` cannot recognise
+    #: it by fingerprint and does not try, and the guards that remain are the ones that
+    #: were always load-bearing: the ``BRACKET+`` directory name, ``Experiment.bracket``,
+    #: and ``NJ_ALLOW_BRACKET``. A domain bracket keeps ``False`` and a distinct fingerprint.
+    forcing_only: bool = False
 
 
-BRACKETS: dict[str, Bracket] = {}
+BRACKETS: dict[str, Bracket] = {
+    # 2026-09-09 (STATUS 09-09, plan Track B): waves OFF + Stockdon SETUP added to the
+    # 224-point NACCS water level. FINDINGS §22 forbids parametric setup beside SnapWave and
+    # §23 says NACCS already carries the setup accumulated seaward of −10 m; raising the
+    # −10 m boundary by the surf-zone term lifts the whole shelf, so the Atlantic City pier
+    # (matched to 6 mm) reads high by construction. It bounds, from above, how much of the
+    # back-bay / HWM low bias a supplied mean level can buy.
+    "setup-stockdon": Bracket(
+        name="setup-stockdon",
+        base_domain="v3",
+        fingerprint=V3,
+        bound="upper",
+        inadmissible_why=(
+            "Stockdon surf-zone setup (beta_f 0.03, CORA H0/Tp) is ADDED to the NACCS water "
+            "level at the −10 m boundary with SnapWave off: the setup that belongs in the "
+            "surf zone is imposed on the whole shelf, on top of the setup NACCS already "
+            "carries at that depth (FINDINGS §22/§23)."
+        ),
+        bounds_what=(
+            "the most a supplied mean-level (setup) term can close of the southern back-bay "
+            "pre-storm deficit and the open-coast / back-bay HWM low bias"
+        ),
+        forcing_only=True,
+    ),
+}
 
 #: A run directory whose name starts with this is a bracket. Machine-checkable, and
 #: deliberately redundant with ``Experiment.bracket`` — belt and braces, because the whole
@@ -214,6 +246,8 @@ def bracket_of(model_dir: "Path | str") -> "Bracket | None":
     except (FileNotFoundError, OSError):
         return None
     for b in BRACKETS.values():
+        if b.forcing_only:
+            continue  # shares the sealed base fingerprint: recognised by name, not hash
         if b.fingerprint.sha_z_mask != "PENDING" and fp == b.fingerprint:
             return b
     return None
@@ -236,6 +270,16 @@ def assert_bracket(model_dir: "Path | str", name: str, context: str = "") -> Non
             f"not a candidate configuration.\n  {b.inadmissible_why}"
         )
     got = domain_fingerprint(model_dir)
+    if b.forcing_only:
+        # The mesh/mask must be the SEALED base domain — the bracket is the forcing on it.
+        want = EXPECTED[b.base_domain]
+        if got != want:
+            raise WrongDomainError(
+                f"{context}: {model_dir} is not the sealed {b.base_domain!r} domain that "
+                f"forcing bracket {name!r} is defined on.\n"
+                f"    expected {want}\n    got      {got}"
+            )
+        return
     if b.fingerprint.sha_z_mask != "PENDING" and got != b.fingerprint:
         raise WrongDomainError(
             f"{context}: {model_dir} is not bracket {name!r}.\n"
@@ -361,10 +405,18 @@ def assert_sealed_domain(model_dir: Path | str, context: str = "") -> None:
         (
             b
             for b in BRACKETS.values()
-            if b.fingerprint.sha_z_mask != "PENDING" and got == b.fingerprint
+            if not b.forcing_only  # shares the sealed fingerprint: refused by NAME below
+            and b.fingerprint.sha_z_mask != "PENDING" and got == b.fingerprint
         ),
         None,
     )
+    # A FORCING bracket carries the sealed fingerprint, so the name is the guard: a run
+    # dir called BRACKET+... is never a candidate, whatever its mesh says.
+    if brk is None and Path(model_dir).name.startswith(BRACKET_PREFIX):
+        bname = Path(model_dir).name[len(BRACKET_PREFIX):]
+        brk = BRACKETS.get(bname) or next(
+            (b for b in BRACKETS.values() if b.forcing_only), None
+        )
     if brk is not None:
         raise WrongDomainError(
             f"{where}{model_dir} is the INADMISSIBLE BRACKET '{brk.name}' "

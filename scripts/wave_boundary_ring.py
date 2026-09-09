@@ -129,6 +129,11 @@ def transmission(mesh: xr.Dataset, mp: xr.Dataset) -> pd.DataFrame:
         bnd = np.where(sel & (swm == 2))[0]
         inner = np.where(sel & (swm == 1) & np.isfinite(zb) & (zb < -8.5) & (zb > -9.8))[0]
         for tt in TIMES:
+            if np.datetime64(tt) > mt.max():  # partial map: no record yet
+                rows.append(dict(site=name, time=tt[5:16], n_bnd=len(bnd),
+                                 n_inner=len(inner), hm0_imposed=np.nan,
+                                 hm0_inner=np.nan, ratio=np.nan))
+                continue
             it = int(np.argmin(np.abs(mt - np.datetime64(tt))))
             h = mp["hm0"].isel(time=it).values
             hb = float(np.nanmean(h[bnd])) if len(bnd) else np.nan
@@ -187,7 +192,12 @@ def main() -> None:
     pd.set_option("display.max_rows", 200)
 
     mesh = xr.open_dataset(args.run / "sfincs.nc")
-    mp = xr.open_dataset(args.run / "sfincs_map.nc")
+    # ``timemax`` is left undecoded: on a PARTIAL map (a timed-out solve) its fill
+    # values break the default decoder and would take the whole file with them.
+    mp = xr.open_dataset(args.run / "sfincs_map.nc", decode_times={"timemax": False})
+    last = mp["time"].values.max()
+    if np.datetime64(args.ring_time) > last:
+        print(f"⚠️ map ends at {last}; --ring-time {args.ring_time} falls back to the last record")
 
     print(f"== 1. DEAD RING at {args.ring_time} — interior cells touching the wave boundary "
           "with no hm0, no wave force")

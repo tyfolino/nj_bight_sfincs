@@ -1035,6 +1035,21 @@ cudem_nj_v3:
       instead of native 3 m over the whole v3 bbox (docs/STATUS.md, 2026-08-24).
 
 
+naccs_sandy_v3_stockdon03:
+  data_type: GeoDataset
+  uri: gtsm/naccs_sandy_v3_stockdon03.nc
+  driver:
+    name: geodataset_xarray
+    options: {}
+  metadata:
+    category: ocean
+    unit: m+NAVD88
+    crs: 4326
+    source: "BRACKET (inadmissible, STATUS 2026-09-09): naccs_sandy_v3 PLUS Stockdon
+      surf-zone SETUP eta = 0.35*0.03*sqrt(H0*L0) from CORA at each of the 224 points
+      (scripts/build_stockdon_boundary.py). FINDINGS §22/§23 forbid this beside SnapWave
+      and on top of NACCS's own boundary-depth setup; it bounds the mean-level effect from
+      above. Only BRACKET+setup-stockdon may point at it."
 naccs_sandy_v3:
   data_type: GeoDataset
   uri: gtsm/naccs_sandy_v3.nc

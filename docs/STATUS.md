@@ -4,7 +4,7 @@
 12 KB "current state" memory file and its 26 reverse-chronological campaign logs; the point
 of the format is that a reader gets the current state without replaying how it was reached.
 
-Last updated: **2026-09-08** (🌊 `wave-shelf-steps` STAGED + SUBMITTED (job 61313672, 14 h): SnapWave boundary redrawn along quadtree rows/columns at 25–30 m, 38 predicted dead ring cells vs 2,580, 60 CORA support points, `snapwave_niter` 200 — success is TRANSMISSION (`scripts/wave_boundary_ring.py`), then score; 🌊 LOW-BIAS REVIEW: the SnapWave BOUNDARY IS NOT TRANSMITTING — 43 % of the interior cells touching the southern wave boundary carry NO waves (staircase inner corners), shelf hm0 inside is 15–60 % of imposed, shoreline setup 0.05 m vs 0.2–0.35 theory, back bays 0.2–0.55 m low BEFORE the storm with the ocean gauge matched to 6 mm; pre-registered fix = smoother decoupled SnapWave boundary, success = transmission not score — see the 09-08 section at the top of PICK UP; 🏠 `bed-buildings` RE-SCORED on the merged bed: no measurable Sandy effect outside footprint drying + bay seiche phase; paired ΔRMSE +0.008 [−0.027, +0.041], non-seiche basins +0.001; first score was VOID (lev3-only bed) and the gap is closed in code — see the 09-04 section; 2026-09-04: 🏠 BUILDINGS: adequacy checks done, `bed_buildings_v3` tier burned (328 km² at ground + 4 m), `bed-buildings` arm registered with `Experiment.subgrid_from`, first (prepend) subgrid rebuild VOIDED by a hydromt merge trap, `--overlay` rebuild LANDED (61231337) and item 5 passes, `bed-buildings` staged + solve submitted via 61232044 — see the 09-04 section; 2026-09-03: 🏠 BUILDING FOOTPRINTS acquired, NJDEP + Microsoft, statewide raw + v3 clip; ⭐ RAIN-OFF SCORED on v3: CSI 0.710 → 0.809, **93.7% of premier's MOTF false alarm is rain**; the bay HWM/peak shifts (+0.3–0.4 m with rain OFF) are SEICHE PHASE (§40), not rain — see the 09-03 section; 💾 `experiments/` MOVED to `/scratch/tpj8` and symlinked, staging quota guard follows it, `scripts/desktop_pull_backup.sh` written, desktop snapshot taken, home copy deleted, home back under quota — see DISK; 2026-09-02: rain-off arm registered, staged and run (solve 61190532 → validate 61190533); 2026-09-01: ⭐ v3 REBUILD LANDED AND RE-SCORED — three arms clean on
+Last updated: **2026-09-09** (⏳ PM: three one-change arms SUBMITTED via stage job 61333216 — `wave-fw01+wave-shelf-steps`, `wave-nowind+wave-shelf-steps`, `BRACKET+setup-stockdon` (forcing bracket, own CSV) — with pre-registrations in the 09-09 section; source read of SnapWave v2.3.3 says the shelf loss is bottom friction (no whitecapping exists) and the dead corners are `inner=false` cells; meeting brief `reports/weekly_2026-09-09.html`; 🌊 AM: `wave-shelf-steps` TIMED OUT at 55 % (14 h limit, hal0339) and was RESUBMITTED verbatim as **job 61327796** (40 h, hal0351, expect it done ~09-10 midday). Read-out on the PARTIAL map (to 10-29 16:00): the DEAD RING IS FIXED (0 of 2,381 vs 2,580 of 6,556), the east and stepped legs pass 0.70–0.87 of the imposed Hs into the first cell, but the bottom row's shallow Cape May half passes only 0.30–0.5, the wave then decays to a ≈0.47 plateau within 10 km of the line where CORA's own SWAN keeps 0.6–0.8, so the −9 m shelf still sees ~0.35–0.55 of CORA's value there; 25 of 80 SnapWave calls did not converge and those hours carry hm0 blow-ups to 22 m plus a persistent hotspot east of Sandy Hook; CORA's storm waves come FROM the S–SSE, so the supply edge is the 46 km bottom row, not the 200 km east leg — **transmission criterion NOT met**, next-arm decision is the user's, see the 09-09 section; 09-08: `wave-shelf-steps` STAGED + SUBMITTED (job 61313672, 14 h): SnapWave boundary redrawn along quadtree rows/columns at 25–30 m, 38 predicted dead ring cells vs 2,580, 60 CORA support points, `snapwave_niter` 200 — success is TRANSMISSION (`scripts/wave_boundary_ring.py`), then score; 🌊 LOW-BIAS REVIEW: the SnapWave BOUNDARY IS NOT TRANSMITTING — 43 % of the interior cells touching the southern wave boundary carry NO waves (staircase inner corners), shelf hm0 inside is 15–60 % of imposed, shoreline setup 0.05 m vs 0.2–0.35 theory, back bays 0.2–0.55 m low BEFORE the storm with the ocean gauge matched to 6 mm; pre-registered fix = smoother decoupled SnapWave boundary, success = transmission not score — see the 09-08 section at the top of PICK UP; 🏠 `bed-buildings` RE-SCORED on the merged bed: no measurable Sandy effect outside footprint drying + bay seiche phase; paired ΔRMSE +0.008 [−0.027, +0.041], non-seiche basins +0.001; first score was VOID (lev3-only bed) and the gap is closed in code — see the 09-04 section; 2026-09-04: 🏠 BUILDINGS: adequacy checks done, `bed_buildings_v3` tier burned (328 km² at ground + 4 m), `bed-buildings` arm registered with `Experiment.subgrid_from`, first (prepend) subgrid rebuild VOIDED by a hydromt merge trap, `--overlay` rebuild LANDED (61231337) and item 5 passes, `bed-buildings` staged + solve submitted via 61232044 — see the 09-04 section; 2026-09-03: 🏠 BUILDING FOOTPRINTS acquired, NJDEP + Microsoft, statewide raw + v3 clip; ⭐ RAIN-OFF SCORED on v3: CSI 0.710 → 0.809, **93.7% of premier's MOTF false alarm is rain**; the bay HWM/peak shifts (+0.3–0.4 m with rain OFF) are SEICHE PHASE (§40), not rain — see the 09-03 section; 💾 `experiments/` MOVED to `/scratch/tpj8` and symlinked, staging quota guard follows it, `scripts/desktop_pull_backup.sh` written, desktop snapshot taken, home copy deleted, home back under quota — see DISK; 2026-09-02: rain-off arm registered, staged and run (solve 61190532 → validate 61190533); 2026-09-01: ⭐ v3 REBUILD LANDED AND RE-SCORED — three arms clean on
 hal nodes, premier 4/4 on the new fingerprint, merged dep rebuilt, HWM RMSE
 0.384/0.400/0.431, extent unchanged; bay SnapWave setup HALVED and the v3↔v1.5 Monmouth
 offset is GONE (sign-test P 0.011 → 0.152), Sandy Hook tide-range gap healed
@@ -23,6 +23,195 @@ excludes Mays Landing and Batsto and that is NOT accepted** — see PICK UP · 2
 seiche FINDINGS §40 · weir FINDINGS §38 · rain FINDINGS §39)
 
 ## ⏳ PICK UP — next session
+
+### 🌊 2026-09-09 — `wave-shelf-steps` TIMED OUT at 55 %; the partial map says the DEAD RING IS FIXED but the band still starves the shelf. RESUBMITTED as job 61327796 (40 h)
+
+Plain-English version: the new boundary line no longer has the dead corners — every cell
+next to it now receives waves. But the waves that come in lose about half their height in
+the first 10 km of the model's shelf and then stay at that half, whereas the wave model
+that produced our boundary values (CORA, i.e. SWAN) loses only a fifth to a third over the
+same water. So the beach still gets far less wave than it should, for a different reason
+than before. Also, during Sandy the waves came from the SOUTH, so the short bottom edge of
+the box is where nearly all the energy has to enter, and its shallow western half is
+letting only a third through. All numbers below are from the timed-out run's partial map
+(`logs/shelf_steps_partial_*_2026-09-09.log`, reproduce with the snippets there); the
+rerun overwrites that map.
+
+**Job.** 61313672 ran on **hal0339** (not halk), `TIMEOUT` at 14:00:23 with 55 % of the
+window done (80 of 145 SnapWave calls, last map record 10-29 16:00, MaxRSS 19.9 GB). No
+restart file (`trstout` off), so the rerun is from scratch: **61327796**, same staged dir,
+`sfincs-desktop.sif` explicit, `run.submit_slurm(..., extra_args=["--time=40:00:00"])`,
+running on **hal0351** since 09-09 09:05 UTC-4. Projection 26–30 h. The partial
+`sfincs.log` / `sfincs_his.nc` are kept as `logs/wave-shelf-steps_PARTIAL_61313672_*`.
+`scripts/wave_boundary_ring.py` now opens a partial map (`timemax` left undecoded — its
+fill values broke the default decoder and took the file with them) and skips times it
+does not have.
+
+**Why it is slow.** SnapWave calls average **350 s** (9 calls > 1000 s; ≥ 10.3 h of the
+14 h) against the premier's 110 s. The band is 1,113,137 cells and **75 % of them are
+50 m cells**: `low_water` (refinement level 2, zmin −20) refines every cell shallower than
+−20 m ring-wide, shelf included, so the SnapWave grid went 1.76 M → 2.88 M nodes. **25 of
+80 calls hit the new 50-iteration cap** (premier: 26 of 145 at 25) — raising `niter` did
+not buy convergence, see item 5.
+
+**Read-out against the 09-08 pre-registration (item 3: dead ring ≈ 0 AND ratio ≥ 0.85 at
+every site and time):**
+
+**1. Dead ring → 0. ✅** At 10-29 12:00, **0 of 2,381** ring cells dead (premier, same
+hour: 2,580 of 6,556 = 39 %). Even the 38 predicted inner-corner cells carry waves.
+
+**2. Transmission across the NEW line** — first interior cell / its own boundary neighbour
+(`shelf_steps_partial_bottomrow`):
+
+| leg | 10-29 12:00 | 10-29 16:00 | ring cells below half |
+|---|---|---|---|
+| east leg (x ≈ 600 km, N–S, 200 km) | 0.76 | 0.82 | 1 % |
+| south-facing steps (E–W, 3 × short) | 0.70 | 0.76 | 0–16 % |
+| bottom row, x ≥ 538 km (bed −23..−31 m) | 0.49–0.75 | 0.55–0.81 | 0 % |
+| **bottom row, x 510–536 km (bed −12..−20 m, south of Cape May)** | **0.30–0.49** | **0.31–0.55** | **61–100 %** |
+
+The bottom-row loss is NOT the refinement level (on the east leg, level-1 cells give
+0.76/0.81 and level-2 0.79–0.87 — no cell-size dependence), NOT breaking (Hs/h ≈ 0.4 →
+Baldock Qb ≈ 0.002), NOT the imposed direction (157–163° from, i.e. travelling into the
+band). It is the shallow, western, mesh-edge stretch and it is unexplained.
+
+**3. ❌ The ≥ 0.85 criterion is not met, and the loss moved inland.** Along the east leg at
+10-29 12:00 the band hm0 / imposed is 0.78 (0–250 m), 0.75 (0.25–1 km), 0.67 (1–3 km),
+0.54 (3–10 km), 0.48 (10–20 km), 0.47 (20–40 km): a decay to a **plateau ≈ 0.47 within
+10 km**, in 28 → 19 m of water, then flat. Bottom friction at fw 0.02 over that reach is
+~15 % of Hs, not 40 %. CORA's own SWAN, over the same shelf, keeps far more
+(`shelf_steps_partial_cora_reference`; "old 10 m line" = the premier's boundary cells):
+
+| site | time | CORA at new line | CORA at old −10 m line | **SWAN keeps** | **SnapWave keeps** at the old line | −9 m shelf / CORA-at-10 m: **this arm** | premier |
+|---|---|---|---|---|---|---|---|
+| Sea Bright | 10-29 12:00 | 4.42 (−40 m, 14 km out) | 3.12 | 0.71 | 0.34 | 0.48 | 0.61 |
+| Atlantic City | 10-29 12:00 | 6.90 (−22 m, 30 km) | 4.75 | 0.69 | 0.36 | 0.47 | 0.48 |
+| Ocean City | 10-29 12:00 | 7.02 (−27 m, 38 km) | 4.25 | 0.61 | 0.22 | 0.36 | 0.15 |
+| Sea Isle | 10-29 12:00 | 6.93 (−33 m, 41 km) | 4.24 | 0.61 | 0.21 | 0.34 | 0.50 |
+| Atlantic City | 10-28 12:00 (a cap-hit hour) | 3.97 | 3.29 | 0.83 | **0.12** | 0.28 | 0.44 |
+
+So on the −9 m shelf the arm rescues Ocean City (the deadest ring, 0.15 → 0.36), is
+neutral at Atlantic City and is slightly WORSE at Sea Isle and Sea Bright, because the
+premier's boundary sat right there and imposed CORA directly. Net, the shelf still gets
+~⅓–½ of what CORA says.
+
+**4. The geometry that matters: Sandy's waves came from the SOUTH.** CORA's imposed
+direction (nautical, from), median over the 60 support points: 146° at 10-28 00:00 →
+165° (10-28 12) → 176° (10-29 00) → **181° (10-29 12)** → 168° (10-30 00) → 112° (10-30 12)
+→ 104–110° after. During the whole rise and peak the waves travel NORTH, parallel to the
+200 km east leg, which is therefore grazed, and the **upwave supply for the entire coast is
+the 46 km bottom row plus the three short south-facing steps** — exactly the edges that
+transmit worst (table 2). After 10-30 06:00 the direction swings to ESE and the east leg
+becomes the supply. Read the second half of the window separately; do not average across
+the swing.
+
+**5. ⚠️ Non-convergence IS a blow-up.** The 25 unconverged calls oscillate at error ≈ 1
+with %ok 95–99.9 % (one at 79.7 %, 27.5 h). In those hours the band carries hm0 up to
+**22 m**: 55k / 76k / 93k band cells above 1.2 × the max imposed at 3 / 6 / 13 h, in the
+mid-band 12–24 km inside the line at −17..−19 m off Atlantic City–LBI, and Ocean City's
+−9 m shelf reads 0.32 m at 10-28 12:00 vs 1.80 m twelve hours later (table 3, last row).
+The large ones stop after ~15 h, but a **persistent hotspot east of Sandy Hook** stays
+through the last record (x ≈ 589 km, y 4468–4483 km, 3–12 km south of the unforced top
+edge, 50 m cells at −12..−17 m, hm0 10–18 m, **30–50 % SFINCS-active** — it feeds the Sea
+Bright / Sandy Hook hydrodynamics). ERA5 shelf wind in the blow-up hours is 9–12 m/s from
+35–50°; with `snapwave_wind = 1` the wind-growth term over a 1.1 M-cell fetch is the
+prime suspect (the premier's band was a few cells wide, so it never had a fetch). The
+top-edge cells themselves are near zero (0.15–0.4 m in the first 300 m): an unforced edge
+drains, it does not pile up.
+
+**✅ SUBMITTED 09-09 afternoon (plan `~/.claude/plans/alright-i-think-we-nested-beacon.md`,
+approved by the user): three one-change arms, staged by `hpc/stage_and_submit_v3.slurm`
+job **61333216** (`NJ_ALLOW_BRACKET=setup-stockdon SOLVE_TIME=40:00:00`), which submits one
+solve per arm through `hpc/sfincs_run.slurm` (halk excluded, `sfincs-desktop.sif`
+explicit) and one `--validate-only` job `afterok` all three. Staging COMPLETED on hal0139 at 13:26 UTC-4; solves **61334377** (`wave-fw01+…`), **61334378** (`wave-nowind+…`), **61334379** (`BRACKET+setup-stockdon`), validate **61334380** (afterok all three, so it waits ~28 h; score the bracket by hand earlier with `--validate-only --experiments BRACKET+setup-stockdon` under `NJ_ALLOW_BRACKET`). **Morning checklist: `sacct -j 61334377,61334378,61334379 --format=JobName,State,NodeList,Elapsed,MaxRSS`, hal not halk.**
+- `wave-fw01+wave-shelf-steps` — `snapwave_fw` 0.02 → 0.01, nothing else. WHY: SnapWave's
+  only distributed shelf sink is friction `Dfk = 0.28·ρ·fw·uorb³` (source read 09-09, v2.3.3;
+  no whitecapping anywhere); at fw 0.02 a 6 m / 13.6 s swell in the band's median 18 m keeps
+  0.77 of its height per 10 km (0.87 at 0.01), which is most of the measured 0.78 → 0.54.
+  PRE-REGISTERED: band ratio 10–20 km inside the east leg 0.48 → ≥ 0.7 at 10-29 12:00; −9 m
+  shelf / CORA-at-10 m at AC / OC / Sea Isle 0.34–0.47 → ≥ 0.6; first-cell ratios, cap-hits,
+  blow-ups unchanged. Less than half the friction-only move ⇒ friction is not the plateau.
+- `wave-nowind+wave-shelf-steps` — `snapwave_wind` 1 → 0 with `snapwave_sector` pinned at 360
+  (new `WaveConfig.snapwave_sector`; without it wind-off would also narrow the sector).
+  PRE-REGISTERED: cap-hits → ≤ 2 of 145, no band cell > 1.2× imposed max, Sandy Hook hotspot
+  gone, Ocean City's 10-28 12:00 collapse gone; plateau unchanged or slightly lower; bay hm0
+  down. Blow-ups surviving wind-off = boundary/solver defect.
+- `BRACKET+setup-stockdon` — waves OFF + Stockdon SETUP (β_f 0.03, CORA H0/Tp deshoaled at
+  each point's nearest node ≥ 8 m deep) on all 224 NACCS points
+  (`data/gtsm/naccs_sandy_v3_stockdon03.nc`, `scripts/build_stockdon_boundary.py`; as built:
+  pre-storm mean η 0.25 m, median peak 0.41 m, max 0.51). INADMISSIBLE by FINDINGS §22/§23,
+  registered as a FORCING bracket (`premier.Bracket.forcing_only` — same fingerprint as v3,
+  refused by NAME; first `--check` refused the sealed template as "the bracket" until the
+  guard learned that distinction). Rows go to `experiments/v3/bracket_metrics.csv`, never
+  `metrics.csv`. PRE-REGISTERED: southern bay pre-storm deficits (0.23–0.55) shrink by ≈ η;
+  AC pier +0.006 → ≈ +0.15; south_coast / great_egg / cape_may_back_bays HWM biases shrink;
+  CSI either way. Bays NOT rising by ≈ η ⇒ not a boundary-level problem. Runup/swash is judged
+  OFFLINE (`scripts/stockdon_envelope.py --arm BRACKET+setup-stockdon --beta-f 0.03`).
+- Retired 09-09 with the measurement: a stepped line hugging −13 m still leaves a 461k-cell
+  band 6.7 km wide (flat shelf) and friction per km is worse in 13 m than 25 m. The `bds` unit
+  hypothesis: the source converts degrees (`ds_bwv*pi/180`), our 30.0 is right. Source facts
+  for a later Deltares issue/PR: `inner(k)=.false.` for any direction lacking an upwind pair
+  (the dead-corner rule), boundary spectrum cut at ±90° around each point's mean direction.
+- Reading any arm: `scripts/wave_shelf_reference.py <dir>` (new; the −9 m shelf / CORA-at-10 m
+  criterion, works on a partial map) + `scripts/wave_boundary_ring.py`, then `--validate-only`,
+  paired bootstrap vs `wave-shelf-steps` and vs premier. Coarse-band domain (Track C) waits
+  for the +12 h partial reads. Meeting brief: `reports/weekly_2026-09-09.html`.
+
+**Close of play 09-09 (17:00 UTC-4).** Running, all on hal nodes: rerun **61327796** (hal0351,
+started 09:05, ~28 h), **61334377** `wave-fw01+…` (hal0346) and **61334378** `wave-nowind+…`
+(hal0313), both started 13:26 with 40 h limits, **61334379** `BRACKET+setup-stockdon` (hal0314,
+~1 h) and validate **61334380** pending afterok all three. Staged inputs VERIFIED: fw arm differs
+from `wave-shelf-steps/sfincs.inp` by the one `snapwave_fw` line, nowind by `snapwave_wind`
+only (sector stays 360), `snapwave.bnd/.bhs` md5-identical across the three; the bracket's
+`sfincs.inp` is identical to `naccs-nowaves` and its boundary minus nowaves' equals η exactly
+(max |Δ−η| 0.0, mean 0.28, max 0.51 m). Meeting briefs (artifacts, also in `reports/`):
+detailed `weekly_2026-09-09.html`, plain-wording `weekly_2026-09-09_supervisor.html`.
+⏳ **Tomorrow, in order:** (1) `sacct -j 61327796,61334377,61334378,61334379
+--format=JobName%34,State,NodeList,Elapsed,MaxRSS` — hal not halk; (2) bracket: `NJ_DOMAIN=v3
+NJ_ALLOW_BRACKET=setup-stockdon python run_experiments.py --experiments BRACKET+setup-stockdon
+--validate-only` → `experiments/v3/bracket_metrics.csv`, then `scripts/paired_hwm_bootstrap.py
+BRACKET+setup-stockdon naccs-nowaves`, the pre-storm bay-mean table (09-08 snippet) and the AC
+pier residual, read against the pre-registration above; (3) partial reads of the two wave arms
+at ~+12 h: `scripts/wave_shelf_reference.py experiments/v3/<arm>` and
+`scripts/wave_boundary_ring.py <arm> --ring-time 2012-10-29T00:00`; cap-hit count from
+`sfincs.log` (`grep -B1 "Computing SnapWave" | grep -c "iteration     50"`); (4) rerun 61327796
+lands ~13:00: full ring + setup transects, `--validate-only`, paired vs premier; then the
+spectral-truncation check (band ratio vs distance NORTH of the nearest south-facing step) —
+if the ratio falls with that distance at fixed depth, the plateau is geometry (unforced SW
+quadrant), not friction. 📝 Friction literature note for FINDINGS once the fw arm has spoken:
+in SnapWave's coefficient at Sandy's orbital velocities, SWAN's JONSWAP swell constant ≈ 0.006,
+wind-sea ≈ 0.010, a Madsen/Nielsen law with 5 cm ripple roughness ≈ 0.02, sheet-flow sand
+0.005–0.01; CORA's own setting is unknown. So 0.02 is the rough-bed end, 2–3× the shelf-swell
+values; friction explains ~half of the first-10-km loss at the east leg's 24–28 m, and the
+flat plateau beyond 10 km is NOT friction-shaped.
+
+**⏳ When 61327796 finishes (in order):** (1) `sacct -j 61327796 --format=State,NodeList,Elapsed,MaxRSS`
+— hal not halk, COMPLETED not TIMEOUT; (2) `NJ_DOMAIN=v3 python scripts/wave_boundary_ring.py
+experiments/v3/wave-shelf-steps --setup experiments/v3/naccs-nowaves` for the peak-hour
+ring and the setup transects — table 2's ratio column is NaN by construction now (the
+4 km strip holds no boundary cells), read `shelf9m / CORA-at-10 m` from the snippet in
+`logs/shelf_steps_partial_cora_reference_2026-09-09.log` instead; (3) `--validate-only`,
+the paired bootstrap vs premier, the pre-storm bay-mean table — and read them as "what a
+transmitting-but-starved band does to the scores", not as the fix landing. The arm is
+admissible; it is not the fix.
+
+**⏳ DECISION FOR THE USER — the next arm.** One change each, in the order the evidence
+points (the user judges; none of these is staged):
+- **(a) `snapwave_wind = 0` on this band.** Cheapest; tests whether the blow-ups and the
+  cap-hits are the wind source term. CORA's Hs already contains SWAN's wind growth over the
+  shelf, so growth inside the band double-counts. Prediction: cap-hits → ~0, no band cell
+  above the imposed max, Sandy Hook hotspot gone, band plateau unchanged or slightly lower
+  (this does not fix item 3 on its own).
+- **(b) Coarsen the band.** 75 % of it is 50 m cells because `low_water` reaches the
+  shelf; a SnapWave-only mask cannot change the mesh, so this is a new domain (a
+  `low_water` clipped to the bays) — or accept 3× the premier's SnapWave cost per arm.
+- **(c) The supply edge.** With waves from the S, the bottom row feeds the coast and its
+  shallow half passes a third. Nothing in this arm's toolbox moves the mesh's row 1
+  further south; the `wave-shelf-steps-apex` extension (below) helps the Sandy Hook
+  hotspot and the Raritan, not the southern coast.
+- **Deltares report** (09-08 item 1) stays open; the reproducible case is now this run dir
+  plus table 2 — a first interior cell at 0.30 of its boundary neighbour, with no dead
+  corner, no breaking and no cell-size dependence, is the cleanest statement of it.
 
 ### 🌊 2026-09-08 — THE OPEN-COAST / BACK-BAY LOW BIAS: the SnapWave BOUNDARY IS NOT TRANSMITTING the waves we impose (a defect, not a physics setting)
 
@@ -174,6 +363,23 @@ relative to the OLD −10 m boundary cells, which are now interior — read the 
 "−9 m shelf hm0 / CORA-imposed hm0" and expect it to be well above the premier's 0.14–0.62;
 (3) only then `--validate-only`, the paired bootstrap vs premier, the pre-storm bay-mean
 table and the setup transects.
+
+**Run state 09-08 → 09-09:** 61313672 TIMED OUT at 55 % after 14 h on hal0339; resubmitted verbatim as 61327796 (40 h) — see the 09-09 section at the top of PICK UP for the partial-map read-out and the finish checklist. Domain map: `reports/figures/snapwave_domain/wave-shelf-steps_domain.png` (gitignored dir; regenerate from the staged `sfincs.nc` + `snapwave.bnd` if lost).
+
+**⏳ FOLLOW-UP ARM, user's question 09-08 ("why not take it up to Brooklyn?"):** the navy
+line stops at the tip of Sandy Hook because the premier's `open_coast_max_y = 4,476,000`
+demotes every wave-boundary cell north of it — a rule written for the ~1e13 blow-up that
+was LATER traced to support points outside the mesh (archive 2026-06 root cause), so its
+"enclosed corner" justification may be a relic. Kept verbatim here so this arm changes ONE
+thing. Physically the case to extend is real: NDBC 44065 at the Bight apex saw 9–10 m from
+the SE, those waves entered the Lower Bay, and today the Sandy Hook→Rockaway apron gets
+only what leaks north along the band. Design if `wave-shelf-steps` passes transmission:
+extend the x ≈ 600 km leg north to row ≈ 945 (y ≈ 4492 km, where it meets Long Island's
+south shore near Long Beach), raise `n_top`, relax the demotion FOR THAT ARM ONLY (an
+`Experiment`/`WaveConfig` override, not a `Domain` edit), a few more CORA support points.
+Pre-registration: Raritan-lobe wave setup and Great Kills / Narrows peaks move; everything
+south of Sandy Hook does NOT (paired, |Δ| within the seiche band §40). Name it
+`wave-shelf-steps-apex`; never fold it into the current arm.
 
 ### 🏠 2026-09-03 — BUILDING FOOTPRINTS ACQUIRED (both sources, statewide raw + v3 clip); the `bed-buildings` arm is NOT yet built
 

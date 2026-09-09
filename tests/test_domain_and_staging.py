@@ -204,11 +204,25 @@ class TestFingerprints(_DomainEnv):
         """
         expected_fps = set(premier.EXPECTED.values())
         for name, brk in premier.BRACKETS.items():
+            if brk.forcing_only:
+                continue  # by definition ON a sealed domain; see the next test
             self.assertNotIn(
                 brk.fingerprint,
                 expected_fps,
                 f"bracket {name!r} is registered as a legitimate domain",
             )
+
+    def test_forcing_brackets_sit_on_their_sealed_base(self):
+        """A forcing bracket's fingerprint IS its base domain's — no more, no less.
+
+        Forcing does not enter sha(z, mask), so the guard that remains for such a bracket
+        is the name + NJ_ALLOW_BRACKET; this pins that it cannot ALSO smuggle a mesh change.
+        """
+        for name, brk in premier.BRACKETS.items():
+            if not brk.forcing_only:
+                continue
+            self.assertIn(brk.base_domain, premier.EXPECTED, name)
+            self.assertEqual(brk.fingerprint, premier.EXPECTED[brk.base_domain], name)
 
     def test_bracket_base_domain_is_registered(self):
         for name, brk in premier.BRACKETS.items():
@@ -610,6 +624,43 @@ class TestRainOffIsWrittenNotMerelyNotWritten(_DomainEnv):
                 )
         if checked == 0:
             self.skipTest("no rain-off arms staged on any domain")
+
+
+class TestForcingBracketIsRefusedByName(_DomainEnv):
+    def test_sealed_template_is_not_mistaken_for_a_forcing_bracket(self):
+        """The 2026-09-09 trap: a forcing bracket shares the sealed fingerprint, and the
+        first `--check` refused the sealed TEMPLATE as 'the bracket'. Pin both halves."""
+        tpl = exp_root() / "_template_sealed"
+        if not (tpl / "sfincs.nc").is_file():
+            self.skipTest("no sealed template on disk")
+        premier.assert_sealed_domain(tpl, context="test")  # must NOT raise
+        fake = tpl.parent / "BRACKET+setup-stockdon"
+        if fake.exists():
+            self.skipTest("bracket dir exists; not touching it")
+        # a dir NAMED as a bracket is refused even with the sealed mesh inside it
+        try:
+            fake.symlink_to(tpl)
+            with self.assertRaises(premier.WrongDomainError):
+                premier.assert_sealed_domain(fake, context="test")
+        finally:
+            if fake.is_symlink():
+                fake.unlink()
+
+
+class TestBracketRowsStayOutOfMetrics(unittest.TestCase):
+    def test_split(self):
+        import pandas as pd
+
+        import run_experiments as rx
+
+        df = pd.DataFrame.from_dict(
+            {"naccs-premier": {"domain": "v3", "x": 1},
+             "BRACKET+setup-stockdon": {"domain": "BRACKET:setup-stockdon INADMISSIBLE", "x": 2}},
+            orient="index",
+        )
+        cand, brk = rx._split_brackets(df)
+        self.assertEqual(list(cand.index), ["naccs-premier"])
+        self.assertEqual(list(brk.index), ["BRACKET+setup-stockdon"])
 
 
 class TestMetricsMergeKeepsOtherArms(unittest.TestCase):

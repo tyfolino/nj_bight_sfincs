@@ -28,6 +28,8 @@ A ``BRACKET+`` prefix marks a deliberately inadmissible bound.
 
 from __future__ import annotations
 
+from dataclasses import replace
+
 from .config import DATA, Experiment, WaveConfig
 from .domain import active
 
@@ -143,6 +145,19 @@ _V3_WL = dict(
     # ARM, never by relaxing Domain.n_waterlevel_support.
     n_waterlevel_support=224,
 )
+# The stepped-boundary wave config, hoisted so its one-flag unions below are built with
+# `replace()` and cannot drift from it (STATUS 2026-09-09: three arms share this band).
+_V3_SHELF_STEPS_WAVES = WaveConfig(
+    use_waves=True, wave_wind=True, wave_igwaves=False, tune_physics=True,
+    wave_point_dataset=_V3_CORA,
+    snapwave_domain="v3_shelf_steps",
+    # ~275 km of stepped line at ~4.6 km — the CORA nearest-node limit is 5 km.
+    wave_n_support=60,
+    # 17 % of the premier's SnapWave calls hit the 25-iteration cap with the
+    # unconverged nodes ≈ the boundary ring; a higher cap keeps convergence from
+    # masking whether the ring is fixed. Costs time only on calls that need it.
+    snapwave_niter=200,
+)
 _V3: dict[str, Experiment] = {
     "naccs-premier": Experiment(
         "naccs-premier",
@@ -197,17 +212,7 @@ _V3: dict[str, Experiment] = {
     # (snapwave_mask is outside the fingerprint by design).
     "wave-shelf-steps": Experiment(
         "wave-shelf-steps",
-        WaveConfig(
-            use_waves=True, wave_wind=True, wave_igwaves=False, tune_physics=True,
-            wave_point_dataset=_V3_CORA,
-            snapwave_domain="v3_shelf_steps",
-            # ~275 km of stepped line at ~4.6 km — the CORA nearest-node limit is 5 km.
-            wave_n_support=60,
-            # 17 % of the premier's SnapWave calls hit the 25-iteration cap with the
-            # unconverged nodes ≈ the boundary ring; a higher cap keeps convergence from
-            # masking whether the ring is fixed. Costs time only on calls that need it.
-            snapwave_niter=200,
-        ),
+        _V3_SHELF_STEPS_WAVES,
         "The premier with SnapWave's boundary moved out to ~25-30 m and drawn as FOUR "
         "grid-aligned segments (three inner corners instead of ~2,400). Measured on the "
         "premier, SnapWave zeroes every cell touching >= 2 boundary cells; the isobath "
@@ -221,6 +226,66 @@ _V3: dict[str, Experiment] = {
         "barnegat_bay HWM biases shrink; Raritan lobe re-rings (compare paired); "
         "extent may drop (v1 wave-deep30 precedent). Then retest wave-ig on top.",
         **_V3_WL,
+    ),
+    # ── 2026-09-09: one-flag unions on the shelf-steps band (STATUS 09-09) ────────
+    # The partial map of the first shelf-steps run showed the dead ring FIXED but the
+    # wave decaying to ~0.47 of imposed within 10 km of the line, and 25 of 80 SnapWave
+    # calls unconverged with hm0 blow-ups to 22 m. Each union changes ONE thing on
+    # `_V3_SHELF_STEPS_WAVES`; names follow the `+`-alphabetical convention.
+    "wave-fw01+wave-shelf-steps": Experiment(
+        "wave-fw01+wave-shelf-steps",
+        replace(_V3_SHELF_STEPS_WAVES, snapwave_fw=0.01),
+        "wave-shelf-steps with SnapWave bottom friction fw 0.02 -> 0.01 (the SFINCS "
+        "main-branch default). SnapWave's Dfk = 0.28*rho*fw*uorb^3 is always on; at "
+        "fw 0.02 a 6 m / 13.6 s swell keeps 0.77 of its height over 10 km of the "
+        "band's median 18 m water, at 0.01 it keeps 0.87 — CORA's own SWAN keeps "
+        "0.6-0.8 across the whole shelf. PRE-REGISTERED (STATUS 09-09): band hm0 / "
+        "imposed 10-20 km inside the east leg 0.48 -> >= 0.7 at 10-29 12:00; the -9 m "
+        "shelf / CORA-at-10 m ratio at Atlantic City, Ocean City, Sea Isle 0.34-0.47 -> "
+        ">= 0.6; first-cell ratios, cap-hits and blow-ups UNCHANGED (friction is not a "
+        "boundary effect). If the shelf ratio moves by less than half the friction-only "
+        "prediction, friction is not the plateau.",
+        **_V3_WL,
+    ),
+    "wave-nowind+wave-shelf-steps": Experiment(
+        "wave-nowind+wave-shelf-steps",
+        replace(_V3_SHELF_STEPS_WAVES, wave_wind=False, snapwave_sector=360),
+        "wave-shelf-steps with SnapWave wind growth OFF and the 360 deg sector KEPT "
+        "(without the explicit sector a wind-off arm would also narrow to 180 deg — two "
+        "changes). Tests whether the unconverged calls / hm0 blow-ups and the persistent "
+        "hotspot east of Sandy Hook are the wind source term acting over a 1.1 M-cell "
+        "fetch (the premier's band was a few cells wide). PRE-REGISTERED (STATUS 09-09): "
+        "cap-hits -> <= 2 of 145, no band cell above 1.2x the imposed max, Sandy Hook "
+        "hotspot gone, Ocean City's 10-28 12:00 shelf value no longer collapses; band "
+        "plateau unchanged or slightly LOWER; bay-interior hm0 drops (wind was turned on "
+        "for Sandy Hook Bay chop, 0.26 m mean). Blow-ups persisting with wind off = a "
+        "boundary/solver defect.",
+        **_V3_WL,
+    ),
+    # ── BRACKET: the parametric-setup ceiling (STATUS 09-09, plan Track B) ──────────
+    # Waves OFF + Stockdon SETUP (eta = 0.35*beta_f*sqrt(H0*L0), the surf-zone MEAN-level
+    # term, NOT the swash) from CORA added to every NACCS support point. Inadmissible by
+    # FINDINGS §22 (setup at the boundary XOR SnapWave) and §23 (NACCS already carries the
+    # setup accumulated seaward of -10 m): it raises the whole shelf, so the Atlantic City
+    # pier (matched to 6 mm) will read high. It exists to put a CEILING on how much of the
+    # back-bay / HWM low bias a supplied mean level buys. Scored into its own CSV only.
+    "BRACKET+setup-stockdon": Experiment(
+        "BRACKET+setup-stockdon",
+        WaveConfig(use_waves=False),
+        "UPPER BOUND, waves off: naccs-nowaves with Stockdon setup (beta_f 0.03, CORA "
+        "Hs/Tp deshoaled to H0 at each point's nearest CORA node) ADDED to the 224-point "
+        "NACCS water level (data/gtsm/naccs_sandy_v3_stockdon03.nc, "
+        "scripts/build_stockdon_boundary.py). PRE-REGISTERED (STATUS 09-09): southern "
+        "back-bay pre-storm deficits (0.23-0.55 m) shrink by ~eta (as built: 0.25 m pre-storm "
+        "mean over the 224 points, 0.41 m median peak); "
+        "Atlantic City pier +0.006 -> ~+0.15; south_coast / great_egg / "
+        "cape_may_back_bays HWM biases shrink; MOTF CSI moves either way. Bays NOT rising "
+        "by ~eta means the deficit is not a boundary-level problem at all. Runup (swash) "
+        "is judged OFFLINE on the open-coast marks with scripts/stockdon_envelope.py, "
+        "never added to a boundary.",
+        waterlevel_geodataset="naccs_sandy_v3_stockdon03",
+        n_waterlevel_support=224,
+        bracket="setup-stockdon",
     ),
     # Buildings as subgrid porosity (Building Block on the 3.125/6.25 m pixels; STATUS
     # 09-03/09-04). The premier's mesh, mask, forcing and roughness verbatim; only

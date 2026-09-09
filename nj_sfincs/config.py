@@ -254,9 +254,16 @@ class WaveConfig:
     snapwave_fw: float = 0.02  # wave bottom-friction factor
     snapwave_niter: int = 100  # max iterations (÷4 internal sweeps)
     storefw: int = 1  # store extra wave output
+    #: Explicit `snapwave_sector` [deg]. ``None`` = derive from ``wave_wind`` (360 with
+    #: wind growth, else 180). Exists so a wind-OFF arm can keep the full 360° directional
+    #: grid the premier runs on — without it, switching wind off would ALSO narrow the
+    #: sector to ±90° around the boundary mean direction, and a one-flag test would be two.
+    snapwave_sector: int | None = None
 
     def sector(self) -> int:
         """Directional sector: full circle when wind can grow waves any way."""
+        if self.snapwave_sector is not None:
+            return int(self.snapwave_sector)
         return 360 if self.wave_wind else 180
 
 
