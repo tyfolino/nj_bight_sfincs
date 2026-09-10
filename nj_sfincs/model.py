@@ -1081,7 +1081,12 @@ def add_forcing(base: BaseConfig, sf: SfincsModel) -> None:
             "latitude": base.latitude,
             "advection": 1,
             "dtmapout": 3600.0,  # map output every hour
-            "dtmaxout": 86400.0,  # one zsmax over the whole run
+            # zsmax blocks and restart files on ONE 6 h lattice: a preempted solve resumes
+            # from its newest restart file (nj_sfincs/restart.py, 2026-09-10) and the
+            # stitch keeps whole zsmax blocks only — dtmaxout must divide dtrstout.
+            # validate takes max over `timemax`, so 12 blocks score like the old 3.
+            "dtmaxout": 21600.0,
+            "dtrstout": 21600.0,
             "dthisout": 600.0,  # his output every 10 min
         }
     )

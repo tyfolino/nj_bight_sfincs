@@ -23,16 +23,21 @@
 #SBATCH -c 64
 #SBATCH --mem=64G
 # Wave-enabled (SnapWave) solves of the 3-day Sandy window take 1:40-2:05 wall; the old
-# 1 h limit silently TIMEOUTed the 2026-07-20 phaselag runs at ~80% of the window. There is
-# no restart file (trstout is off), so a timeout loses the whole solve. 3 h = ~1.5x worst case.
+# 1 h limit silently TIMEOUTed the 2026-07-20 phaselag runs at ~80% of the window. A v3
+# SnapWave band solve is 6-30 h — pass --time explicitly (run.submit_slurm extra_args).
+# Since 2026-09-10 a run staged with `dtrstout` resumes from its newest restart file on a
+# requeue (see below), so a TIMEOUT or preemption costs at most one restart interval.
 #SBATCH -t 03:00:00
 #SBATCH -J sfincs
 #SBATCH -o logs/sfincs_%j.out
 #SBATCH -e logs/sfincs_%j.out
-# Heat-wave node losses preempt jobs. --requeue lets SLURM put a preempted/node-failed job
-# back in the queue automatically instead of killing it. SFINCS re-runs the whole solve from
-# scratch on requeue (it overwrites its own output), so a restart is idempotent — no checkpoint
-# state to corrupt. SLURM_RESTART_COUNT tells us how many times this happened.
+# The `main` partition PREEMPTS (2026-09-10: two 40 h solves thrown off hal0351/hal0346 in
+# the same second, 21 h and 19 h in). --requeue lets SLURM put a preempted/node-failed job
+# back in the queue automatically instead of killing it. On the requeue this script asks
+# nj_sfincs/restart.py what to do: a run staged with `dtrstout` (every arm since 09-10)
+# RESUMES from its newest restart file — the earlier output is parked in restart_segments/
+# and stitched back into ONE sfincs_map.nc / sfincs_his.nc after the solve — and a run
+# without one re-runs from scratch as before. SLURM_RESTART_COUNT counts the requeues.
 #SBATCH --requeue
 
 set -euo pipefail
@@ -66,9 +71,23 @@ echo "stack: ulimit -s $(ulimit -s)  OMP_STACKSIZE=$OMP_STACKSIZE"
 
 echo "host=$(hostname)  job=${SLURM_JOB_ID:-none}  threads=$OMP_NUM_THREADS"
 echo "model=$MODEL  sif=$SIF"
+# Resume support (nj_sfincs/restart.py). `prepare` is a no-op on a fresh run; on a requeue
+# it retires the partial output and rewrites sfincs.inp to start from the newest restart
+# file; `finish` stitches the pieces back and restores the inp. Both are safe to run on a
+# dir that needs neither. The host env python is used — the container only has SFINCS.
+PY="${NJ_PYTHON:-$HOME/nj_sandy_sfincs/micromamba/envs/sfincs/bin/python}"
+export PYTHONPATH="$REPO"
 if [ "${SLURM_RESTART_COUNT:-0}" -gt 0 ]; then
-    echo "NOTE: this job was requeued (restart #${SLURM_RESTART_COUNT}) — re-running the solve from scratch."
+    echo "NOTE: this job was requeued (restart #${SLURM_RESTART_COUNT})."
 fi
+ACTION=$("$PY" "$REPO/scripts/sfincs_restart.py" prepare "$MODEL" | tail -n 1)
+# "finish" means the map already reaches tstop. On a REQUEUE (or with segments parked) that
+# is a job that died mid-stitch, so only the stitch is owed. On a first attempt it is a
+# deliberate re-run of a completed dir — solve again, as before.
+if [ "$ACTION" = "finish" ] && [ "${SLURM_RESTART_COUNT:-0}" -eq 0 ] && [ ! -d "$MODEL/restart_segments" ]; then
+    ACTION=fresh
+fi
+echo "restart plan: $ACTION"
 
 # Singularity runs as the calling user, so no root-owned-output cleanup is needed
 # (unlike the old Docker workflow).
@@ -76,4 +95,9 @@ fi
 # (which scales with cores, ~1.6x at 48 vs 16) isn't bottlenecked on one socket's memory.
 NUMA=""
 command -v numactl >/dev/null 2>&1 && NUMA="numactl --interleave=all"
-$NUMA singularity run --bind "$(realpath "$MODEL")":/data --pwd /data "$SIF"
+if [ "$ACTION" != "finish" ]; then
+    $NUMA singularity run --bind "$(realpath "$MODEL")":/data --pwd /data "$SIF"
+else
+    echo "solve already reached tstop before this requeue — stitching only."
+fi
+"$PY" "$REPO/scripts/sfincs_restart.py" finish "$MODEL"

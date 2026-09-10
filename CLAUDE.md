@@ -71,6 +71,7 @@ face and boundary-edge counts — so you cannot tell them apart by counting anyt
 nj_sfincs/          the package
   domain.py         ⭐ ALL geography. Add a domain here, not as literals elsewhere.
   premier.py        ⭐ the fingerprints. The staging guard.
+  restart.py        resume a preempted solve from its restart file + stitch the segments
   experiments.py    the arm registry, KEYED BY DOMAIN
   config.py         BaseConfig + WaveConfig + Experiment; exp_root()
   model.py          build_static / add_forcing / add_waves / finalize
@@ -107,6 +108,19 @@ run" as "touches nothing" destroyed 1.8 GB of solver output once;
 
 ⚠️ **`--experiments` has no default and `all` needs `--yes`.** A bare invocation used to be
 a full destructive sweep.
+
+✅ **Preemption is survivable since 2026-09-10.** `main` preempts (two 40 h solves lost 21 h
+and 19 h in one second). Every arm staged since then writes `sfincs.YYYYMMDD.HHMMSS.rst`
+every 6 h (`dtrstout = dtmaxout = 21600`), and `hpc/sfincs_run.slurm` asks
+`nj_sfincs/restart.py` on every start: a requeue **resumes** from the newest restart file,
+parks the earlier output in `restart_segments/`, and **stitches** one `sfincs_map.nc` /
+`sfincs_his.nc` afterwards (`restart_history.txt` records it). `python
+scripts/sfincs_restart.py plan <dir>` is read-only; `enable <dir>` retrofits a staged dir.
+🔴 `dtmaxout` must divide `dtrstout` — the stitch keeps whole `zsmax` blocks only. A job
+submitted BEFORE 09-10 runs the old spooled batch script: it still restarts from scratch,
+resume it by hand (`prepare`, then `run.submit_slurm`). Measured on the toy model: the
+resumed trajectory differs from the uninterrupted one by ≤ 0.2 mm (p90), 8 mm max on a
+2 cm wetting front, mean −0.08 mm — the same size as changing `tstop` alone.
 
 ⚠️ **Submit the STAGED dir via `run.submit_slurm(dir, sif=...)`, not `--slurm`,** when you
 have already staged. Always pass `sif` explicitly — leaving it to the batch script's
