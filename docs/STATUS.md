@@ -24,6 +24,42 @@ seiche FINDINGS §40 · weir FINDINGS §38 · rain FINDINGS §39)
 
 ## ⏳ PICK UP — next session
 
+### ⏳ 2026-09-11 — START HERE (hand-off written 09-10 evening)
+
+**The approved plan is `~/.claude/plans/alright-finally-and-this-calm-lollipop.md`** (Phase 0 →
+8; the 09-10 ADDENDUM in `~/.claude/plans/alright-i-think-we-nested-beacon.md` is the record of
+how we got here). Read the plan's "Hard constraints" first.
+
+Done 09-10 evening, after the plan was approved:
+- ✅ SFINCS source cloned at tag `v2.3.3` (`091f531a`) to `~/nj_sandy_sfincs/SFINCS-src`, branch
+  `nj/snapwave-winddir` checked out. Nothing edited yet.
+- ✅ Build env `~/nj_sandy_sfincs/micromamba/envs/sfincs-build` created (conda-forge
+  `gfortran_linux-64 gcc_linux-64 netcdf-fortran libnetcdf hdf5 autoconf automake libtool make
+  pkg-config`); `include/netcdf.mod` present. ⚠️ Its gfortran is **16.2** vs the container's
+  GCC 11.4 — five majors apart, so expect the gate to land at ACCEPT at best; Option B (host
+  gfortran 11.5 + netcdf-fortran built from source against conda's libnetcdf) is the likely
+  path if G2 misses.
+- ✅ The four scratchpad diagnostics + their outputs are saved in
+  `logs/snapwave_diag_scratch_2026-09-10/` (`convergence.py band_diag.py breaking_diag.py
+  hourly_entry.py`) — the raw material for `scripts/snapwave_direction_check.py` (Phase 0.2).
+  🔴 They hard-code the 2012-10-28 time base and the two run paths; the promoted script must not.
+
+First thing tomorrow:
+1. **User**: `scancel 61334380` (stranded validate — the classifier blocked me).
+2. `squeue -u tpj8` / `sacct -j 61327796 --format=State,NodeList,Elapsed` — the wind-on
+   `wave-shelf-steps` rerun (hal0323, expected ~midday). 🔴 Do not touch its dir; when it is
+   done: `restart.finish` has stitched? then `--validate-only --experiments wave-shelf-steps`,
+   THEN copy `metrics.csv` → `metrics_2026-09-11_pre_winddir_rebaseline.csv`. Only after that
+   may Phase 3 remove its registry entry.
+3. Phase 0: `.gitignore` (drop the 3 trailing lines — the hygiene test currently FAILS on them;
+   uncommitted), `scripts/snapwave_direction_check.py`, FINDINGS §43 + the two Closed bullets +
+   the ΔCSI-0.018 docstring gap, `scripts/snapwave_parameters.py` + `nj_sfincs/snapwave_params.py`
+   (engine defaults are listed verbatim in the plan; the supervisor printout = `docs/snapwave_parameters.md`
+   + an HTML artifact), then Phase 1a (`hpc/build_sfincs_native.sh`, gates G1/G2).
+4. Working tree is dirty and uncommitted (`CLAUDE.md`, `STATUS.md`, `hpc/sfincs_run.slurm`,
+   `model.py`, `restart.py` + scripts/tests for the restart work, the two weekly reports,
+   `.gitignore`): the user commits.
+
 ### ⚡ 2026-09-10 — preemption on `main`; 🔴 SnapWave WIND MODE REPLACES THE IMPOSED WAVE DIRECTION WITH THE WIND DIRECTION (source bug, v2.3.3 → v2.4.1/main, PR #194) — that is why wind-off "won"; the Stockdon bracket lifts ocean and bays alike
 
 Plain-English version: two of the three long wave runs were thrown off their nodes this
