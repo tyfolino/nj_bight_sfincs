@@ -56,9 +56,3 @@ hydromt_sfincs
 
 # Papers — symlinked into the read-only archive (docs, not code). See ARCHIVE.md.
 refs
-reports/weekly_2026-09-09_supervisor.html
-reports/weekly_2026-09-09_supervisor.html
-.gitignore
-reports/weekly_2026-09-09_supervisor.html
-reports/weekly_2026-09-09.html
-.gitignore

@@ -106,7 +106,12 @@ Live campaign state is in [STATUS.md](STATUS.md). This file is for what is settl
    effect is not only in level — **2.24 km² of open coast is premier-wet and nowaves-dry**.
    In extent terms SnapWave is worth **ΔCSI 0.018**, against **ΔCSI 0.011** between the two
    waves-on arms, so a table that ranks them together carries a confound larger than the
-   signal under test. No scored mark changes wet/dry state between the arms.
+   signal under test. No scored mark changes wet/dry state between the arms. Conditions
+   for the 0.018: v1_5_raritan, `naccs-premier` − `naccs-nowaves`, MOTF CSI over the
+   simulated mask, 2026-08-20, container engine v2.3.3 with `snapwave_wind = 1` — i.e.
+   waves imposed in the WIND direction (§43). It is the size of the waves-on/off confound
+   on that engine, not a measurement of correctly directed setup; re-measure on the fixed
+   engine before quoting it for a new premier.
 
 5. **Compare arms PAIRED.** Bootstrap the per-mark differences, not the two pooled
    statistics. Two arms can differ by more than either differs from the truth while the
@@ -524,6 +529,67 @@ Live campaign state is in [STATUS.md](STATUS.md). This file is for what is settl
     CI [−0.0718, −0.0170], P(better) = 0.998 — waves are real skill on this coast;
     which admissible product supplies them is (so far) not decidable from these marks.
 
+43. 🔴 **SnapWave's wind mode REPLACES the imposed wave direction with the domain-mean
+    wind direction** (SFINCS v2.3.3 through v2.4.1 and `main`; introduced by PR #194,
+    2025-06-11, the one-day fix for issue #193). With `snapwave_wind = 1` the engine keeps
+    the boundary Hs, Tp and spread we impose but launches the spectrum in the direction
+    the WIND is blowing from. Measured on v3 (`wave-shelf-steps`, wind on, vs
+    `wave-nowind+wave-shelf-steps`, same mesh, band and `.bwd`; energy-weighted mean of
+    the boundary-cell `wavdir` vs the Hs-weighted mean of the imposed `.bwd`, ERA5 vector
+    mean for the wind; `scripts/snapwave_direction_check.py direction`, 2026-09-11, full
+    73-hour maps):
+
+    | hour | imposed `.bwd` (from) | wind-ON `wavdir` | wind-OFF `wavdir` | ERA5 wind (from) |
+    |---|---|---|---|---|
+    | 10-28 06:00 | 155 | 45 | 155 | 52 |
+    | 10-28 12:00 | 164 | 34 | 164 | 36 |
+    | 10-29 00:00 | 175 | 35 | 175 | 40 |
+    | 10-29 12:00 | 179 | **9** | 179 | 19 |
+    | 10-30 00:00 | 167 | 97 | 167 | 145 |
+    | 10-30 06:00 | 126 | 171 | 126 | 172 |
+    | 10-30 12:00 | 116 | 176 | 116 | 179 |
+
+    Wind-off matches the imposed direction to within the 5° bin on all 73 hours; wind-on
+    matches it on 0 of 73 (worst |Δ| 170°) and tracks the wind instead. The wave FORCE on
+    the −9 m shelf turns with it (wind-on alongshore, wind-off onshore), so the energy is
+    rotated, not just the label. During Sandy's approach the swell came from the S–SSE and
+    the wind from the NE, so wind-on sent the swell down the coast: entry-band transmission
+    0.63–0.88 vs 0.82–0.99 wind-off, −9 m shelf 0.16–0.36 vs 0.22–0.44 of the imposed
+    height; at landfall (wind and swell both from the SE) the two agree. Wind-on also hit
+    the iteration cap on 36 of 145 SnapWave calls (8 wind-off) and carries hm0 blow-ups,
+    because the interior solution is stored by bin index too and a wind swing between
+    calls rotates the previous solution used as the initial guess.
+
+    **The mechanism** (`source/src/snapwave/snapwave_boundaries.f90`, tag `v2.3.3` =
+    `091f531a`), in `update_boundary_conditions`: (a) `update_boundary_points` builds the
+    per-support-point spectrum `eet_bwv` as a `cos^m` bump on a θ grid centred on the
+    Hs-weighted imposed direction `wdmean_bwv`; (b) `update_wind_field` forms the
+    speed-weighted mean wind direction `u10dmean`; (c) `if (wind) make_theta_grid(u10dmean)`
+    re-labels the bins around the wind WITHOUT rebuilding `eet_bwv`; (d)
+    `update_boundaries` copies the spectrum to the boundary cells BY BIN INDEX. Net: the
+    imposed spectrum is rotated by `u10dmean − wdmean_bwv`. With `snapwave_sector = 360`
+    nothing is clipped, only rotated; a narrower sector also clips swell more than
+    sector/2 from the wind. There is no input-file workaround — the bump always lands on
+    the grid centre whatever the `.bwd` says. Before PR #194 the guard was
+    `if (ntwbnd > 0) make_theta_grid(wdmean_bwv)`, which was correct.
+
+    **Breaking is NOT the sink and friction is unchanged**: Baldock reconstructed per
+    depth bin from `hm0 / tp / snapwavedepth` with the engine's own `Hmax = γ·h` form
+    gives Qb = 0.0000 (p90 ≤ 0.003) in every band bin in both runs, and the friction
+    dissipation `0.28·ρ·fw·u_orb³` (0.6–12 W/m²) is identical between them. The
+    wind-off run "won" on the shelf by getting the DIRECTION right, not by physics.
+
+    **Consequence for the record**: every wind-on arm scored to 2026-09-10 — v1.5 and v3
+    `naccs-premier`, `wave-stwave`, `bed-buildings`, `diag-premier-norain`,
+    `wave-shelf-steps`, `wave-fw01+wave-shelf-steps` — imposed its waves in the ERA5
+    domain-mean wind direction. Their numbers stay in the CSVs, flagged
+    `snapwave_direction = wind`, and are re-baselined deliberately on the fixed engine
+    (the native patched v2.3.3 build tagged `nj-winddir-fix-1` in its `Build-Revision`;
+    STATUS 09-10 PM, the 09-10 evening plan). The §4 ΔCSI and every "waves-on" HWM
+    number before that epoch are numbers for MISDIRECTED waves. Diagnostic:
+    `scripts/snapwave_direction_check.py` (`direction` is the pass/fail table; `bands`,
+    `breaking`, `convergence`, `force` are the supporting reads).
+
 ### Closed — do not re-open
 
 Each of these cost a campaign and is settled. The evidence is in the archive's
@@ -531,7 +597,9 @@ Each of these cost a campaign and is settled. The evidence is in the archive's
 
 - **Infragravity waves are a NULL LEVER, not an instability.** The old "IG caused blow-ups"
   verdict came from a pre-sealed run whose blow-up traced to a *solver* bug. On a sealed
-  domain every metric moved ≤0.01 m.
+  domain every metric moved ≤0.01 m. ⚠️ That was measured with MISDIRECTED waves (§43) at
+  a −10 m boundary; it is re-tested as `wave-ig` on the fixed engine (plan Phase 8) before
+  the "null lever" verdict is quoted for the shelf-steps band.
 - **SnapWave blow-ups (~1e13) are boundary points OUTSIDE the mesh** → depth 0 → runaway.
   Any SnapWave-active cell that is SFINCS-inactive and dry is a candidate.
 - **Surf-zone hm0 spikes are GEBCO integer bathymetry** filling nearshore NoData; offshore
@@ -542,7 +610,10 @@ Each of these cost a campaign and is settled. The evidence is in the archive's
 - **CORA is rejected for WATER LEVEL** (tide late, levels 0.14–0.31 m low) and **adopted for
   WAVES**. ❌ "CORA runs low" does NOT extend to its waves. 🔑 Its `*_map.zarr` are kerchunk
   reference files, not real zarr stores.
-- **The Galibier engine is retired.** Faber is the engine.
+- **The Galibier engine is retired.** The Faber container (`sfincs-cpu.sif`, v2.3.3) was
+  the engine for every run to 2026-09-10; from the Phase-2 rebuild onward the engine is the
+  native patched v2.3.3 build (`Build-Revision … nj-winddir-fix-1`, §43). Every metrics
+  row carries an `engine` column from that epoch; do not compare across it without saying so.
 
 ---
 

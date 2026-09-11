@@ -50,7 +50,10 @@ from .domain import active
 _CORA = DATA / "waves" / "cora_waves_nj.nc"
 
 _PREMIER_WAVES = WaveConfig(
-    use_waves=True, wave_wind=True, wave_igwaves=False, tune_physics=True,
+    use_waves=True,
+    wave_wind=True,
+    wave_igwaves=False,
+    tune_physics=True,
     wave_point_dataset=_CORA,
 )
 
@@ -148,7 +151,10 @@ _V3_WL = dict(
 # The stepped-boundary wave config, hoisted so its one-flag unions below are built with
 # `replace()` and cannot drift from it (STATUS 2026-09-09: three arms share this band).
 _V3_SHELF_STEPS_WAVES = WaveConfig(
-    use_waves=True, wave_wind=True, wave_igwaves=False, tune_physics=True,
+    use_waves=True,
+    wave_wind=True,
+    wave_igwaves=False,
+    tune_physics=True,
     wave_point_dataset=_V3_CORA,
     snapwave_domain="v3_shelf_steps",
     # ~275 km of stepped line at ~4.6 km — the CORA nearest-node limit is 5 km.
@@ -158,155 +164,102 @@ _V3_SHELF_STEPS_WAVES = WaveConfig(
     # masking whether the ring is fixed. Costs time only on calls that need it.
     snapwave_niter=200,
 )
+# ── THE ENGINE EPOCH — 2026-09-11 ───────────────────────────────────────────────
+# SFINCS v2.3.3 through v2.4.1 launch the imposed boundary spectrum in the domain-mean
+# WIND direction when `snapwave_wind = 1` (FINDINGS §43). Every wind-on arm scored before
+# this date carries that; their rows stay in metrics.csv with `snapwave_direction = wind`
+# and their metrics table is frozen as metrics_2026-09-11_pre_winddir_rebaseline.csv.
+# The arms below run on the patched native engine (`nj-winddir-fix-1`,
+# hpc/build_sfincs_native.sh, hpc/patches/snapwave_winddir_v2.3.3.patch).
+#
+# The retired v3 arms — the old `naccs-premier` (36-point isobath band, fw 0.02, IG off,
+# template subgrid), `wave-stwave`, `diag-premier-norain`, `bed-buildings`,
+# `wave-shelf-steps`, `wave-fw01+wave-shelf-steps`, `wave-nowind+wave-shelf-steps`,
+# `BRACKET+setup-stockdon` — are not registered any more: their configs are in git
+# (this file before 2026-09-11), their numbers in the CSVs, their reads in STATUS and
+# FINDINGS. `premier.BRACKETS["setup-stockdon"]` stays, so the bracket dir still audits.
+#
+# ONE constant defines the premier's wave physics; every attribution arm is ONE field
+# off it (tests/test_engine_epoch.py pins that), so the 2×2×2 reads paired and clean:
+#   premier              shelf-steps band · wind ON · IG ON · fw 0.01 · buildings subgrid
+#   wave-fw02            fw 0.02 (what every arm ran to 09-10; engine default is 0.01)
+#   wave-noig            IG OFF (what every arm ran to 09-10; engine default is ON)
+#   bed-nobuildings      the sealed template's subgrid (no footprints)
+#   bed-nobuildings+wave-fw02+wave-noig
+#                        all three: the OLD wave-shelf-steps configuration on the FIXED
+#                        engine — the paired before/after of the direction fix alone,
+#                        and the first arm run (the early direction read, plan F.4)
+#   naccs-nowaves        SnapWave OFF, buildings subgrid (so waves-on/off is one flag)
+_V3_PREMIER_WAVES = replace(_V3_SHELF_STEPS_WAVES, snapwave_fw=0.01, wave_igwaves=True)
+_V3_BUILDINGS = dict(subgrid_from="_subgrid_buildings")
+
 _V3: dict[str, Experiment] = {
     "naccs-premier": Experiment(
         "naccs-premier",
-        WaveConfig(use_waves=True, wave_wind=True, wave_igwaves=False, tune_physics=True,
-                   wave_point_dataset=_V3_CORA, wave_n_support=_V3_WAVE_N),
-        "THE v3 PREMIER: NACCS/CHS ADCIRC storm tide on v1.5's three cuts plus the "
-        "isobath to Cape May and the Delaware Bay wedge, with CORA per-support-point "
-        "waves (v1.5's premier wave config verbatim). Every back bay from Raritan Bay to "
-        "Cape May Harbor is COMPUTED.",
+        _V3_PREMIER_WAVES,
+        "THE v3 PREMIER, engine epoch nj-winddir-fix-1 (2026-09-11). NACCS/CHS ADCIRC "
+        "storm tide on the 224-point boundary; CORA waves imposed at 60 support points "
+        "on the grid-aligned shelf-steps band (~25-30 m) and now launched in the "
+        "direction CORA gives them; wind growth ON; infragravity ON (engine defaults: "
+        "Herbers bound long wave, gamma_ig 0.2, fw_ig 0.015); bottom friction fw 0.01 "
+        "(the engine default; every arm to 09-10 ran 0.02); NJDEP building footprints in "
+        "the subgrid at ground + 4 m. PRE-REGISTRATION lives in STATUS (09-11): boundary "
+        "wavdir within 5 deg of .bwd every hour; entry-band transmission >= the wind-off "
+        "run's; -9 m shelf >= wind-off's at every site; bay hm0 0.2-0.5 m; cap-hits "
+        "<= 8 of 145; hm0ig/hm0 p99 <= 0.5 below 5 m depth, no cell hm0ig > 1 m; "
+        "runtime <= 2x the wind-off run.",
+        **_V3_BUILDINGS,
         **_V3_WL,
     ),
-    "wave-stwave": Experiment(
-        "wave-stwave",
-        WaveConfig(use_waves=True, wave_wind=True, wave_igwaves=False, tune_physics=True,
-                   wave_point_dataset=_V3_STWAVE, wave_n_support=_V3_WAVE_N),
-        "Premier with the wave boundary from NACCS's OWN STWAVE save points instead of "
-        "CORA — the same CSTORM-MS system that produced the water level, so the waves "
-        "and the surge are internally consistent. ⚠️ STWAVE's `alpham` is read as a "
-        "nautical FROM direction by inference, not documentation "
-        "(scripts/build_naccs_stwave_waves.py).",
+    "wave-fw02": Experiment(
+        "wave-fw02",
+        replace(_V3_PREMIER_WAVES, snapwave_fw=0.02),
+        "Premier with SnapWave bottom friction fw 0.01 -> 0.02, the value every arm ran "
+        "to 2026-09-10. Attribution of the friction lever alone on the fixed engine: "
+        "measured 09-09 on the misdirected engine as the quarter-lever (shelf ratio "
+        "+0.02..+0.12); expected the same size here, bay hm0 unchanged.",
+        **_V3_BUILDINGS,
+        **_V3_WL,
+    ),
+    "wave-noig": Experiment(
+        "wave-noig",
+        replace(_V3_PREMIER_WAVES, wave_igwaves=False),
+        "Premier with the infragravity balance OFF, the setting every arm ran to "
+        "2026-09-10. The old 'IG is a null lever' verdict (FINDINGS Closed) was measured "
+        "with misdirected waves at a -10 m boundary; this is its retest on the fixed "
+        "engine and the shelf-steps band. Read: open-coast HWM maxima (IG adds 0-0.1 m "
+        "of runup-side level), bay pre-storm means unchanged within +-0.02 m, paired "
+        "dRMSE with CI.",
+        **_V3_BUILDINGS,
+        **_V3_WL,
+    ),
+    "bed-nobuildings": Experiment(
+        "bed-nobuildings",
+        _V3_PREMIER_WAVES,
+        "Premier on the sealed template's subgrid (no building footprints). The "
+        "buildings lever alone: measured 09-08 as paired dRMSE +0.008 [-0.027, +0.041] "
+        "on the old engine; expected within +-0.02 m again.",
+        **_V3_WL,
+    ),
+    "bed-nobuildings+wave-fw02+wave-noig": Experiment(
+        "bed-nobuildings+wave-fw02+wave-noig",
+        replace(_V3_PREMIER_WAVES, snapwave_fw=0.02, wave_igwaves=False),
+        "The OLD wave-shelf-steps configuration (fw 0.02, IG off, template subgrid) on "
+        "the FIXED engine: the paired before/after of the wind-direction fix and nothing "
+        "else. Runs FIRST (plan F.4): at +3 h wall, snapwave_direction_check.py direction "
+        "must show boundary wavdir within 5 deg of .bwd every hour; then the rest are "
+        "submitted. Its retired twin is experiments/v3/wave-shelf-steps (validated "
+        "09-11, snapwave_direction = wind).",
         **_V3_WL,
     ),
     "naccs-nowaves": Experiment(
         "naccs-nowaves",
         WaveConfig(use_waves=False),
-        "Premier with SnapWave OFF. Extent metrics flagged extent_admissible=False, "
-        "never ranked against a waves-on arm (CLAUDE.md §6).",
-        **_V3_WL,
-    ),
-    # Same name as the v1.5 diagnostic on purpose: scripts/measure_rain_share.py keys on
-    # it, so NJ_DOMAIN=v3 re-runs the FINDINGS §39 measurement unchanged.
-    "diag-premier-norain": Experiment(
-        "diag-premier-norain",
-        WaveConfig(
-            use_waves=True, wave_wind=True, wave_igwaves=False, tune_physics=True,
-            wave_point_dataset=_V3_CORA, wave_n_support=_V3_WAVE_N,
-        ),
-        "The premier with RAIN OFF (no netamprfile; waves, wind, pressure, tide and "
-        "rivers unchanged). Asked 2026-09-02: how much of the premier's MOTF "
-        "false-alarm area is rain? MOTF is a SURGE-only extent, so rain-fed wet pixels "
-        "are false alarms the reference structurally cannot contain — on v1.5, 75.7% "
-        "of premier FA was rain-true and the disconnected-FA classifier caught it with "
-        "precision 0.991 (FINDINGS §39). Pre-registered read (STATUS 09-02): FAR down, "
-        "POD ≈ same or a little down, CSI up; HWM RMSE ≈ unchanged at the coast. "
-        "⚠️ Rain-off is a diagnostic, not a candidate premier: Sandy's rain was real.",
-        rain=False,
-        **_V3_WL,
-    ),
-    # The wave boundary drawn along quadtree rows/columns instead of the -10 m isobath
-    # staircase (STATUS 2026-09-08, nj_sfincs/snapwave_domain.py). Premier verbatim
-    # otherwise; the SFINCS mask, water-level boundary, mesh and subgrid are untouched
-    # (snapwave_mask is outside the fingerprint by design).
-    "wave-shelf-steps": Experiment(
-        "wave-shelf-steps",
-        _V3_SHELF_STEPS_WAVES,
-        "The premier with SnapWave's boundary moved out to ~25-30 m and drawn as FOUR "
-        "grid-aligned segments (three inner corners instead of ~2,400). Measured on the "
-        "premier, SnapWave zeroes every cell touching >= 2 boundary cells; the isobath "
-        "boundary is a staircase of such corners, the shelf received 15-60 % of the "
-        "imposed Hs and the beaches ~0.05 m of setup vs 0.2-0.35 theory. Pre-registered "
-        "SUCCESS IS TRANSMISSION, NOT SCORE (STATUS 09-08): dead-ring fraction -> ~0 "
-        "and shelf-inside/imposed hm0 >= 0.85 at every site and time "
-        "(scripts/wave_boundary_ring.py). Only then read: southern shoreline setup "
-        "toward 0.2-0.35 m, southern back-bay pre-storm means up, south_coast / "
-        "absecon_atlantic_city / great_egg / cape_may_back_bays / manasquan / "
-        "barnegat_bay HWM biases shrink; Raritan lobe re-rings (compare paired); "
-        "extent may drop (v1 wave-deep30 precedent). Then retest wave-ig on top.",
-        **_V3_WL,
-    ),
-    # ── 2026-09-09: one-flag unions on the shelf-steps band (STATUS 09-09) ────────
-    # The partial map of the first shelf-steps run showed the dead ring FIXED but the
-    # wave decaying to ~0.47 of imposed within 10 km of the line, and 25 of 80 SnapWave
-    # calls unconverged with hm0 blow-ups to 22 m. Each union changes ONE thing on
-    # `_V3_SHELF_STEPS_WAVES`; names follow the `+`-alphabetical convention.
-    "wave-fw01+wave-shelf-steps": Experiment(
-        "wave-fw01+wave-shelf-steps",
-        replace(_V3_SHELF_STEPS_WAVES, snapwave_fw=0.01),
-        "wave-shelf-steps with SnapWave bottom friction fw 0.02 -> 0.01 (the SFINCS "
-        "main-branch default). SnapWave's Dfk = 0.28*rho*fw*uorb^3 is always on; at "
-        "fw 0.02 a 6 m / 13.6 s swell keeps 0.77 of its height over 10 km of the "
-        "band's median 18 m water, at 0.01 it keeps 0.87 — CORA's own SWAN keeps "
-        "0.6-0.8 across the whole shelf. PRE-REGISTERED (STATUS 09-09): band hm0 / "
-        "imposed 10-20 km inside the east leg 0.48 -> >= 0.7 at 10-29 12:00; the -9 m "
-        "shelf / CORA-at-10 m ratio at Atlantic City, Ocean City, Sea Isle 0.34-0.47 -> "
-        ">= 0.6; first-cell ratios, cap-hits and blow-ups UNCHANGED (friction is not a "
-        "boundary effect). If the shelf ratio moves by less than half the friction-only "
-        "prediction, friction is not the plateau.",
-        **_V3_WL,
-    ),
-    "wave-nowind+wave-shelf-steps": Experiment(
-        "wave-nowind+wave-shelf-steps",
-        replace(_V3_SHELF_STEPS_WAVES, wave_wind=False, snapwave_sector=360),
-        "wave-shelf-steps with SnapWave wind growth OFF and the 360 deg sector KEPT "
-        "(without the explicit sector a wind-off arm would also narrow to 180 deg — two "
-        "changes). Tests whether the unconverged calls / hm0 blow-ups and the persistent "
-        "hotspot east of Sandy Hook are the wind source term acting over a 1.1 M-cell "
-        "fetch (the premier's band was a few cells wide). PRE-REGISTERED (STATUS 09-09): "
-        "cap-hits -> <= 2 of 145, no band cell above 1.2x the imposed max, Sandy Hook "
-        "hotspot gone, Ocean City's 10-28 12:00 shelf value no longer collapses; band "
-        "plateau unchanged or slightly LOWER; bay-interior hm0 drops (wind was turned on "
-        "for Sandy Hook Bay chop, 0.26 m mean). Blow-ups persisting with wind off = a "
-        "boundary/solver defect.",
-        **_V3_WL,
-    ),
-    # ── BRACKET: the parametric-setup ceiling (STATUS 09-09, plan Track B) ──────────
-    # Waves OFF + Stockdon SETUP (eta = 0.35*beta_f*sqrt(H0*L0), the surf-zone MEAN-level
-    # term, NOT the swash) from CORA added to every NACCS support point. Inadmissible by
-    # FINDINGS §22 (setup at the boundary XOR SnapWave) and §23 (NACCS already carries the
-    # setup accumulated seaward of -10 m): it raises the whole shelf, so the Atlantic City
-    # pier (matched to 6 mm) will read high. It exists to put a CEILING on how much of the
-    # back-bay / HWM low bias a supplied mean level buys. Scored into its own CSV only.
-    "BRACKET+setup-stockdon": Experiment(
-        "BRACKET+setup-stockdon",
-        WaveConfig(use_waves=False),
-        "UPPER BOUND, waves off: naccs-nowaves with Stockdon setup (beta_f 0.03, CORA "
-        "Hs/Tp deshoaled to H0 at each point's nearest CORA node) ADDED to the 224-point "
-        "NACCS water level (data/gtsm/naccs_sandy_v3_stockdon03.nc, "
-        "scripts/build_stockdon_boundary.py). PRE-REGISTERED (STATUS 09-09): southern "
-        "back-bay pre-storm deficits (0.23-0.55 m) shrink by ~eta (as built: 0.25 m pre-storm "
-        "mean over the 224 points, 0.41 m median peak); "
-        "Atlantic City pier +0.006 -> ~+0.15; south_coast / great_egg / "
-        "cape_may_back_bays HWM biases shrink; MOTF CSI moves either way. Bays NOT rising "
-        "by ~eta means the deficit is not a boundary-level problem at all. Runup (swash) "
-        "is judged OFFLINE on the open-coast marks with scripts/stockdon_envelope.py, "
-        "never added to a boundary.",
-        waterlevel_geodataset="naccs_sandy_v3_stockdon03",
-        n_waterlevel_support=224,
-        bracket="setup-stockdon",
-    ),
-    # Buildings as subgrid porosity (Building Block on the 3.125/6.25 m pixels; STATUS
-    # 09-03/09-04). The premier's mesh, mask, forcing and roughness verbatim; only
-    # sfincs_subgrid.nc + subgrid/*.tif differ, rebuilt on the frozen mesh with
-    # `bed_buildings_v3` (NJDEP footprints at ground + 4 m, ground >= 0 m NAVD88)
-    # prepended to V3_ELEVATION_LIST. Fingerprint unchanged by construction.
-    "bed-buildings": Experiment(
-        "bed-buildings",
-        WaveConfig(use_waves=True, wave_wind=True, wave_igwaves=False, tune_physics=True,
-                   wave_point_dataset=_V3_CORA, wave_n_support=_V3_WAVE_N),
-        "The premier with NJDEP building footprints burned into the subgrid DEM at "
-        "local ground + 4 m (scripts/burn_building_footprints.py → "
-        "scripts/rebuild_subgrid.py). Buildings take storage and narrow the wet cross-"
-        "section inside a cell; a fully covered cell goes dry. Pre-registered read "
-        "(STATUS 09-04): paired HWM ΔRMSE within ±0.02 m with a CI spanning zero, "
-        "town marks a few cm HIGHER, gauges unchanged; raw MOTF CSI DOWN mechanically "
-        "because footprint pixels are dry in the downscaled map and wet in MOTF — the "
-        "fair extent comparison masks footprints out of both. ⚠️ Sandy is the case "
-        "where this matters LEAST (long-duration surge fills behind any wall); the "
-        "arm exists so the porosity is in place for shorter events.",
-        subgrid_from="_subgrid_buildings",
+        "Premier with SnapWave OFF, buildings subgrid kept so waves-on/off is ONE flag. "
+        "Extent metrics flagged extent_admissible=False, never ranked against a "
+        "waves-on arm (CLAUDE.md §6). Re-run on the fixed engine (52 min) so the pair "
+        "shares an engine label.",
+        **_V3_BUILDINGS,
         **_V3_WL,
     ),
 }

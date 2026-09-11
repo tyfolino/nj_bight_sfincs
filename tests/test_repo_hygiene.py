@@ -8,7 +8,6 @@ from __future__ import annotations
 
 import re
 import unittest
-from pathlib import Path
 
 from nj_sfincs.config import ROOT
 
@@ -82,7 +81,11 @@ class TestArchiveIsDataOnly(unittest.TestCase):
     ALLOWED_TOP_LEVEL_LINKS = {
         "micromamba",
         "hydromt_sfincs",
-        "sfincs-cpu.sif",
+        # 2026-09-11: ONE container image. The Galibier v2.4.0 image (sfincs-cpu.sif) was
+        # deleted, link and file, because it sat beside the real engine (Faber v2.3.3,
+        # sfincs-desktop.sif) with a near-identical name and size and was what the old
+        # batch-script fallback silently ran. Re-pull from docker://deltares/sfincs-cpu
+        # if a 2.4.x binary is ever needed; do NOT re-add it here under the old name.
         "sfincs-desktop.sif",
         "refs",
         # 2026-09-03: run dirs live on /scratch/tpj8 (1 TB tier); the target is checked by
@@ -109,7 +112,9 @@ class TestArchiveIsDataOnly(unittest.TestCase):
         if not exp.exists():
             return
         target = exp.resolve()
-        self.assertTrue(target.is_dir(), f"experiments/ resolves to a non-directory: {target}")
+        self.assertTrue(
+            target.is_dir(), f"experiments/ resolves to a non-directory: {target}"
+        )
         self.assertTrue(
             os.access(target, os.W_OK),
             f"experiments/ resolves to a read-only location: {target}",
@@ -152,11 +157,13 @@ class TestNoProjEnvInHpc(unittest.TestCase):
         self.assertEqual(
             offenders,
             [],
-            "hpc scripts use a $PROJ shell variable:\n  " + "\n  ".join(offenders) + "\n"
-            "  Locate the repo instead: in a .slurm, `cd \"${SLURM_SUBMIT_DIR:-$PWD}\"` "
-            "then `REPO=\"$PWD\"` (sbatch copies the script to the spool dir, so "
+            "hpc scripts use a $PROJ shell variable:\n  "
+            + "\n  ".join(offenders)
+            + "\n"
+            '  Locate the repo instead: in a .slurm, `cd "${SLURM_SUBMIT_DIR:-$PWD}"` '
+            'then `REPO="$PWD"` (sbatch copies the script to the spool dir, so '
             "BASH_SOURCE is wrong there); in a .sh, "
-            "`REPO=\"$(cd \"$(dirname \"${BASH_SOURCE[0]}\")/..\" && pwd)\"`.",
+            '`REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"`.',
         )
 
     def test_package_asserts_nj_root(self):
@@ -232,6 +239,35 @@ class TestProvenanceIsWiredIn(unittest.TestCase):
         src = inspect.getsource(model.finalize)
         self.assertIn("provenance", src)
         self.assertIn("provenance.txt", src)
+
+
+class TestEngineIsExplicit(unittest.TestCase):
+    """The batch script has NO engine fallback (2026-09-11). The old default to
+    sfincs-cpu.sif (Galibier) silently ran a different engine than the sealed premier's;
+    now a job with no SFINCS_SIF / SFINCS_BIN exits before touching the model dir, and
+    every finished run is stamped with the engine that solved it."""
+
+    def setUp(self):
+        self.src = (ROOT / "hpc" / "sfincs_run.slurm").read_text()
+
+    def test_no_container_fallback(self):
+        self.assertNotIn("sfincs-cpu.sif", self.src)
+        self.assertNotIn(":-$REPO/sfincs", self.src)
+
+    def test_refuses_without_an_engine(self):
+        self.assertIn("REFUSING: no engine", self.src)
+        self.assertIn("REFUSING: both SFINCS_SIF and SFINCS_BIN", self.src)
+
+    def test_records_the_engine(self):
+        self.assertIn("record_engine.py", self.src)
+        self.assertRegex(self.src, r"record_engine\.py.*--bin")
+        self.assertRegex(self.src, r"record_engine\.py.*--sif")
+
+    def test_drivers_pass_the_engine_explicitly(self):
+        for rel in ("run_experiments.py", "hpc/stage_and_submit_v3.slurm"):
+            src = (ROOT / rel).read_text()
+            self.assertIn("SFINCS_BIN", src, rel)
+            self.assertIn("binary=binary", src, rel)
 
 
 if __name__ == "__main__":

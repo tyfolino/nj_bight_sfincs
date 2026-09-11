@@ -2,8 +2,9 @@
 
 ``build_static`` copies the frozen mesh and returns early, so a bed change routed through
 the template builder is a silent no-op (CLAUDE.md §5). These tests pin the contract that
-keeps that path closed: every ``bed-`` arm names a ``_subgrid_*`` source, nothing else
-does, and the naming convention is the one ``scripts/rebuild_subgrid.py`` enforces.
+keeps that path closed: every ``bed-`` arm runs a DIFFERENT subgrid from its premier,
+nothing else does, and the naming convention is the one ``scripts/rebuild_subgrid.py``
+enforces.
 
 Nothing here reads a run dir or a raster.
 """
@@ -22,20 +23,28 @@ class TestBedArms(unittest.TestCase):
         e = Experiment("x", WaveConfig(use_waves=False))
         self.assertIsNone(e.subgrid_from)
 
-    def test_bed_arms_declare_a_subgrid_source(self):
+    def test_bed_arms_and_only_bed_arms_change_the_subgrid(self):
+        """A `bed-` arm's subgrid source differs from its domain's PREMIER; no other arm's
+        does. (Until 2026-09-11 the premier always ran the sealed template's subgrid, so
+        this read "bed- arms name a source, nothing else does"; since the engine epoch
+        the v3 premier itself carries `_subgrid_buildings` and `bed-nobuildings` is the
+        arm that swaps back to the template — the contract is relative to the premier.)"""
         for dom, arms in EXPERIMENTS_BY_DOMAIN.items():
+            prem = arms.get("naccs-premier")
+            base = prem.subgrid_from if prem is not None else None
             for name, exp in arms.items():
                 with self.subTest(domain=dom, arm=name):
                     if name.startswith("bed-") or "+bed-" in name:
-                        self.assertIsNotNone(
+                        self.assertNotEqual(
                             exp.subgrid_from,
-                            f"{dom}/{name} is a bed- arm with no subgrid_from: it would "
-                            "run the premier's subgrid",
+                            base,
+                            f"{dom}/{name} is a bed- arm on the premier's own subgrid",
                         )
                     else:
-                        self.assertIsNone(
+                        self.assertEqual(
                             exp.subgrid_from,
-                            f"{dom}/{name} swaps its subgrid but is not named bed-*",
+                            base,
+                            f"{dom}/{name} changes the subgrid but is not named bed-*",
                         )
 
     def test_subgrid_source_naming(self):
@@ -83,11 +92,20 @@ class TestBedArms(unittest.TestCase):
         self.assertEqual(rx.hwm_count_mismatches(df.drop(index="naccs-premier")), [])
         self.assertEqual(rx.hwm_count_mismatches(pd.DataFrame(index=["a"])), [])
 
-    def test_v3_bed_buildings_registered(self):
-        exp = EXPERIMENTS_BY_DOMAIN["v3"]["bed-buildings"]
-        self.assertEqual(exp.subgrid_from, "_subgrid_buildings")
-        self.assertTrue(exp.waves.use_waves)  # premier physics, only the bed differs
-        self.assertTrue(exp.rain)
+    def test_v3_premier_carries_the_buildings_subgrid(self):
+        """Since the 2026-09-11 engine epoch the PREMIER runs on the buildings subgrid and
+        `bed-nobuildings` is the one-field attribution arm (the old `bed-buildings` arm is
+        retired)."""
+        v3 = EXPERIMENTS_BY_DOMAIN["v3"]
+        self.assertEqual(v3["naccs-premier"].subgrid_from, "_subgrid_buildings")
+        self.assertIsNone(v3["bed-nobuildings"].subgrid_from)
+        self.assertEqual(v3["bed-nobuildings"].waves, v3["naccs-premier"].waves)
+        self.assertTrue(v3["naccs-premier"].rain)
+        self.assertEqual(
+            v3["naccs-nowaves"].subgrid_from,
+            "_subgrid_buildings",
+            "waves-on/off must stay ONE flag",
+        )
 
 
 if __name__ == "__main__":

@@ -55,8 +55,29 @@ cd "${SLURM_SUBMIT_DIR:-$PWD}"
 REPO="$PWD"
 
 MODEL="${1:-model_quadtree}"
-# Override the image with: SFINCS_SIF=/path/to/x.sif sbatch hpc/sfincs_run.slurm <model>
-SIF="${SFINCS_SIF:-$REPO/sfincs-cpu.sif}"
+# 🔴 THE ENGINE IS ALWAYS EXPLICIT (2026-09-11, plan Phase 1b). Exactly one of
+#   SFINCS_SIF=/path/to/image.sif   (container)  or
+#   SFINCS_BIN=/path/to/sfincs      (native build, hpc/build_sfincs_native.sh)
+# must be exported by the submitter — nj_sfincs.run.submit_slurm does. The old fallback
+# to a hard-coded image in the repo (Galibier, v2.4.0) silently ran a DIFFERENT engine than the
+# sealed premier's (Faber, v2.3.3, sfincs-desktop.sif) and is gone: a job with no engine,
+# or two, exits 2 here, before it touches the model dir.
+SIF="${SFINCS_SIF:-}"
+BIN="${SFINCS_BIN:-}"
+if [ -n "$SIF" ] && [ -n "$BIN" ]; then
+    echo "REFUSING: both SFINCS_SIF and SFINCS_BIN are set — pick one engine" >&2; exit 2
+fi
+if [ -z "$SIF" ] && [ -z "$BIN" ]; then
+    echo "REFUSING: no engine — export SFINCS_SIF=<image.sif> or SFINCS_BIN=<sfincs binary>" >&2; exit 2
+fi
+if [ -n "$SIF" ] && [ ! -f "$SIF" ]; then echo "REFUSING: SFINCS_SIF=$SIF not found" >&2; exit 2; fi
+if [ -n "$BIN" ] && [ ! -x "$BIN" ]; then echo "REFUSING: SFINCS_BIN=$BIN is not executable" >&2; exit 2; fi
+# A native binary carries its netCDF rpath (build_sfincs_native.sh); SFINCS_BIN_LIBDIR is
+# the override for a binary that does not.
+if [ -n "$BIN" ] && [ -n "${SFINCS_BIN_LIBDIR:-}" ]; then
+    export LD_LIBRARY_PATH="$SFINCS_BIN_LIBDIR:${LD_LIBRARY_PATH:-}"
+fi
+ENGINE="${SIF:+sif:$SIF}${BIN:+bin:$BIN}"
 
 export OMP_NUM_THREADS="${SLURM_CPUS_PER_TASK:-1}"
 # 🔴 STACK. SFINCS/SnapWave size Fortran automatic arrays by the face count. At v1.5's
@@ -70,7 +91,7 @@ export OMP_STACKSIZE="${OMP_STACKSIZE:-1G}"
 echo "stack: ulimit -s $(ulimit -s)  OMP_STACKSIZE=$OMP_STACKSIZE"
 
 echo "host=$(hostname)  job=${SLURM_JOB_ID:-none}  threads=$OMP_NUM_THREADS"
-echo "model=$MODEL  sif=$SIF"
+echo "model=$MODEL  engine=$ENGINE"
 # Resume support (nj_sfincs/restart.py). `prepare` is a no-op on a fresh run; on a requeue
 # it retires the partial output and rewrites sfincs.inp to start from the newest restart
 # file; `finish` stitches the pieces back and restores the inp. Both are safe to run on a
@@ -96,8 +117,20 @@ echo "restart plan: $ACTION"
 NUMA=""
 command -v numactl >/dev/null 2>&1 && NUMA="numactl --interleave=all"
 if [ "$ACTION" != "finish" ]; then
-    $NUMA singularity run --bind "$(realpath "$MODEL")":/data --pwd /data "$SIF"
+    if [ -n "$BIN" ]; then
+        # Same rlimits / OMP env as the container path; SFINCS writes sfincs.log in cwd.
+        ( cd "$MODEL" && $NUMA "$BIN" )
+    else
+        $NUMA singularity run --bind "$(realpath "$MODEL")":/data --pwd /data "$SIF"
+    fi
 else
     echo "solve already reached tstop before this requeue — stitching only."
 fi
 "$PY" "$REPO/scripts/sfincs_restart.py" finish "$MODEL"
+# The engine record: engine.txt + an [engine] block in provenance.txt (label, sha256,
+# Build-Revision, host, job, restart count). collect_metrics stamps it onto the row.
+if [ -n "$BIN" ]; then
+    "$PY" "$REPO/scripts/record_engine.py" "$MODEL" --bin "$BIN"
+else
+    "$PY" "$REPO/scripts/record_engine.py" "$MODEL" --sif "$SIF"
+fi

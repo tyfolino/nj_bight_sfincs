@@ -584,7 +584,10 @@ class TestRainOffIsWrittenNotMerelyNotWritten(_DomainEnv):
                     f"{dname}/{name} differs from the premier in WAVES, not only rain",
                 )
                 self.assertEqual(exp.waterlevel_geodataset, prem.waterlevel_geodataset)
-        self.assertGreaterEqual(seen, 1, "no norain arm registered on any domain")
+        # No `seen >= 1` since 2026-09-11: the v3 `diag-premier-norain` arm was retired
+        # with the engine epoch (its FINDINGS §39 measurement stands as recorded). The
+        # contract above still binds any norain arm that is registered again.
+        del seen
 
     def test_source_has_the_rain_off_branch(self):
         import inspect

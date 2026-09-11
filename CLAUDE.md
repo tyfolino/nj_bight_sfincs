@@ -122,9 +122,16 @@ resume it by hand (`prepare`, then `run.submit_slurm`). Measured on the toy mode
 resumed trajectory differs from the uninterrupted one by ≤ 0.2 mm (p90), 8 mm max on a
 2 cm wetting front, mean −0.08 mm — the same size as changing `tstop` alone.
 
-⚠️ **Submit the STAGED dir via `run.submit_slurm(dir, sif=...)`, not `--slurm`,** when you
-have already staged. Always pass `sif` explicitly — leaving it to the batch script's
-fallback is how a sweep silently ran on the wrong engine.
+⚠️ **Submit the STAGED dir via `run.submit_slurm(dir, sif=... | binary=...)`, not
+`--slurm`,** when you have already staged. 🔴 **The engine is always explicit (2026-09-11):**
+exactly one of `sif` (container) or `binary` (a native build from
+`hpc/build_sfincs_native.sh`) — `run.py` and `hpc/sfincs_run.slurm` both REFUSE a run with
+none or both; the old fallback to `sfincs-cpu.sif` (Galibier v2.4.0, NOT the premier's Faber
+v2.3.3) is gone. `SFINCS_BIN=<path>` in the environment makes the sweep driver and
+`stage_and_submit_v3.slurm` use the native engine. Every finished run gets `engine.txt`
+(label `sif:<stem>@<sha8>` / `bin:<variant>@<sha8>`, Build-Revision, host, job) and
+`metrics.csv` carries `engine`, `snapwave_direction` (`wind` = the FINDINGS §43 bug) and
+`subgrid` on every row.
 
 ⚠️ **`build_template()` calls `rmtree` on its target.** It refuses when the template is
 already sealed for the active domain, but a template whose fingerprint has *drifted* does
@@ -225,7 +232,8 @@ not trip that guard. Do not run the sweep driver to "just rebuild" a template.
 - ⚠️ **A waves-off arm's CSI / POD / FAR are KEPT and flagged** `extent_admissible=False`
   — waves-off is a legitimate configuration, not a broken one. The caution is against
   RANKING one against a waves-on arm: on v1.5 SnapWave is worth ΔCSI 0.018, against
-  ΔCSI 0.011 between the two waves-on arms. FINDINGS §4.
+  ΔCSI 0.011 between the two waves-on arms (container engine, waves misdirected —
+  FINDINGS §43). FINDINGS §4.
 - **Compare arms PAIRED** — bootstrap the per-mark differences, not the two pooled
   statistics (`scripts/paired_hwm_bootstrap.py`).
 - **Write the pre-registration BEFORE running the scorer** — pick the diagnostic before you

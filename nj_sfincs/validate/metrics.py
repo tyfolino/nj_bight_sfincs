@@ -18,8 +18,9 @@ sign of the bias, and therefore the ranking of every arm. Every row carries
 **A waves-off extent metric is kept, and flagged.** Waves-off is a legitimate
 configuration (Grimley et al. 2025 run it), so the number is computed and the row carries
 ``extent_admissible=False``. Measured on v1.5: SnapWave moves the median open-coast level
-+0.084 m and the CSI 0.018 — against 0.011 between the two waves-on arms. Do not RANK
-across the pair; reading the number itself is the reader's call. FINDINGS §4.
++0.084 m and the CSI 0.018 — against 0.011 between the two waves-on arms (container
+engine, waves misdirected: FINDINGS §43). Do not RANK across the pair; reading the
+number itself is the reader's call. FINDINGS §4.
 """
 
 from __future__ import annotations
@@ -650,7 +651,7 @@ def motf_metrics(da_hmax, da_dep, model_dir: Path, data_dir: Path = DATA) -> dic
 
     ⚠️ ON A WAVES-OFF ARM these are a different measurement, not a weaker one — wetting
     is threshold-nonlinear, and on v1.5 SnapWave is worth ΔCSI 0.018 (2.24 km² of open
-    coast changes wet/dry state). The number is still computed and still meaningful on its
+    coast changes wet/dry state; measured with misdirected waves, FINDINGS §43). The number is still computed and still meaningful on its
     own terms; the row's ``extent_admissible`` flag is what says not to rank across the
     pair. FINDINGS §4.
 

@@ -1,0 +1,146 @@
+diff --git a/source/src/sfincs_lib.f90 b/source/src/sfincs_lib.f90
+index a8b8fda..f70c1b2 100644
+--- a/source/src/sfincs_lib.f90
++++ b/source/src/sfincs_lib.f90
+@@ -94,7 +94,7 @@ module sfincs_lib
+    !
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !
+-   build_revision = "$Rev: v2.3.3 mt. Faber+"
++   build_revision = "$Rev: v2.3.3 mt. Faber+ nj-winddir-fix-1"
+    build_date     = "$Date: 2025-05-12"
+    !
+    call write_log('', 1)
+diff --git a/source/src/snapwave/snapwave_boundaries.f90 b/source/src/snapwave/snapwave_boundaries.f90
+index 773b458..82c2417 100644
+--- a/source/src/snapwave/snapwave_boundaries.f90
++++ b/source/src/snapwave/snapwave_boundaries.f90
+@@ -508,9 +508,10 @@ subroutine update_boundary_conditions(t)
+       !
+    endif 
+    !
+-   ! Build spectra on the boundary support points
++   ! Build spectra on the boundary support points — on the FINAL theta grid, with the lobe
++   ! centred on the imposed mean wave direction (nj-winddir-fix-1; see the routine).
+    !
+-   !call build_boundary_support_points_spectra() TODO - TL: later can clean up this code by also using this function
++   call build_boundary_support_points_spectra()
+    !
+    ! Update boundary conditions at grid points
+    !
+@@ -711,35 +712,13 @@ subroutine update_boundary_points(t, just_time_series)
+       call make_theta_grid(u10dmean)
+    endif 
+    !
+-   ! Build spectra on wave boundary support points
++   ! The boundary spectra (eet_bwv, eet_bwv_ig) are NOT built here any more.
++   ! nj-winddir-fix-1: they used to be built on the theta grid made just above, centred
++   ! on the mean WAVE direction; update_boundary_conditions then re-centred the grid on
++   ! the mean WIND direction (snapwave_wind = 1, PR #194) and update_boundaries copied the
++   ! spectra by bin INDEX — so the imposed spectrum was rotated by (u10dmean - wdmean_bwv).
++   ! They are now built by build_boundary_support_points_spectra() AFTER the final grid.
+    !
+-   do ib = 1, nwbnd ! Loop along boundary points
+-      !
+-      E0   = 0.0625 * rho * g * hst_bwv(ib)**2
+-      ms   = 1.0 / dst_bwv(ib)**2 - 1.0
+-      dist = sign(1.0,cos(theta - thetamean))*abs(cos(theta - thetamean))**ms
+-      where (abs(mod(pi+theta - thetamean,2.0*pi)-pi)>0.999*pi/2.0) dist = 0.0      
+-      !
+-      eet_bwv(:,ib) = dist/sum(dist)*E0/dtheta
+-      !      
+-   enddo
+-   !
+-   ! Build IG spectra on wave boundary support points   
+-   if (igwaves) then   
+-      if (igherbers) then 
+-          do ib = 1, nwbnd ! Loop along boundary points    
+-             !          
+-             E0_ig   = 0.0625 * rho * g * hst_bwv_ig(ib)**2
+-             ms   = 1.0 / dst_bwv(ib)**2 - 1.0
+-             dist = sign(1.0,cos(theta - thetamean))*abs(cos(theta - thetamean))**ms
+-             where (abs(mod(pi+theta - thetamean,2.0*pi)-pi)>0.999*pi/2.0) dist = 0.0                  
+-             !         
+-             eet_bwv_ig(:,ib) = dist / sum(dist) * E0_ig / dtheta          
+-             !      
+-          enddo
+-      endif
+-   endif
+-   !         
+ end subroutine update_boundary_points
+ !
+ subroutine update_wind_field()
+@@ -831,7 +810,14 @@ end subroutine make_theta_grid
+ !
+ subroutine build_boundary_support_points_spectra()
+    !
+-   ! Update directional spectra on boundary points from time series
++   ! Build the directional spectra on the wave boundary support points on the CURRENT
++   ! theta grid, with the cos^ms lobe centred on the imposed mean wave direction
++   ! wdmean_bwv — never on thetamean, which is the GRID centre and equals the mean wind
++   ! direction when snapwave_wind = 1. Must be called after the final make_theta_grid.
++   !
++   ! nj-winddir-fix-1 (2026-09-11): before this, update_boundary_points built eet_bwv on
++   ! a wave-centred grid and update_boundary_conditions re-labelled the bins around the
++   ! wind, so every boundary spectrum was launched in the wind direction.
+    !
+    use snapwave_data
+    !
+@@ -839,16 +825,50 @@ subroutine build_boundary_support_points_spectra()
+    !
+    integer :: ib
+    !
+-   real*4  :: E0, ms
+-   !  
++   real*4  :: E0, ms, E0_ig, sdist
++   logical, save :: warned_sector = .false.
++   !
++   if (wind .and. ntwbnd > 0 .and. sector < 359.999 .and. .not. warned_sector) then
++      write(logstr,'(a,f6.1,a)') 'WARNING SnapWave - wind growth is on with an imposed wave boundary and snapwave_sector = ', &
++         sector, ' deg: the grid is centred on the WIND and swell more than sector/2 from it is clipped. Use snapwave_sector = 360.'
++      call write_log(logstr, 1)
++      warned_sector = .true.
++   endif
++   !
+    do ib = 1, nwbnd ! Loop along boundary points
+-      E0   = 0.0625*rho*g*hst_bwv(ib)**2
+-      ms = 1.0/dst_bwv(ib)**2-1.0
+-      dist = sign(1.0,cos(theta - thetamean))*abs(cos(theta - thetamean))**ms
+-      where (abs(mod(pi+theta - thetamean,2.0*pi)-pi)>0.999*pi/2.0) dist = 0.0
+-      eet_bwv(:,ib) = dist/sum(dist)*E0/dtheta
++      !
++      E0   = 0.0625 * rho * g * hst_bwv(ib)**2
++      ms   = 1.0 / dst_bwv(ib)**2 - 1.0
++      dist = sign(1.0, cos(theta - wdmean_bwv)) * abs(cos(theta - wdmean_bwv))**ms
++      where (abs(mod(pi + theta - wdmean_bwv, 2.0*pi) - pi) > 0.999*pi/2.0) dist = 0.0
++      sdist = sum(dist)
++      if (sdist > 0.0) then
++         eet_bwv(:,ib) = dist / sdist * E0 / dtheta
++      else
++         eet_bwv(:,ib) = 0.0   ! the whole lobe lies outside the (sector-limited) grid
++      endif
++      !
+    enddo
+    !
++   if (igwaves) then
++      if (igherbers) then
++         do ib = 1, nwbnd ! Loop along boundary points
++            !
++            E0_ig = 0.0625 * rho * g * hst_bwv_ig(ib)**2
++            ms    = 1.0 / dst_bwv(ib)**2 - 1.0
++            dist  = sign(1.0, cos(theta - wdmean_bwv)) * abs(cos(theta - wdmean_bwv))**ms
++            where (abs(mod(pi + theta - wdmean_bwv, 2.0*pi) - pi) > 0.999*pi/2.0) dist = 0.0
++            sdist = sum(dist)
++            if (sdist > 0.0) then
++               eet_bwv_ig(:,ib) = dist / sdist * E0_ig / dtheta
++            else
++               eet_bwv_ig(:,ib) = 0.0
++            endif
++            !
++         enddo
++      endif
++   endif
++   !
+ end subroutine build_boundary_support_points_spectra
+ !
+ subroutine update_boundaries()

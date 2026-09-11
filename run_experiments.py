@@ -41,13 +41,13 @@ from pathlib import Path
 
 import pandas as pd
 
+from hydromt_sfincs import SfincsModel
+
 # Import the package first — its __init__ primes PROJ before hydromt_sfincs loads and
 # asserts NJ_ROOT is this package's own repo. Keep this ahead of the hydromt_sfincs import.
 from nj_sfincs import domain, model, premier, report, run, validate
 from nj_sfincs.config import BaseConfig, WaveConfig, exp_root, with_window
 from nj_sfincs.experiments import experiments
-
-from hydromt_sfincs import SfincsModel
 
 # Resolved once: a single invocation works on one domain, and NJ_DOMAIN is read at import
 # exactly like NJ_TEMPLATE below.
@@ -284,6 +284,16 @@ def collect_metrics(names: list[str]) -> pd.DataFrame:
         except Exception as e:  # noqa: BLE001
             print(f"[{name}] validation failed: {e}")
             rows[name] = {"error": str(e)}
+        # The engine epoch (2026-09-11, FINDINGS §43): WHICH binary solved this run,
+        # whether SnapWave launched the boundary waves in the imposed direction or in the
+        # WIND direction (every wind-on run on the unpatched engine), and which subgrid
+        # table it solved on. Strings; the report's best-value mask skips them.
+        rows[name]["engine"] = provenance.engine_label(exp_dir)
+        rows[name]["snapwave_direction"] = provenance.snapwave_direction(exp_dir)
+        try:
+            rows[name]["subgrid"] = provenance.subgrid_label(exp_dir)
+        except Exception as e:  # noqa: BLE001
+            rows[name]["subgrid"] = f"unavailable ({e})"
         # Stamp the domain onto every row. A metrics table whose numbers do not say which
         # domain they came from is how a voided A/B got compared against a premier it never
         # shared a mesh with. Scoring an off-domain run stays legal — silently is not.
@@ -304,7 +314,9 @@ def collect_metrics(names: list[str]) -> pd.DataFrame:
         # What the flag means: not "this run is wrong" but "this CSI is not on the same
         # footing as a waves-on CSI". Measured on v1.5 (2026-08-20), SnapWave is worth
         # ΔCSI 0.018 — against ΔCSI 0.011 between the two waves-on arms, so a mixed
-        # ranking puts a bigger effect in the table than the one under test.
+        # ranking puts a bigger effect in the table than the one under test. (Measured
+        # on the container engine with misdirected waves — FINDINGS §43; the size, not
+        # the sign, is what the flag rests on.)
         if exp is not None and not exp.waves.use_waves:
             rows[name]["extent_admissible"] = False
             print(
@@ -504,6 +516,12 @@ def main(argv=None) -> int:
         )
 
     # ── per-experiment prepare + run ─────────────────────────────────────────
+    # The engine: SFINCS_BIN in the environment selects a native build (the patched
+    # v2.3.3, plan Phase 2); otherwise the configured container. Exactly one is passed,
+    # explicitly — run.py and the batch script both refuse a run with no engine.
+    binary = os.environ.get("SFINCS_BIN") or None
+    sif = None if binary else str(base.container_sif)
+    print(f"[engine] {'bin:' + binary if binary else 'sif:' + sif}")
     submitted = {}
     for name in names:
         exp_dir = prepare_experiment(name, base)
@@ -513,13 +531,14 @@ def main(argv=None) -> int:
         if args.slurm:
             job = run.submit_slurm(
                 exp_dir,
-                sif=str(base.container_sif),
+                sif=sif,
+                binary=binary,
                 extra_args=args.slurm_args.split() if args.slurm_args else None,
             )
             submitted[name] = job
             print(f"[{name}] submitted SLURM job {job}")
         else:
-            result = run.run_sfincs(exp_dir, sif=str(base.container_sif))
+            result = run.run_sfincs(exp_dir, sif=sif, binary=binary)
             print(f"[{name}] solver return code {result.returncode}")
 
     if args.inputs_only or args.dry_run or args.no_run:

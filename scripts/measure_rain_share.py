@@ -53,6 +53,10 @@ from nj_sfincs.validate.fa_decomp import sea_connected  # noqa: E402
 from nj_sfincs.validate.metrics import DATA, motf_exclude_mask, motf_path  # noqa: E402
 
 PREMIER = "naccs-premier"
+# ⚠️ HISTORY-ONLY since 2026-09-11: `diag-premier-norain` is no longer a registered arm
+# (the engine epoch retired the pre-fix v3 arms). The FINDINGS §39 / STATUS 09-03
+# measurement stands as recorded; re-running it needs a rain-off arm registered against
+# the CURRENT premier (Experiment(..., rain=False)) and this constant pointed at it.
 NORAIN = "diag-premier-norain"
 #: |depth - DEPTH_MIN| below this counts as flip-marginal (reported, not screened).
 MARGIN_M = 0.05

@@ -65,10 +65,14 @@ import os
 from nj_sfincs import run
 from nj_sfincs.config import BaseConfig, exp_root
 base = BaseConfig()
+# SFINCS_BIN in the environment = the native engine (plan Phase 1b); else the container.
+binary = os.environ.get("SFINCS_BIN") or None
+sif = None if binary else str(base.container_sif)
+print(f"[engine] {'bin:' + binary if binary else 'sif:' + sif}", flush=True)
 ids = []
 for arm in os.environ["ARMS"].split(","):
     d = exp_root() / arm
-    job = run.submit_slurm(d, sif=str(base.container_sif),
+    job = run.submit_slurm(d, sif=sif, binary=binary,
                            extra_args=[f"--time={os.environ['SOLVE_TIME']}",
                                        f"--mem={os.environ['SOLVE_MEM']}", "-J", f"v3_{arm}"])
     print(f"[submit] {arm} -> job {job}", flush=True)

@@ -4,7 +4,7 @@
 12 KB "current state" memory file and its 26 reverse-chronological campaign logs; the point
 of the format is that a reader gets the current state without replaying how it was reached.
 
-Last updated: **2026-09-10** (🔴 PM: **SnapWave WIND MODE DISCARDS THE IMPOSED WAVE DIRECTION** — boundary-cell `wavdir` = ERA5 wind direction (34/9/97/176°) where CORA imposes 165/181/168/112°, wind-off matches CORA; source (`snapwave_boundaries.f90` v2.3.3, unfixed in v2.4.1/main): boundary spectrum built on a wave-centred θ grid, grid then re-centred on `u10dmean` (PR #194, 2025-06-11, the fix for #193) and copied BY INDEX → rotated by wind−wave; Baldock Qb ≈ 0 in the band, friction identical → wind-off "won" by getting the DIRECTION right, not by physics; the 09-10 AM reading "wind degrades the solve" is CORRECTED in place; EVERY wind-on run to date imposed waves in the wind direction (flag, re-baseline later); `wave-fw01+…` rerun 61334377 CANCELLED (user), validate 61334380 stranded → user `scancel`; plan Track F = native patched build + Deltares issue/PR; Track C kept as a runtime lever after the fix; ⚡ AM: both long wave solves — the `wave-shelf-steps` rerun 61327796 (21 h in, map to 10-30 12:00) and `wave-fw01+…` 61334377 (19 h, map to 10-29 23:00) — were PREEMPTED at 08:30:54 on `main` and auto-requeued FROM SCRATCH at 08:33 (no restart file; `trstout` off), so both now land ~09-11 midday; their partial maps were copied to `/scratch/tpj8/partials/` before the restarts overwrote them and read; ✅ `wave-nowind+wave-shelf-steps` COMPLETED clean in 5 h 51 (SnapWave 75 s/call vs 350, 8 of 145 cap-hits) — 🔴 PREDICTION MISS on the plateau: wind OFF nearly DOUBLES the −9 m shelf wave (shelf / CORA-at-10 m at 10-29 12:00: Sea Bright 0.48 → 0.83, AC 0.47 → 0.79, OC 0.36 → 0.67, Sea Isle 0.34 → 0.56), the field blow-ups and the Sandy Hook shelf hotspot are gone, bay hm0 goes to ~0; ✅ `BRACKET+setup-stockdon` ran (52 min): it lifts the model pre-storm mean by 0.22–0.31 m at every southern bay gauge AND by 0.33 at the AC pier, so the bay-minus-pier deficit is untouched — see the 09-10 section; bracket HWM/CSI scoring in progress; 09-09 PM: three one-change arms SUBMITTED via stage job 61333216 — `wave-fw01+wave-shelf-steps`, `wave-nowind+wave-shelf-steps`, `BRACKET+setup-stockdon` (forcing bracket, own CSV) — with pre-registrations in the 09-09 section; source read of SnapWave v2.3.3 says the shelf loss is bottom friction (no whitecapping exists) and the dead corners are `inner=false` cells; meeting brief `reports/weekly_2026-09-09.html`; 🌊 AM: `wave-shelf-steps` TIMED OUT at 55 % (14 h limit, hal0339) and was RESUBMITTED verbatim as **job 61327796** (40 h, hal0351, expect it done ~09-10 midday). Read-out on the PARTIAL map (to 10-29 16:00): the DEAD RING IS FIXED (0 of 2,381 vs 2,580 of 6,556), the east and stepped legs pass 0.70–0.87 of the imposed Hs into the first cell, but the bottom row's shallow Cape May half passes only 0.30–0.5, the wave then decays to a ≈0.47 plateau within 10 km of the line where CORA's own SWAN keeps 0.6–0.8, so the −9 m shelf still sees ~0.35–0.55 of CORA's value there; 25 of 80 SnapWave calls did not converge and those hours carry hm0 blow-ups to 22 m plus a persistent hotspot east of Sandy Hook; CORA's storm waves come FROM the S–SSE, so the supply edge is the 46 km bottom row, not the 200 km east leg — **transmission criterion NOT met**, next-arm decision is the user's, see the 09-09 section; 09-08: `wave-shelf-steps` STAGED + SUBMITTED (job 61313672, 14 h): SnapWave boundary redrawn along quadtree rows/columns at 25–30 m, 38 predicted dead ring cells vs 2,580, 60 CORA support points, `snapwave_niter` 200 — success is TRANSMISSION (`scripts/wave_boundary_ring.py`), then score; 🌊 LOW-BIAS REVIEW: the SnapWave BOUNDARY IS NOT TRANSMITTING — 43 % of the interior cells touching the southern wave boundary carry NO waves (staircase inner corners), shelf hm0 inside is 15–60 % of imposed, shoreline setup 0.05 m vs 0.2–0.35 theory, back bays 0.2–0.55 m low BEFORE the storm with the ocean gauge matched to 6 mm; pre-registered fix = smoother decoupled SnapWave boundary, success = transmission not score — see the 09-08 section at the top of PICK UP; 🏠 `bed-buildings` RE-SCORED on the merged bed: no measurable Sandy effect outside footprint drying + bay seiche phase; paired ΔRMSE +0.008 [−0.027, +0.041], non-seiche basins +0.001; first score was VOID (lev3-only bed) and the gap is closed in code — see the 09-04 section; 2026-09-04: 🏠 BUILDINGS: adequacy checks done, `bed_buildings_v3` tier burned (328 km² at ground + 4 m), `bed-buildings` arm registered with `Experiment.subgrid_from`, first (prepend) subgrid rebuild VOIDED by a hydromt merge trap, `--overlay` rebuild LANDED (61231337) and item 5 passes, `bed-buildings` staged + solve submitted via 61232044 — see the 09-04 section; 2026-09-03: 🏠 BUILDING FOOTPRINTS acquired, NJDEP + Microsoft, statewide raw + v3 clip; ⭐ RAIN-OFF SCORED on v3: CSI 0.710 → 0.809, **93.7% of premier's MOTF false alarm is rain**; the bay HWM/peak shifts (+0.3–0.4 m with rain OFF) are SEICHE PHASE (§40), not rain — see the 09-03 section; 💾 `experiments/` MOVED to `/scratch/tpj8` and symlinked, staging quota guard follows it, `scripts/desktop_pull_backup.sh` written, desktop snapshot taken, home copy deleted, home back under quota — see DISK; 2026-09-02: rain-off arm registered, staged and run (solve 61190532 → validate 61190533); 2026-09-01: ⭐ v3 REBUILD LANDED AND RE-SCORED — three arms clean on
+Last updated: **2026-09-11** (⭐ Phase 0 of the 09-10 evening plan DONE — `scripts/snapwave_direction_check.py` (direction/bands/breaking/convergence/force), `scripts/snapwave_parameters.py` + `nj_sfincs/snapwave_params.py` + the generated `docs/snapwave_parameters.md` / `reports/snapwave_parameters.html`, FINDINGS §43 + the two Closed bullets + §4 conditions, `.gitignore` tail fixed, 8 new tests; 🌊 the wind-on `wave-shelf-steps` rerun 61327796 COMPLETED clean on hal0323 (20 h 34, full 73-hour map, no stitch needed — pre-09-10 batch script), validate-only SUBMITTED as 61402750 (hal0292); on the FULL map the direction check reads 0 of 73 hours within 5° of the imposed direction (worst 170°), wind-off 73 of 73, and wind-on hit the iteration cap on 36 of 145 calls (partial read had said 25 of 81) vs 8 wind-off; stranded validate 61334380 scancelled (user) — see the 09-11 section; 09-10 🔴 PM: **SnapWave WIND MODE DISCARDS THE IMPOSED WAVE DIRECTION** — boundary-cell `wavdir` = ERA5 wind direction (34/9/97/176°) where CORA imposes 165/181/168/112°, wind-off matches CORA; source (`snapwave_boundaries.f90` v2.3.3, unfixed in v2.4.1/main): boundary spectrum built on a wave-centred θ grid, grid then re-centred on `u10dmean` (PR #194, 2025-06-11, the fix for #193) and copied BY INDEX → rotated by wind−wave; Baldock Qb ≈ 0 in the band, friction identical → wind-off "won" by getting the DIRECTION right, not by physics; the 09-10 AM reading "wind degrades the solve" is CORRECTED in place; EVERY wind-on run to date imposed waves in the wind direction (flag, re-baseline later); `wave-fw01+…` rerun 61334377 CANCELLED (user), validate 61334380 stranded → user `scancel`; plan Track F = native patched build + Deltares issue/PR; Track C kept as a runtime lever after the fix; ⚡ AM: both long wave solves — the `wave-shelf-steps` rerun 61327796 (21 h in, map to 10-30 12:00) and `wave-fw01+…` 61334377 (19 h, map to 10-29 23:00) — were PREEMPTED at 08:30:54 on `main` and auto-requeued FROM SCRATCH at 08:33 (no restart file; `trstout` off), so both now land ~09-11 midday; their partial maps were copied to `/scratch/tpj8/partials/` before the restarts overwrote them and read; ✅ `wave-nowind+wave-shelf-steps` COMPLETED clean in 5 h 51 (SnapWave 75 s/call vs 350, 8 of 145 cap-hits) — 🔴 PREDICTION MISS on the plateau: wind OFF nearly DOUBLES the −9 m shelf wave (shelf / CORA-at-10 m at 10-29 12:00: Sea Bright 0.48 → 0.83, AC 0.47 → 0.79, OC 0.36 → 0.67, Sea Isle 0.34 → 0.56), the field blow-ups and the Sandy Hook shelf hotspot are gone, bay hm0 goes to ~0; ✅ `BRACKET+setup-stockdon` ran (52 min): it lifts the model pre-storm mean by 0.22–0.31 m at every southern bay gauge AND by 0.33 at the AC pier, so the bay-minus-pier deficit is untouched — see the 09-10 section; bracket HWM/CSI scoring in progress; 09-09 PM: three one-change arms SUBMITTED via stage job 61333216 — `wave-fw01+wave-shelf-steps`, `wave-nowind+wave-shelf-steps`, `BRACKET+setup-stockdon` (forcing bracket, own CSV) — with pre-registrations in the 09-09 section; source read of SnapWave v2.3.3 says the shelf loss is bottom friction (no whitecapping exists) and the dead corners are `inner=false` cells; meeting brief `reports/weekly_2026-09-09.html`; 🌊 AM: `wave-shelf-steps` TIMED OUT at 55 % (14 h limit, hal0339) and was RESUBMITTED verbatim as **job 61327796** (40 h, hal0351, expect it done ~09-10 midday). Read-out on the PARTIAL map (to 10-29 16:00): the DEAD RING IS FIXED (0 of 2,381 vs 2,580 of 6,556), the east and stepped legs pass 0.70–0.87 of the imposed Hs into the first cell, but the bottom row's shallow Cape May half passes only 0.30–0.5, the wave then decays to a ≈0.47 plateau within 10 km of the line where CORA's own SWAN keeps 0.6–0.8, so the −9 m shelf still sees ~0.35–0.55 of CORA's value there; 25 of 80 SnapWave calls did not converge and those hours carry hm0 blow-ups to 22 m plus a persistent hotspot east of Sandy Hook; CORA's storm waves come FROM the S–SSE, so the supply edge is the 46 km bottom row, not the 200 km east leg — **transmission criterion NOT met**, next-arm decision is the user's, see the 09-09 section; 09-08: `wave-shelf-steps` STAGED + SUBMITTED (job 61313672, 14 h): SnapWave boundary redrawn along quadtree rows/columns at 25–30 m, 38 predicted dead ring cells vs 2,580, 60 CORA support points, `snapwave_niter` 200 — success is TRANSMISSION (`scripts/wave_boundary_ring.py`), then score; 🌊 LOW-BIAS REVIEW: the SnapWave BOUNDARY IS NOT TRANSMITTING — 43 % of the interior cells touching the southern wave boundary carry NO waves (staircase inner corners), shelf hm0 inside is 15–60 % of imposed, shoreline setup 0.05 m vs 0.2–0.35 theory, back bays 0.2–0.55 m low BEFORE the storm with the ocean gauge matched to 6 mm; pre-registered fix = smoother decoupled SnapWave boundary, success = transmission not score — see the 09-08 section at the top of PICK UP; 🏠 `bed-buildings` RE-SCORED on the merged bed: no measurable Sandy effect outside footprint drying + bay seiche phase; paired ΔRMSE +0.008 [−0.027, +0.041], non-seiche basins +0.001; first score was VOID (lev3-only bed) and the gap is closed in code — see the 09-04 section; 2026-09-04: 🏠 BUILDINGS: adequacy checks done, `bed_buildings_v3` tier burned (328 km² at ground + 4 m), `bed-buildings` arm registered with `Experiment.subgrid_from`, first (prepend) subgrid rebuild VOIDED by a hydromt merge trap, `--overlay` rebuild LANDED (61231337) and item 5 passes, `bed-buildings` staged + solve submitted via 61232044 — see the 09-04 section; 2026-09-03: 🏠 BUILDING FOOTPRINTS acquired, NJDEP + Microsoft, statewide raw + v3 clip; ⭐ RAIN-OFF SCORED on v3: CSI 0.710 → 0.809, **93.7% of premier's MOTF false alarm is rain**; the bay HWM/peak shifts (+0.3–0.4 m with rain OFF) are SEICHE PHASE (§40), not rain — see the 09-03 section; 💾 `experiments/` MOVED to `/scratch/tpj8` and symlinked, staging quota guard follows it, `scripts/desktop_pull_backup.sh` written, desktop snapshot taken, home copy deleted, home back under quota — see DISK; 2026-09-02: rain-off arm registered, staged and run (solve 61190532 → validate 61190533); 2026-09-01: ⭐ v3 REBUILD LANDED AND RE-SCORED — three arms clean on
 hal nodes, premier 4/4 on the new fingerprint, merged dep rebuilt, HWM RMSE
 0.384/0.400/0.431, extent unchanged; bay SnapWave setup HALVED and the v3↔v1.5 Monmouth
 offset is GONE (sign-test P 0.011 → 0.152), Sandy Hook tide-range gap healed
@@ -24,41 +24,284 @@ seiche FINDINGS §40 · weir FINDINGS §38 · rain FINDINGS §39)
 
 ## ⏳ PICK UP — next session
 
-### ⏳ 2026-09-11 — START HERE (hand-off written 09-10 evening)
+### ⏳ 2026-09-11 — Phase 0 DONE; next is Phase 1a (native build + gates G1/G2)
 
 **The approved plan is `~/.claude/plans/alright-finally-and-this-calm-lollipop.md`** (Phase 0 →
 8; the 09-10 ADDENDUM in `~/.claude/plans/alright-i-think-we-nested-beacon.md` is the record of
 how we got here). Read the plan's "Hard constraints" first.
 
-Done 09-10 evening, after the plan was approved:
-- ✅ SFINCS source cloned at tag `v2.3.3` (`091f531a`) to `~/nj_sandy_sfincs/SFINCS-src`, branch
-  `nj/snapwave-winddir` checked out. Nothing edited yet.
-- ✅ Build env `~/nj_sandy_sfincs/micromamba/envs/sfincs-build` created (conda-forge
-  `gfortran_linux-64 gcc_linux-64 netcdf-fortran libnetcdf hdf5 autoconf automake libtool make
-  pkg-config`); `include/netcdf.mod` present. ⚠️ Its gfortran is **16.2** vs the container's
-  GCC 11.4 — five majors apart, so expect the gate to land at ACCEPT at best; Option B (host
-  gfortran 11.5 + netcdf-fortran built from source against conda's libnetcdf) is the likely
-  path if G2 misses.
-- ✅ The four scratchpad diagnostics + their outputs are saved in
-  `logs/snapwave_diag_scratch_2026-09-10/` (`convergence.py band_diag.py breaking_diag.py
-  hourly_entry.py`) — the raw material for `scripts/snapwave_direction_check.py` (Phase 0.2).
-  🔴 They hard-code the 2012-10-28 time base and the two run paths; the promoted script must not.
+**Done 09-11 (Phase 0, all six items):**
+- ✅ `scancel 61334380` (user). ✅ Working tree from 09-10 committed (`e0f27b7`).
+- ✅ **`wave-shelf-steps` (wind ON, job 61327796) COMPLETED** 05:07 on hal0323, 20 h 34,
+  exit 0:0; 73 hourly map steps to 10-31 00:00, his to the end, log closes normally. It was
+  submitted BEFORE the 09-10 restart hooks (old spooled batch script) so it ran straight
+  through — no `restart_segments/`, nothing to stitch. **Validate-only SUBMITTED as job
+  61402750** (`hpc/run_experiments.slurm --validate-only --experiments wave-shelf-steps`,
+  128 G, hal0292). 🔴 When it finishes: copy `experiments/v3/metrics.csv` →
+  `metrics_2026-09-11_pre_winddir_rebaseline.csv` BEFORE Phase 3 touches the registry.
+- ✅ **`scripts/snapwave_direction_check.py`** — one CLI, five subcommands (`direction`,
+  `bands`, `breaking`, `convergence`, `force`), one partial-map-safe loader (time base from
+  the variable's `units`, `tref` fallback; nothing hard-coded). `direction` is the F.4
+  pass/fail table. Run on the FULL wind-on map vs wind-off (same mesh/band/`.bwd`):
+  wind-on **0 of 73 hours** within `dtheta` = 5° of the Hs-weighted imposed direction
+  (worst |Δ| 170°), wind-off **73 of 73** (all Δ = 0.0). Entry-band transmission wind-on
+  0.63–0.99 vs wind-off 0.80–1.02; −9 m shelf 0.16–0.36 vs 0.22–0.44. Baldock Qb = 0.0000
+  in every band bin (both runs). Cap-hits **36 of 145** wind-on (the 09-09 partial read was
+  25 of 81) vs **8 of 145** wind-off; cap = `snapwave_niter/4` = 50 because the log's
+  `iteration` counter tests every 4th sweep. Wave force on the shelf: wind-on 213° Cartesian
+  (alongshore) at 10-29 12:00 vs wind-off 121° (onshore). ⚠️ `force` uses the MEAN force
+  vector — a component-wise median of small forces is (0,0) and its arctan is noise.
+  A last-hour wind-on blow-up: 217 k interior cells > 1.2× the imposed max at 10-31 00:00.
+- ✅ **FINDINGS §43** written (table from the full map, mechanism, "breaking is not the
+  sink", consequence); the IG and Galibier Closed bullets amended; §4's ΔCSI 0.018 now
+  carries its conditions (v1.5, 08-20, container engine, wind on = misdirected waves) and
+  the four docstring sites (`metrics.py` ×2, `run_experiments.py`, `CLAUDE.md`) point at §43.
+  (The plan's "§4 gives only level deltas" was slightly stale — §4 did carry 0.018 at line
+  107; it lacked the conditions, which are now there.)
+- ✅ **Parameter printout (D)**: `nj_sfincs/snapwave_params.py` (data only —
+  `ENGINE_DEFAULTS_V233` re-transcribed from `sfincs_snapwave.f90:614-680` +
+  `sfincs_input.f90`, `HYDROMT_DEFAULTS`, `MEANINGS`, `RAW_APPEND_ONLY`,
+  `has_direction_bug()`), `scripts/snapwave_parameters.py` (stdout / `--md` / `--html`;
+  engine label from `engine.txt` else the log's Build-Revision "(inferred)"; 🔴 caveat on
+  every wind-on run without the `nj-winddir-fix` tag). Generated
+  **`docs/snapwave_parameters.md`** and **`reports/snapwave_parameters.html`** (the artifact)
+  for `naccs-premier`, `wave-shelf-steps`, `wave-nowind+wave-shelf-steps`, `naccs-nowaves`.
+  🔴 Regenerate after Phase 4 with the new premier. The lever list it prints: `snapwave_wind`,
+  `snapwave_igwaves` (engine default **1**, we write 0), `dtwave` 1800 (3600),
+  `snapwave_gamma` 0.78 (0.7), **`snapwave_fw` 0.02 (engine default 0.01)**, `snapwave_hmin`
+  0.01 (0.1), `snapwave_dtheta` 5 (10), `snapwave_sector` 360 (180), `snapwave_niter`
+  100/200 (10), `storefw`/`storewavdir` 1 (0). `provenance._WAVES` extended with
+  `snapwave_hmin`, `storefw`, `storewavdir`, `snapwave_bndfile`.
+- ✅ `.gitignore`: SIX junk trailing lines removed (the hand-off said three; commit `e0f27b7`
+  had doubled them). Both weekly reports are TRACKED, so the ignore lines were dead anyway;
+  nothing to `git rm --cached`. `test_gitignore_does_not_ignore_itself` passes again.
+- ✅ `tests/test_snapwave_parameters.py` (8 tests: every key documented, hydromt ⊂ engine,
+  the two surprising defaults, direction-flag truth table, one row per key with `*`/`≠`
+  marks, caveat fires on the old engine only, lever list). Full suite green.
 
-First thing tomorrow:
-1. **User**: `scancel 61334380` (stranded validate — the classifier blocked me).
-2. `squeue -u tpj8` / `sacct -j 61327796 --format=State,NodeList,Elapsed` — the wind-on
-   `wave-shelf-steps` rerun (hal0323, expected ~midday). 🔴 Do not touch its dir; when it is
-   done: `restart.finish` has stitched? then `--validate-only --experiments wave-shelf-steps`,
-   THEN copy `metrics.csv` → `metrics_2026-09-11_pre_winddir_rebaseline.csv`. Only after that
-   may Phase 3 remove its registry entry.
-3. Phase 0: `.gitignore` (drop the 3 trailing lines — the hygiene test currently FAILS on them;
-   uncommitted), `scripts/snapwave_direction_check.py`, FINDINGS §43 + the two Closed bullets +
-   the ΔCSI-0.018 docstring gap, `scripts/snapwave_parameters.py` + `nj_sfincs/snapwave_params.py`
-   (engine defaults are listed verbatim in the plan; the supervisor printout = `docs/snapwave_parameters.md`
-   + an HTML artifact), then Phase 1a (`hpc/build_sfincs_native.sh`, gates G1/G2).
-4. Working tree is dirty and uncommitted (`CLAUDE.md`, `STATUS.md`, `hpc/sfincs_run.slurm`,
-   `model.py`, `restart.py` + scripts/tests for the restart work, the two weekly reports,
-   `.gitignore`): the user commits.
+🔴 **Plan change (user, 09-11 midday): the next premier has `snapwave_fw = 0.01` AND
+`snapwave_igwaves = 1` (IG ON).** The 09-10 plan had IG off in the premier with `wave-ig` as
+a Phase-8 add-on; that inverts — the premier carries IG, and the one-flag attribution arm
+becomes **`wave-noig`** (IG off). The Phase-8 stability reads (cap-hits ≤ premier's,
+`hm0ig/hm0` p99 ≤ 0.5 below 5 m depth, no cell `hm0ig > 1 m`, runtime ≤ 2×) move onto the
+premier's own pre-registration in Phase 4. Engine IG defaults then apply (`use_herbers 1`,
+`gammaig 0.2`, `fwig 0.015`, `Tinc2ig 7`, `eeinc2ig 0.01`, `ig_opt 1`) — list them there.
+
+### 🔧 2026-09-11 PM — Phase 1a IN PROGRESS: native SFINCS v2.3.3 BUILT; G1 is BIT-IDENTICAL (STRICT); G2 running
+
+**Build.** `hpc/build_sfincs_native.sh <variant> [--fc host|conda]` — rsyncs the checkout to
+`/scratch/tpj8/sfincs-build/<variant>` (the git tree stays clean), `autoreconf -ivf`,
+`./configure --disable-openacc`, Deltares' own flags `-fopenmp -O3 -fallow-argument-mismatch
+-w` (from `source/build_scripts/Dockerfile` / `Singularityfile-cpu.def`, the recipe behind
+the container), installs to `~/nj_sandy_sfincs/sfincs-native/<variant>/bin/sfincs` with
+`BUILD_INFO` (commit, diffstat, compiler, flags, sha256). Two things the plan did not know:
+- ⭐ **The tree bundles netcdf-fortran 4.6.1 and builds it in place with the same compiler**,
+  so the `.mod`-version worry is moot and only the netCDF *C* library is external (the
+  `sfincs-build` env's 4.10.1, rpath baked in). That makes **host gfortran 11.5 the closer
+  match** to the container's Ubuntu-jammy gfortran 11.4 — Option B became the default, the
+  conda gfortran 16.2 is the `--fc conda` fallback.
+- 🔴 `src/` must build **serially**: `src/Makefile.am` lists the Fortran sources in dependency
+  order but declares no `.mod` dependencies, so `make -j16` races ("Cannot open module file
+  'sfincs_log.mod'"). netcdf-fortran takes the `-j`; `src/` is `make -j1` (~2 min).
+- ⚠️ `ldd` resolves `libgfortran.so.5` / `libgomp.so.1` from the conda lib dir (the rpath),
+  i.e. gfortran-16's runtime under a gfortran-11 binary. Same soname, backward compatible,
+  and G1 is bit-identical — but it is on the record.
+
+Built: **`v2.3.3-unpatched-gf11`** (`091f531a`, clean tree, sha256 `aa121062…`).
+
+**Gate cases** (`scripts/engine_gate.py make/run/compare`; dirs in `/scratch/tpj8/engine_gate/`,
+inputs hard-linked, outputs never; `tests/test_engine_gate.py` pins that). 🔴 The container
+of record is **`sfincs-desktop.sif` = Faber v2.3.3** (`config.container_sif`, and the
+09-09 solve's SLURM log says so); `sfincs-cpu.sif` is **Galibier v2.4.0** and is NOT the
+engine any scored run used.
+- ✅ **G1** (hydromt `sfincs_compound`, full 2-day window, 4 threads, this node):
+  **STRICT** — `zs`, `zsmax`, `h` max|Δ| = 0.000e+00 on every cell and step (49 steps),
+  wall 19.8 s container vs 19.5 s native. `/scratch/tpj8/engine_gate/G1_compare.json`.
+- ⚠️ **G2** (`v1_monmouth/faber-waves-premier`, 12 h, SnapWave, 64 threads; container
+  61403785 on hal0347 17.3 min, native 61403802 on hal0349 17.2 min; 13 map steps, 25
+  SnapWave calls each): **`engine_gate.py compare` says FAIL on the instantaneous max,
+  ACCEPT-shaped everywhere else — the user decides the bar.** The numbers
+  (`/scratch/tpj8/engine_gate/G2_compare.json`):
+
+  | field | n | max | p99 | p90 | p50 |
+  |---|---|---|---|---|---|
+  | `zs` (all steps) | 3.40 M | **0.194 m** | 0.32 mm | 0.051 mm | 0.006 mm |
+  | `zsmax` (12 h envelope) | 270 k | **5.4 mm** | 0.26 mm | 0.094 mm | 0.021 mm |
+  | `hm0` | 5.14 M | **0.118 m** | 0.057 mm | 0.003 mm | ~0 |
+  | `wavdir` interior | 5.14 M | 176° | 0.009° | 0 | 0 |
+  | `wavdir` BOUNDARY cells | 11,232 | **0.000°** | 0 | 0 | 0 |
+  | SnapWave iterations per call | 25 calls | **identical** (max |Δ| 0) | | | |
+
+  The bars: STRICT needs zs max ≤ 1e-6 (no); ACCEPT needs zs p90 ≤ 0.2 mm (yes, 0.05),
+  zs max ≤ 8 mm (**no**, 0.19), hm0 p99 ≤ 1 cm (yes), hm0 max ≤ 5 cm (**no**, 0.12),
+  boundary wavdir ≤ 0.5° (yes, 0), iterations ±1 (yes, 0). What the exceedances ARE:
+  - per hour the count of cells > 1 mm goes 0, 11, 1182, 34, 11, 7, 16, 4, 11, 105, 608,
+    178, 841 — **bursts that relax, not growth**; p99.9 ≤ 1.5 mm at every hour.
+  - **53 distinct cells of 395,574 active (0.013 %) ever exceed 8 mm.** The 0.19 m is
+    three cells at hour 9 (faces 311971/311972/312032, lon −74.177 lat 40.519, zb
+    −1.7 m, depth 1.8 m), **112 m inside the forced water-level boundary in Raritan
+    Bay** — v1's boundary-ring cells (the "2Δx boundary ring" artefact, FINDINGS Closed),
+    on the very line v1.5 was built to move. By hour 12 the worst cell is 7 cm.
+  - `zsmax`, the envelope the HWM scorer reads, is within the ACCEPT bar everywhere
+    (max 5.4 mm, one cell > 5 mm).
+  - hm0 > 5 cm: 0–6 cells of 5.1 M per hour; `tp` max 4.7 s at single cells (a period
+    bin flip where energy is ~0).
+  Reading: same physics, different last-ulp rounding (gfortran 11.4 + Ubuntu glibc 2.35
+  libm in the container vs 11.5 + RHEL glibc 2.34 here), amplified at threshold cells.
+  The quantities the PATCH gate keys on — boundary `wavdir`, iteration counts, the bulk
+  field — are identical or within 0.3 mm. 🔴 The plan's rule is "do not patch on a FAIL";
+  the recommendation below is to proceed on the envelope reading, but that is the user's
+  call, not the script's. ✅ **DECIDED (user, 09-11 ~14:00): G2 is a PASS** — the
+  disagreement is last-digit rounding at threshold cells, not a physical difference; the
+  envelope, the boundary direction and the iteration counts are the evidence. The script's
+  bars are left as written (they still flag the instantaneous max); this reading is the
+  record. Phase 2 (the patch) may start.
+- 🗑️ **Galibier image DELETED (user, 09-11):** `~/nj_sandy_sfincs/sfincs-cpu.sif` (215 MB,
+  v2.4.0) and the repo's top-level symlink to it; `ALLOWED_TOP_LEVEL_LINKS` in
+  `test_repo_hygiene.py` trimmed. One image remains, `sfincs-desktop.sif` = Faber v2.3.3.
+- ✅ **G2 libm isolation** (job 61404233, hal0285, 14.6 min): the SAME native binary run
+  INSIDE `sfincs-desktop.sif` (`singularity exec`; `ldd` confirms libm/libc from the
+  container, libgfortran/libnetcdf from conda via rpath). Against the container: zs p99
+  0.32 → **0.08 mm**, p90 0.05 → 0.016 mm, hm0 max 0.118 → **0.034 m**, zsmax max 5.4 →
+  5.0 mm — but the SAME three boundary-ring cells still carry the 0.19 m at hour 9.
+  Against the native-on-host run of the same binary it differs as much as either does
+  from the container (zs max 0.068, hm0 max 0.118). Reading: roughly half the bulk
+  residual is glibc's libm (2.34 RHEL vs 2.35 jammy), the rest is gfortran 11.4 vs 11.5 +
+  the libgfortran-16 runtime; the threshold cells flip on any of them. **Confirms the
+  rounding reading, changes nothing.** `G2_inctr_compare.json`.
+- ⏳ **G3** (`wave-shelf-steps` 12 h cut, wind ON, v3, 64 threads, 100 G, 6 h limit):
+  container **61404023** (hal0350), native **61404024** (hal0355), both RUNNING since
+  ~13:25. Expect ~3.5 h. `direction` check on both afterwards must reproduce the wind-on
+  table (0 of 12 hours within 5°).
+
+### 🔌 2026-09-11 PM — Phase 1b DONE: the engine is EXPLICIT everywhere and every run is stamped
+
+- ✅ **`wave-shelf-steps` VALIDATED** (job 61402750, hal0292, 50 min): HWM RMSE 0.379 / bias
+  −0.182 (scored keys, wind ON = misdirected waves). **`metrics.csv` copied byte-identical
+  to `experiments/v3/metrics_2026-09-11_pre_winddir_rebaseline.csv`** — the pre-fix record
+  the plan requires before Phase 3 touches the registry. Seven arms in the table.
+- ✅ `nj_sfincs/run.py`: `_pick_engine(sif, binary)` — exactly one, must exist, raised BEFORE
+  the sbatch check; `run_sfincs(…, binary=)` runs a native binary with the same OMP /
+  stack / numactl env as the container; both paths call `provenance.write_engine` after
+  the solve. 🔴 **The `SFINCS_SIF`-from-environment and `sfincs-cpu.sif` fallbacks are
+  GONE** — `run_sfincs(dir)` with no engine raises "REFUSING: no engine".
+- ✅ `hpc/sfincs_run.slurm`: `SFINCS_SIF` xor `SFINCS_BIN`, `exit 2` on none/both/missing,
+  native exec `( cd "$MODEL" && $NUMA "$BIN" )`, `scripts/record_engine.py` after the
+  restart stitch. `run_experiments.py` and `hpc/stage_and_submit_v3.slurm` read
+  `SFINCS_BIN` from the environment and pass `sif=None if binary else container_sif`.
+- ✅ `nj_sfincs/provenance.py`: `engine_record / write_engine / read_engine`
+  (`engine.txt` + `[engine]` block; label `sif:<stem>@<sha8>` / `bin:<variant>@<sha8>`,
+  both Build-Revision lines, host, job, restart count, threads, and the native build's
+  commit/branch/diffstat/compiler/flags from `BUILD_INFO`), `engine_label()` (inferred
+  `container:v2.3.3-faber (inferred)` for pre-epoch runs from the log),
+  `snapwave_direction()` (`off | wind | imposed`, keyed on the `nj-winddir-fix` tag),
+  `subgrid_sha256()` (cached in `.subgrid_sha256` by inode/size/mtime — 1.1 GB file) and
+  `subgrid_label()` (inode/sha match to `_template_sealed` / `_subgrid_*`). Three new
+  `[engine]` rows in `manifest()`. Measured on the real arms: premier →
+  `template@da494e3c`, `bed-buildings` → `_subgrid_buildings@8518110d`, direction `wind`
+  on both, `n/a` on nowaves.
+- ✅ `run_experiments.collect_metrics` stamps `engine`, `snapwave_direction`, `subgrid` on
+  every row (strings; `report._best_mask` skips non-numeric columns). Old rows get NaN
+  until Phase 3's `stamp_metrics_epoch.py --apply`.
+- ✅ Tests: `tests/test_engine.py` (direction truth table, engine.txt precedence over the
+  log, inferred labels, write/read round-trip with `[engine]` replaced not duplicated,
+  sha cache invalidation, `submit_slurm` / `run_sfincs` refusals off-cluster) and
+  `TestEngineIsExplicit` in `test_repo_hygiene.py` (no image literal in the batch script,
+  the two REFUSING strings, `record_engine.py --bin/--sif`, drivers pass `binary=`).
+  **153 tests OK.** CLAUDE.md §4 carries the rule.
+- Smoke: `record_engine.py` on the G1 gate dirs → `bin:v2.3.3-unpatched-gf11@aa121062`
+  and `sif:sfincs-desktop@3f6b8b64`.
+
+### 🩹 2026-09-11 PM — Phase 2 STARTED: the patch is written, the patched engine is building
+
+**The patch** (`hpc/patches/snapwave_winddir_v2.3.3.patch`, 146 lines, on branch
+`nj/snapwave-winddir` of `~/nj_sandy_sfincs/SFINCS-src`, UNCOMMITTED — the user commits
+and pushes the fork; `build_sfincs_native.sh` records the diff sha in `BUILD_INFO`):
+1. `update_boundary_points` no longer builds `eet_bwv` / `eet_bwv_ig` (it built them on a
+   wave-centred grid that `update_boundary_conditions` then re-centred on the wind).
+2. `build_boundary_support_points_spectra` (the commented-out TODO hook) is now real: the
+   cos^ms lobe is centred EXPLICITLY on `wdmean_bwv`, never on `thetamean` (= the grid
+   centre = `u10dmean` in wind mode); the IG twin is built the same way; `sum(dist) = 0`
+   (lobe entirely outside a sector-limited grid) gives zero energy instead of NaN; a
+   one-time WARNING fires when `wind .and. ntwbnd > 0 .and. sector < 360`.
+3. `update_boundary_conditions` calls it AFTER the final `make_theta_grid`, before
+   `update_boundaries`. PR #194's wind-centred grid is kept (the DCA use case is unchanged).
+4. `sfincs_lib.f90`: `Build-Revision` literal → `"$Rev: v2.3.3 mt. Faber+ nj-winddir-fix-1"`,
+   so every log self-identifies (`provenance.snapwave_direction()` keys on it).
+NOT bundled (follow-up): per-point `wdt_bwv(ib)` centring; remapping the interior
+`ee`/`ee_ig` initial guess by the index shift in `make_theta_grid`.
+Wind OFF is provably untouched: `thetamean == wdmean_bwv` there, so the new routine
+computes the identical lobe on the identical grid.
+
+**Built: `v2.3.3-winddir-fix-1-gf11`** (sha256 `673ee3bf…`, diff sha `02aa3200…`, same
+compiler and flags as the unpatched build; `sfincs.log` says
+`Build-Revision: $Rev: v2.3.3 mt. Faber+ nj-winddir-fix-1`).
+✅ **G1 patched vs unpatched: STRICT** — `zs`, `zsmax`, `h` max|Δ| = 0 (the hydrodynamic
+path is untouched).
+
+✅ **G2w0 (wind OFF) patched vs unpatched: STRICT** — `zs`, `zsmax`, `hm0`, `tp`, `wavdir`
+max|Δ| = 0.000e+00 on 5.14 M wave cells × 13 steps, 25/25 identical iteration counts.
+The patch is provably a no-op with wind off; only wind-on runs change. (Aside: wind off
+is 4× cheaper — 261–305 s vs 1035 s for the same 12 h on 64 cores.)
+
+✅ **G2 (wind ON) PATCHED: the direction is FIXED** (job 61404596, hal0383, 15.3 min vs
+17.2 unpatched). `snapwave_direction_check.py direction`: boundary `wavdir` within 5° of
+the Hs-weighted imposed direction on **13 of 13 hours, worst |Δ| = 0.0°** (model 114.7 →
+87.7° as the `.bwd` swings 114.7 → 87.7°), where the unpatched native run on the same
+inputs reads 29.7 → 32.7° — the ERA5 wind (45 → 40°). Cap-hits 1 of 25 (0 unpatched;
+the solve now has a real swell to converge). No sector warning fired (sector 360). The v1
+domain has no offshore band (its wave boundary IS the −10 m line), so the transmission
+read waits for G3-patched.
+
+**Gate dirs cut** (`/scratch/tpj8/engine_gate/`): `G1_patched` (done), `G2_patched` (job
+**61404596**), `G2w0_unpatched` (**61404528**) + `G2w0_patched` (**61404597**) — G2 with
+`snapwave_wind = 0`, the bit-identity control for the patch — and `G3_patched`
+(**61404598**, 6 h limit). Pass criteria:
+G1 patched == unpatched bit-for-bit; G2w0 patched == unpatched bit-for-bit; G2/G3 patched
+boundary `wavdir` within 5° of `.bwd` every record (`snapwave_direction_check.py
+direction`); G3 entry ratio ≥ the wind-off run's at matched hours.
+
+### 📇 2026-09-11 PM — Phase 3 DONE: the registry is on the engine epoch; the old rows are stamped
+
+- ✅ **`nj_sfincs/experiments.py` v3 dict rewritten.** ONE constant,
+  `_V3_PREMIER_WAVES = replace(_V3_SHELF_STEPS_WAVES, snapwave_fw=0.01, wave_igwaves=True)`
+  (shelf-steps band, 60 support points, wind ON, sector 360, dtheta 5, niter 200, **fw 0.01,
+  IG ON** — the user's 09-11 decision), premier on `_subgrid_buildings`. Arms:
+  `naccs-premier` · `wave-fw02` · `wave-noig` · `bed-nobuildings` ·
+  **`bed-nobuildings+wave-fw02+wave-noig`** (= the OLD wave-shelf-steps config on the fixed
+  engine — the paired before/after of the fix alone, and the first arm run, plan F.4) ·
+  `naccs-nowaves` (buildings subgrid, so waves-on/off stays one flag). Every attribution
+  arm differs from the premier in exactly the fields its name says
+  (`tests/test_engine_epoch.py`). The pre-registration text is in the premier's
+  description. `--check` on all six: **6/6 would stage**.
+- ✅ **Retired from the registry** (configs in git, numbers in the CSVs, reads in
+  STATUS/FINDINGS): old `naccs-premier`, `wave-stwave`, `diag-premier-norain`,
+  `bed-buildings`, `wave-shelf-steps`, `wave-fw01+…`, `wave-nowind+…`,
+  `BRACKET+setup-stockdon` (`premier.BRACKETS["setup-stockdon"]` kept). Their run dirs
+  are untouched until Phase 6's `retire_arm.py`.
+- ✅ Coupled code: `scripts/wave_shelf_reference.py` takes the −10 m line from
+  `_template_sealed/sfincs.nc` `snapwave_mask == 2` (`--ref-mesh`), `--premier` optional;
+  `scripts/measure_rain_share.py` marked history-only. Two tests restated for the epoch:
+  `test_bed_arms` (a `bed-` arm's subgrid differs from its PREMIER's; nothing else's
+  does) and the norain test no longer requires a norain arm to exist.
+- ✅ **`scripts/stamp_metrics_epoch.py --apply` RUN**: `engine`, `snapwave_direction`,
+  `subgrid`, `retired_to` filled on all 7 `metrics.csv` rows + the bracket row
+  (`container:v2.3.3-faber (inferred)` everywhere; direction `wind` on the five wind-on
+  arms, `imposed` on `wave-nowind+…`, `off` on nowaves/bracket; subgrid
+  `template@da494e3c` except `bed-buildings` → `_subgrid_buildings@8518110d`);
+  `report.html` regenerated. 🔴 Two traps found and closed on the way: pandas reads
+  `n/a` back as NaN (the label is now `off`), and pandas' default float parser is 1–2 ulp
+  off, so a plain read/write changed one number in the last digit — the script now reads
+  with `float_precision="round_trip"`, writes to a temp file, and REFUSES unless every
+  non-epoch cell is byte-identical on disk (verified against the rebaseline copy: 0 of
+  ~3,500 cells differ). Full suite **159 tests OK**.
+
+**Next (Phase 1a, the plan):** `hpc/build_sfincs_native.sh` against
+`~/nj_sandy_sfincs/SFINCS-src` (tag v2.3.3, branch `nj/snapwave-winddir`, untouched) with
+the `sfincs-build` env (gfortran **16.2** — expect ACCEPT at best; Option B = host gfortran
+11.5 + netcdf-fortran from source if G2 misses); `scripts/engine_gate.py make/compare`;
+gates G1 (hydromt example) and G2 (v1_monmouth 12 h). 🔴 `df /scratch` before every submit
+(93 % full, not our quota). Then Phase 1b plumbing, G3 once 61402750 has validated.
 
 ### ⚡ 2026-09-10 — preemption on `main`; 🔴 SnapWave WIND MODE REPLACES THE IMPOSED WAVE DIRECTION WITH THE WIND DIRECTION (source bug, v2.3.3 → v2.4.1/main, PR #194) — that is why wind-off "won"; the Stockdon bracket lifts ocean and bays alike
 
@@ -338,6 +581,15 @@ friction (`fw 0.01`) as a one-flag arm on the fixed engine. **Track C (coarse Sn
 STAYS, repurposed (user, 09-10): a runtime lever, after the fix** — SnapWave is 75 s/call
 wind-off and 350 wind-on on the 1.1 M-cell band, and a coarser band is the way to buy back
 the 40 h wall clock.
+
+**7. Plan accepted (09-10 evening; `~/.claude/plans/alright-finally-and-this-calm-lollipop.md`),
+Track F under way — Phase 0 landed 09-11 (see the 09-11 section).** Two engine facts learned
+while transcribing the defaults for the printout: **SFINCS's own default `snapwave_fw` is
+0.01** — our 0.02 was double the engine default on every arm to date, and the new premier
+returns to 0.01 as ONE of its defining changes (so `wave-fw02` is the attribution arm); and
+engine default `snapwave_igwaves` is **1** (IG on) — we have always written 0 explicitly.
+Neither is a finding about the physics; both are facts about what "default" means when the
+key is absent. `docs/snapwave_parameters.md` is the generated record.
 
 ### 🌊 2026-09-09 — `wave-shelf-steps` TIMED OUT at 55 %; the partial map says the DEAD RING IS FIXED but the band still starves the shelf. RESUBMITTED as job 61327796 (40 h)
 
