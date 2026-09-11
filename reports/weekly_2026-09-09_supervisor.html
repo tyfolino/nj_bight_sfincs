@@ -90,13 +90,13 @@ code{font-family:var(--mono);font-size:.92em}
 <header class="masthead">
   <span class="eyebrow">New York Bight · Hurricane Sandy flood hindcast · SFINCS with the SnapWave wave model</span>
   <h1>Sandy Hindcast, Plainly</h1>
-  <p class="dek">What the model is, how well it works, what we learned between 2 and 9 September 2026, and what is running tonight. Written for the 10 September meeting, for a reader who has not followed the week.</p>
+  <p class="dek">What the model is, how well it works, what we learned between 2 and 10 September 2026, and what is running now. Written for the 10 September meeting, for a reader who has not followed the week, and updated on the morning of the 10th with the first two results.</p>
 </header>
 
 <section>
 <span class="eyebrow">State of play</span>
 <h2>The model is good on the open ocean and low almost everywhere behind it</h2>
-<p class="lede">The model reproduces Sandy’s storm tide at the open-ocean gauge to within a centimetre and floods the right places: 87 % of the 94 surveyed high-water marks we score are matched to within half a metre. But it runs low. The marks average 16 cm below what was surveyed, the gauges inside the southern bays sit 20 to 55 cm below the observations, and that gap is already there on the quiet day before the storm. This week we traced it to the wave model: the waves we feed in at the seaward edge of the model are not reaching the beach. The first fix, a geometric one, removed one cause completely and exposed two more. Three simulations that change one thing each, to tell those two apart, were submitted today.</p>
+<p class="lede">The model reproduces Sandy’s storm tide at the open-ocean gauge to within a centimetre and floods the right places: 87 % of the 94 surveyed high-water marks we score are matched to within half a metre. But it runs low. The marks average 16 cm below what was surveyed, the gauges inside the southern bays sit 20 to 55 cm below the observations, and that gap is already there on the quiet day before the storm. This week we traced it to the wave model: the waves we feed in at the seaward edge of the model are not reaching the beach. The first fix, a geometric one, removed one cause completely and exposed two more. Three runs that change one thing each were submitted to tell those two apart, and two are in. Switching off the part of the wave model that grows waves from the local wind nearly doubles the wave reaching the beach, the opposite of what we predicted. And a deliberately wrong run that lifts the whole ocean edge of the model shows the bays follow the ocean one for one, so the missing water has to be added between the ocean and the bays, not at the edge.</p>
 </section>
 
 <section>
@@ -132,7 +132,7 @@ code{font-family:var(--mono);font-size:.92em}
 
 <section>
 <span class="eyebrow">Scores</span>
-<h2>How the five completed runs score</h2>
+<h2>How the completed runs score</h2>
 <p>A high-water mark is a surveyed line left by the flood on a wall or a tree. We compare each one with the modelled water level within 50 m of it, using the same 94 marks for every run; RMSE is the typical size of the error and bias its average sign. The extent scores compare the modelled flood outline with FEMA’s map of how far the surge reached in New Jersey: CSI is the overall agreement (1 is perfect), POD the share of FEMA’s flooded area the model also floods, and FAR the share of the model’s flooded area that FEMA does not show. FEMA’s map does not cover New York, so 14 km² of New York land is left out of every extent score. A run with the wave model off is a legitimate setup, but its extent score is not on the same footing as one with waves, so it is flagged rather than ranked.</p>
 <div class="tablewrap"><table><thead><tr><th>Arm</th><th>What it is</th><th class="num">HWM RMSE (m)</th><th class="num">HWM bias (m)</th><th class="num">within 0.5 m</th><th class="num">CSI</th><th class="num">POD</th><th class="num">FAR</th></tr></thead><tbody>
 <tr><td><code>naccs-premier</code></td><td>the reference configuration above</td><td class="num">0.384</td><td class="num">-0.156</td><td class="num">87%</td><td class="num">0.710</td><td class="num">0.894</td><td class="num">0.224</td></tr>
@@ -140,12 +140,14 @@ code{font-family:var(--mono);font-size:.92em}
 <tr><td><code>naccs-nowaves</code></td><td>reference run with the wave model switched off<span class="flag">extent not comparable with waves on</span></td><td class="num">0.431</td><td class="num">-0.270</td><td class="num">79%</td><td class="num">0.707</td><td class="num">0.875</td><td class="num">0.213</td></tr>
 <tr><td><code>diag-premier-norain</code></td><td>reference run with rain switched off (a diagnostic, not a candidate)<span class="flag">8 of 94 marks dry; wet-only RMSE 0.441</span></td><td class="num">0.754</td><td class="num">-0.240</td><td class="num">76%</td><td class="num">0.809</td><td class="num">0.824</td><td class="num">0.022</td></tr>
 <tr><td><code>bed-buildings</code></td><td>reference run with building footprints added to the terrain<span class="flag">buildings are dry in the model, wet on FEMA’s map</span></td><td class="num">0.392</td><td class="num">-0.079</td><td class="num">87%</td><td class="num">0.699</td><td class="num">0.870</td><td class="num">0.219</td></tr>
+<tr><td><code>BRACKET+setup-stockdon</code></td><td>wave model off, the ocean edge of the model lifted by the beach-setup formula<span class="flag">wrong on purpose: an upper bound, not a candidate</span></td><td class="num">0.358</td><td class="num">+0.074</td><td class="num">—</td><td class="num">0.763</td><td class="num">0.951</td><td class="num">0.206</td></tr>
 </tbody></table></div>
 <p>The rain-off row is not a candidate configuration, because Sandy’s rain really fell. It exists to measure how much of the model’s “false alarm” area is rain-fed wetting that FEMA’s surge-only map cannot contain, and the answer is 94 %. Its high-water-mark score collapses because eight marks that the rain filled go dry in that run; on the marks that stay wet it is 0.441 m.</p>
+<p>The bottom row is the best-looking line in the table and is not a candidate either. It lifts the whole ocean by a quarter metre, which closes the gap in the southern bays by trading the oceanfront for the bays: the open-coast marks and the Atlantic City pier end up 20 to 30 cm too high. Compared mark by mark, it beats the no-waves run by 7 cm, with an uncertainty range that just touches zero, and is not distinguishable from the reference run. The wind-off wave run is being scored this morning and joins the table when it lands.</p>
 </section>
 
 <section>
-<span class="eyebrow">2 – 9 September</span>
+<span class="eyebrow">2 – 10 September</span>
 <h2>The week, in order</h2>
 
 <h3>2–3 September — rain is nearly all of the false alarm</h3>
@@ -359,17 +361,136 @@ code{font-family:var(--mono);font-size:.92em}
   <figcaption><b>What reaches the inner shelf, per site, at 12:00 on 29 October.</b> Modelled wave height in 9 m of water divided by NOAA’s own value at the 10 m contour for the same site. The new line rescues Ocean City, leaves Atlantic City where it was and is slightly worse at Sea Isle and Sea Bright, where the old boundary sat right there and imposed NOAA’s value directly. Neither setup reaches the 0.85 target we set.</figcaption>
 </figure>
 <div class="callout"><p><strong>In one sentence:</strong> the geometric fix worked, and it showed that the wave model is losing the imposed wave energy to seabed friction, and in the hours before the storm to numerical noise, before the waves reach the beach where their setup would lift the beaches and the bays.</p></div>
+
+<h3>10 September — wind off doubles the wave at the beach; lifting the ocean lifts everything</h3>
+<p>Two of the three new runs finished overnight. The two long runs, the redrawn-boundary rerun 21 hours in and the lower-friction run 19 hours in, were pushed off their computers by the cluster’s scheduler at 08:30 in the same second and started again from zero, so they now finish around midday on the 11th. What they had written was saved before the restarts overwrote it, and read.</p>
+<ul>
+<li><strong>Wind off is the big lever, and we predicted the opposite.</strong> With the wind-growth term switched off, the run took under 6 hours instead of 28; 8 of the 145 wave calculations failed to settle instead of 25 of 80; the runaway 22 m waves and the hot spot east of Sandy Hook are gone; and the wave reaching the inner shelf nearly doubled (chart below). We had written down that this switch would not move it much. Our reading: the wind term only ever adds wave energy, with nothing to take it away, and over a million cells it stopped the solver from settling; the unsettled answers were too low on the shelf, not just spiky. The cost is that waves inside the bays drop to nearly zero, because in this model the wind term was the only thing making them, and Sandy did raise half-metre chop in Barnegat Bay.</li>
+<li><strong>Friction is a distant second.</strong> From its saved partial run, halving the seabed friction moved the same number by 0.02 to 0.12, short of the 0.6 we had set. By its own test, friction is not what was holding the waves back.</li>
+<li><strong>Lifting the ocean edge lifted everything by the same quarter metre.</strong> Raising the ocean boundary by the beach-setup formula raised the pre-storm level at every southern bay gauge by 22 to 31 cm, closing most of the bay gap, and raised the Atlantic City pier by 33 cm, where it is now 32 cm too high (chart below). The bays follow the boundary one for one, and so does the open ocean. What the observations show is the bays sitting <em>above</em> the pier, and no uniform lift can create that difference: whatever is missing acts between the pier and the bay, through the surf zone and the inlets.</li>
+<li><strong>Restart files are now in place.</strong> Every run set up from today saves its state every 6 hours; a run that gets pushed off its computer now resumes from the last save and the pieces are joined back into one output. Checked on a small test model: the resumed run matches an uninterrupted one to within the solver’s own run-to-run noise.</li>
+</ul>
+<figure>
+  <div class="legend"><span><i class="sw s2"></i>premier (−10 m staircase)</span><span><i class="sw s1"></i>stepped line, wind growth on</span><span><i class="sw s3"></i>stepped line, wind growth off</span></div><svg viewBox="0 0 720 300" width="100%" role="img" class="chart">
+<line x1="44" y1="256.0" x2="708" y2="256.0" class="grid"/>
+<text x="36" y="260.0" class="tick" text-anchor="end">0.0</text>
+<line x1="44" y1="208.4" x2="708" y2="208.4" class="grid"/>
+<text x="36" y="212.4" class="tick" text-anchor="end">0.2</text>
+<line x1="44" y1="160.8" x2="708" y2="160.8" class="grid"/>
+<text x="36" y="164.8" class="tick" text-anchor="end">0.4</text>
+<line x1="44" y1="113.2" x2="708" y2="113.2" class="grid"/>
+<text x="36" y="117.2" class="tick" text-anchor="end">0.6</text>
+<line x1="44" y1="65.6" x2="708" y2="65.6" class="grid"/>
+<text x="36" y="69.6" class="tick" text-anchor="end">0.8</text>
+<line x1="44" y1="18.0" x2="708" y2="18.0" class="grid"/>
+<text x="36" y="22.0" class="tick" text-anchor="end">1.0</text>
+<line x1="44" y1="53.7" x2="708" y2="53.7" class="refline"/>
+<text x="708" y="48.7" class="reflab" text-anchor="end">target 0.85</text>
+<rect x="92.0" y="110.8" width="22" height="145.2" class="bar s2" data-tip="Sea Bright · premier (−10 m staircase): 0.61"/>
+<text x="103.0" y="106.8" class="val" text-anchor="middle">0.61</text>
+<rect x="116.0" y="141.8" width="22" height="114.2" class="bar s1" data-tip="Sea Bright · stepped line, wind growth on: 0.48"/>
+<text x="127.0" y="137.8" class="val" text-anchor="middle">0.48</text>
+<rect x="140.0" y="58.5" width="22" height="197.5" class="bar s3" data-tip="Sea Bright · stepped line, wind growth off: 0.83"/>
+<text x="151.0" y="54.5" class="val" text-anchor="middle">0.83</text>
+<text x="127.0" y="278" class="lab" text-anchor="middle">Sea Bright</text>
+<rect x="258.0" y="151.3" width="22" height="104.7" class="bar s2" data-tip="Atlantic City · premier (−10 m staircase): 0.44"/>
+<text x="269.0" y="147.3" class="val" text-anchor="middle">0.44</text>
+<rect x="282.0" y="144.1" width="22" height="111.9" class="bar s1" data-tip="Atlantic City · stepped line, wind growth on: 0.47"/>
+<text x="293.0" y="140.1" class="val" text-anchor="middle">0.47</text>
+<rect x="306.0" y="68.0" width="22" height="188.0" class="bar s3" data-tip="Atlantic City · stepped line, wind growth off: 0.79"/>
+<text x="317.0" y="64.0" class="val" text-anchor="middle">0.79</text>
+<text x="293.0" y="278" class="lab" text-anchor="middle">Atlantic City</text>
+<rect x="424.0" y="220.3" width="22" height="35.7" class="bar s2" data-tip="Ocean City · premier (−10 m staircase): 0.15"/>
+<text x="435.0" y="216.3" class="val" text-anchor="middle">0.15</text>
+<rect x="448.0" y="170.3" width="22" height="85.7" class="bar s1" data-tip="Ocean City · stepped line, wind growth on: 0.36"/>
+<text x="459.0" y="166.3" class="val" text-anchor="middle">0.36</text>
+<rect x="472.0" y="96.5" width="22" height="159.5" class="bar s3" data-tip="Ocean City · stepped line, wind growth off: 0.67"/>
+<text x="483.0" y="92.5" class="val" text-anchor="middle">0.67</text>
+<text x="459.0" y="278" class="lab" text-anchor="middle">Ocean City</text>
+<rect x="590.0" y="132.2" width="22" height="123.8" class="bar s2" data-tip="Sea Isle · premier (−10 m staircase): 0.52"/>
+<text x="601.0" y="128.2" class="val" text-anchor="middle">0.52</text>
+<rect x="614.0" y="175.1" width="22" height="80.9" class="bar s1" data-tip="Sea Isle · stepped line, wind growth on: 0.34"/>
+<text x="625.0" y="171.1" class="val" text-anchor="middle">0.34</text>
+<rect x="638.0" y="122.7" width="22" height="133.3" class="bar s3" data-tip="Sea Isle · stepped line, wind growth off: 0.56"/>
+<text x="649.0" y="118.7" class="val" text-anchor="middle">0.56</text>
+<text x="625.0" y="278" class="lab" text-anchor="middle">Sea Isle</text>
+<line x1="44" y1="256" x2="708" y2="256" class="baseline"/></svg>
+  <figcaption><b>What reaches the inner shelf, per site, at 12:00 on 29 October.</b> Modelled wave height in 9 m of water divided by NOAA’s own value at the 10 m contour for the same site. The reference run and the redrawn boundary with wind on deliver a third to a half; with the wind term off the same boundary delivers 0.56 to 0.83 and clears the target at Sea Bright. The shallow stretch off Cape May (Ocean City, Sea Isle) is still the weak edge.</figcaption>
+</figure>
+<figure>
+  <div class="legend"><span><i class="sw s1"></i>no waves (reference forcing)</span><span><i class="sw s3"></i>ocean boundary raised by the beach setup (the bracket)</span></div><svg viewBox="0 0 720 354" width="100%" role="img" class="chart">
+<line x1="250.0" y1="8" x2="250.0" y2="314" class="grid"/>
+<text x="250.0" y="330" class="tick" text-anchor="middle">-0.4</text>
+<line x1="340.0" y1="8" x2="340.0" y2="314" class="grid"/>
+<text x="340.0" y="330" class="tick" text-anchor="middle">-0.2</text>
+<line x1="430.0" y1="8" x2="430.0" y2="314" class="baseline"/>
+<text x="430.0" y="330" class="tick" text-anchor="middle">0.0</text>
+<line x1="520.0" y1="8" x2="520.0" y2="314" class="grid"/>
+<text x="520.0" y="330" class="tick" text-anchor="middle">+0.2</text>
+<line x1="610.0" y1="8" x2="610.0" y2="314" class="grid"/>
+<text x="610.0" y="330" class="tick" text-anchor="middle">+0.4</text>
+<line x1="700.0" y1="8" x2="700.0" y2="314" class="grid"/>
+<text x="700.0" y="330" class="tick" text-anchor="middle">+0.6</text>
+<text x="242" y="29.0" class="lab" text-anchor="end">Atlantic City pier (ocean, 7 m)</text>
+<rect x="430.0" y="11.0" width="2.7" height="13" class="bar s1" data-tip="Atlantic City pier (ocean, 7 m) · no waves: +0.006 m"/>
+<text x="437.7" y="22.0" class="val" text-anchor="start">+0.01</text>
+<rect x="286.0" y="26.0" width="144.0" height="13" class="bar s3" data-tip="Atlantic City pier (ocean, 7 m) · boundary raised by the setup: -0.320 m"/>
+<text x="281.0" y="37.0" class="val" text-anchor="end">-0.32</text>
+<text x="242" y="63.0" class="lab" text-anchor="end">Absecon Channel</text>
+<rect x="430.0" y="45.0" width="115.2" height="13" class="bar s1" data-tip="Absecon Channel · no waves: +0.256 m"/>
+<text x="550.2" y="56.0" class="val" text-anchor="start">+0.26</text>
+<rect x="405.7" y="60.0" width="24.3" height="13" class="bar s3" data-tip="Absecon Channel · boundary raised by the setup: -0.054 m"/>
+<text x="400.7" y="71.0" class="val" text-anchor="end">-0.05</text>
+<text x="242" y="97.0" class="lab" text-anchor="end">Ship Bottom</text>
+<rect x="430.0" y="79.0" width="85.5" height="13" class="bar s1" data-tip="Ship Bottom · no waves: +0.190 m"/>
+<text x="520.5" y="90.0" class="val" text-anchor="start">+0.19</text>
+<rect x="409.3" y="94.0" width="20.7" height="13" class="bar s3" data-tip="Ship Bottom · boundary raised by the setup: -0.046 m"/>
+<text x="404.3" y="105.0" class="val" text-anchor="end">-0.05</text>
+<text x="242" y="131.0" class="lab" text-anchor="end">Tuckerton</text>
+<rect x="430.0" y="113.0" width="111.6" height="13" class="bar s1" data-tip="Tuckerton · no waves: +0.248 m"/>
+<text x="546.6" y="124.0" class="val" text-anchor="start">+0.25</text>
+<rect x="410.6" y="128.0" width="19.4" height="13" class="bar s3" data-tip="Tuckerton · boundary raised by the setup: -0.043 m"/>
+<text x="405.6" y="139.0" class="val" text-anchor="end">-0.04</text>
+<text x="242" y="165.0" class="lab" text-anchor="end">Stone Harbor</text>
+<rect x="430.0" y="147.0" width="137.7" height="13" class="bar s1" data-tip="Stone Harbor · no waves: +0.306 m"/>
+<text x="572.7" y="158.0" class="val" text-anchor="start">+0.31</text>
+<rect x="430.0" y="162.0" width="9.5" height="13" class="bar s3" data-tip="Stone Harbor · boundary raised by the setup: +0.021 m"/>
+<text x="444.5" y="173.0" class="val" text-anchor="start">+0.02</text>
+<text x="242" y="199.0" class="lab" text-anchor="end">Cape May Harbor</text>
+<rect x="430.0" y="181.0" width="125.5" height="13" class="bar s1" data-tip="Cape May Harbor · no waves: +0.279 m"/>
+<text x="560.5" y="192.0" class="val" text-anchor="start">+0.28</text>
+<rect x="430.0" y="196.0" width="5.4" height="13" class="bar s3" data-tip="Cape May Harbor · boundary raised by the setup: +0.012 m"/>
+<text x="440.4" y="207.0" class="val" text-anchor="start">+0.01</text>
+<text x="242" y="233.0" class="lab" text-anchor="end">Sea Isle</text>
+<rect x="430.0" y="215.0" width="156.6" height="13" class="bar s1" data-tip="Sea Isle · no waves: +0.348 m"/>
+<text x="591.6" y="226.0" class="val" text-anchor="start">+0.35</text>
+<rect x="430.0" y="230.0" width="42.8" height="13" class="bar s3" data-tip="Sea Isle · boundary raised by the setup: +0.095 m"/>
+<text x="477.8" y="241.0" class="val" text-anchor="start">+0.10</text>
+<text x="242" y="267.0" class="lab" text-anchor="end">Great Egg</text>
+<rect x="430.0" y="249.0" width="180.9" height="13" class="bar s1" data-tip="Great Egg · no waves: +0.402 m"/>
+<text x="615.9" y="260.0" class="val" text-anchor="start">+0.40</text>
+<rect x="430.0" y="264.0" width="80.5" height="13" class="bar s3" data-tip="Great Egg · boundary raised by the setup: +0.179 m"/>
+<text x="515.5" y="275.0" class="val" text-anchor="start">+0.18</text>
+<text x="242" y="301.0" class="lab" text-anchor="end">Ocean City</text>
+<rect x="430.0" y="283.0" width="251.5" height="13" class="bar s1" data-tip="Ocean City · no waves: +0.559 m"/>
+<text x="686.5" y="294.0" class="val" text-anchor="start">+0.56</text>
+<rect x="430.0" y="298.0" width="147.2" height="13" class="bar s3" data-tip="Ocean City · boundary raised by the setup: +0.327 m"/>
+<text x="582.2" y="309.0" class="val" text-anchor="start">+0.33</text>
+<text x="475" y="350" class="axis-name" text-anchor="middle">observed minus modelled mean water level before the storm, m (positive = model too low)</text></svg>
+  <figcaption><b>Lifting the ocean edge reaches the bays and the pier alike.</b> Observed minus modelled average water level over the quiet day before the storm, in metres, with the normal forcing and with the ocean boundary raised by the beach-setup formula. Every southern bay closes to within a few centimetres; the pier, matched to 6 mm before, is now 32 cm too high. The gain in the bays is paid for at the oceanfront.</figcaption>
+</figure>
+<div class="callout"><p><strong>In one sentence:</strong> the wave model was not short of wave energy, it was failing to settle on an answer; and the water missing from the bays has to be added between the ocean and the bays, not at the ocean edge.</p></div>
 </section>
 
 <section>
 <span class="eyebrow">Running now</span>
-<h2>Four runs, one change each</h2>
-<p>Each run is judged first on whether the waves get through, using the predictions below, which were written before any result was read, and only then on scores. The two wave runs take about 28 hours; the third about an hour.</p>
-<div class="tablewrap"><table class="jobs"><thead><tr><th>Arm</th><th>Job</th><th>What changes</th><th>What we wrote down before looking</th></tr></thead><tbody>
-<tr><td><code>wave-shelf-steps (rerun)</code></td><td class="state">61327796</td><td>running on hal0351 since 09:05 today, 40 h limit; the first attempt timed out at 55 %</td><td>The baseline the other two are compared against. The wave model is deterministic, so today’s partial numbers will come back complete, with the storm peak added.</td></tr>
-<tr><td><code>wave-fw01+wave-shelf-steps</code></td><td class="state">staging job 61333216</td><td>seabed friction coefficient 0.02 → 0.01, everything else identical</td><td>Wave height 10–20 km inside the line rises from about half of the imposed value toward at least 0.7; on the inner shelf at Atlantic City, Ocean City and Sea Isle it rises from 0.34–0.47 toward at least 0.6 of NOAA’s value. The first-cell ratios, the unsettled calculations and the unphysical hours stay as they were.</td></tr>
-<tr><td><code>wave-nowind+wave-shelf-steps</code></td><td class="state">staging job 61333216</td><td>growth of waves by the local wind switched off; the full circle of wave directions kept</td><td>The unsettled calculations drop to two or fewer of 145; no cell exceeds 1.2 times the imposed maximum; the Sandy Hook hot spot disappears. The loss across the shelf itself does not move much.</td></tr>
-<tr><td><code>BRACKET+setup-stockdon</code></td><td class="state">staging job 61333216</td><td>wave model off; the wave setup from a standard beach formula (Stockdon, beach slope 0.03, driven by NOAA’s waves) added to the ocean boundary at all 224 points; runs in under an hour</td><td>A deliberate upper bound, not a candidate: the southern bays rise by about the added setup (0.25 m on average before the storm), the Atlantic City pier reads about 15 cm too high, and the southern high-water-mark biases shrink. If the bays do not rise, the gap is not about water level at the boundary at all.</td></tr>
+<h2>Four runs, one change each: two finished, two restarted</h2>
+<p>Each run is judged first on whether the waves get through, using the predictions below, which were written before any result was read, and only then on scores. Status as of the morning of 10 September.</p>
+<div class="tablewrap"><table class="jobs"><thead><tr><th>Arm</th><th>Job</th><th>What changes</th><th>What we wrote down before looking</th><th>What happened</th></tr></thead><tbody>
+<tr><td><code>wave-shelf-steps (rerun)</code></td><td class="state">61327796</td><td>the redrawn boundary, unchanged; the baseline the others are compared against</td><td>The wave model is deterministic, so the partial numbers come back complete, with the storm peak added.</td><td>Pushed off its computer at 21 h with output written to 12:00 on 30 Oct (saved); restarted from zero at 08:33, due about midday on the 11th. The saved part covers the storm peak and confirms the 9 Sep reading: at 00:00 on 30 Oct, once the waves have swung round to come from the east, the inner-shelf fraction is 1.07 / 0.81 / 0.76 / 0.54 (Sea Bright / Atlantic City / Ocean City / Sea Isle).</td></tr>
+<tr><td><code>wave-fw01+wave-shelf-steps</code></td><td class="state">61334377</td><td>seabed friction coefficient 0.02 → 0.01, everything else identical</td><td>On the inner shelf at Atlantic City, Ocean City and Sea Isle the fraction rises from 0.34–0.47 toward at least 0.6 of NOAA’s value.</td><td>Pushed off at 19 h (output to 23:00 on 29 Oct, saved); restarted. From the saved part, at 12:00 on 29 Oct: 0.50 / 0.59 / 0.46 / 0.44 against 0.48 / 0.47 / 0.36 / 0.34 before. <strong>Short of 0.6: friction is not what holds the waves back.</strong></td></tr>
+<tr><td><code>wave-nowind+wave-shelf-steps</code></td><td class="state">61334378</td><td>growth of waves by the local wind switched off; the full circle of wave directions kept</td><td>The unsettled calculations drop to two or fewer of 145; no cell exceeds 1.2 times the imposed maximum; the Sandy Hook hot spot disappears. The loss across the shelf itself does not move much.</td><td>Finished cleanly in 5 h 51. Unsettled calculations 8 of 145 (target missed, but down from 25 of 80); no runaway waves on the shelf, only a few hundred just-wetted beach cells with nonsense heights; hot spot gone; Ocean City’s pre-storm collapse gone. <strong>The loss across the shelf halved: 0.83 / 0.79 / 0.67 / 0.56.</strong> Bay waves fall to about zero.</td></tr>
+<tr><td><code>BRACKET+setup-stockdon</code></td><td class="state">61334379</td><td>wave model off; the wave setup from a standard beach formula (Stockdon, beach slope 0.03, driven by NOAA’s waves) added to the ocean boundary at all 224 points</td><td>The southern bays rise by about the added setup (0.25 m on average before the storm), the Atlantic City pier reads about 15 cm too high, and the southern high-water-mark biases shrink. If the bays do not rise, the gap is not about water level at the boundary at all.</td><td>Finished in 52 min. The bays rose by 22–31 cm; the pier rose by 33 cm, twice what we wrote down; the southern mark biases shrink from −0.3 m to within ±5 cm; the oceanfront goes 19 cm high. Mark error 0.358 m, extent agreement 0.763. <strong>The bays follow the boundary one for one, and so does the pier.</strong></td></tr>
 </tbody></table></div>
 <div class="caveat"><p><strong>Why the third run is wrong on purpose.</strong> The published rule (Leijnse et al. 2025) is that a formula for wave setup at the boundary and a wave model are never used together, and the storm-tide hindcast we use already includes the setup that builds up seaward of the 10 m contour. Adding beach setup at that boundary lifts the whole shelf, which is wrong at the ocean gauge by construction. We run it only to learn the most that a correct wave setup could ever close of the gap. The run-up half of the same formula, the swash, is deliberately left out: it is an up-and-down motion, not a level, so it cannot lift a bay or a gauge average; its effect on open-beach marks is assessed separately without a run.</p></div>
 </section>
@@ -378,14 +499,17 @@ code{font-family:var(--mono);font-size:.92em}
 <span class="eyebrow">Decisions ahead</span>
 <h2>What we are not doing, and what comes next</h2>
 <ul>
-<li><strong>Not switching wave models.</strong> SFINCS only works with its own wave model, SnapWave, and NOAA’s wave hindcast is already a full wave model (SWAN) run on a fine grid; it can only enter ours through the boundary. The evidence points at two settings (where the line is drawn, the seabed friction) and one stability term (wind growth), not at the tool. If friction and wind together still leave the inner shelf below about 70 % of NOAA’s value, then SnapWave cannot carry ocean swell across a wide shelf, and a different wave model (XBeach along cross-shore lines, or Delft3D-FM coupled to SWAN) becomes the question, at the cost of a new set of tools.</li>
-<li><strong>Not moving the boundary closer to shore.</strong> We measured it today: the shelf is so flat that a stepped line hugging the 13 m contour still leaves a band of 460,000 cells and 6.7 km wide, and friction per kilometre is worse in 13 m of water than in 25 m.</li>
-<li><strong>Coarsening the shelf band</strong> is the right next platform once the physics answer is in. Three quarters of the band is 50 m cells only because the rule that refines the bays reaches out onto the shelf; at 200 m cells the wave grid drops from 2.9 to about 1.9 million and a wave run costs about 6 hours instead of 28. It is a new grid, so it needs a rebuild, a check that no cell inside the flood model changed, and new baseline runs: about a day of work, started after the first partial read of tonight’s runs.</li>
-<li><strong>Tomorrow:</strong> first partial reads of the rerun and the two wave runs after about 12 hours, the full read-out and side-by-side scores when they finish, and the upper bound on the bay gap from the third run.</li>
+<li><strong>Still not switching wave models.</strong> The 70 % line we had set as the trigger is now cleared at two of the four sites with the wind term off alone, and the failure turned out to be the solver not settling, not a missing piece of physics. The tool stays.</li>
+<li><strong>Next run (recommended, your call): wind off plus friction 0.01, one 6-hour run.</strong> The two changes are independent and both moved the number the right way. If they add up, Atlantic City and Sea Bright clear the 0.85 target and only the Cape May stretch is left.</li>
+<li><strong>Reopening the shallower boundary for the Cape May stretch.</strong> On the 9th we ruled out moving the line closer to shore because friction over a wide shallow band looked bad. That reasoning assumed friction was the problem, and it was not. The western half of the bottom edge passes a third of the imposed wave even with the wind term off, and imposing NOAA’s waves nearer to where they are needed is the fix for that edge.</li>
+<li><strong>Bay chop.</strong> Switching the wind term off removes the half-metre waves Sandy raised inside Barnegat Bay. What we score is water level, and bay waves add only a few centimetres at bay shores; we will put a number on what was lost before worrying about it.</li>
+<li><strong>Coarsening the shelf band</strong> is still the right platform, but less urgent: the wind change already cut a wave run from 28 hours to 6.</li>
+<li><strong>Tell the model’s developers</strong> about the calculations that fail to settle, with the hours and the grid size. A wind term with nothing to balance it is a known limitation, and there may be a setting for it that is not exposed.</li>
+<li><strong>Tomorrow:</strong> the two restarted runs land around midday; full read-out, side-by-side scores against the reference run, and the wind-off run’s scores added to the table above.</li>
 </ul>
 </section>
 
-<footer>Every number here is recorded with its conditions in the project’s working notes; high-water-mark statistics use the median modelled level within 50 m of each mark unless stated. Figures: reference-run depth animation (3 Sep), buildings difference map (8 Sep), wave-domain map (8 Sep), and charts drawn from the 9 Sep partial read-out.</footer>
+<footer>Every number here is recorded with its conditions in the project’s working notes; high-water-mark statistics use the median modelled level within 50 m of each mark unless stated. Figures: reference-run depth animation (3 Sep), buildings difference map (8 Sep), wave-domain map (8 Sep), charts drawn from the 9 Sep partial read-out, and the 10 Sep wind-off and boundary-lift charts.</footer>
 </div>
 <script>
 (function(){
