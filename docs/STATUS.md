@@ -24,6 +24,95 @@ seiche FINDINGS §40 · weir FINDINGS §38 · rain FINDINGS §39)
 
 ## ⏳ PICK UP — next session
 
+### ✅ 2026-09-12 AM — G3 PATCHED PASSES BOTH GATES: Phase 2 (the patch) is CLOSED on the science; the two UNPATCHED G3 runs are re-queued for the rounding compare
+
+**`G3_patched` (job 61404598, hal0386, 4 h 41, exit 0) — PASS on both pre-registered criteria:**
+- **Direction:** boundary `wavdir` within 5° of the Hs-weighted imposed `.bwd` on **13 of 13
+  hours, worst |Δ| = 0.0°** (model 146.8 → 164.3° as the `.bwd` swings 146.8 → 164.3°). The
+  unpatched container (partial, 11 hours) reads 33–51° = the ERA5 wind (37–53°), **0 of 11
+  within 5°, worst |Δ| 120°** — the FINDINGS §43 bug reproduced on the v3 wind-on cut.
+- **Transmission** (`bands`, ref `wave-nowind+wave-shelf-steps`): entry ratio **0.965–0.990
+  vs the wind-off run's 0.955–0.985** — ≥ ref on 12 of 13 matched hours, the exception
+  (09:00) 0.002 below, i.e. noise. Mid band 0.76–0.87 vs 0.78–0.87, same. The unpatched
+  container's entry ratio is **0.76–0.90** — the misdirected waves lose 10–25 % in the
+  entry band alone, before any shelf physics.
+- ⚠️ **Flag, not a gate: the −9 m shelf ratio dips at 01:00 (0.280) and 08:00 (0.298)**
+  against 0.38–0.49 on the other 11 hours and the wind-off run's flat 0.38–0.44. Not tied to
+  a cap-hit (01:00 sits on a capped call, 08:00 on a converged one). Read it on the full
+  Phase 4 run before treating it as real.
+- ⚠️ **Flag: cap-hits 17 of 25 SnapWave calls** (cap 50 = niter 200 / 4; `error_final` ~1.0
+  with `pct_ok` 98.8–99.99 %) vs 9 of 22 unpatched-container, 1 of 25 on G2 patched and
+  **8 of 145 on the wind-off v3 run**. With the imposed swell actually launched, wind ON on
+  v3 leaves <1 % of cells outside tolerance at the cap on most calls. Cost, not
+  correctness, so far: 4 h 41 for 12 h → the 40 h Phase 4 budget is ~1.5× tight. Watch
+  `convergence` at the +3 h read.
+- Tables: `logs/engine_gate_2026-09-11/G3_{patched,container}_{direction,bands,convergence}.csv`.
+
+**🔎 09-12 AM read on the cap-hits — a bounded LIMIT CYCLE in a few hundred cells, not a
+divergence** (source + map read; `logs/engine_gate_2026-09-11/G3_patched_spike_cells.png`):
+- The log's `error` is the single worst cell's change relative to the field max
+  (`snapwave_solver.f90:868`), and `%ok` is CUMULATIVE within a call (`ok(k)` is set once and
+  never cleared; an ok cell is then skipped, line 575) — so a capped call means a handful of
+  cells never settle while the field is done. The capped traces are periodic: call 3 cycles
+  `3.57 / 1.00 / 0.37`, call 9 `1.00 / 4.57`, call 20 `1.00 / 1.02 / 2.71`, identical to the
+  last digit for 30+ iterations. Bounded, period 2–3.
+- **Where:** a line of cells along the deep channel axis at lon −74.00 from off Sandy Hook
+  (lat 40.33, hour 01) through the Sandy Hook channel (40.42, 40.51) to the Narrows approach
+  (40.60, hour 09; mesh depth 24 m), i.e. the wave SHADOW of Sandy Hook / Lower Bay: the
+  wind-off run has hm0 0.02–0.16 m at 98–100 % of them. Never the same cells two hours
+  running (0–153 overlap of 100–3200). SFINCS-active cells (msk 1) except hour 01.
+- **What:** the spike cells sit at the engine's PERIOD FLOOR — `tp` 1.1–1.6 s
+  (`snapwave_sigmax` default 2π/1.0 s; a cell at the energy floor gets `Ak = waveps/sigmax`,
+  i.e. T = 1 s by construction, solver line 393) — with hm0 6–23 m (H/d 0.3–0.65, the Baldock
+  lid, `snapwave_gammax` default 2.0 never bites). A 1-s wave 10 m high is numerical: the
+  PM fully-developed limit for the 8 m/s wind at that hour is ~1.6 m. Transient: the hour-09
+  cells read 0.2–0.7 m every other hour and 6.5 m median / 23 m max at 09:00 only.
+- **The patch helped, a lot:** cells with hm0 > 5 m at matched hours are 5,532 / 4,964 /
+  37,452 / 146 / 827 unpatched vs 0 / 1,699 / 214 / 176 / 112 patched. The blow-ups are a
+  wind-mode property that the misdirected swell made 10–100× worse; the fixed engine keeps
+  the residual in the shadow of Sandy Hook. G2 patched (v1, no bay band) has none.
+- **Bay wind sea is physically sized apart from the spikes:** Lower/Raritan Bay box median
+  hm0 0.27–0.46 m (wind-off 0.05–0.06) — the pre-registered 0.2–0.5 m — with p99 2.1–3.3 m.
+- The 01:00 and 08:00 shelf-ratio dips in the bands table coincide with spike snapshots on
+  the shelf east of Sandy Hook (01:00: 1,699 cells > 5 m where wind-off reads 1.34 m), so
+  they are the same artefact caught in the −9 m band, not a transmission loss.
+- **The horizontal line at lat 40.48 in the `tp` map is the Sandy Hook SHADOW, not a mesh
+  seam** (`logs/engine_gate_2026-09-11/G3_patched_sandy_hook_refraction.png`): the spit's
+  northernmost land cell is at 40.482; inside Lower Bay the swell has refracted to travel
+  W–NW (wavdir FROM 45–135° on 98 % of cells, both engines), and SnapWave has refraction but
+  NO diffraction, so a west-travelling field casts a straight E–W shadow off the tip. Cell
+  size (51 m), msk and depth are continuous across it. It is a PERIOD contrast between two
+  wave systems — 12 s swell north, 3.5 s NE wind sea (0.4 m) south — while hm0 only steps
+  0.45 → 0.69 m. The wind-off run has the same shadow in hm0 (0.07 vs 0.19 m; Sandy Hook
+  Bay pocket 0.01–0.02 m) but a CONSTANT tp (12.68 s everywhere; wind-off has no period
+  evolution), so it cannot show it. ⚠️ On a CAPPED hour (10:00) the tp field is not
+  trustworthy: an 11 s "period" appears FROM the north-east across Raritan Bay — the
+  unconverged period state, same limit cycle.
+- **Diffraction: SnapWave has NONE** (no term in the v2.3.3 source or docs; it is a stationary
+  directional energy balance with refraction, breaking, friction, wind, IG — one period per
+  cell, no frequency spectrum, no whitecapping). CORA's SWAN has 940 nodes in the bay box and
+  99 in the Sandy Hook Bay pocket and agrees with the fixed engine on HEIGHT to ~0.1 m at
+  10-28 09:00 (pocket 0.45 / Raritan S 0.45 / Lower Bay N 0.64 vs 0.36 / 0.44 / 0.58): the
+  wind sea fills the shadow. 40 of 185 v3 marks are in the zone box, 2 on the spit's bay side
+  (6106, 6140) within 1.5 km of the tip. **Plan Phase 4b (D1–D6) added** — the CORA-in-the-bay
+  check, the paired waves-on/off attribution on the zone marks, a spread-sensitivity cut, and
+  the HHB-2003 engine option as a decision point.
+- Levers, NOT applied (the user judges): `snapwave_sigmax` (raise the period floor from 1 s
+  to 2–3 s, kills the 1-s seas at the source), `snapwave_gammax` = 0.78 (hard lid at breaking
+  height instead of 2.0), a lower `snapwave_niter` (the cycle never converges, so the last
+  ~100 sweeps of a capped call are pure cost; ~50 % of the 4 h 41 was capped calls). Any of
+  these is an arm key, run paired against the premier — the un-bundled interior initial-guess
+  remap (plan Phase 2 item 6) is the likely engine-side fix.
+
+**The unpatched pair did NOT finish:** `G3_container` 61404023 **TIMEOUT** at 6 h (22 of ~25
+SnapWave calls, map to 10:00 — parked in `G3_container/partial_61404023_timeout/`);
+`G3_native` 61404024 **PREEMPTED** at 2 h 09 with nothing written. Both **RE-SUBMITTED
+09-12 08:55 with `-t 10:00:00`**: container **61447158**, native **61447159** (same
+`engine_gate.py run` lines, `-p main --exclude=halk`). When both finish:
+`engine_gate.py compare G3_container G3_native` (expect the G2 shape: ACCEPT, rounding
+only) — that is the last Phase 2 line item and it is CONFIRMATORY (G1 + G2 already
+established it); **it does not block Phase 4.**
+
 ### ⏳ 2026-09-11 — PICK UP HERE (written ~14:20 before a context compaction): Phases 0, 1a, 1b, 3 DONE; Phase 2 (the patch) built and passing its first gates; G3 ×3 running
 
 **The approved plan is `~/.claude/plans/alright-finally-and-this-calm-lollipop.md`** (Phase 0 →
@@ -31,9 +120,10 @@ seiche FINDINGS §40 · weir FINDINGS §38 · rain FINDINGS §39)
 how we got here). Read the plan's "Hard constraints" first.
 
 **State at 14:20 — what is running and what comes next (details in the 09-11 sections below):**
-- ⏳ RUNNING: `G3_container` **61404023** (hal0350) and `G3_native` **61404024** (hal0355),
-  the 12 h v3 wind-on cut on the UNPATCHED engines (~1.5 h left); `G3_patched`
-  **61404598** (hal0386, ~2 h left). All under `/scratch/tpj8/engine_gate/`. When done:
+- ~~⏳ RUNNING~~ **→ see 09-12 AM above** (patched PASSED; unpatched pair re-queued as
+  61447158 / 61447159). Original note: `G3_container` **61404023** (hal0350) and `G3_native`
+  **61404024** (hal0355), the 12 h v3 wind-on cut on the UNPATCHED engines (~1.5 h left);
+  `G3_patched` **61404598** (hal0386, ~2 h left). All under `/scratch/tpj8/engine_gate/`. When done:
   `engine_gate.py compare G3_container G3_native` (expect the G2 shape: rounding only);
   `snapwave_direction_check.py direction G3_native` (expect 0 of 12 hours within 5° — the
   bug), then `direction G3_patched --ref G3_native` (expect 12 of 12, Δ ≈ 0) and `bands
@@ -200,7 +290,9 @@ engine any scored run used.
 - ⏳ **G3** (`wave-shelf-steps` 12 h cut, wind ON, v3, 64 threads, 100 G, 6 h limit):
   container **61404023** (hal0350), native **61404024** (hal0355), both RUNNING since
   ~13:25. Expect ~3.5 h. `direction` check on both afterwards must reproduce the wind-on
-  table (0 of 12 hours within 5°).
+  table (0 of 12 hours within 5°). **09-12: the 3.5 h estimate was wrong — the container
+  needs ~7 h (TIMEOUT at 6 h), the native was PREEMPTED; re-queued at 10 h as 61447158 /
+  61447159. The container's partial 11 hours DID reproduce the wind-on table (0 of 11).**
 
 ### 🔌 2026-09-11 PM — Phase 1b DONE: the engine is EXPLICIT everywhere and every run is stamped
 
