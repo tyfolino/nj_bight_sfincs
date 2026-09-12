@@ -110,8 +110,10 @@ run" as "touches nothing" destroyed 1.8 GB of solver output once;
 a full destructive sweep.
 
 ✅ **Preemption is survivable since 2026-09-10.** `main` preempts (two 40 h solves lost 21 h
-and 19 h in one second). Every arm staged since then writes `sfincs.YYYYMMDD.HHMMSS.rst`
-every 6 h (`dtrstout = dtmaxout = 21600`), and `hpc/sfincs_run.slurm` asks
+and 19 h in one second). Every arm staged since **2026-09-12** writes `sfincs.YYYYMMDD.HHMMSS.rst`
+every 6 h (`dtrstout = dtmaxout = 21600`, set per arm by `model.restore_diagnostics` —
+🔴 between 09-10 and 09-12 only HAND-ENABLED arms had it: the sealed template predates the
+hook and staging copies its inp; check `grep dtrstout <dir>/sfincs.inp` before a long submit), and `hpc/sfincs_run.slurm` asks
 `nj_sfincs/restart.py` on every start: a requeue **resumes** from the newest restart file,
 parks the earlier output in `restart_segments/`, and **stitches** one `sfincs_map.nc` /
 `sfincs_his.nc` afterwards (`restart_history.txt` records it). `python

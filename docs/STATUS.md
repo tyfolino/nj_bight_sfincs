@@ -121,6 +121,18 @@ no buildings) on the PATCHED engine `v2.3.3-winddir-fix-1-gf11`. It is the paire
 of the fix alone; the "before" is `wave-shelf-steps` (metrics frozen in
 `metrics_2026-09-11_pre_winddir_rebaseline.csv`: HWM RMSE 0.379 / bias −0.182, scored keys).
 Staged and submitted via `SFINCS_BIN=… SOLVE_TIME=40:00:00 sbatch hpc/stage_and_submit_v3.slurm`.
+🔴 **09-12 10:15 — the first solve (61448435) went out WITHOUT the restart hook and was
+scancelled at 3 min**: the staged inp had `dtmaxout = 86400`, no `dtrstout`. Cause: the
+sealed v3 template is from 08-31, `add_forcing` (where the hook lives) runs only at template
+build, and staging `copytree`s the template inp then re-writes it through hydromt — so EVERY
+v3 arm staged from the sealed template lacked the hook (`wave-shelf-steps` and
+`wave-fw01+…` had it because they were hand-`enable`d on 09-10; CLAUDE.md's "every arm since
+09-10" was wrong and is corrected). Fix: `model.restore_diagnostics` (the per-arm restore
+step every staging path passes through) now sets `dtmaxout = dtrstout = RESTART_DT_S`
+(one constant shared with `add_forcing`); `tests/test_staging_restart_keys.py` pins it.
+The arm was retrofitted with `sfincs_restart.py enable` and **RESUBMITTED as solve
+61448559, validate 61448560 (afterok)**. `naccs-nowaves` (stage 61448357) was already
+staging through the old code — a 40 min solve, left alone.
 **SUBMITTED 09-12 ~09:50: stage job 61448248** (`logs/stage_v3_61448248.out`; it stages,
 dedupes, submits the solve as `v3_bed-nobuildings+wave-fw02+wave-noig` with 40 h / 64 G, and
 queues a dependent `v3_validate`; the solve id lands in `logs/stage_v3_61448248.jobs`).

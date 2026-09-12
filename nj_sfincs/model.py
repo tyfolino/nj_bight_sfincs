@@ -1069,6 +1069,13 @@ def check_waterlevel_support(sf: SfincsModel, expect: int | None = None) -> int:
     return got
 
 
+#: Restart-file cadence AND zsmax block length (s). One lattice: the stitch keeps whole
+#: zsmax blocks only, so ``dtmaxout`` must divide ``dtrstout`` (nj_sfincs/restart.py).
+#: 🔴 Set on EVERY staged arm by :func:`restore_diagnostics`, not only at template
+#: build: a sealed template built before 2026-09-10 has neither key, and staging copies
+#: its sfincs.inp — the F.4 arm went out unprotected on 2026-09-12 for exactly that reason.
+RESTART_DT_S = 21600.0
+
 def add_forcing(base: BaseConfig, sf: SfincsModel) -> None:
     """Window + physics flags and every compound forcing (no waves)."""
     sf.config.update(
@@ -1085,8 +1092,8 @@ def add_forcing(base: BaseConfig, sf: SfincsModel) -> None:
             # from its newest restart file (nj_sfincs/restart.py, 2026-09-10) and the
             # stitch keeps whole zsmax blocks only — dtmaxout must divide dtrstout.
             # validate takes max over `timemax`, so 12 blocks score like the old 3.
-            "dtmaxout": 21600.0,
-            "dtrstout": 21600.0,
+            "dtmaxout": RESTART_DT_S,
+            "dtrstout": RESTART_DT_S,
             "dthisout": 600.0,  # his output every 10 min
         }
     )
@@ -1495,7 +1502,14 @@ def restore_diagnostics(model_dir: Path) -> None:
     """
     model_dir = Path(model_dir)
     crs_src = ROOT / "data" / "flux_crosssections.crs"
-    kv = {"storevel": "1"}
+    kv = {
+        "storevel": "1",
+        # Preemption survival on every arm, whatever the template's vintage (see
+        # RESTART_DT_S). An Experiment cannot opt out: a 40 h solve on `main` without a
+        # restart file is the 2026-09-10 failure shape.
+        "dtmaxout": f"{RESTART_DT_S:.1f}",
+        "dtrstout": f"{RESTART_DT_S:.1f}",
+    }
     if crs_src.exists():
         shutil.copy2(crs_src, model_dir / "sfincs.crs")
         kv["crsfile"] = "sfincs.crs"
