@@ -24,11 +24,39 @@ seiche FINDINGS §40 · weir FINDINGS §38 · rain FINDINGS §39)
 
 ## ⏳ PICK UP — next session
 
-### ⏳ 2026-09-11 — Phase 0 DONE; next is Phase 1a (native build + gates G1/G2)
+### ⏳ 2026-09-11 — PICK UP HERE (written ~14:20 before a context compaction): Phases 0, 1a, 1b, 3 DONE; Phase 2 (the patch) built and passing its first gates; G3 ×3 running
 
 **The approved plan is `~/.claude/plans/alright-finally-and-this-calm-lollipop.md`** (Phase 0 →
 8; the 09-10 ADDENDUM in `~/.claude/plans/alright-i-think-we-nested-beacon.md` is the record of
 how we got here). Read the plan's "Hard constraints" first.
+
+**State at 14:20 — what is running and what comes next (details in the 09-11 sections below):**
+- ⏳ RUNNING: `G3_container` **61404023** (hal0350) and `G3_native` **61404024** (hal0355),
+  the 12 h v3 wind-on cut on the UNPATCHED engines (~1.5 h left); `G3_patched`
+  **61404598** (hal0386, ~2 h left). All under `/scratch/tpj8/engine_gate/`. When done:
+  `engine_gate.py compare G3_container G3_native` (expect the G2 shape: rounding only);
+  `snapwave_direction_check.py direction G3_native` (expect 0 of 12 hours within 5° — the
+  bug), then `direction G3_patched --ref G3_native` (expect 12 of 12, Δ ≈ 0) and `bands
+  G3_patched --ref experiments/v3/wave-nowind+wave-shelf-steps` (expect entry ratio ≥ the
+  wind-off run's 0.80–0.98 at matched hours). Record in STATUS; that closes Phase 2.
+- NEXT after that: **Phase 4** — stage + submit `bed-nobuildings+wave-fw02+wave-noig`
+  FIRST on the patched engine
+  (`SFINCS_BIN=~/nj_sandy_sfincs/sfincs-native/v2.3.3-winddir-fix-1-gf11/bin/sfincs`,
+  `run_experiments.py --experiments <arm> --check` then `--no-run`, `dedupe --apply`,
+  `run.submit_slurm(dir, binary=BIN, extra_args=["--time=40:00:00","-J","v3_<arm>"])`;
+  `df /scratch` first, 93 % full); early `direction` read at +3 h; then the premier +
+  `wave-fw02` + `wave-noig` + `bed-nobuildings` + `naccs-nowaves` in parallel.
+  ⚠️ `run_experiments.py --no-run` rmtrees the OLD `naccs-premier` and `naccs-nowaves`
+  dirs (same names) — their numbers are stamped in `metrics.csv`, their configs in git;
+  that is the intended retirement path, but say so before staging.
+- THEN: Phase 6 `scripts/retire_arm.py` (not started; patterns read: dedupe script,
+  `premier._main`, `TestStagingIsSafeBeforeItIsDestructive`, `desktop_pull_backup.sh`
+  keep-list; a retired arm's heavy files are `sfincs_map.nc` 5.3 G, `snapwave.upw` up to
+  2.6 G, `floodmap_hmax_lev3.tif` 0.3 G, plus the hard-linked inputs at nlink 4–13 whose
+  true reclaim is ~0); Phase 5 the Deltares issue draft (the G2/G3 tables are the
+  evidence); Phase 7 cleanup on sign-off.
+- USER: commit the staged tree (everything but the .docx); commit + push the SFINCS-src
+  branch `nj/snapwave-winddir` (2 files, uncommitted) when the issue is filed.
 
 **Done 09-11 (Phase 0, all six items):**
 - ✅ `scancel 61334380` (user). ✅ Working tree from 09-10 committed (`e0f27b7`).
