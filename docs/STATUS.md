@@ -113,6 +113,62 @@ SnapWave calls, map to 10:00 — parked in `G3_container/partial_61404023_timeou
 only) — that is the last Phase 2 line item and it is CONFIRMATORY (G1 + G2 already
 established it); **it does not block Phase 4.**
 
+### 📝 2026-09-12 — Phase 4 PRE-REGISTRATION, written before the first fixed-engine solve was submitted
+
+**Arm 1: `bed-nobuildings+wave-fw02+wave-noig`** = the OLD `wave-shelf-steps` configuration
+(shelf-steps band, 60 support points, wind ON, sector 360, dtheta 5, niter 200, fw 0.02, IG off,
+no buildings) on the PATCHED engine `v2.3.3-winddir-fix-1-gf11`. It is the paired before/after
+of the fix alone; the "before" is `wave-shelf-steps` (metrics frozen in
+`metrics_2026-09-11_pre_winddir_rebaseline.csv`: HWM RMSE 0.379 / bias −0.182, scored keys).
+Staged and submitted via `SFINCS_BIN=… SOLVE_TIME=40:00:00 sbatch hpc/stage_and_submit_v3.slurm`.
+**SUBMITTED 09-12 ~09:50: stage job 61448248** (`logs/stage_v3_61448248.out`; it stages,
+dedupes, submits the solve as `v3_bed-nobuildings+wave-fw02+wave-noig` with 40 h / 64 G, and
+queues a dependent `v3_validate`; the solve id lands in `logs/stage_v3_61448248.jobs`).
+No new lever rides on it (the `snapwave_sigmax` period-floor lever from the 09-12 AM read is a
+LATER one-flag arm, not this one).
+
+**Also submitted 09-12 ~10:00 (concurrent, cluster quiet):**
+- **`naccs-nowaves` stage job 61448357**, `--dependency=afterok:61448248` so the two dedupe
+  passes never overlap; 3 h / 32 G solve. Waves-off needs no direction read. ⚠️ Its staging
+  rmtrees the OLD `naccs-nowaves` dir (numbers stamped in the rebaseline CSV).
+- **Period-floor cuts** `G3_sigmax2s` (job 61448359) and `G3_sigmax3s` (61448360):
+  the G3 recipe (12 h cut of `wave-shelf-steps`, patched engine) plus ONE key,
+  `snapwave_sigmax` = 2π/2 = 3.141593 and 2π/3 = 2.094395 (engine default 2π/1 → 1 s floor).
+  Pre-registration, against `G3_patched` (default floor): (a) cap-hits fall from 17 of 25 —
+  predict ≤ 5 of 25 at 3 s, the 2 s floor in between; (b) spike cells (hm0 > 1.2× boundary
+  max) fall from 100–3,200 per hour to < 50; (c) entry / mid / −9 m shelf ratios unchanged
+  within 0.02 at every hour (the floor only touches cells at the energy floor); (d) Lower /
+  Raritan Bay wind-sea hm0 median unchanged within 0.05 m at 2 s and DOWN by ≤ 0.1 m at 3 s
+  (a 3 s floor may clip a young wind sea whose mean period is 2.5–3 s — this is the number
+  that decides which floor is admissible); (e) wall time drops in proportion to the cap-hits.
+  `snapwave_gammax` was NOT cut: the spike cells sit at H/d 0.3–0.65, under the 0.78 Baldock
+  lid already, so a lower hard lid would not bite.
+- NEXT concurrent item once 61448248 has staged: a 12 h cut of the F.4 staged dir with the
+  NEW premier's two changes hand-edited in (`snapwave_igwaves = 1`, `snapwave_fw = 0.01`) —
+  the IG stability read (plan Phase 8 criteria: cap-hits ≤ the no-IG cut's; `hm0ig/hm0`
+  p99 ≤ 0.5 on cells deeper than 5 m; no cell `hm0ig > 1.0 m`; runtime ≤ 2×) BEFORE four
+  40 h IG-on solves go in.
+
+Predictions (plan Phase 4, verbatim, plus the 09-12 reads):
+1. Boundary `wavdir` = `.bwd` within 5° every map hour (`snapwave_direction_check.py direction`).
+   **Early read at +3 h wall**; if it passes, submit the other five arms at once.
+2. Pre-peak entry ratio ≥ the wind-off run's (0.82–0.99 at matched hours).
+3. −9 m shelf ≥ the wind-off run's at every site/time (0.83 / 0.79 / 0.67 / 0.56 at 10-29 12:00
+   for Sea Bright / AC / OC / Sea Isle), i.e. the fixed engine recovers what wind-off got by
+   getting the direction right, and keeps the wind.
+4. Bay hm0 back to 0.2–0.5 m pre-storm (measured 0.27–0.46 on the G3 cut).
+5. Cap-hits ≤ 8 of 145 — **expected to MISS**: the G3 cut hit the cap on 17 of 25 calls (the
+   Sandy Hook limit cycle, 09-12 AM). Record the count; a miss here is a runtime and
+   period-field caveat, not a rejection.
+6. Phase 4b D2: in the Sandy Hook Bay pocket, Raritan Bay S of 40.48 and Lower Bay N of 40.48,
+   |hm0 − CORA hs| ≤ 0.3 m at 10-29 12:00 (CORA 1.26 / 1.21 / 1.57 m). The unpatched run
+   reads 0.68 / 0.16 / 0.67 there.
+7. HWM: paired ΔRMSE vs `wave-shelf-steps` with a bootstrap CI; direction of the point
+   estimate unpredicted (the bias is −0.18 m and better-directed waves push the open coast UP,
+   the bay marks are wind-sea-controlled). Quote the CI, not the sign.
+8. Runtime: 4 h 41 for 12 h on the cut → 25–40 h for the 73 h window; restart hooks cover a
+   preemption.
+
 ### ⏳ 2026-09-11 — PICK UP HERE (written ~14:20 before a context compaction): Phases 0, 1a, 1b, 3 DONE; Phase 2 (the patch) built and passing its first gates; G3 ×3 running
 
 **The approved plan is `~/.claude/plans/alright-finally-and-this-calm-lollipop.md`** (Phase 0 →
