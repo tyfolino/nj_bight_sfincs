@@ -179,7 +179,9 @@ pinned in `test_engine_epoch.py` as its three fields. **Predictions, paired agai
    ±10 of the premier's; runtime within 10 %.
 5. Sea Bright / Sandy Hook shelf hotspot (the 10-28 14:00 blow-up) — unpredicted; record.
 **SUBMITTED 09-13 ~16:50 as stage job 61542895** (patched binary, **34 h**, emeraldrapids; solve
-id in `logs/stage_v3_61542895.jobs`, one `v3_validate` chained). A first stage 61542360 (40 h
+id in `logs/stage_v3_61542895.jobs`, one `v3_validate` chained). ✅ Staged with the apex band as
+pre-flighted (5,207 boundary cells, 489 shallow edge cells left unforced); **solve 61543164 on
+hal0434 (emeraldrapids, 34 h, started ~17:10), validate 61543165 chained.** A first stage 61542360 (40 h
 solve) was scancelled before it ran — see the maintenance note. `wave-noig` itself: stage
 61541583 → solve **61542345** (hal0433, started ~16:50 after its limit was trimmed to 36 h).
 
