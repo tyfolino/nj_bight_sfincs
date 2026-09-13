@@ -98,6 +98,15 @@ def main() -> None:
     # The −10 m line: the sealed template's own SnapWave mask (the isobath band every
     # pre-2026-09-11 arm ran on). `snapwave_mask` on the mesh == `snapwavemsk` on a map.
     pswm = xr.open_dataset(ref_mesh)["snapwave_mask"].values
+    if not (pswm == 2).any():
+        # 2026-09-13: the sealed v3 template's mesh carries NO SnapWave boundary since
+        # the wave boundary became a per-arm input; the default ref then yields all-NaN
+        # columns with only a "Mean of empty slice" warning. Point --ref-mesh at an arm
+        # that still holds the -10 m line, e.g. experiments/v3/wave-stwave/sfincs.nc.
+        raise SystemExit(
+            f"{ref_mesh}: snapwave_mask has no boundary (==2) cells; pass --ref-mesh "
+            "<mesh with the old -10 m line>, e.g. experiments/v3/wave-stwave/sfincs.nc"
+        )
     pm = xr.open_dataset(prem / "sfincs_map.nc", **kw) if prem is not None else None
     tlast = mp["time"].values.max()
 

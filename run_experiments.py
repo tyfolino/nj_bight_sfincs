@@ -45,7 +45,7 @@ from hydromt_sfincs import SfincsModel
 
 # Import the package first — its __init__ primes PROJ before hydromt_sfincs loads and
 # asserts NJ_ROOT is this package's own repo. Keep this ahead of the hydromt_sfincs import.
-from nj_sfincs import domain, model, premier, report, run, validate
+from nj_sfincs import domain, model, premier, provenance, report, run, validate
 from nj_sfincs.config import BaseConfig, WaveConfig, exp_root, with_window
 from nj_sfincs.experiments import experiments
 

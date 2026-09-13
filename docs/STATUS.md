@@ -4,7 +4,7 @@
 12 KB "current state" memory file and its 26 reverse-chronological campaign logs; the point
 of the format is that a reader gets the current state without replaying how it was reached.
 
-Last updated: **2026-09-11** (⭐ Phase 0 of the 09-10 evening plan DONE — `scripts/snapwave_direction_check.py` (direction/bands/breaking/convergence/force), `scripts/snapwave_parameters.py` + `nj_sfincs/snapwave_params.py` + the generated `docs/snapwave_parameters.md` / `reports/snapwave_parameters.html`, FINDINGS §43 + the two Closed bullets + §4 conditions, `.gitignore` tail fixed, 8 new tests; 🌊 the wind-on `wave-shelf-steps` rerun 61327796 COMPLETED clean on hal0323 (20 h 34, full 73-hour map, no stitch needed — pre-09-10 batch script), validate-only SUBMITTED as 61402750 (hal0292); on the FULL map the direction check reads 0 of 73 hours within 5° of the imposed direction (worst 170°), wind-off 73 of 73, and wind-on hit the iteration cap on 36 of 145 calls (partial read had said 25 of 81) vs 8 wind-off; stranded validate 61334380 scancelled (user) — see the 09-11 section; 09-10 🔴 PM: **SnapWave WIND MODE DISCARDS THE IMPOSED WAVE DIRECTION** — boundary-cell `wavdir` = ERA5 wind direction (34/9/97/176°) where CORA imposes 165/181/168/112°, wind-off matches CORA; source (`snapwave_boundaries.f90` v2.3.3, unfixed in v2.4.1/main): boundary spectrum built on a wave-centred θ grid, grid then re-centred on `u10dmean` (PR #194, 2025-06-11, the fix for #193) and copied BY INDEX → rotated by wind−wave; Baldock Qb ≈ 0 in the band, friction identical → wind-off "won" by getting the DIRECTION right, not by physics; the 09-10 AM reading "wind degrades the solve" is CORRECTED in place; EVERY wind-on run to date imposed waves in the wind direction (flag, re-baseline later); `wave-fw01+…` rerun 61334377 CANCELLED (user), validate 61334380 stranded → user `scancel`; plan Track F = native patched build + Deltares issue/PR; Track C kept as a runtime lever after the fix; ⚡ AM: both long wave solves — the `wave-shelf-steps` rerun 61327796 (21 h in, map to 10-30 12:00) and `wave-fw01+…` 61334377 (19 h, map to 10-29 23:00) — were PREEMPTED at 08:30:54 on `main` and auto-requeued FROM SCRATCH at 08:33 (no restart file; `trstout` off), so both now land ~09-11 midday; their partial maps were copied to `/scratch/tpj8/partials/` before the restarts overwrote them and read; ✅ `wave-nowind+wave-shelf-steps` COMPLETED clean in 5 h 51 (SnapWave 75 s/call vs 350, 8 of 145 cap-hits) — 🔴 PREDICTION MISS on the plateau: wind OFF nearly DOUBLES the −9 m shelf wave (shelf / CORA-at-10 m at 10-29 12:00: Sea Bright 0.48 → 0.83, AC 0.47 → 0.79, OC 0.36 → 0.67, Sea Isle 0.34 → 0.56), the field blow-ups and the Sandy Hook shelf hotspot are gone, bay hm0 goes to ~0; ✅ `BRACKET+setup-stockdon` ran (52 min): it lifts the model pre-storm mean by 0.22–0.31 m at every southern bay gauge AND by 0.33 at the AC pier, so the bay-minus-pier deficit is untouched — see the 09-10 section; bracket HWM/CSI scoring in progress; 09-09 PM: three one-change arms SUBMITTED via stage job 61333216 — `wave-fw01+wave-shelf-steps`, `wave-nowind+wave-shelf-steps`, `BRACKET+setup-stockdon` (forcing bracket, own CSV) — with pre-registrations in the 09-09 section; source read of SnapWave v2.3.3 says the shelf loss is bottom friction (no whitecapping exists) and the dead corners are `inner=false` cells; meeting brief `reports/weekly_2026-09-09.html`; 🌊 AM: `wave-shelf-steps` TIMED OUT at 55 % (14 h limit, hal0339) and was RESUBMITTED verbatim as **job 61327796** (40 h, hal0351, expect it done ~09-10 midday). Read-out on the PARTIAL map (to 10-29 16:00): the DEAD RING IS FIXED (0 of 2,381 vs 2,580 of 6,556), the east and stepped legs pass 0.70–0.87 of the imposed Hs into the first cell, but the bottom row's shallow Cape May half passes only 0.30–0.5, the wave then decays to a ≈0.47 plateau within 10 km of the line where CORA's own SWAN keeps 0.6–0.8, so the −9 m shelf still sees ~0.35–0.55 of CORA's value there; 25 of 80 SnapWave calls did not converge and those hours carry hm0 blow-ups to 22 m plus a persistent hotspot east of Sandy Hook; CORA's storm waves come FROM the S–SSE, so the supply edge is the 46 km bottom row, not the 200 km east leg — **transmission criterion NOT met**, next-arm decision is the user's, see the 09-09 section; 09-08: `wave-shelf-steps` STAGED + SUBMITTED (job 61313672, 14 h): SnapWave boundary redrawn along quadtree rows/columns at 25–30 m, 38 predicted dead ring cells vs 2,580, 60 CORA support points, `snapwave_niter` 200 — success is TRANSMISSION (`scripts/wave_boundary_ring.py`), then score; 🌊 LOW-BIAS REVIEW: the SnapWave BOUNDARY IS NOT TRANSMITTING — 43 % of the interior cells touching the southern wave boundary carry NO waves (staircase inner corners), shelf hm0 inside is 15–60 % of imposed, shoreline setup 0.05 m vs 0.2–0.35 theory, back bays 0.2–0.55 m low BEFORE the storm with the ocean gauge matched to 6 mm; pre-registered fix = smoother decoupled SnapWave boundary, success = transmission not score — see the 09-08 section at the top of PICK UP; 🏠 `bed-buildings` RE-SCORED on the merged bed: no measurable Sandy effect outside footprint drying + bay seiche phase; paired ΔRMSE +0.008 [−0.027, +0.041], non-seiche basins +0.001; first score was VOID (lev3-only bed) and the gap is closed in code — see the 09-04 section; 2026-09-04: 🏠 BUILDINGS: adequacy checks done, `bed_buildings_v3` tier burned (328 km² at ground + 4 m), `bed-buildings` arm registered with `Experiment.subgrid_from`, first (prepend) subgrid rebuild VOIDED by a hydromt merge trap, `--overlay` rebuild LANDED (61231337) and item 5 passes, `bed-buildings` staged + solve submitted via 61232044 — see the 09-04 section; 2026-09-03: 🏠 BUILDING FOOTPRINTS acquired, NJDEP + Microsoft, statewide raw + v3 clip; ⭐ RAIN-OFF SCORED on v3: CSI 0.710 → 0.809, **93.7% of premier's MOTF false alarm is rain**; the bay HWM/peak shifts (+0.3–0.4 m with rain OFF) are SEICHE PHASE (§40), not rain — see the 09-03 section; 💾 `experiments/` MOVED to `/scratch/tpj8` and symlinked, staging quota guard follows it, `scripts/desktop_pull_backup.sh` written, desktop snapshot taken, home copy deleted, home back under quota — see DISK; 2026-09-02: rain-off arm registered, staged and run (solve 61190532 → validate 61190533); 2026-09-01: ⭐ v3 REBUILD LANDED AND RE-SCORED — three arms clean on
+Last updated: **2026-09-13** (⭐ ALL SIX 09-12 JOBS DONE + SCORED — F.4 `bed-nobuildings+wave-fw02+wave-noig` on the patched engine PASSES direction 73/73, transmission, per-site shelf (1.01/0.83/0.70/0.64 of CORA vs 0.48/0.47/0.36/0.34 unpatched) and runtime (21 h 55 on emeraldrapids), MISSES cap-hits (55 of 145) and D2 (bay 0.24–0.69 m under CORA at the peak); HWM paired ΔRMSE vs unpatched +0.014 [−0.006, +0.035]; NY bay gauge peaks revert to waves-off — the unpatched bay lift was the force explosion; `G3_patched_rep` bit-identical → patched binary DETERMINISTIC across nodes; `G3_sigmax2s` = the 3 s verdict, lever dropped; `G4_premier_ig` FAILS 2 of 4 IG criteria (nearshore IG > 1 m on 24 k cells — bound-wave growth, not spikes) → three IG-on arms HELD for the user, `wave-noig` cleared, nothing submitted; new `scripts/snapwave_bay_census.py`; `wave_shelf_reference.py` default ref-mesh trap fixed — see the 09-13 section; 09-11: (⭐ Phase 0 of the 09-10 evening plan DONE — `scripts/snapwave_direction_check.py` (direction/bands/breaking/convergence/force), `scripts/snapwave_parameters.py` + `nj_sfincs/snapwave_params.py` + the generated `docs/snapwave_parameters.md` / `reports/snapwave_parameters.html`, FINDINGS §43 + the two Closed bullets + §4 conditions, `.gitignore` tail fixed, 8 new tests; 🌊 the wind-on `wave-shelf-steps` rerun 61327796 COMPLETED clean on hal0323 (20 h 34, full 73-hour map, no stitch needed — pre-09-10 batch script), validate-only SUBMITTED as 61402750 (hal0292); on the FULL map the direction check reads 0 of 73 hours within 5° of the imposed direction (worst 170°), wind-off 73 of 73, and wind-on hit the iteration cap on 36 of 145 calls (partial read had said 25 of 81) vs 8 wind-off; stranded validate 61334380 scancelled (user) — see the 09-11 section; 09-10 🔴 PM: **SnapWave WIND MODE DISCARDS THE IMPOSED WAVE DIRECTION** — boundary-cell `wavdir` = ERA5 wind direction (34/9/97/176°) where CORA imposes 165/181/168/112°, wind-off matches CORA; source (`snapwave_boundaries.f90` v2.3.3, unfixed in v2.4.1/main): boundary spectrum built on a wave-centred θ grid, grid then re-centred on `u10dmean` (PR #194, 2025-06-11, the fix for #193) and copied BY INDEX → rotated by wind−wave; Baldock Qb ≈ 0 in the band, friction identical → wind-off "won" by getting the DIRECTION right, not by physics; the 09-10 AM reading "wind degrades the solve" is CORRECTED in place; EVERY wind-on run to date imposed waves in the wind direction (flag, re-baseline later); `wave-fw01+…` rerun 61334377 CANCELLED (user), validate 61334380 stranded → user `scancel`; plan Track F = native patched build + Deltares issue/PR; Track C kept as a runtime lever after the fix; ⚡ AM: both long wave solves — the `wave-shelf-steps` rerun 61327796 (21 h in, map to 10-30 12:00) and `wave-fw01+…` 61334377 (19 h, map to 10-29 23:00) — were PREEMPTED at 08:30:54 on `main` and auto-requeued FROM SCRATCH at 08:33 (no restart file; `trstout` off), so both now land ~09-11 midday; their partial maps were copied to `/scratch/tpj8/partials/` before the restarts overwrote them and read; ✅ `wave-nowind+wave-shelf-steps` COMPLETED clean in 5 h 51 (SnapWave 75 s/call vs 350, 8 of 145 cap-hits) — 🔴 PREDICTION MISS on the plateau: wind OFF nearly DOUBLES the −9 m shelf wave (shelf / CORA-at-10 m at 10-29 12:00: Sea Bright 0.48 → 0.83, AC 0.47 → 0.79, OC 0.36 → 0.67, Sea Isle 0.34 → 0.56), the field blow-ups and the Sandy Hook shelf hotspot are gone, bay hm0 goes to ~0; ✅ `BRACKET+setup-stockdon` ran (52 min): it lifts the model pre-storm mean by 0.22–0.31 m at every southern bay gauge AND by 0.33 at the AC pier, so the bay-minus-pier deficit is untouched — see the 09-10 section; bracket HWM/CSI scoring in progress; 09-09 PM: three one-change arms SUBMITTED via stage job 61333216 — `wave-fw01+wave-shelf-steps`, `wave-nowind+wave-shelf-steps`, `BRACKET+setup-stockdon` (forcing bracket, own CSV) — with pre-registrations in the 09-09 section; source read of SnapWave v2.3.3 says the shelf loss is bottom friction (no whitecapping exists) and the dead corners are `inner=false` cells; meeting brief `reports/weekly_2026-09-09.html`; 🌊 AM: `wave-shelf-steps` TIMED OUT at 55 % (14 h limit, hal0339) and was RESUBMITTED verbatim as **job 61327796** (40 h, hal0351, expect it done ~09-10 midday). Read-out on the PARTIAL map (to 10-29 16:00): the DEAD RING IS FIXED (0 of 2,381 vs 2,580 of 6,556), the east and stepped legs pass 0.70–0.87 of the imposed Hs into the first cell, but the bottom row's shallow Cape May half passes only 0.30–0.5, the wave then decays to a ≈0.47 plateau within 10 km of the line where CORA's own SWAN keeps 0.6–0.8, so the −9 m shelf still sees ~0.35–0.55 of CORA's value there; 25 of 80 SnapWave calls did not converge and those hours carry hm0 blow-ups to 22 m plus a persistent hotspot east of Sandy Hook; CORA's storm waves come FROM the S–SSE, so the supply edge is the 46 km bottom row, not the 200 km east leg — **transmission criterion NOT met**, next-arm decision is the user's, see the 09-09 section; 09-08: `wave-shelf-steps` STAGED + SUBMITTED (job 61313672, 14 h): SnapWave boundary redrawn along quadtree rows/columns at 25–30 m, 38 predicted dead ring cells vs 2,580, 60 CORA support points, `snapwave_niter` 200 — success is TRANSMISSION (`scripts/wave_boundary_ring.py`), then score; 🌊 LOW-BIAS REVIEW: the SnapWave BOUNDARY IS NOT TRANSMITTING — 43 % of the interior cells touching the southern wave boundary carry NO waves (staircase inner corners), shelf hm0 inside is 15–60 % of imposed, shoreline setup 0.05 m vs 0.2–0.35 theory, back bays 0.2–0.55 m low BEFORE the storm with the ocean gauge matched to 6 mm; pre-registered fix = smoother decoupled SnapWave boundary, success = transmission not score — see the 09-08 section at the top of PICK UP; 🏠 `bed-buildings` RE-SCORED on the merged bed: no measurable Sandy effect outside footprint drying + bay seiche phase; paired ΔRMSE +0.008 [−0.027, +0.041], non-seiche basins +0.001; first score was VOID (lev3-only bed) and the gap is closed in code — see the 09-04 section; 2026-09-04: 🏠 BUILDINGS: adequacy checks done, `bed_buildings_v3` tier burned (328 km² at ground + 4 m), `bed-buildings` arm registered with `Experiment.subgrid_from`, first (prepend) subgrid rebuild VOIDED by a hydromt merge trap, `--overlay` rebuild LANDED (61231337) and item 5 passes, `bed-buildings` staged + solve submitted via 61232044 — see the 09-04 section; 2026-09-03: 🏠 BUILDING FOOTPRINTS acquired, NJDEP + Microsoft, statewide raw + v3 clip; ⭐ RAIN-OFF SCORED on v3: CSI 0.710 → 0.809, **93.7% of premier's MOTF false alarm is rain**; the bay HWM/peak shifts (+0.3–0.4 m with rain OFF) are SEICHE PHASE (§40), not rain — see the 09-03 section; 💾 `experiments/` MOVED to `/scratch/tpj8` and symlinked, staging quota guard follows it, `scripts/desktop_pull_backup.sh` written, desktop snapshot taken, home copy deleted, home back under quota — see DISK; 2026-09-02: rain-off arm registered, staged and run (solve 61190532 → validate 61190533); 2026-09-01: ⭐ v3 REBUILD LANDED AND RE-SCORED — three arms clean on
 hal nodes, premier 4/4 on the new fingerprint, merged dep rebuilt, HWM RMSE
 0.384/0.400/0.431, extent unchanged; bay SnapWave setup HALVED and the v3↔v1.5 Monmouth
 offset is GONE (sign-test P 0.011 → 0.152), Sandy Hook tide-range gap healed
@@ -23,6 +23,172 @@ excludes Mays Landing and Batsto and that is NOT accepted** — see PICK UP · 2
 seiche FINDINGS §40 · weir FINDINGS §38 · rain FINDINGS §39)
 
 ## ⏳ PICK UP — next session
+
+### ⏳ 2026-09-13 — PICK UP HERE: all six 09-12 jobs DONE and SCORED; Phase 4 arm 1 PASSES its engine gates, the IG cut FAILS its stability read → the three IG-on 40 h arms are HELD for a user decision; `wave-noig` is cleared
+
+All six ran on `hal*` nodes (`sacct` checked); tables in `logs/phase4_2026-09-13/` and
+`logs/engine_gate_2026-09-11/`; two new/changed tools below. 163 tests OK (7 skipped).
+
+**1. `bed-nobuildings+wave-fw02+wave-noig` (F.4, job 61459225, hal0383 emeraldrapids, 21 h 55,
+exit 0, full 73-hour map, `restart_count 0`, nothing to stitch; validate 61459226, 58 min).**
+Engine `bin:v2.3.3-winddir-fix-1-gf11@673ee3bf`; row in `metrics.csv` carries it. Scored
+against the 09-12 pre-registration, in its order:
+1. **Direction: 73 of 73 hours within 5°, worst 0.0° → PASS** (`F4_direction.csv`).
+2. **Entry-band transmission ≥ wind-off on 72 of 73 hours** (0.84–1.02 vs 0.80–1.02; the one
+   miss is 0.002) → PASS. Mid band ≥ on 69 of 73.
+3. **−9 m shelf per site → PASS.** `wave_shelf_reference.py` at 10-29 12:00, arm hm0 on the
+   −9 m shelf / CORA at the old −10 m line, Sea Bright / Atlantic City / Ocean City / Sea
+   Isle: **1.01 / 0.83 / 0.70 / 0.64** vs wind-off 0.83 / 0.79 / 0.67 / 0.56 vs the UNPATCHED
+   `wave-shelf-steps` **0.48 / 0.47 / 0.36 / 0.34**. Over all 16 site-times the fixed engine
+   is ≥ wind-off on 13, the three misses ≤ 0.02. That is the before/after of the fix alone:
+   the swell that used to be sent down the coast now reaches the shelf. Domain-wide bands:
+   shelf9m ≥ wind-off on 61 of 73 hours; 5 of the 12 misses are blow-up snapshots (10-28
+   01:00 / 14:00, 10-29 07:00, 10-30 23:00, 10-31 00:00), the rest are within 0.015.
+   ⚠️ The Sea Bright 10-28 12:00 ratio of 2.04 is the Sandy Hook hotspot caught on the line.
+4. **Bay wind sea → PASS.** `snapwave_bay_census.py`, Lower + Raritan Bay box
+   (−74.32..−74.00, 40.40..40.60), subtidal `msk 1` cells: median hm0 0.26–0.51 m on 10-28
+   00–12, 0.65–0.68 at 13:00 / 15:00 once the wind passes 10 m/s; unpatched 0.29–0.74,
+   wind-off 0.06–0.10. The bay wind sea is a wind-mode product the misdirection barely
+   touched.
+5. **Cap-hits 55 of 145 → MISS, as expected** (unpatched 36, wind-off 8). Spike hours
+   (> 1,000 cells above 1.2× the boundary max): **5 vs 12 unpatched; 63 k spike cell-hours
+   vs 599 k** (~10× fewer). Worst hour 10-28 14:00, 30,874 cells, field max 18 m. No spikes
+   at all from 10-28 15:00 to 10-29 03:00 and from 10-29 08:00 to 10-30 22:00.
+6. **Phase 4b D2 (CORA in the bay at 10-29 12:00) → MISS on 2 of 3.** Boxes are now the
+   census script's (coordinate boxes, in its docstring): Sandy Hook Bay pocket **0.79 vs CORA
+   1.22 (−0.43)**, Raritan Bay S **0.77 vs 1.00 (−0.24)**, Lower Bay N **0.87 vs 1.56
+   (−0.69)**; criterion ±0.3. Unpatched in the same boxes 0.80 / 0.79 / 0.73. Pre-storm
+   (10-28 00–12) the model matches CORA to −0.22..+0.03 in all three; the deficit opens as
+   the swell grows and is largest nearest the ocean entrance. Reading: SnapWave carries
+   little of the swell into the bay (refraction only, no diffraction — 09-12 AM); the wind
+   sea it does grow is right-sized. ⚠️ The D2 numbers quoted on 09-12 (CORA 1.26 / 1.21 /
+   1.57, unpatched 0.68 / 0.16 / 0.67) were on undocumented boxes; the census boxes replace
+   them.
+7. **HWM: RMSE 0.393 / bias −0.197 m** (`_scored`, median, 50 m, n 94) vs the unpatched
+   `wave-shelf-steps` 0.379 / −0.182. **Paired ΔRMSE +0.014 m, 95 % CI [−0.006, +0.035],
+   P(patched better) 0.09** — not distinguishable, point estimate the wrong way. **Vs
+   `naccs-nowaves` on the same binary: ΔRMSE −0.041 m, 95 % CI [−0.057, −0.026], P(waves-on
+   better) 1.000** — correctly-directed waves are a real ~4 cm HWM win (the 09-01
+   misdirected read was −0.046 [−0.072, −0.017]). ⚠️ Not a one-change pair: `naccs-nowaves`
+   now carries the buildings subgrid and F.4 does not (`bed-buildings` alone was worth
+   +0.008 RMSE on 09-04), so ~0.01 of that margin may be the buildings tier. Vs the
+   wind-off run `wave-nowind+wave-shelf-steps` (container, 0.438 / −0.173): ΔRMSE −0.044,
+   95 % CI [−0.137, +0.005], P(wind-on better) 0.79 — wide because the wind-off run's
+   errors are lopsided (a few marks carry the tail), and it is a cross-binary pair. Extent CSI
+   0.7154 vs 0.7130 unpatched vs 0.6972 waves-off. **Gauge peaks are the finding:** the NY
+   bay gauges REVERT TO THE WAVES-OFF VALUES — Great Kills −0.57 (unpatched −0.41, waves-off
+   −0.57), Arthur Kill mouth −0.49 (−0.37 / −0.48), Narrows SI −0.10 (−0.03 / −0.11) — while
+   the open coast goes UP: Sea Bright −0.58 (−0.52 / −0.67), Mantoloking −0.21 (−0.28 /
+   −0.35), Barnegat Light +0.25 (+0.22 / +0.09). Reading: the unpatched run's 0.1–0.16 m
+   bay-peak lift over waves-off was the radiation-stress explosion of the 09-12 G3 compare
+   (a 34,000 N/m² force under a spurious 20 m wave), not wave setup; with the swell launched
+   correctly the bays get ~no wave contribution at the peak, consistent with D2. ⚠️ One
+   field family (his peaks) — read the `zs` difference map F.4 minus `naccs-nowaves` before
+   promoting it past hypothesis.
+8. **Runtime 21 h 55 for 73 h on emeraldrapids (3.3 sim-h per wall-h) → PASS**; the same
+   solve was pacing 0.98 on icelake → ~74 h, past the 40 h limit. The 09-12 PACE FINDING is
+   confirmed on the full run; CLAUDE.md §5 has the bullet.
+
+**2. `G3_patched_rep` (61465043, hal0384) vs `G3_patched` (hal0386): VERDICT STRICT — every
+field bit-identical** (zs, zsmax, hm0, tp, hm0ig, wavdir: max |Δ| 0 over 15.6 M cell-hours;
+25 / 25 calls, |Δiter| 0; wall 16,877 vs 16,883 s). **The patched binary is deterministic
+across nodes.** So the 09-12 container-vs-native FAIL (Δzs 5.9 m) is what two DIFFERENT
+binaries do to the limit cycle — compiler rounding, amplified — not run-to-run noise: a
+paired Δ between two arms on ONE binary is an exact number; a Δ across binaries is not.
+`logs/engine_gate_2026-09-11/G3_patched_rep_compare.json`. FINDINGS §44.
+
+**3. `G3_sigmax2s` (2 s period floor, 61448359, 6 h 17 icelake) — the same verdict as the 3 s
+cut: NOT the fix.** (a) cap-hits 16 of 25 vs 17 → MISS; (b) spike cells per hour 90 / 7,602 /
+1,071 / 650 / 445 / 374 / 242 / 137 / 0 / 521 / 402 / 371 / 232 vs 67 / 3,208 / 415 / 984 / 97 /
+367 / 55 / 168 / 2 / 124 / 23 / 251 / 2 — worse on 9 of 13 hours, field max 17–18 m → MISS;
+(c) entry within 0.03 but mid off by up to −0.065 → MISS; (d) bay median +0.07–0.09 m at
+11:00–12:00 (Lower Bay N 0.91–0.93 vs 0.67–0.70) → MISS; (e) 6 h 17 on icelake vs the 3 s
+cut's 5 h 45 like-for-like → no gain. `snapwave_sigmax` stays dropped. Tables
+`G3_sigmax2s_{direction,convergence,bands,census}.csv`.
+
+**4. `G4_premier_ig` (IG on + `snapwave_fw 0.01` = the new premier's wave config, 61448466,
+6 h 12 icelake, direction 13 of 13) — Phase 8 stability read: 2 of 4 criteria FAIL.**
+- cap-hits **13 of 25 ≤ 17 → PASS**; runtime: same icelake pace as F.4 (0.97 vs 0.98 sim-h
+  per wall-h at +3 h), i.e. IG costs ~nothing → PASS.
+- `hm0ig/hm0` p99 on cells deeper than 5 m ≤ 0.5: **0.06–0.48 on 10 of 13 hours, 0.64 (06:00),
+  0.72 (07:00), 1.13 (10:00 = a 54,203-cell blow-up hour) → FAIL on 3.**
+- no cell `hm0ig > 1.0 m`: **FAIL — ig max 1.08 → 2.41 m, cells above 1 m growing 7 → 24,101
+  by hour 12.** They are NOT the spike cells: at 08:00 (no blow-up, field max 3.95 m) 6,069
+  cells exceed 1 m, median depth 7.4 m (3–9 m), hm0 there 2.3–3.3 m, IG 1.0–1.1 m, ratio
+  0.33–0.46, spread along the whole nearshore (lon −74.9..−73.97, lat 38.9..40.4), 95 %
+  SFINCS-active. Depth-binned p99 of the ratio at 12:00: 0.26 (> 20 m), 0.37 (10–20 m),
+  0.61 (5–10 m), 0.64 (2–5 m), 0.67 (0–2 m). Reading: this is the Herbers bound long wave
+  at ~35 % of a 3 m swell on the 5–9 m shelf — growth with the swell, not instability; the
+  1 m lid was written for a small swell, the bound wave scales with Hs², and the storm
+  boundary reaches 7.8 m, so the full window would carry ~2 m nearshore IG. The 2.41 m
+  maximum at 10:00 IS spike-related.
+- ⚠️ G4 changes TWO things. Its shelf transmission is far higher than F.4's (entry
+  1.00–1.02, mid 0.87–0.96, −9 m shelf 0.41–0.56 vs 0.97–0.99 / 0.76–0.87 / 0.28–0.49), which
+  is `fw 0.01` (half the bottom friction), not IG — attributable only by a one-flag cut.
+- **Per the pre-registration a FAIL holds the three IG-on 40 h arms** (`naccs-premier`,
+  `wave-fw02`, `bed-nobuildings`). **User decides:** (i) accept nearshore IG of this size as
+  the physics of the Herbers default and submit all three; (ii) submit `wave-noig` now
+  (IG-off, cleared by F.4) and cut `fw 0.01` alone first; (iii) `gammaig` / `fwig` arms.
+  Nothing was submitted. `/scratch` is at 77 %. The stage line, unchanged:
+  `SFINCS_BIN=~/nj_sandy_sfincs/sfincs-native/v2.3.3-winddir-fix-1-gf11/bin/sfincs SOLVE_TIME=40:00:00 SOLVE_CONSTRAINT=emeraldrapids sbatch hpc/stage_and_submit_v3.slurm <arms>`
+  (⚠️ a list containing `naccs-premier` rmtrees the OLD `naccs-premier` dir).
+
+**5. `naccs-nowaves` (61448637 → validate 61459332, 10 min)** scored on the patched binary:
+RMSE 0.434 / bias −0.275, CSI 0.6972, `extent_admissible False`, `snapwave_direction off`.
+The 09-11 baseline row was 0.431 / −0.270 / 0.7075 — the difference is the NEW premier config
+(buildings in the subgrid, `_subgrid_buildings@8518110d`), not the engine.
+
+**Tools:** `scripts/snapwave_bay_census.py` (NEW — the 09-12 spike census, bay / D2 box
+medians, CORA-in-the-bay and the IG ratio, one definition for every run; reproduces the
+09-12 sigmax3s counts to the cell). 🔴 `scripts/wave_shelf_reference.py`'s default
+`--ref-mesh` (`_template_sealed/sfincs.nc`) has had NO SnapWave boundary since the wave
+band became a per-arm input — it returned all-NaN with only a "Mean of empty slice"
+warning; it now refuses loudly. Use `--ref-mesh experiments/v3/wave-stwave/sfincs.nc`
+(the −10 m line survives there) until the retired arms go.
+
+**Uncommitted:** everything from 09-12 plus `scripts/snapwave_bay_census.py`,
+`scripts/wave_shelf_reference.py`, `docs/STATUS.md`, `docs/FINDINGS.md`, `CLAUDE.md` —
+`git add` done, user commits. `logs/` is gitignored; the CSVs live only on disk.
+
+**Next:** the user's IG decision (item 4) → submit; the F.4-minus-waves-off `zs` map read
+(item 1.7); Phase 5 Deltares issue (the G3 compare + rep are the evidence); Phase 4b D3;
+Phase 6 `retire_arm.py`.
+
+### ✅ 2026-09-12 ~12:30 (all six jobs DONE 09-13 — scored in the 09-13 section above; kept for the pre-registrations): eight jobs left running on a quiet Saturday
+
+**Check first:** `squeue -u tpj8` and `sacct -j <id> --format=JobID,JobName%36,State,NodeList,Elapsed`
+(nodes must be `hal*`). Then, per job:
+
+| job | what | when it finishes |
+|---|---|---|
+| **61459225** | F.4 `bed-nobuildings+wave-fw02+wave-noig`, patched engine, 40 h, restart hook ON, **`--constraint=emeraldrapids`** (resubmitted 12:55, see the pace note below) | ✅ **Early read DONE at +3 h on the first attempt (61448559): 4 of 4 hours within 5°, worst 0.0° → PASS.** So the other four wave arms are cleared: `SFINCS_BIN=… SOLVE_TIME=40:00:00 SOLVE_CONSTRAINT=emeraldrapids sbatch hpc/stage_and_submit_v3.slurm naccs-premier,wave-fw02,wave-noig,bed-nobuildings` (⚠️ rmtrees OLD `naccs-premier`; staging now sets the restart hook itself) — **held only because the user signed off for the day; hold also on the G4 IG read for the three IG-on arms.** Validate 61459226 is chained (afterok). Expect ~29 h → done ~Sun 13 evening. Then score against the pre-registration. |
+| **61459332** | validate of `naccs-nowaves` (solve 61448637 done, 57 min, `engine.txt` = patched bin). 🔴 The first validate **61448638 FAILED after 45 min** on its LAST line: `run_experiments.collect_metrics` calls `provenance.engine_label` (Phase 1b) but the module was never imported — `NameError`, nothing written. Fixed (one import) + `tests/test_run_experiments_names.py` (AST walk: every dereferenced module-level name must be bound; it FAILS on the old line). 61459226 (the F.4 validate) reads the fixed file at start, no resubmit needed. | check `metrics.csv` gained the row with `engine = bin:…winddir-fix-1`; `snapwave_direction = n/a` |
+| **61448360 `G3_sigmax3s` DONE** (5 h 45 icelake ≈ 30 % faster than the default floor like-for-like) | **SCORED against the (a)–(e) pre-registration: the period floor is NOT the fix.** (a) cap-hits **11 of 25** vs 17 (predicted ≤ 5 → MISS). (b) spike cells (hm0 > 1.2× boundary max) **NOT reduced — relocated**: 0 / 42 / 41 / 72 at hours 1/3/6/9 (was 3,208 / 984 / 55 / 124) but **12,330 / 14,023 / 6,302 / 81,032 at hours 4/7/10/12** (was 97 / 168 / 23 / 2), field max hm0 still 8–13.5 m. The 1-s cells are gone by construction (tp < 2 s: 175 k → 0–4 k) and the blow-ups persist at tp ≥ 3 s → **the floor was a symptom, not the cause; the instability is in the wind-growth / breaking / period interplay itself.** (c) entry / mid ratios within ±0.04 of the default floor every hour; the −9 m shelf ratio swings ±0.2 on spike hours (01: +0.21, 04: −0.11) — snapshot contamination, same as before. (d) bay wind sea DOWN by 0.00–0.09 m (median 0.17–0.45 vs 0.20–0.46), pocket down 0.02–0.11 — within the ≤ 0.1 m admissibility line, barely. (e) 30 % faster. Direction 13 of 13, 0.0°. **Where the relocated blow-ups are — the OPEN SHELF wave band, not the shadow:** hour 12 has 75,164 cells > 6 m and 57,933 > 8 m in a 30 km strip along lon −74.0 from lat 39.88 to 40.15 (20 m deep, SFINCS-inactive band, tp 4.2 s, where wind-off reads 2.3 m and the default-floor run has ZERO cells > 6 m); hour 4 has 5,427 > 6 m off LBI (lon −74.13, lat 39.4–39.6, 18 m, tp 12 s — the swell field itself, 8 m where wind-off has 2.6 m); hours 7 and 10 the strip off Sea Bright–Long Branch (lon −74.0, lat 40.15–40.42). An 8–13 m sea at 4 s in 20 m of water cannot come from the wind source (its growth is capped near the PM fully developed 2 m for a 9 m/s wind, `windinput` tanh factor) — it is the wind-mode SOLVER blowing up, and the 3 s floor makes that WORSE on the open coast while it clears the Sandy Hook pocket. **Verdict: not an arm. The `snapwave_sigmax` lever is dropped from the plan; the engine-side follow-ups (interior initial-guess remap; the wind source near the energy floor) are the target, and the G3_patched_rep determinism read decides how urgent.** |
+| **61448359** | `G3_sigmax2s` period-floor cut (⚠️ on icelake at 0.95 sim-h per wall-h: the 2 s cut and G4 will likely TIMEOUT at 10 h with ~9–10 of 12 hours written — the tools are partial-map safe, read what is there; `scontrol update TimeLimit` is denied to users) | `convergence`, `bands --ref experiments/v3/wave-nowind+wave-shelf-steps`, and the spike census (the 09-12 AM script logic: cells with hm0 > 1.2× boundary max per hour; bay-box hm0 median) against `G3_patched`; score the (a)–(e) pre-registration above. Decides the later `wave-sigmax` one-flag arm. |
+| **61448466** | `G4_premier_ig` — F.4 cut + `snapwave_igwaves = 1`, `snapwave_fw = 0.01` (= the new premier's wave config, 12 h) | Phase 8 stability criteria: cap-hits ≤ G3_patched's 17 of 25; `hm0ig/hm0` p99 ≤ 0.5 on cells deeper than 5 m; no cell `hm0ig > 1.0 m`; wall ≤ 2 × 4 h 41. A FAIL here holds the four IG-on 40 h arms. |
+| **61447158 / 61447159** | unpatched G3 container / native reruns — **BOTH DONE (5 h 19 / 5 h 37, icelake)** | 🔴 **`compare` VERDICT = FAIL, and it is a FINDING, not a gate slip** (`logs/engine_gate_2026-09-11/G3_compare.json`): zs max\|Δ\| 5.9 m, p99 36 cm, p90 8.6 cm over 15.5 M cell-hours; zsmax max 7.1 m (Narrows approach: 0.62 vs 7.76 m); hm0 max 21 m, 813 k cells (21 % of active) differ by > 1 m in some hour, lat 38.9–40.6 — the WHOLE shelf, not just Sandy Hook; boundary `wavdir` identical (3e-4°), SnapWave calls 25/25 but max \|Δiter\| 44, cap-hits 12 vs 11 of 25. Both reproduce the bug (0 of 13 hours within 5°, worst 130°). Reading: with wind ON the unpatched solve ends half its calls inside the limit cycle; two rounding-different engines stop it at different PHASES, the spurious 10–20 m wave snapshots differ, their radiation-stress gradients kick the water surface, and the transients travel. **From hour 1, 15–20 % of active cells differ by > 5 cm** (p90 8–28 cm every hour, NOT growing — set off, not chaotic), gauge series max\|Δzs\| 59 cm Great Kills, 56 Arthur Kill mouth, 48 Sandy Hook, 34 Tuckerton, 31 Narrows, 27 Sea Bright; 10 of 25 stations > 5 cm. At the HWM faces (36 of 143 wet in this pre-storm window) p90 1.6 cm, max 4.6 cm. **Mechanism confirmed at hour 6:** the 5.9 m Δzs sits at lon −73.943 lat 40.502 (Lower Bay, 19.5 m deep) where zs is **−6.29 m in the container vs −0.39 native**, with hm0 19 m within 2 km and a wave force \|fwx\| of **34,000 vs 17,000 N/m²** (a physical wave force is O(1–10)) — a radiation-stress explosion under a spurious 20 m wave; **86 % of the cells that differ by > 5 cm have NO local force difference**, i.e. they carry the transient that travelled out of the spike sites. Per region per hour, Δzs p90: NY bays 17–40 cm, Monmouth–Barnegat 0.2–4 cm, south NJ 0–3 cm (p99 33 cm at hour 6 — Tuckerton's 34 cm). ⚠️ Hypothesis to test on the patched repeat, NOT a claim: the wind-on "bay seiche" phase noise (FINDINGS §40's neighbour) and the wind-on ≫ wind-off shelf hotspots may be this force-explosion, i.e. an engine artefact, not physics. G2 (v1, 12 h) had shown p99 0.32 mm — the small domain has no bay wave band to blow up in. **Consequence: every unpatched wind-on score (v1.5 and v3, all pre-09-12 rows) carries a compiler-level irreproducibility of ~10 cm p90 in the bays and dm-scale transients at the bay gauges; it was never a deterministic number.** Whether the PATCHED engine (100–3,000 spike cells vs 5,000–37,000) inherits a usable fraction of this is the decisive question → **`G3_patched_rep` (job 61465043, emeraldrapids, same binary, second node)** is the same-binary repeat: `compare G3_patched G3_patched_rep`. Pre-registration: STRICT/ACCEPT would mean the patched solve is reproducible run-to-run; a FAIL of the same shape means the limit cycle + OpenMP reduction order make every wind-on run a sample from a distribution, and the `snapwave_sigmax` floor (cut G3_sigmax3s, 30 % faster already) becomes a determinism lever, not just a runtime one. Either way the number goes beside every paired Δ between wave arms. |
+
+🔴 **PACE FINDING 09-12 PM — the patched wind-on engine needs the FAST nodes.** Measured
+sim-hours per wall-hour at +3 h: F.4 solve 0.98, `G3_sigmax2s` 0.95, `G4_premier_ig` 0.97,
+`G3_sigmax3s` 1.27 (fewer cap-hits — the 3 s floor already pays for itself), all on
+**icelake** (`hal02xx`, 64 CPUs = 32 cores + HT, 256 G); the unpatched G3 reruns 1.8–2.1
+(misdirected waves converge faster); `G3_patched` 2.56 on **emeraldrapids** (hal0386). SLURM
+accounting shows ~30 effective cores on every job (`sstat AveCPU`), so this is per-core speed
+and cap-hits, not a threading fault (`scontrol` CPULoad ≈ 2 on these nodes is misleading).
+Consequence: 73 h × 1.0 = ~74 h on icelake vs the 40 h limit, and a TIMEOUT is NOT
+auto-requeued (`--requeue` covers preemption/node failure only) — it would have needed a
+hand `prepare` + resubmit, losing ≤ 6 h. With 109 emeraldrapids nodes idle, the F.4 solve
+(61448559, 3 h in, early read banked) was scancelled and resubmitted as **61459225** with
+`--constraint=emeraldrapids` (expect ~29 h). `hpc/stage_and_submit_v3.slurm` gained
+`SOLVE_CONSTRAINT` for the remaining arms. Candidate CLAUDE.md §5 trap once confirmed on
+the full run.
+
+**Uncommitted, staged (`git add` done):** `run_experiments.py` (the `provenance` import), `tests/test_run_experiments_names.py`, `hpc/stage_and_submit_v3.slurm` (`SOLVE_CONSTRAINT`), `docs/STATUS.md` (the model.py /
+test / CLAUDE.md restart fix is already committed as `14218b3`). 🔴 The SFINCS-src branch
+`nj/snapwave-winddir` still has its two files uncommitted (user).
+
+**Next after the table:** Phase 5 (Deltares issue + reproducer — not started); Phase 4b D2/D3
+once the premier and `naccs-nowaves` are scored; Phase 6 `retire_arm.py`.
 
 ### ✅ 2026-09-12 AM — G3 PATCHED PASSES BOTH GATES: Phase 2 (the patch) is CLOSED on the science; the two UNPATCHED G3 runs are re-queued for the rounding compare
 

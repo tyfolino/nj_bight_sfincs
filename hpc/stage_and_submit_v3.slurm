@@ -31,6 +31,10 @@ ARMS="${1:-naccs-premier,wave-stwave,naccs-nowaves}"
 # waves-off 0:40 / 1.3 G. 12 h / 64 G is ~2x the worst case on both axes.
 SOLVE_TIME="${SOLVE_TIME:-12:00:00}"
 SOLVE_MEM="${SOLVE_MEM:-64G}"
+# 2026-09-12: the patched wind-on engine runs ~1 sim-h per wall-h on icelake nodes and
+# ~2.5 on emeraldrapids (STATUS 09-12 PM) — a 73 h window needs the fast nodes to fit 40 h.
+# Set SOLVE_CONSTRAINT=emeraldrapids (sbatch --constraint) for any full wave arm.
+SOLVE_CONSTRAINT="${SOLVE_CONSTRAINT:-}"
 MIN_FREE_G="${MIN_FREE_G:-15}"
 
 # 2026-09-03: experiments/ is a symlink to /scratch (1 TB soft / 2 TB hard), so the
@@ -60,7 +64,7 @@ python run_experiments.py --experiments "$ARMS" --no-run
 python scripts/dedupe_experiment_inputs.py --apply
 /usr/lpp/mmfs/bin/mmlsquota -u $USER --block-size auto "$QFS" | tail -1 || true
 JOBFILE="logs/stage_v3_${SLURM_JOB_ID:-local}.jobs"
-ARMS="$ARMS" SOLVE_TIME="$SOLVE_TIME" SOLVE_MEM="$SOLVE_MEM" JOBFILE="$JOBFILE" python - <<'PY'
+ARMS="$ARMS" SOLVE_TIME="$SOLVE_TIME" SOLVE_MEM="$SOLVE_MEM" SOLVE_CONSTRAINT="$SOLVE_CONSTRAINT" JOBFILE="$JOBFILE" python - <<'PY'
 import os
 from nj_sfincs import run
 from nj_sfincs.config import BaseConfig, exp_root
@@ -72,9 +76,10 @@ print(f"[engine] {'bin:' + binary if binary else 'sif:' + sif}", flush=True)
 ids = []
 for arm in os.environ["ARMS"].split(","):
     d = exp_root() / arm
-    job = run.submit_slurm(d, sif=sif, binary=binary,
-                           extra_args=[f"--time={os.environ['SOLVE_TIME']}",
-                                       f"--mem={os.environ['SOLVE_MEM']}", "-J", f"v3_{arm}"])
+    extra = [f"--time={os.environ['SOLVE_TIME']}", f"--mem={os.environ['SOLVE_MEM']}"]
+    if os.environ.get("SOLVE_CONSTRAINT"):
+        extra.append(f"--constraint={os.environ['SOLVE_CONSTRAINT']}")
+    job = run.submit_slurm(d, sif=sif, binary=binary, extra_args=extra + ["-J", f"v3_{arm}"])
     print(f"[submit] {arm} -> job {job}", flush=True)
     ids.append(str(job))
 open(os.environ["JOBFILE"], "w").write(":".join(ids) + "\n")

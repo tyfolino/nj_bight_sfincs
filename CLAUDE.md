@@ -200,6 +200,13 @@ not trip that guard. Do not run the sweep driver to "just rebuild" a template.
   now; do not weaken that.
 - **SnapWave is 90–95% of runtime** and scales per-iteration; the 3 h batch default is not
   enough for a large domain. Pass `--slurm-args "--time=12:00:00"`.
+- 🔴 **A wind-on SnapWave solve on v3 needs the FAST nodes** (confirmed 2026-09-13 on the
+  full 73 h run): 3.3 sim-h per wall-h on `emeraldrapids` (21 h 55 total) vs 0.98 on
+  `icelake` (`hal02xx`) → ~74 h, past the 40 h limit, and a TIMEOUT is NOT auto-requeued
+  (`--requeue` covers preemption only). Submit with `SOLVE_CONSTRAINT=emeraldrapids`
+  (`hpc/stage_and_submit_v3.slurm`) or `--constraint=emeraldrapids`; check `sacct
+  --format=NodeList` before believing a pace. It is per-core speed plus cap-hits, not
+  threading (`sstat AveCPU` shows ~30 effective cores on every node).
 - **`zb` is NaN on SFINCS-inactive faces**, so any hm0 comparison must restrict to faces
   active in *both* runs.
 - 🔴 **`da_dep` is valid on ground the model never simulated**, so `dep > 0` is NOT a

@@ -590,6 +590,40 @@ Live campaign state is in [STATUS.md](STATUS.md). This file is for what is settl
     `scripts/snapwave_direction_check.py` (`direction` is the pass/fail table; `bands`,
     `breaking`, `convergence`, `force` are the supporting reads).
 
+    **Measured effect of the fix (2026-09-13, `bed-nobuildings+wave-fw02+wave-noig` = the
+    `wave-shelf-steps` configuration on the patched native build, full 73-hour window,
+    STATUS 09-13):** direction 73 of 73 hours within 5° (worst 0.0°); the −9 m shelf at
+    10-29 12:00 carries 1.01 / 0.83 / 0.70 / 0.64 of CORA's −10 m wave at Sea Bright /
+    Atlantic City / Ocean City / Sea Isle against 0.48 / 0.47 / 0.36 / 0.34 unpatched and
+    0.83 / 0.79 / 0.67 / 0.56 wind-off (`scripts/wave_shelf_reference.py`); spike
+    cell-hours 63 k vs 599 k; cap-hits 55 of 145 (36 unpatched, 8 wind-off). The HWM score
+    did NOT move: paired ΔRMSE +0.014 m [−0.006, +0.035] (n 94, median, 50 m). What moved
+    is WHERE the water is: the NY bay gauge peaks (Great Kills, Arthur Kill mouth, the
+    Narrows) drop back to the waves-off values and the open coast rises 0.03–0.09 m — the
+    unpatched engine's 0.1–0.16 m bay-peak lift was the radiation-stress explosion of §44,
+    not setup. In the bay the fixed engine still sits 0.24–0.69 m under CORA's SWAN at the
+    peak (Lower Bay N, Sandy Hook Bay pocket, Raritan S; `scripts/snapwave_bay_census.py`
+    boxes): SnapWave refracts but does not diffract, so little swell rounds Sandy Hook.
+
+44. 🔴 **The patched wind-on solve is DETERMINISTIC; the unpatched container-vs-native
+    disagreement is compiler rounding amplified by the SnapWave limit cycle, not run-to-run
+    noise.** `G3_patched_rep` (same binary, hal0384) vs `G3_patched` (hal0386), the 12-hour
+    v3 wind-on cut: every field bit-identical — zs, zsmax, hm0, tp, hm0ig, wavdir max |Δ| 0
+    over 15.6 M cell-hours, 25 of 25 SnapWave calls with |Δiter| 0 (`engine_gate.py
+    compare`, VERDICT STRICT, 2026-09-13). The same cut on the container vs the unpatched
+    native build (2026-09-12) differed by Δzs max 5.9 m, p99 36 cm, p90 8.6 cm, with 15–20 %
+    of active cells > 5 cm apart from hour 1, traced to a 34,000 N/m² wave force under a
+    spurious 20 m wave in Lower Bay (a physical force is O(1–10)). Consequence: a paired Δ
+    between two arms run on ONE binary is an exact number; a Δ across binaries carries
+    ~10 cm p90 in the bays and dm-scale transients at the bay gauges, and every pre-09-12
+    wind-on row (container engine) is such a sample. Every `metrics.csv` row carries
+    `engine`, so the binary is always known. The Sandy Hook limit cycle itself (STATUS
+    09-12 AM: a few hundred cells at the period floor cycling with period 2–3) persists on
+    the patched engine — 55 of 145 calls capped on the full run — and the period-floor
+    lever `snapwave_sigmax` (2 s and 3 s cuts) does not remove it, it relocates the
+    blow-ups onto the open shelf; the engine-side interior initial-guess remap is the open
+    follow-up.
+
 ### Closed — do not re-open
 
 Each of these cost a campaign and is settled. The evidence is in the archive's
