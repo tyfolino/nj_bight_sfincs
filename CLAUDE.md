@@ -206,7 +206,11 @@ not trip that guard. Do not run the sweep driver to "just rebuild" a template.
   (`--requeue` covers preemption only). Submit with `SOLVE_CONSTRAINT=emeraldrapids`
   (`hpc/stage_and_submit_v3.slurm`) or `--constraint=emeraldrapids`; check `sacct
   --format=NodeList` before believing a pace. It is per-core speed plus cap-hits, not
-  threading (`sstat AveCPU` shows ~30 effective cores on every node).
+  threading (`sstat AveCPU` shows ~30 effective cores on every node). ⚠️ And check
+  `scontrol show reservation` first: the monthly maintenance takes every hal node for ~40 h,
+  and a job whose time limit overlaps it will not START (`Reserved for maintenance`) —
+  ~1.5× the measured pace is enough, and users may shorten a queued job's limit with
+  `scontrol update JobId=<id> TimeLimit=<h>:00:00` (only an increase is refused).
 - **`zb` is NaN on SFINCS-inactive faces**, so any hm0 comparison must restrict to faces
   active in *both* runs.
 - 🔴 **`da_dep` is valid on ground the model never simulated**, so `dep > 0` is NOT a

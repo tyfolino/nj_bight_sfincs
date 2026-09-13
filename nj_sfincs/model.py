@@ -81,8 +81,10 @@ def _grid_attrs(sf: SfincsModel) -> dict:
         return {k: ds.attrs[k] for k in keys}
 
 
-def _open_coast_max_y() -> float:
+def _open_coast_max_y(wcfg=None) -> float:
     """Northing above which the coast is no longer open Atlantic.
+
+    ``wcfg.open_coast_max_y`` (a ``WaveConfig`` field) overrides the domain's for one arm.
 
     Incident SnapWave energy must only enter along the open-ocean edge. North of a spit
     tip the "boundary" wraps into an enclosed harbour corner, and leaving boundary cells
@@ -91,6 +93,8 @@ def _open_coast_max_y() -> float:
 
     ``inf`` means the whole seaward edge is open coast.
     """
+    if wcfg is not None and getattr(wcfg, "open_coast_max_y", None) is not None:
+        return float(wcfg.open_coast_max_y)
     y = _domain.active().open_coast_max_y
     return float("inf") if y is None else y
 
@@ -281,8 +285,10 @@ def _drop_detached_active_islands(sf, mask, zb) -> np.ndarray:
             continue
         sel = np.zeros(len(mask), dtype=bool)
         sel[idx[lab == lb]] = True
-        print(f"       island {ct:>5} cells at x {fx[sel].mean():.0f} "
-              f"y {fy[sel].mean():.0f}, bed {zb[sel].min():+.2f}..{zb[sel].max():+.2f} m")
+        print(
+            f"       island {ct:>5} cells at x {fx[sel].mean():.0f} "
+            f"y {fy[sel].mean():.0f}, bed {zb[sel].min():+.2f}..{zb[sel].max():+.2f} m"
+        )
     mask = mask.copy()
     mask[detached] = 0
     return mask
@@ -321,10 +327,16 @@ def _assert_boundary_is_continuous(sf, mask, dom) -> None:
     step = float(np.median(d1[:, -1])) if pts.shape[0] > 1 else 1.0
     radius = 2.5 * step
 
-    pairs = np.array(list(tree.query_pairs(radius))) if len(pts) > 1 else np.empty((0, 2), int)
+    pairs = (
+        np.array(list(tree.query_pairs(radius)))
+        if len(pts) > 1
+        else np.empty((0, 2), int)
+    )
     if len(pairs):
-        g = coo_matrix((np.ones(len(pairs)), (pairs[:, 0], pairs[:, 1])),
-                       shape=(len(pts), len(pts)))
+        g = coo_matrix(
+            (np.ones(len(pairs)), (pairs[:, 0], pairs[:, 1])),
+            shape=(len(pts), len(pts)),
+        )
         n_comp, lab = connected_components(g, directed=False)
     else:
         n_comp, lab = len(pts), np.arange(len(pts))
@@ -332,8 +344,10 @@ def _assert_boundary_is_continuous(sf, mask, dom) -> None:
     n_arms = max(1, len([a for a in dom.boundary_arms if a.btype == "waterlevel"]))
     ceiling = 4 * n_arms
     biggest = ", ".join(f"{c:,}" for c in sorted(counts)[::-1][:6])
-    print(f"[bc] continuity: {n_comp} run(s) over {n_arms} declared arm(s) "
-          f"(link radius {radius:.0f} m); largest: {biggest}")
+    print(
+        f"[bc] continuity: {n_comp} run(s) over {n_arms} declared arm(s) "
+        f"(link radius {radius:.0f} m); largest: {biggest}"
+    )
     if n_comp > ceiling:
         raise AssertionError(
             f"water-level boundary fragmented into {n_comp} runs over {n_arms} "
@@ -569,7 +583,9 @@ def _check_domain_invariants(
             # condition this alarm exists to catch, with no trace in the build log.
             print("=" * 78)
             print(f"!! INVARIANT WAIVED: no-waterlevel zone '{zone.name}'")
-            print(f"!! {int(sel.sum())} water-level BC cells are being ALLOWED inside it.")
+            print(
+                f"!! {int(sel.sum())} water-level BC cells are being ALLOWED inside it."
+            )
             print(f"!! {zone.why}")
             print("!! This is only legitimate for a DELIBERATE bracketing experiment.")
             print("!! The result is an INADMISSIBLE boundary condition and must never")
@@ -638,7 +654,9 @@ def _check_domain_invariants(
         except Exception:  # noqa: BLE001 — a missing catalog key is reported below
             tif = DATA / "missing" / key
         if not tif.exists():
-            fail.append(f"carving tier {key!r} has no raster at {tif} — cannot check it")
+            fail.append(
+                f"carving tier {key!r} has no raster at {tif} — cannot check it"
+            )
             continue
         with rasterio.open(tif) as d:
             v = np.array(
@@ -787,7 +805,10 @@ def apply_mask_and_boundary(
     # 5. Boundary cells -------------------------------------------------------
     sf.quadtree_mask.create_boundary(btype="waterlevel", zmax=-1, reset_bounds=True)
     sf.quadtree_mask.create_boundary(
-        btype="outflow", zmin=OUTFLOW_MAX_DEPTH, zmax=OUTFLOW_MAX_BED, reset_bounds=False
+        btype="outflow",
+        zmin=OUTFLOW_MAX_DEPTH,
+        zmax=OUTFLOW_MAX_BED,
+        reset_bounds=False,
     )
 
     mask = sf.quadtree_grid.data["mask"].values.copy()
@@ -822,12 +843,12 @@ def apply_mask_and_boundary(
             print(f"!! mask override '{ov.name}' SKIPPED (bracketing experiment)")
             continue
         xmin, ymin, xmax, ymax = ov.box
-        sel = (
-            (mask == ov.frm) & (fx > xmin) & (fx < xmax) & (fy > ymin) & (fy < ymax)
-        )
+        sel = (mask == ov.frm) & (fx > xmin) & (fx < xmax) & (fy > ymin) & (fy < ymax)
         n = int(sel.sum())
         if n:
-            print(f"[mask] override {ov.name}: {n} cells {ov.frm} → {ov.to}  ({ov.why})")
+            print(
+                f"[mask] override {ov.name}: {n} cells {ov.frm} → {ov.to}  ({ov.why})"
+            )
         mask[sel] = ov.to
 
     # 5c. SEAL ANY FREE-OUTFLOW BC THAT LANDS ON OPEN WATER -------------------
@@ -863,7 +884,9 @@ def apply_mask_and_boundary(
     )
 
 
-def build_static(base: BaseConfig, template_dir: Path, skip_subgrid: bool = False) -> None:
+def build_static(
+    base: BaseConfig, template_dir: Path, skip_subgrid: bool = False
+) -> None:
     """Build grid/elevation/mask/subgrid and write to ``template_dir``.
 
     Forcing-independent, so it runs once; ``add_forcing`` reopens from disk.
@@ -950,7 +973,9 @@ def build_static(base: BaseConfig, template_dir: Path, skip_subgrid: bool = Fals
         geometry=[Point(g.lon, g.lat) for g in gauges],
         crs="EPSG:4326",
     )
-    print(f"[obs] {len(gauges)} observation points: {', '.join(g.name for g in gauges)}")
+    print(
+        f"[obs] {len(gauges)} observation points: {', '.join(g.name for g in gauges)}"
+    )
     n_crest = sum(g.survives_crest for g in gauges)
     print(f"[obs] {n_crest} of them survive the storm crest")
     if gauges:
@@ -960,8 +985,10 @@ def build_static(base: BaseConfig, template_dir: Path, skip_subgrid: bool = Fals
         # the probe needs the mesh first). hydromt raises NoDataException on an empty
         # set, which read as a build failure. Warn, never gate — but a SEALED domain
         # with no gauges has nothing to score, and that is what the freeze asserts.
-        print("[obs] ⚠️ no obs_gauges declared on this domain — no his output points. "
-              "Declare them before freezing.")
+        print(
+            "[obs] ⚠️ no obs_gauges declared on this domain — no his output points. "
+            "Declare them before freezing."
+        )
 
     # 7. Roughness + subgrid (memory/CPU peak) --------------------------------
     if skip_subgrid:
@@ -969,7 +996,9 @@ def build_static(base: BaseConfig, template_dir: Path, skip_subgrid: bool = Fals
         # boundaries) is already built, and the subgrid is by far the most expensive step.
         # Used by scripts/validate_domain.py to PROVE a region/elevation change is right
         # BEFORE paying for a full rebuild.
-        print("[build_static] skip_subgrid=True — stopping after mask/boundary (no subgrid)")
+        print(
+            "[build_static] skip_subgrid=True — stopping after mask/boundary (no subgrid)"
+        )
         fx, fy = _face_xy(sf)
         np.savez(
             template_dir / "domain_dryrun.npz",
@@ -1048,9 +1077,7 @@ def check_waterlevel_support(sf: SfincsModel, expect: int | None = None) -> int:
             if xs.size <= 8:
                 where = "  " + ", ".join(f"({a:.1f},{b:.1f})" for a, b in zip(xs, ys))
             else:
-                where = (
-                    f"  x {xs.min():.0f}..{xs.max():.0f}  y {ys.min():.0f}..{ys.max():.0f}"
-                )
+                where = f"  x {xs.min():.0f}..{xs.max():.0f}  y {ys.min():.0f}..{ys.max():.0f}"
             break
     print(f"[bnd] {got} water-level support point(s){where}")
     if want is not None and got != want:
@@ -1075,6 +1102,7 @@ def check_waterlevel_support(sf: SfincsModel, expect: int | None = None) -> int:
 #: build: a sealed template built before 2026-09-10 has neither key, and staging copies
 #: its sfincs.inp — the F.4 arm went out unprotected on 2026-09-12 for exactly that reason.
 RESTART_DT_S = 21600.0
+
 
 def add_forcing(base: BaseConfig, sf: SfincsModel) -> None:
     """Window + physics flags and every compound forcing (no waves)."""
@@ -1107,10 +1135,14 @@ def add_forcing(base: BaseConfig, sf: SfincsModel) -> None:
     sf.wind.create(wind="era5_nj")
     sf.pressure.create(press="era5_nj")
     _dom = _domain.active()
-    sf.precipitation.create(precip=_dom.precip_dataset, cumulative_input=True, aggregate=False)
+    sf.precipitation.create(
+        precip=_dom.precip_dataset, cumulative_input=True, aggregate=False
+    )
     sf.discharge_points.create(geodataset=base.discharge_geodataset, merge=False)
     _snap_sources_to_active_faces(sf)
-    sf.quadtree_infiltration.create_cn(cn=_dom.cn_dataset, antecedent_moisture=None, nrmax=2000)
+    sf.quadtree_infiltration.create_cn(
+        cn=_dom.cn_dataset, antecedent_moisture=None, nrmax=2000
+    )
 
 
 def _snap_sources_to_active_faces(sf: SfincsModel, max_move_m: float = 300.0) -> None:
@@ -1147,9 +1179,11 @@ def _snap_sources_to_active_faces(sf: SfincsModel, max_move_m: float = 300.0) ->
         d1, j = t_act.query(xy[k])
         nx, ny = fc[active][j]
         moved.append(k)
-        print(f"[src] ⚠️ source {k} ({gdf.index[k]}) sits on an INACTIVE face "
-              f"(mask {mask[on]}, {d0[k]:.0f} m away) — moved {d1:.0f} m to the nearest "
-              f"active face ({nx:.0f}, {ny:.0f})")
+        print(
+            f"[src] ⚠️ source {k} ({gdf.index[k]}) sits on an INACTIVE face "
+            f"(mask {mask[on]}, {d0[k]:.0f} m away) — moved {d1:.0f} m to the nearest "
+            f"active face ({nx:.0f}, {ny:.0f})"
+        )
         if d1 > max_move_m:
             raise RuntimeError(
                 f"discharge source {k} is {d1:.0f} m from the nearest ACTIVE face "
@@ -1170,8 +1204,12 @@ def _snap_sources_to_active_faces(sf: SfincsModel, max_move_m: float = 300.0) ->
     g2 = dp.data.vector.to_gdf()
     _, i2 = t_all.query(np.c_[g2.geometry.x.values, g2.geometry.y.values])
     if not active[i2].all():
-        raise RuntimeError("a discharge source is STILL on an inactive face after snapping")
-    print(f"[src] {len(moved)} of {len(gdf)} sources moved; all {len(g2)} now on active faces")
+        raise RuntimeError(
+            "a discharge source is STILL on an inactive face after snapping"
+        )
+    print(
+        f"[src] {len(moved)} of {len(gdf)} sources moved; all {len(g2)} now on active faces"
+    )
 
 
 def _point_wave_bnd(wcfg: WaveConfig, base: BaseConfig, sf: SfincsModel, pts):
@@ -1292,11 +1330,18 @@ def add_waves(wcfg: WaveConfig, base: BaseConfig, sf: SfincsModel) -> dict:
         # SFINCS mask is untouched; only snapwave_mask (outside the fingerprint) moves.
         steps = _domain.SNAPWAVE_STEPS[wcfg.snapwave_domain]
         # Instantiate the variable the way the coupled path does, then overwrite it.
-        sf.quadtree_snapwave_mask.create_active(zmin=base.mask_zmin, copy_sfincsmask=False)
+        sf.quadtree_snapwave_mask.create_active(
+            zmin=base.mask_zmin, copy_sfincsmask=False
+        )
         _g = sf.quadtree_grid.data
         _swm_new, _info = snapwave_domain.build_snapwave_mask(
-            _g["n"].values, _g["m"].values, _g["level"].values, _g["z"].values,
-            _g["mask"].values, steps, base.mask_zmin,
+            _g["n"].values,
+            _g["m"].values,
+            _g["level"].values,
+            _g["z"].values,
+            _g["mask"].values,
+            steps,
+            base.mask_zmin,
         )
         if _info["n_sfincs_outside_band"]:
             raise RuntimeError(
@@ -1364,11 +1409,11 @@ def add_waves(wcfg: WaveConfig, base: BaseConfig, sf: SfincsModel) -> dict:
     # run away into an enclosed corner (the ~1e13 blow-up).
     _swm = sf.quadtree_grid.data["snapwave_mask"].values.copy()
     _swfy = sf.quadtree_grid.data.grid.face_coordinates[:, 1]
-    _demote = (_swm == 2) & (_swfy >= _open_coast_max_y())
+    _demote = (_swm == 2) & (_swfy >= _open_coast_max_y(wcfg))
     _swm[_demote] = 1
-    sf.quadtree_grid.data["snapwave_mask"] = sf.quadtree_grid.data["snapwave_mask"].copy(
-        data=_swm
-    )
+    sf.quadtree_grid.data["snapwave_mask"] = sf.quadtree_grid.data[
+        "snapwave_mask"
+    ].copy(data=_swm)
 
     # Support points = the DEEP (z<-5), open-Atlantic (y<limit) stretch of the boundary,
     # binned by northing, easternmost (seaward) cell per bin. Decoupled: read the SNAPWAVE
@@ -1376,12 +1421,14 @@ def add_waves(wcfg: WaveConfig, base: BaseConfig, sf: SfincsModel) -> dict:
     N = wcfg.wave_n_support
     _fc = sf.quadtree_grid.data.grid.face_coordinates
     _z = sf.quadtree_grid.data["z"].values
-    _bnd_src = "snapwave_mask" if (wcfg.decouple_snapwave or wcfg.snapwave_domain) else "mask"
+    _bnd_src = (
+        "snapwave_mask" if (wcfg.decouple_snapwave or wcfg.snapwave_domain) else "mask"
+    )
     _atl = (
         (sf.quadtree_grid.data[_bnd_src].values == 2)
         & np.isfinite(_z)
         & (_z < -5.0)
-        & (_fc[:, 1] < _open_coast_max_y())
+        & (_fc[:, 1] < _open_coast_max_y(wcfg))
     )
     _bxy = _fc[_atl]
     if not len(_bxy):
@@ -1406,15 +1453,17 @@ def add_waves(wcfg: WaveConfig, base: BaseConfig, sf: SfincsModel) -> dict:
             [
                 grp[np.argmax(grp[:, 0])]
                 for k in range(N)
-                for grp in [_bxy[(_bxy[:, 1] >= _ybins[k]) & (_bxy[:, 1] <= _ybins[k + 1])]]
+                for grp in [
+                    _bxy[(_bxy[:, 1] >= _ybins[k]) & (_bxy[:, 1] <= _ybins[k + 1])]
+                ]
                 if len(grp)
             ]
         )
     print(f"[waves] {len(snapwave_pts)} wave support points on the {_bnd_src} boundary")
 
     if wcfg.wave_point_dataset is not None:
-        snapwave_t, snapwave_hs, snapwave_tp, snapwave_wd, snapwave_ds = _point_wave_bnd(
-            wcfg, base, sf, snapwave_pts
+        snapwave_t, snapwave_hs, snapwave_tp, snapwave_wd, snapwave_ds = (
+            _point_wave_bnd(wcfg, base, sf, snapwave_pts)
         )
     else:
         # Uniform alongshore forcing from the nearest valid ERA5 wave node.
@@ -1611,7 +1660,9 @@ def finalize(
         if not wcfg.wavemaker:
             text = (
                 "\n".join(
-                    ln for ln in text.splitlines() if not ln.strip().startswith("wvmfile")
+                    ln
+                    for ln in text.splitlines()
+                    if not ln.strip().startswith("wvmfile")
                 )
                 + "\n"
             )

@@ -53,6 +53,9 @@ class TestPremierConstant(unittest.TestCase):
             "wave-fw02": {"snapwave_fw"},
             "wave-noig": {"wave_igwaves"},
             "bed-nobuildings": {"subgrid_from"},
+            # One lever, three fields (2026-09-13): the band table, +3 support points
+            # for the new 11.8 km leg, and the open-coast demotion lifted for this arm.
+            "wave-apex": {"snapwave_domain", "wave_n_support", "open_coast_max_y"},
             "bed-nobuildings+wave-fw02+wave-noig": {
                 "snapwave_fw",
                 "wave_igwaves",

@@ -145,10 +145,76 @@ cut's 5 h 45 like-for-like → no gain. `snapwave_sigmax` stays dropped. Tables
   `wave-noig` (IG-off) is NOT in this batch; stage it separately with
   `--dependency=afterok:61533137` so the two dedupe passes never overlap.
 
+**📝 `wave-apex` — PRE-REGISTRATION, written 09-13 ~16:30 before the arm was submitted
+(user, 09-08 "why not take it up to Brooklyn?", re-raised 09-13).** The premier's band
+(`v3_shelf_steps`) stops its east leg at row 883 (y ≈ 4480 km = the tip of Sandy Hook,
+`open_coast_max_y` 4,476,000 demoting everything north), so the whole apron between Sandy
+Hook and Rockaway — 18–29 m deep, 1,671 CORA nodes — is SnapWave-INACTIVE and the Lower Bay
+entrance is fed only by what leaks north along the band; nothing arrives from the E–SE.
+Measured on the fixed engine: Lower Bay N sits 0.69 m under CORA at the peak (D2 above), the
+largest deficit of the three boxes and the one nearest the ocean. The arm: `v3_shelf_steps_apex`
+= the same table with the last step `(291, 942, 490)` and `n_top 942` (column 490 runs −29 m at
+row 884 → −12.4 m at row 942 → land at 958, Long Beach NY; cells shallower than `BND_ZMAX`
+−12 m stay closed, so the last ~3 km to the beach is a closed edge); `WaveConfig.open_coast_max_y`
+(NEW field, per-arm override threaded through `model._open_coast_max_y(wcfg)` and
+`check_snapwave_domain.py --open-coast-max-y`) = inf for this arm only; `wave_n_support` 63.
+Pre-flight (`check_snapwave_domain.py v3_shelf_steps_apex --n-support 63 --open-coast-max-y inf`,
+GeoJSON `reports/snapwave_domain_v3_apex.geojson`): 5,207 boundary cells (5,118 before), 0
+SFINCS cells outside the band, ring 2,467 with **39 two-plus cells vs 38** — ONE new dead cell
+at the NE corner (601.5 km, 4490.2 km, −12.4 m) where the leg meets the closed top row; 63
+support points all within 5 km of a CORA node; `--check` OK; 163 tests OK with `wave-apex`
+pinned in `test_engine_epoch.py` as its three fields. **Predictions, paired against
+`naccs-premier` on the same binary (exact, FINDINGS §44):**
+1. `snapwave_bay_census.py` at 10-29 12:00: Lower Bay N / pocket / Raritan S vs CORA move
+   from −0.69 / −0.43 / −0.24 m toward zero, **Lower Bay N by ≥ 0.2 m**; if Lower Bay N moves
+   < 0.1 m the entrance is not the supply path and the deficit is refraction/no-diffraction
+   inside the bay (09-12 AM), not the boundary.
+2. Great Kills / Narrows SI / Arthur Kill mouth peaks and the `raritan_bay`,
+   `lower_bay_si_shore`, `sandy_hook_bay` HWM basins move (direction unpredicted, wave
+   setup up but seiche phase §40 either way); quote the paired CI.
+3. Every basin south of Sandy Hook and every open-coast shelf ratio (`bands`,
+   `wave_shelf_reference.py`) unchanged: |Δ| ≤ 0.02 in ratio, HWM basins within the seiche
+   band. A change there means the band edit leaked south, and the arm is void.
+4. Ring: no new dead cells beyond the one predicted; direction 73 of 73; cap-hits within
+   ±10 of the premier's; runtime within 10 %.
+5. Sea Bright / Sandy Hook shelf hotspot (the 10-28 14:00 blow-up) — unpredicted; record.
+**SUBMITTED 09-13 ~16:50 as stage job 61542895** (patched binary, **34 h**, emeraldrapids; solve
+id in `logs/stage_v3_61542895.jobs`, one `v3_validate` chained). A first stage 61542360 (40 h
+solve) was scancelled before it ran — see the maintenance note. `wave-noig` itself: stage
+61541583 → solve **61542345** (hal0433, started ~16:50 after its limit was trimmed to 36 h).
+
+🔴 **OPS 09-13 PM — the monthly MAINTENANCE RESERVATION blocks any job whose limit overlaps it.**
+`maintenance-202609` takes EVERY hal/halk node Tue 09-15 08:00 → Wed 09-16 23:59
+(`scontrol show reservation`; the next ones are 10-13, 11-10, 12-15, same shape). A job cannot
+START unless its whole time limit fits before the reservation, so from ~Sun 16:00 a 40 h solve
+sits `(ReqNodeNotAvail, Reserved for maintenance)` until Thursday. `scontrol update TimeLimit`
+DOWN is allowed for users (only an increase is refused): `wave-noig` was trimmed 40 → 36 h and
+started at once. The three 13:02 solves end within their limits before 08:00 Tue (premier and
+`bed-nobuildings` ~11:00 Mon; **`wave-fw02` was PREEMPTED at 14:34 after 1 h 32 on hal0384 —
+no restart file yet, `restart plan: fresh` — and restarted at 14:39 on hal0390, so ~12:40 Mon**).
+Their validates (6 h) also fit. Rule: before choosing `SOLVE_TIME`, check the reservation and
+keep start + limit before it; ~1.5× the measured pace (22 h → 34 h) is enough with the 6 h
+restart hook behind it.
+
 **5. `naccs-nowaves` (61448637 → validate 61459332, 10 min)** scored on the patched binary:
 RMSE 0.434 / bias −0.275, CSI 0.6972, `extent_admissible False`, `snapwave_direction off`.
 The 09-11 baseline row was 0.431 / −0.270 / 0.7075 — the difference is the NEW premier config
 (buildings in the subgrid, `_subgrid_buildings@8518110d`), not the engine.
+
+**Notebook (user request, 09-13 PM): `notebooks/v3/sandy-v3-winddir-fix-2026-09-13.ipynb`** —
+the paired before/after of the fix, `wave-shelf-steps` (container, waves in the wind direction)
+vs `bed-nobuildings+wave-fw02+wave-noig` (patched), executed, GIFs embedded; figures in
+`reports/figures/v3_winddir_fix_*.png`. Read-out: the direction quiver shows the unpatched
+swell travelling down-coast (from the NE wind) and the patched swell shoreward; ΔHm0 is +1–3 m
+over the whole shelf before and at the peak, but at landfall (10-30 00:00, wind and swell
+aligned) the UNPATCHED offshore field is the larger by 1–2 m; **Δzsmax (patched − unpatched)
+is below −0.3 m over Sandy Hook Bay and the east half of Raritan Bay** — well past the ~0.1 m
+cross-binary floor, so attributable to the fix (the unpatched force explosion lifted the
+pocket), p10/p50/p90 over active cells −0.078 / 0.000 / +0.054, |Δ| > 0.1 m on 8 % of them;
+the paired HWM Δ by basin: shark_river −0.10, sandy_hook_bay −0.08, raritan_bay −0.07 (n 19),
+shrewsbury_navesink −0.04 down; barnegat_bay +0.06, lower_bay_si_shore +0.14 (n 3) up; the
+open-coast basins within ±0.03. The 08-29 notebook stays as the pre-fix epoch record; this
+one must be re-executed BEFORE `wave-shelf-steps` is retired (its 5.3 G map is the input).
 
 **Tools:** `scripts/snapwave_bay_census.py` (NEW — the 09-12 spike census, bay / D2 box
 medians, CORA-in-the-bay and the IG ratio, one definition for every run; reproduces the

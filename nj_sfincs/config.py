@@ -68,7 +68,9 @@ DEFAULT_ELEVATION_LIST: tuple[dict, ...] = (
     {"elevation": "ehydro_raritan_ak"},
     {"elevation": "ehydro_nj"},
     {"elevation": "shrewsbury_ehydro_2015"},
-    {"elevation": "usace_nj_2010"},  # 1 m PRE-Sandy topobathy (fails in deep/turbid water)
+    {
+        "elevation": "usace_nj_2010"
+    },  # 1 m PRE-Sandy topobathy (fails in deep/turbid water)
     # 🔴 MUST sit ABOVE cudem_nj. CUDEM is MISSING the Ward Point headland — its land stops
     # at lat 40.49982 in every column and the missing ~230 m of New York State is backfilled
     # as -3 to -5.5 m of bay — and it has no tile west of lon -74.2504 at all, so Conference
@@ -80,7 +82,9 @@ DEFAULT_ELEVATION_LIST: tuple[dict, ...] = (
     {"elevation": "coned_sw_raritan"},
     {"elevation": "cudem_nj"},  # 3 m fill: inlets + shelf + Raritan Bay
     {"elevation": "nj_10ft_dem", "zmin": 0.001},  # 3 m fill: inland land, NJ ONLY
-    {"elevation": "cudem13_nj"},  # ~10 m fill: nearshore ocean the 1/9" product never tiled
+    {
+        "elevation": "cudem13_nj"
+    },  # ~10 m fill: nearshore ocean the 1/9" product never tiled
     {"elevation": "gmrt_nj"},  # ~50 m GMRT offshore tail
 )
 
@@ -242,6 +246,13 @@ class WaveConfig:
     # `decouple_snapwave`. Support points are sampled along the stepped line instead of
     # binned by northing, so the E-W steps and the bottom edge are forced too.
     snapwave_domain: str | None = None
+    #: Per-ARM override of ``Domain.open_coast_max_y`` (the northing above which wave-
+    #: boundary cells are demoted and no support point is taken). ``None`` = the domain's;
+    #: ``inf`` = the whole seaward edge is open coast. Exists for `wave-apex` (2026-09-13):
+    #: the v3 rule (y 4,476,000, the tip of Sandy Hook) was written for a blow-up later
+    #: traced to support points outside the mesh, and a band that continues to the Long
+    #: Island shore needs it lifted for THAT ARM ONLY — never edit the Domain value.
+    open_coast_max_y: float | None = None
     wavemaker_line: Path = DATA / "wavemakers" / "wavemaker_line.geojson"
     dtwave: float = 1800.0  # SnapWave coupling interval [s]
 

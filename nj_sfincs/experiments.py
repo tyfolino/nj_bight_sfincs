@@ -233,6 +233,29 @@ _V3: dict[str, Experiment] = {
         **_V3_BUILDINGS,
         **_V3_WL,
     ),
+    "wave-apex": Experiment(
+        "wave-apex",
+        replace(
+            _V3_PREMIER_WAVES,
+            snapwave_domain="v3_shelf_steps_apex",
+            wave_n_support=63,  # +3 for the 11.8 km leg, keeps ~4.6 km spacing
+            open_coast_max_y=float("inf"),
+        ),
+        "Premier with the SnapWave band's east leg continued north past Sandy Hook to "
+        "the Long Island shore (user, 09-08 / 09-13: the apron between Sandy Hook and "
+        "Rockaway is wave-INACTIVE on the premier, so nothing reaches the Lower Bay "
+        "entrance from the E-SE). One lever, three fields that are one change: the "
+        "table, +3 support points for the new leg, and the open-coast demotion lifted "
+        "for this arm. PRE-REGISTRATION (STATUS 09-13): Lower Bay N / Sandy Hook Bay "
+        "pocket / Raritan S hm0 vs CORA at 10-29 12:00 move from -0.69 / -0.43 / -0.24 m "
+        "toward zero, Lower Bay N by >= 0.2 m; Great Kills and Narrows peaks and the "
+        "raritan_bay / lower_bay_si_shore / sandy_hook_bay HWM basins move; every "
+        "basin south of Sandy Hook and every open-coast shelf ratio unchanged (paired, "
+        "|dz| within the seiche band, FINDINGS S40); no new dead ring cells; cap-hits "
+        "within +-10 of the premier's.",
+        **_V3_BUILDINGS,
+        **_V3_WL,
+    ),
     "bed-nobuildings": Experiment(
         "bed-nobuildings",
         _V3_PREMIER_WAVES,
