@@ -132,6 +132,18 @@ cut's 5 h 45 like-for-like → no gain. `snapwave_sigmax` stays dropped. Tables
   Nothing was submitted. `/scratch` is at 77 %. The stage line, unchanged:
   `SFINCS_BIN=~/nj_sandy_sfincs/sfincs-native/v2.3.3-winddir-fix-1-gf11/bin/sfincs SOLVE_TIME=40:00:00 SOLVE_CONSTRAINT=emeraldrapids sbatch hpc/stage_and_submit_v3.slurm <arms>`
   (⚠️ a list containing `naccs-premier` rmtrees the OLD `naccs-premier` dir).
+  ✅ **USER DECISION 09-13 ~13:40: accept the IG size and submit all three.** Stage job
+  **61533137** submitted (`logs/stage_v3_61533137.out`; solve ids land in
+  `logs/stage_v3_61533137.jobs`; one `v3_validate` chained afterok): `naccs-premier`,
+  `wave-fw02`, `bed-nobuildings`, patched binary, 40 h, `--constraint=emeraldrapids`,
+  restart hook set by staging. ✅ Staged in 9 min 45 (hal0326); solves **61533519
+  `naccs-premier` hal0383, 61533520 `wave-fw02` hal0384, 61533521 `bed-nobuildings`
+  hal0385** (all emeraldrapids, started 09-13 ~13:50); validate **61533522** afterok all
+  three. Expect ~22 h each → done ~Sun 14 midday.
+  Pre-registration = the premier's docstring + the Phase 8 list above, with the IG lid
+  KNOWINGLY waived: record `hm0ig` max / cells > 1 m on the full window beside the score.
+  `wave-noig` (IG-off) is NOT in this batch; stage it separately with
+  `--dependency=afterok:61533137` so the two dedupe passes never overlap.
 
 **5. `naccs-nowaves` (61448637 → validate 61459332, 10 min)** scored on the patched binary:
 RMSE 0.434 / bias −0.275, CSI 0.6972, `extent_admissible False`, `snapwave_direction off`.
