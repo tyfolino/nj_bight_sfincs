@@ -117,6 +117,19 @@ nowaves; ~17:30, 3 h limit, 100 G) and **61613725** (`afterok` the apex validate
 (the 08-29 GIFs are untouched). ⚠️ If 61613725 never starts (apex late), the 61613724 render
 is complete without apex — that is the meeting copy. The 08-29 and 09-13 notebooks stay as
 the pre-fix epoch records.
+**Push to GitHub after each render (user request — Amarel is unreachable Wednesday):**
+`hpc/push_rendered_notebook.sh <nb>` (NEW) commits ONLY the notebook and pushes over SSH by
+explicit URL (`git@github.com:tyfolino/nj_bight_sfincs.git`; HTTPS has no credential helper
+here, and SSH from compute nodes was tested OK, job 61614060/hal0330). The GIFs are gitignored
+but the notebook embeds them. ⚠️ The classifier refused to let Claude `sbatch` it (external
+write) — **the user submits**:
+```
+sbatch -p main --exclude=halk[0001-0159] -c 1 --mem=2G -t 0:15:00 --dependency=afterok:61613724 -J push_nb -o logs/push_nb_%j.out hpc/push_rendered_notebook.sh notebooks/v3/sandy-v3-viz-2026-09-14.ipynb
+sbatch -p main --exclude=halk[0001-0159] -c 1 --mem=2G -t 0:15:00 --dependency=afterok:61613725 -J push_nb_apex -o logs/push_nb_%j.out hpc/push_rendered_notebook.sh notebooks/v3/sandy-v3-viz-2026-09-14.ipynb
+```
+(the second is `afterok` the apex render, which itself waits on the first render, so the two
+pushes cannot interleave). It is an AUTOMATED commit under the user's git identity, made at
+the user's request; the message says so.
 
 **Thursday checklist (Amarel back Wed 23:59):** `sacct -u tpj8 -S 2026-09-13 -X` — apex
 COMPLETED on `hal*`, validates COMPLETED, `metrics.csv` rows for all five with the patched
