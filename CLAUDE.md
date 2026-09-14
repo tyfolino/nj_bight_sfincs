@@ -206,7 +206,10 @@ not trip that guard. Do not run the sweep driver to "just rebuild" a template.
   (`--requeue` covers preemption only). Submit with `SOLVE_CONSTRAINT=emeraldrapids`
   (`hpc/stage_and_submit_v3.slurm`) or `--constraint=emeraldrapids`; check `sacct
   --format=NodeList` before believing a pace. It is per-core speed plus cap-hits, not
-  threading (`sstat AveCPU` shows ~30 effective cores on every node). ⚠️ And check
+  threading (`sstat AveCPU` shows ~30 effective cores on every node). ⚠️ 3.3 was F.4 (IG off, `fw 0.02`,
+  no buildings); the PREMIER config paces 2.2–2.6 on the same nodes (09-14) — budget
+  33–36 h. Read pace from the restart-file mtimes: a SnapWave call over 999.99 s logs
+  `took ****** seconds` (Fortran overflow), so summing the `took` field drops the slowest calls. ⚠️ And check
   `scontrol show reservation` first: the monthly maintenance takes every hal node for ~40 h,
   and a job whose time limit overlaps it will not START (`Reserved for maintenance`) —
   ~1.5× the measured pace is enough, and users may shorten a queued job's limit with

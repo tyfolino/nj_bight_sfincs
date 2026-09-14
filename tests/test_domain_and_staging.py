@@ -705,6 +705,44 @@ class TestMetricsMergeKeepsOtherArms(unittest.TestCase):
         out = rx._merge_metrics(df, Path("/nonexistent/metrics.csv"))
         self.assertTrue(out.equals(df))
 
+    def test_write_outputs_serialises_on_a_lock_file(self):
+        """Chained per-solve validates can finish together; the merge must not race.
+
+        The writer takes an exclusive flock on ``metrics.lock`` beside the table for
+        the whole read-merge-write, so a second job blocks instead of overwriting the
+        row the first one just folded in (2026-09-14).
+        """
+        import fcntl
+        import tempfile
+        from unittest import mock
+
+        import pandas as pd
+
+        import run_experiments as rx
+
+        with tempfile.TemporaryDirectory() as td:
+            csv = Path(td) / "metrics.csv"
+            pd.DataFrame({"motf_csi": [0.71]}, index=["naccs-premier"]).to_csv(csv)
+            seen = {}
+
+            def flock(fd, op):
+                seen["op"] = op
+                seen["exists_before_write"] = not csv.read_text().count("wave-noig")
+
+            with mock.patch.object(rx, "METRICS_CSV", csv), mock.patch.object(
+                rx, "BRACKET_METRICS_CSV", Path(td) / "bracket_metrics.csv"
+            ), mock.patch.object(rx, "EXP_ROOT", Path(td)), mock.patch.object(
+                fcntl, "flock", side_effect=flock
+            ):
+                rx._write_outputs(
+                    pd.DataFrame({"motf_csi": [0.70]}, index=["wave-noig"])
+                )
+            self.assertEqual(seen["op"], fcntl.LOCK_EX)
+            self.assertTrue(seen["exists_before_write"])  # lock taken BEFORE the read
+            self.assertTrue((Path(td) / "metrics.lock").exists())
+            out = pd.read_csv(csv, index_col=0)
+            self.assertEqual(sorted(out.index), ["naccs-premier", "wave-noig"])
+
 
 class TestStagingIsSafeBeforeItIsDestructive(_DomainEnv):
     """⭐ THE REGRESSION TEST FOR THE DATA-LOSS BUG.

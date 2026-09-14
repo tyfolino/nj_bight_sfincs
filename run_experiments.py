@@ -32,6 +32,7 @@ Run from the repo root.
 from __future__ import annotations
 
 import argparse
+import fcntl
 import gc
 import os
 import shutil
@@ -616,6 +617,17 @@ def _write_outputs(df: pd.DataFrame) -> None:
     if df.empty:
         print("No metrics to write (no completed runs found).")
         return
+    # Several `--validate-only` jobs can finish within the same minute (one chained per
+    # solve), and each one folds its rows INTO the shared table below with a
+    # read-merge-write. Serialise them on a lock file so the last writer cannot drop a
+    # row another job merged a moment earlier (2026-09-14).
+    METRICS_CSV.parent.mkdir(parents=True, exist_ok=True)
+    with open(METRICS_CSV.with_suffix(".lock"), "w") as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        _write_outputs_locked(df)
+
+
+def _write_outputs_locked(df: pd.DataFrame) -> None:
     # Bracket rows NEVER enter metrics.csv or the report: an inadmissible bound beside
     # candidate numbers is exactly the table that once ranked a known-wrong boundary first.
     df, brk = _split_brackets(df)
