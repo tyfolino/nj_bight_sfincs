@@ -4,204 +4,125 @@
 12 KB "current state" memory file and its 26 reverse-chronological campaign logs; the point
 of the format is that a reader gets the current state without replaying how it was reached.
 
-Last updated: **2026-09-14 15:30** (⭐ 4 of 5 solves DONE clean, `wave-noig` scored 0.383 / CSI 0.706, paired −0.010 [−0.019, −0.003] vs F.4; 3-arm validate running; 🔴 every 64-thread solve ≈ 6 effective cores; ✅ Deltares issue #362 FILED + PR #363 OPENED (user) — Phase 5 CLOSED; `bed-nobuildings` + `wave-noig` DONE clean, noig validate running; ⏳ five 09-13 solves still RUNNING, ETA tonight; `wave-apex` may TIMEOUT at 02:10 Tue → resume job 61593242 parked `afternotok`; validates keep 6 h limits (trim refused to Claude — commands in the 09-14 section); metrics writer now flock-serialised; ✅ PM: Phase 5 DRAFTED — issue text `docs/upstream/snapwave_winddir_issue.md`, 1-s reproducer `scripts/make_snapwave_reproducer.py` (unpatched 50° / patched 180° / wind-off 180°), fix ported + staged on `nj/snapwave-winddir-main` (worktree), main+fix compile job 61603708; 09-13: ⭐ ALL SIX 09-12 JOBS DONE + SCORED — F.4 `bed-nobuildings+wave-fw02+wave-noig` on the patched engine PASSES direction 73/73, transmission, per-site shelf (1.01/0.83/0.70/0.64 of CORA vs 0.48/0.47/0.36/0.34 unpatched) and runtime (21 h 55 on emeraldrapids), MISSES cap-hits (55 of 145) and D2 (bay 0.24–0.69 m under CORA at the peak); HWM paired ΔRMSE vs unpatched +0.014 [−0.006, +0.035]; NY bay gauge peaks revert to waves-off — the unpatched bay lift was the force explosion; `G3_patched_rep` bit-identical → patched binary DETERMINISTIC across nodes; `G3_sigmax2s` = the 3 s verdict, lever dropped; `G4_premier_ig` FAILS 2 of 4 IG criteria (nearshore IG > 1 m on 24 k cells — bound-wave growth, not spikes) → three IG-on arms HELD for the user, `wave-noig` cleared, nothing submitted; new `scripts/snapwave_bay_census.py`; `wave_shelf_reference.py` default ref-mesh trap fixed — see the 09-13 section; 09-11: (⭐ Phase 0 of the 09-10 evening plan DONE — `scripts/snapwave_direction_check.py` (direction/bands/breaking/convergence/force), `scripts/snapwave_parameters.py` + `nj_sfincs/snapwave_params.py` + the generated `docs/snapwave_parameters.md` / `reports/snapwave_parameters.html`, FINDINGS §43 + the two Closed bullets + §4 conditions, `.gitignore` tail fixed, 8 new tests; 🌊 the wind-on `wave-shelf-steps` rerun 61327796 COMPLETED clean on hal0323 (20 h 34, full 73-hour map, no stitch needed — pre-09-10 batch script), validate-only SUBMITTED as 61402750 (hal0292); on the FULL map the direction check reads 0 of 73 hours within 5° of the imposed direction (worst 170°), wind-off 73 of 73, and wind-on hit the iteration cap on 36 of 145 calls (partial read had said 25 of 81) vs 8 wind-off; stranded validate 61334380 scancelled (user) — see the 09-11 section; 09-10 🔴 PM: **SnapWave WIND MODE DISCARDS THE IMPOSED WAVE DIRECTION** — boundary-cell `wavdir` = ERA5 wind direction (34/9/97/176°) where CORA imposes 165/181/168/112°, wind-off matches CORA; source (`snapwave_boundaries.f90` v2.3.3, unfixed in v2.4.1/main): boundary spectrum built on a wave-centred θ grid, grid then re-centred on `u10dmean` (PR #194, 2025-06-11, the fix for #193) and copied BY INDEX → rotated by wind−wave; Baldock Qb ≈ 0 in the band, friction identical → wind-off "won" by getting the DIRECTION right, not by physics; the 09-10 AM reading "wind degrades the solve" is CORRECTED in place; EVERY wind-on run to date imposed waves in the wind direction (flag, re-baseline later); `wave-fw01+…` rerun 61334377 CANCELLED (user), validate 61334380 stranded → user `scancel`; plan Track F = native patched build + Deltares issue/PR; Track C kept as a runtime lever after the fix; ⚡ AM: both long wave solves — the `wave-shelf-steps` rerun 61327796 (21 h in, map to 10-30 12:00) and `wave-fw01+…` 61334377 (19 h, map to 10-29 23:00) — were PREEMPTED at 08:30:54 on `main` and auto-requeued FROM SCRATCH at 08:33 (no restart file; `trstout` off), so both now land ~09-11 midday; their partial maps were copied to `/scratch/tpj8/partials/` before the restarts overwrote them and read; ✅ `wave-nowind+wave-shelf-steps` COMPLETED clean in 5 h 51 (SnapWave 75 s/call vs 350, 8 of 145 cap-hits) — 🔴 PREDICTION MISS on the plateau: wind OFF nearly DOUBLES the −9 m shelf wave (shelf / CORA-at-10 m at 10-29 12:00: Sea Bright 0.48 → 0.83, AC 0.47 → 0.79, OC 0.36 → 0.67, Sea Isle 0.34 → 0.56), the field blow-ups and the Sandy Hook shelf hotspot are gone, bay hm0 goes to ~0; ✅ `BRACKET+setup-stockdon` ran (52 min): it lifts the model pre-storm mean by 0.22–0.31 m at every southern bay gauge AND by 0.33 at the AC pier, so the bay-minus-pier deficit is untouched — see the 09-10 section; bracket HWM/CSI scoring in progress; 09-09 PM: three one-change arms SUBMITTED via stage job 61333216 — `wave-fw01+wave-shelf-steps`, `wave-nowind+wave-shelf-steps`, `BRACKET+setup-stockdon` (forcing bracket, own CSV) — with pre-registrations in the 09-09 section; source read of SnapWave v2.3.3 says the shelf loss is bottom friction (no whitecapping exists) and the dead corners are `inner=false` cells; meeting brief `reports/weekly_2026-09-09.html`; 🌊 AM: `wave-shelf-steps` TIMED OUT at 55 % (14 h limit, hal0339) and was RESUBMITTED verbatim as **job 61327796** (40 h, hal0351, expect it done ~09-10 midday). Read-out on the PARTIAL map (to 10-29 16:00): the DEAD RING IS FIXED (0 of 2,381 vs 2,580 of 6,556), the east and stepped legs pass 0.70–0.87 of the imposed Hs into the first cell, but the bottom row's shallow Cape May half passes only 0.30–0.5, the wave then decays to a ≈0.47 plateau within 10 km of the line where CORA's own SWAN keeps 0.6–0.8, so the −9 m shelf still sees ~0.35–0.55 of CORA's value there; 25 of 80 SnapWave calls did not converge and those hours carry hm0 blow-ups to 22 m plus a persistent hotspot east of Sandy Hook; CORA's storm waves come FROM the S–SSE, so the supply edge is the 46 km bottom row, not the 200 km east leg — **transmission criterion NOT met**, next-arm decision is the user's, see the 09-09 section; 09-08: `wave-shelf-steps` STAGED + SUBMITTED (job 61313672, 14 h): SnapWave boundary redrawn along quadtree rows/columns at 25–30 m, 38 predicted dead ring cells vs 2,580, 60 CORA support points, `snapwave_niter` 200 — success is TRANSMISSION (`scripts/wave_boundary_ring.py`), then score; 🌊 LOW-BIAS REVIEW: the SnapWave BOUNDARY IS NOT TRANSMITTING — 43 % of the interior cells touching the southern wave boundary carry NO waves (staircase inner corners), shelf hm0 inside is 15–60 % of imposed, shoreline setup 0.05 m vs 0.2–0.35 theory, back bays 0.2–0.55 m low BEFORE the storm with the ocean gauge matched to 6 mm; pre-registered fix = smoother decoupled SnapWave boundary, success = transmission not score — see the 09-08 section at the top of PICK UP; 🏠 `bed-buildings` RE-SCORED on the merged bed: no measurable Sandy effect outside footprint drying + bay seiche phase; paired ΔRMSE +0.008 [−0.027, +0.041], non-seiche basins +0.001; first score was VOID (lev3-only bed) and the gap is closed in code — see the 09-04 section; 2026-09-04: 🏠 BUILDINGS: adequacy checks done, `bed_buildings_v3` tier burned (328 km² at ground + 4 m), `bed-buildings` arm registered with `Experiment.subgrid_from`, first (prepend) subgrid rebuild VOIDED by a hydromt merge trap, `--overlay` rebuild LANDED (61231337) and item 5 passes, `bed-buildings` staged + solve submitted via 61232044 — see the 09-04 section; 2026-09-03: 🏠 BUILDING FOOTPRINTS acquired, NJDEP + Microsoft, statewide raw + v3 clip; ⭐ RAIN-OFF SCORED on v3: CSI 0.710 → 0.809, **93.7% of premier's MOTF false alarm is rain**; the bay HWM/peak shifts (+0.3–0.4 m with rain OFF) are SEICHE PHASE (§40), not rain — see the 09-03 section; 💾 `experiments/` MOVED to `/scratch/tpj8` and symlinked, staging quota guard follows it, `scripts/desktop_pull_backup.sh` written, desktop snapshot taken, home copy deleted, home back under quota — see DISK; 2026-09-02: rain-off arm registered, staged and run (solve 61190532 → validate 61190533); 2026-09-01: ⭐ v3 REBUILD LANDED AND RE-SCORED — three arms clean on
-hal nodes, premier 4/4 on the new fingerprint, merged dep rebuilt, HWM RMSE
-0.384/0.400/0.431, extent unchanged; bay SnapWave setup HALVED and the v3↔v1.5 Monmouth
-offset is GONE (sign-test P 0.011 → 0.152), Sandy Hook tide-range gap healed
-(−0.40 → −0.04 m); waves-on vs off paired ΔRMSE −0.046 [−0.072, −0.017] — see the 09-01
-section; 2026-08-31: 🔴 v3 MESH REBUILD — the bay-side 25 m
-refinement bands were silently dropped from `refinement_v3.geojson`; restored verbatim,
-old v3 runs void by decision, see the 08-31 section. Also: Monmouth HWM overshoot vs
-v1.5 traced to SnapWave setup; v3 results notebook
-`notebooks/v3/sandy-v3-viz-2026-08-29.ipynb` executed — v1_5-viz layout on the three v3
-arms, GIFs embedded statically; `V3.plot_window` + `map_windows` added in `domain.py`,
-plot metadata only, 89 tests OK; 2026-08-27: ⭐ ALL THREE v3 ARMS COMPLETED CLEAN on hal nodes, 4/4 premier OK, HWM 6044 src-flagged, FIRST v3 SCORES in (premier HWM RMSE 0.355 / CSI 0.828; quota hit hard limit mid-validate, reclaimed); 2026-08-26: ⭐ v3 FROZEN, 25 gauges + 17 basins wired, 3 arms staged+submitted overnight, offline VDatum grids, STWAVE wave file; levers restored, subgrid 30 GB/1 h, dam sweep closed; 2026-08-25: ⭐ v3 PRE-FREEZE PASS: levers pulled (−1.3%, the driver is the 25 m surf band), dam sweep → 4 candidates, VDatum fallback, build-QC notebook; SUBGRID MEMORY PROBE running — see PICK UP; 2026-08-24: v3 WIRED + ALL DATA PULLED + CLEAN MESH PROBE 3.31 M faces — Steps 0–2 done, see PICK UP; earlier: MOTF sheet, inland ring, canal uncut; v3 REGION DRAWN + GATED — `region_v3_EDITED.geojson`
-passes `validate_region_v3.py`; ⭐ `acquisition_only` domain state, v3 REGISTERED, all
-five+one downloaders domain-aware, **v3 DATA ACQUISITION COMPLETE** (4.2 G);
-Toms River src moved onto its cut · 🔴 **PAUSED ON A SCOPE DECISION: the ring currently
-excludes Mays Landing and Batsto and that is NOT accepted** — see PICK UP · 2026-08-21:
-seiche FINDINGS §40 · weir FINDINGS §38 · rain FINDINGS §39)
+Last updated: **2026-09-14 15:45** — 4 of 5 fixed-engine solves DONE clean; `wave-noig` scored (RMSE 0.383, CSI 0.706; waves-on vs off paired −0.051 [−0.073, −0.033]); premier 3-arm validate running; `wave-apex` lands tonight; Phase 5 CLOSED (issue #362, PR #363); 🔴 64-thread solves use ~6 effective cores; maintenance Tue 08:00 → Wed 23:59. History before 09-14 is in the dated sections below and in git.
 
 ## ⏳ PICK UP — next session
 
-### ⏳ 2026-09-14 15:30 — FOUR of five solves DONE and clean; `wave-noig` SCORED (first one-config read on the new premier family); the 3-arm validate is RUNNING; ⚠️ every 64-thread solve used ~6 effective cores
+### ⏳ 2026-09-14 — PICK UP HERE: 4 of 5 solves DONE, `wave-noig` scored, the premier's 3-arm validate RUNNING, `wave-apex` finishing tonight; Phase 5 CLOSED (issue #362, PR #363); maintenance Tue 08:00 → Wed 23:59
 
-**Done (all hal, patched bin, 73 map steps, 12 zsmax blocks, `segments 0`, log closes):**
-`bed-nobuildings` 24 h 50, `wave-noig` 21 h 47, **`naccs-premier` 25 h 36, `wave-fw02` 24 h 07**.
-Validates: `wave-noig` 61542346 COMPLETED (53 min); the 3-arm 61533522 (premier + fw02 +
-bed-nobuildings, 5 h limit) RUNNING since 14:46 on hal0324 → rows ~17:30. `wave-apex` at sim-h
-54 at 14:53, 11 h of limit left, ETA ~21:30; resume job 61593242 still parked behind it.
+**State at 15:45.** All five 09-13 solves ran on `hal*` emeraldrapids nodes with the patched
+binary (`bin:v2.3.3-winddir-fix-1-gf11@673ee3bf`). Every finished map: 73 hourly steps to
+10-31 00:00, 12 whole zsmax blocks, `restart_history` `segments 0`, log closes normally.
 
-**`wave-noig` (= the new premier with IG OFF: wind on, fw 0.01, buildings subgrid):** HWM RMSE
-**0.383 / bias −0.181 m** (`_scored`, median, 50 m, n 94), CSI **0.7063** / POD 0.881 / FAR 0.219.
-Paired vs F.4 (`bed-nobuildings+wave-fw02+wave-noig`, 0.393 / −0.197): **ΔRMSE −0.010 m, 95 % CI
-[−0.019, −0.003], P(noig better) 0.995** — a real centimetre, but TWO levers (fw 0.02 → 0.01 AND
-the buildings tier); the premier's three one-flag pairs (vs `wave-fw02`, `bed-nobuildings`,
-`wave-noig`) split it once 61533522 lands. Great Kills peak −0.56 (F.4 −0.56, waves-off −0.57):
-the NY-bay "no wave contribution at the peak" read holds on this config too. Paired vs
-`naccs-nowaves` (same binary, same buildings subgrid → a clean waves-on/off pair): **ΔRMSE -0.0514 m, 95 % CI [-0.0725, -0.0326], P(waves-on better) 1.000** (`logs/paired_noig_vs_nowaves_2026-09-14.log`).
+| arm | job | wall | state |
+|---|---|---|---|
+| `naccs-premier` | 61533519 | 25 h 36 | DONE; validate 61533522 RUNNING (with fw02 + bed-nobuildings, 5 h limit, hal0324, from 14:46 → rows ~17:30) |
+| `wave-fw02` | 61533520 | 24 h 07 (one fresh restart after a 09-13 preemption) | DONE; in 61533522 |
+| `bed-nobuildings` | 61533521 | 24 h 50 | DONE; in 61533522 |
+| `wave-noig` | 61542345 | 21 h 47 | DONE + SCORED (validate 61542346, 53 min) |
+| `wave-apex` | 61543164 | running, sim-h 54 at 14:31, limit ends Tue 02:10 | ETA ~20:00; validate 61543165 (2.5 h) chained |
 
-🔴 **Thread scaling: `sacct TotalCPU / Elapsed` on the `.batch` steps of the five finished
-solves = 5.9 / 6.0 / 6.2 / 6.7 / 6.8 effective cores** (premier, bed-nobuildings, fw02, F.4, noig)
-— on 64 threads, emeraldrapids. `ps -L` on the live `wave-apex` agrees (64 threads all busy, sum
-616 %). So the "~30 effective cores" quoted on 09-13 from `sstat AveCPU` did not survive
-`sacct`; the CLAUDE.md §5 statement "per-core speed plus cap-hits, not threading" is right for
-the wrong reason — threading is not delivering at all. Cheap test when a node is free: the 12 h
-G3 cut with `OMP_NUM_THREADS` 8 / 16 / 32 / 64 on one emeraldrapids node (`engine_gate.py`),
-wall per SnapWave call. If 16 ≈ 64, every future solve can ask for a quarter node (or four
-runs per node) and the queue-fit problem before maintenance windows mostly disappears.
+Safety net: **61593242 `v3_wave-apex-resume`** (`--dependency=afternotok:61543164`, 12 h,
+patched bin) fires only if the apex solve times out or fails, resumes from the newest 6-h
+restart file and stitches; validate 61593265 chained after it. If apex finishes clean both sit
+`DependencyNeverSatisfied` forever (no `kill_invalid_depend` on this cluster) → **`scancel
+61593242 61593265` on Thursday.** Ids in `logs/wave_apex_resume.job`.
 
-### ⏳ 2026-09-14 14:35 — two solves DONE (`bed-nobuildings` 24 h 50, `wave-noig` 21 h 47, both hal, full 73-step maps, 12 zsmax blocks, `engine.txt` = the patched bin, `segments 0`); `wave-noig` validate 61542346 RUNNING (hal0259); premier + `wave-fw02` at sim-h 66, `wave-apex` at 54; ✅ **Deltares ISSUE #362 FILED and PR #363 OPENED by the user 09-14** from worktree branch `nj/snapwave-winddir-main` — Phase 5 CLOSED
+**`wave-noig` = the new premier with IG off** (wind on, correctly directed, `fw 0.01`, buildings
+subgrid): HWM RMSE **0.383 / bias −0.181 m** (`_scored`, median, 50 m, n 94), CSI **0.706** /
+POD 0.881 / FAR 0.219. Paired (`scripts/paired_hwm_bootstrap.py`, B 200 k):
+- vs `naccs-nowaves` (same binary, same subgrid → the clean waves-on/off pair): **ΔRMSE −0.051 m,
+  95 % CI [−0.073, −0.033], P 1.000** — correctly directed waves are worth ~5 cm of HWM RMSE
+  on v3 (the 09-13 read of −0.041 had the buildings confound). `logs/paired_noig_vs_nowaves_2026-09-14.log`.
+- vs F.4 `bed-nobuildings+wave-fw02+wave-noig` (0.393 / −0.197): **ΔRMSE −0.010 m, 95 % CI
+  [−0.019, −0.003], P 0.995** — real but TWO levers (fw 0.02→0.01 and the buildings tier);
+  the premier's one-flag pairs split it. ⚠️ Extent goes the other way: CSI 0.706 vs 0.715,
+  POD 0.881 vs 0.900 — the buildings tier drying footprints (09-04); compare buildings arms on
+  the footprint-masked CSI (`motf_csi_buildings_masked.csv`), not the headline.
+- Great Kills peak −0.56 (F.4 −0.56, waves-off −0.57): the "NY bays get ~no wave contribution
+  at the peak" read (09-13) holds on this config. Bias is still −0.18 m: waves fixed ~5 cm of
+  a 27 cm deficit; the bays-under-CORA problem (09-13 D2) is untouched.
 
-### ⏳ 2026-09-14 09:30 — PICK UP HERE: all FIVE 09-13 solves still RUNNING (none done yet); they land tonight, before the Tue 08:00 maintenance; `wave-apex` is the one that may not; a resume job is parked behind it
+**Next, in order:** (1) when 61533522 lands (~17:30): `python -m nj_sfincs.premier`; the Phase 8
+IG read on the premier (09-13 item 4 list, IG lid knowingly waived — record `hm0ig` max /
+cells > 1 m on the full window, `snapwave_bay_census.py`); the three one-flag pairs premier vs
+`wave-noig` (IG), `wave-fw02` (friction), `bed-nobuildings` (buildings) with paired CIs;
+`snapwave_direction_check.py direction` 73/73. (2) `wave-apex` tonight/Thursday against its
+09-13 pre-registration (Lower Bay N vs CORA ≥ +0.2 m headline; south-of-Sandy-Hook null =
+void test), paired vs the premier. (3) Carried: the F.4-minus-waves-off `zs` map read, Phase 4b
+D3, Phase 6 `retire_arm.py` (execute after the premier is scored), Phase 7 sign-offs below.
 
-Read at 09:23 Mon (all five on `hal*` emeraldrapids nodes, exclusive, `squeue -w` checked;
-`stat` of the 6-hourly restart files + the `Computing SnapWave … took` lines in each `sfincs.log`;
-`logs/` has nothing new). The window is 72 sim-h (10-28 00:00 → 10-31 00:00).
+**Phase 5 CLOSED.** Issue **Deltares/SFINCS#362** filed and **PR #363** opened by the user
+(09-14 PM) from worktree `~/nj_sandy_sfincs/SFINCS-src-main`, branch `nj/snapwave-winddir-main`
+off `origin/main` (`886d10a`, v2.4.2-alpha): `snapwave_boundaries.f90` is byte-identical
+between the tag and `main`, so the fix ports as-is — one file, 48+/38−, comments trimmed to
+neutral one-liners at the user's request, our `Build-Revision` tag NOT included. Compiled on
+main (job 61607027, `sfincs-native/main-winddir-fix-1-gf11`, sha `546ff148…`) and the plane-beach
+case reads 180° on it. The issue text (`docs/upstream/snapwave_winddir_issue.md`, ~400 words,
+code-first by user decision) quotes the three Fortran blocks (l. 705–725 lobe on the
+wave-centred grid; l. 493–517 grid re-made on the wind with the rebuild hook commented out;
+l. 876 copy by index) and the #194 guard change. **`scripts/make_snapwave_reproducer.py`**
+(NEW; `build`/`run`/`compare`; test file, 3 tests): plane beach, swell from 180°, wind from
+45°, ~1 s per run — unpatched wind-on **50°**, patched **180°**, wind-off 180°
+(`logs/upstream_2026-09-14/reproducer_compare.txt`; cases in `/scratch/tpj8/engine_gate/repro`,
+32 M). 🔴 Engine fact it took to get there: a ONE-level quadtree is written by the REGULAR map
+writer, which has no `wavdir` (`sfincs_domain.f90:38-48`); the case carries one refinement
+band for that reason only. Remaining upstream: their review; the two uncommitted files on
+`nj/snapwave-winddir` (the v2.3.3 record) are the user's to commit.
 
-| arm | job / node | sim-h done | wall | avg simh/wallh | ETA (avg / slowest-block pace) | limit ends |
-|---|---|---|---|---|---|---|
-| `naccs-premier` | 61533519 hal0383 | 44.0 | 20.4 h | 2.16 | Mon 22:20 / Tue 01:20 | Tue 05:02 |
-| `bed-nobuildings` | 61533521 hal0385 | 46.5 | 20.4 h | 2.28 | Mon 20:35 / Mon 23:35 | Tue 05:02 |
-| `wave-fw02` | 61533520 hal0390 (preempted once 09-13 14:34, fresh restart) | 42.0 | 18.8 h | 2.24 | Mon 22:45 / Mon 22:40 | Tue 06:39 |
-| `wave-noig` | 61542345 hal0433 | 46.0 | 17.3 h | 2.65 | Mon 19:10 / Mon 22:20 | Tue 04:03 |
-| `wave-apex` | 61543164 hal0434 | 39.5 | 17.2 h | 2.29 | Mon 23:35 / **Tue 04:40** | **Tue 02:10** |
+**Ops learned today (all in CLAUDE.md §5 or here):**
+- 🔴 **Thread scaling: every finished 64-thread solve used 5.9–6.8 effective cores**
+  (`sacct TotalCPU/Elapsed` on the `.batch` steps: premier 5.9, bed-nobuildings 6.0, fw02 6.2,
+  F.4 6.7, noig 6.8; `ps -L` on the live apex process agrees, 616 %). The "~30 effective cores"
+  from 09-13 `sstat` did not survive. Cheap test when a node is free: the 12 h G3 cut at
+  `OMP_NUM_THREADS` 8/16/32/64 on one emeraldrapids node (`engine_gate.py`), wall per
+  SnapWave call. If 16 ≈ 64, solves can take a quarter node and the maintenance-window
+  queue-fit problem mostly disappears.
+- **Pace:** a premier-config 72 h solve is ~2.2–2.6 sim-h per wall-h on emeraldrapids
+  (24–26 h), not F.4's 3.3 — budget 33–36 h. The peak blocks (sim 30–42 h) are SnapWave at
+  the 200-iteration cap, 17–19 min per call. ⚠️ A call over 999.99 s logs `took ******
+  seconds` (Fortran overflow): never sum the `took` field for pace, read the restart-file
+  mtimes. (My first read this morning summed it and concluded the hydrodynamics dominated the
+  peak — wrong, retracted.)
+- **Maintenance rule:** `maintenance-202609` Tue 09-15 08:00 → Wed 09-16 23:59, every
+  hal/halk node; a job starts only if start + whole limit fits before it; users may
+  `scontrol update TimeLimit` DOWN (the user trimmed the validates to 5 h / 2.5 h / 2.5 h
+  this morning). ⚠️ Claude cannot `scancel` or `scontrol update` in this session (permission
+  classifier) — `sbatch` is fine; plan with dependency chains and hand the user the lines.
+- **This VSCode shell sat on hal0434, the apex solve node**, as an ssh session outside the
+  job cgroup — competes at OS level; heavy work went to `sbatch`, the rest at `nice 19`.
+- **Halk:** yesterday's VSCode job 61532132 ran on halk0081; the tracked files it wrote were
+  committed and `git status` is clean, so no late flush landed — re-check Thursday.
+- **Code:** `run_experiments.py` `_write_outputs` takes an `fcntl.flock` on
+  `experiments/<domain>/metrics.lock` around the metrics read-merge-write (three validates
+  finishing together could drop a row); test `test_write_outputs_serialises_on_a_lock_file`.
+  167 tests OK (7 skipped).
 
-🔴 **These runs pace ~2.2–2.6 sim-h per wall-h, NOT the 3.3 that F.4 measured on the same
-node type** — IG on / `fw 0.01` / the buildings subgrid each add something. The peak is
-SnapWave: the 6-sim-h blocks at sim 30–42 h cost 200–230 min wall (12 calls each, so ~17–19
-min per call, i.e. the 200-iteration cap at the storm peak). ⚠️ **A SnapWave call longer than
-999.99 s prints `Computing SnapWave at t = … took ****** seconds`** — Fortran field
-overflow — 17 of the premier's first 91 calls so far, nine of them consecutive over sim
-29.5–33.5 h. Any tool that sums or averages the `took` field silently drops exactly the
-slowest calls (my first read this morning did, and concluded the hydrodynamics dominated
-the peak — WRONG; retracted here). Read pace from the restart-file mtimes (one every 6
-sim-h) and count `******` lines as cap-hit calls. So the 09-13 rule "1.5× the measured pace"
-was calibrated on the WRONG arm; **budget ~33–36 h for a premier-config 72 h solve on
-emeraldrapids**. (Scratchpad scripts `pace.py` / `shape.py` did the above — worth promoting
-to `scripts/` if this recurs, with the `******` handling.)
+**Cleanup done 09-14 (user-approved):** `/scratch/tpj8/partials/` (7.8 G) and every
+`/scratch/tpj8/engine_gate/G*` case (G1–G4, ~50 G) DELETED — the compare JSONs stay in
+`engine_gate/` and `logs/engine_gate_2026-09-11/`, the census/direction CSVs in
+`logs/phase4_2026-09-13/`; `repro/` (32 M) kept. Also `__pycache__`/.ruff_cache and the three
+native BUILD trees (binaries in `~/nj_sandy_sfincs/sfincs-native/` stay). Still the user's:
+`data/probe_mesh_v1_5_fix4` 17 M, `~/fish-4.7.1{,.tar}`, `~/.claude.json.tmp.*`. Home 78 G
+of 100; `/scratch` filesystem 92 %.
 
-**`wave-apex`** has 32.5 sim-h left and 16.8 h of limit. Its blocks so far match the premier's
-(105–118 min pre-storm, 213 min at sim 30–36), so the honest projection is ~830 min of work
-(rest of 36–42 + two peak blocks at ~200 + three post-peak at ~120–130) → ~23:10 Mon, inside
-the limit, but the slowest-block extrapolation says 04:40 → **TIMEOUT at 02:10 Tue is a live
-possibility** (a timeout is NOT auto-requeued; only preemption is). ✅ **Parked behind it:
-job 61593242 `v3_wave-apex-resume`** (`run.submit_slurm`, patched binary, 12 h, emeraldrapids,
-`--dependency=afternotok:61543164`) — it fires ONLY if 61543164 ends in a failed state
-(timeout counts), the batch script's restart hook then resumes from the newest
-`sfincs.2012103*.rst` (files every 6 sim-h are on disk up to 10-29 12:00 already), parks the
-partial output in `restart_segments/` and stitches. **Validate 61593265** is chained
-`afterok:61593242`. If `wave-apex` finishes clean, both sit `DependencyNeverSatisfied`
-forever (`kill_invalid_depend` is NOT in this cluster's SchedulerParameters) — `scancel
-61593242 61593265` on Thursday. Ids in `logs/wave_apex_resume.job`.
+**📓 Notebook for the Wednesday advisor meeting: `notebooks/v3/sandy-v3-viz-2026-09-14.ipynb`**
+(generated by NEW `scripts/make_v3_epoch_notebook.py`; the 08-29 layout — headers-only —
+plus ONE "Arms" table cell saying what each arm changes). Its arm list is FILTERED at run
+time to arms with a map AND a metrics row, so it re-executes as arms land. Executions queued:
+**61613724** (`afterok` the 3-arm validate 61533522 → premier, noig, fw02, bed-nobuildings,
+nowaves; ~17:30, 3 h limit, 100 G) and **61613725** (`afterok` the apex validate 61543165 and
+61613724 → adds `wave-apex`; ~22:30). Both fit before the 08:00 outage; logs
+`logs/nb_v3_epoch_<job>.out`. GIFs land as `reports/figures/v3_<var>_<window>_2026-09-14.gif`
+(the 08-29 GIFs are untouched). ⚠️ If 61613725 never starts (apex late), the 61613724 render
+is complete without apex — that is the meeting copy. The 08-29 and 09-13 notebooks stay as
+the pre-fix epoch records.
 
-**Maintenance (user reminder 09-14, `maintenance-202609`: Tue 09-15 08:00 → Wed 09-16 23:59,
-every hal/halk node).** A job STARTS only if start + its whole limit fits before 08:00 Tue.
-The five solves already fit (SLURM admitted them). The chained validates do NOT necessarily:
-they carry **6 h** limits, so each starts before the outage only if its solve ends by
-~02:00 Tue; otherwise it waits and runs Thursday ~00:00 (harmless — the maps are complete
-either way). ⚠️ I tried to trim them (`scontrol update JobId=<id> TimeLimit=…`, allowed for a
-DECREASE — it worked for the user on 09-13) and to split the 3-arm validate 61533522 into
-one per solve; **both were refused by the session's permission classifier (cluster
-mutation), so nothing was changed.** If you want the scores before the outage, run:
-```
-scontrol update JobId=61533522 TimeLimit=05:00:00   # premier+fw02+bed-nobuildings, sequential ~3 h
-scontrol update JobId=61542346 TimeLimit=02:30:00   # wave-noig   (a single-arm validate took 58 min on 09-13)
-scontrol update JobId=61543165 TimeLimit=02:30:00   # wave-apex
-```
-(61533522 waits for the LAST of its three solves — `naccs-premier`, ~22:20–01:20.)
+**Thursday checklist (Amarel back Wed 23:59):** `sacct -u tpj8 -S 2026-09-13 -X` — apex
+COMPLETED on `hal*`, validates COMPLETED, `metrics.csv` rows for all five with the patched
+`engine`; `scancel 61593242 61593265` if unused; `git status` clean; then "Next" above.
 
-**Code:** `run_experiments.py` `_write_outputs` now takes an exclusive `fcntl.flock` on
-`experiments/<domain>/metrics.lock` around the read-merge-write of `metrics.csv` /
-`bracket_metrics.csv` / the report. Three independent validate jobs are queued tonight and
-`_merge_metrics` is a read-modify-write, so the last writer could silently drop a row the
-previous one had just folded in; the recovery was only ever "re-run `--validate-only` for the
-missing arm", but now it cannot happen. Test
-`test_write_outputs_serialises_on_a_lock_file`. 164 tests OK (7 skipped). Uncommitted:
-`run_experiments.py`, `tests/test_domain_and_staging.py`, `docs/STATUS.md` — `git add` done.
-
-**Halk note:** yesterday's 12:18–16:22 VSCode job (61532132) ran on **halk0081** — every file I
-wrote in that session (`STATUS.md`, `FINDINGS.md`, `CLAUDE.md`, the census script, the
-09-13 CSVs) was written from a halk node. The tracked ones are safe: the user committed them
-(bee3ecb) and `git status` is clean this morning, so a late flush would show as a diff — check
-`git status` again on Thursday. The untracked `logs/phase4_2026-09-13/*.csv` are regenerable.
-
-**Thursday checklist (Amarel back Wed 23:59):**
-1. `sacct -u tpj8 -S 2026-09-13 -X --format=JobID,JobName%24,State,Elapsed,NodeList` — five
-   solves COMPLETED on `hal*`, `restart_count`/`restart_history.txt` per dir (`wave-fw02` had
-   one fresh restart, nothing to stitch), three validates COMPLETED; `metrics.csv` has rows
-   `naccs-premier`, `wave-fw02`, `bed-nobuildings`, `wave-noig`, `wave-apex` with
-   `engine bin:v2.3.3-winddir-fix-1-gf11@…`.
-2. `wave-apex`: if 61543164 TIMEOUT → 61593242 resumed it (check `restart_history.txt`, the
-   stitch, and `sfincs_map.nc` reaches 10-31 00:00), 61593265 scored it; else `scancel
-   61593242 61593265`.
-3. Score against the pre-registrations: Phase 8 list (09-13 item 4, IG lid knowingly waived —
-   record `hm0ig` max / cells > 1 m on the full window) for the three; the 09-13 `wave-apex`
-   list (Lower Bay N vs CORA ≥ +0.2 m is the headline; the south-of-Sandy-Hook null is the
-   void test) paired against `naccs-premier` on the same binary; `wave-noig` = the one-flag
-   IG cut vs the premier. `python -m nj_sfincs.premier` on every dir first.
-4. Then the items carried from 09-13: the F.4-minus-waves-off `zs` map read, the Deltares
-   issue, Phase 4b D3, `retire_arm.py`.
-
-### ✅ 2026-09-14 PM — Phase 5 DRAFTED: the Deltares issue text, a 1-second reproducer, and the fix ported onto `main`; the user files the issue and writes the PR
-
-User decision 09-14: **issue first, PR the next day** (the fix changes every wind-on user's
-results, the evidence is a table not a diff, and the PR must target `main` not the v2.3.3
-tag). Claude drafts, the user authors and files.
-
-- **`docs/upstream/snapwave_winddir_issue.md`** — the issue, ready to paste. **User
-  decision 09-14 PM: code-first, not reproducer-first** — it quotes the three Fortran blocks
-  (l. 705–725 lobe on the wave-centred grid; l. 493–517 grid re-made on the wind with the
-  rebuild hook commented out; l. 876 copy by index), the #194 guard change, two short
-  "confirmed" bullets (the plane-beach case, the Sandy hours) and the suggested fix. No
-  placeholders; the reproducer script is mentioned only as the plane-beach case. The "bit-identical wind-off / no-SnapWave" claims are
-  backed by `engine_gate/G2w0_compare.json` and `G1_patched_compare.json` (both STRICT).
-- **`scripts/make_snapwave_reproducer.py`** (NEW, `build` / `run` / `compare`): plane beach
-  6 × 4 km, 100 m quadtree with ONE refinement band, swell Hs 2 / Tp 10 / from 180° / spread
-  30° on the south edge, uniform 15 m/s wind from 45° (`wndfile`), 3 h. hydromt-sfincs makes
-  the quadtree file; everything else is analytic ASCII. Each run is ~1 s.
-  🔴 Two engine facts it took to get there: (1) SFINCS writes a ONE-level quadtree with its
-  REGULAR map writer, which has no `wavdir` variable at all (`sfincs_domain.f90:38-48`,
-  `use_quadtree` reverts to false; `wavdir` is only in `ncoutput_quadtree_map_init`) — hence
-  the refinement band; (2) `tp` in the regular writer is gated by `storefw`, not `storewavdir`.
-  Result (`logs/upstream_2026-09-14/reproducer_compare.txt`), boundary-cell energy-weighted
-  `wavdir` at every map step: **unpatched wind-on 50°** (the wind, snapped to the 10° bin),
-  **patched wind-on 180°**, wind-off 180°; boundary Hs 2.00 in all three. Cases under
-  `/scratch/tpj8/engine_gate/repro/` (22 M). Test `tests/test_snapwave_reproducer.py` (3).
-- **The port to `main`:** `snapwave_boundaries.f90` is BYTE-IDENTICAL between tag v2.3.3 and
-  `origin/main` (`886d10a`, "v2.4.2-alpha Galibier+", dated 2026-09-08 — upstream is
-  active), so the patch applies as-is. A git WORKTREE `~/nj_sandy_sfincs/SFINCS-src-main` on
-  new branch **`nj/snapwave-winddir-main`** (off `origin/main`) has the boundaries hunk
-  applied and STAGED (58+/38−, one file; the `Build-Revision` hunk deliberately left out —
-  that tag is ours, not upstream's). The original `nj/snapwave-winddir` checkout (tag +
-  2 uncommitted files) is untouched. **Compile check of main+fix submitted as job 61603708**
-  (`hpc/build_sfincs_native.sh main-winddir-fix-1-gf11 --src …/SFINCS-src-main`, 8 cores;
-  `logs/build_main_winddir_61603708.out`) — `main` has 5,500 changed SnapWave lines vs the tag
-  so this is a real test, not a formality. ✅ **Build landed** (`sha 55a3a86b…`, stamp `src=886d10a diff=41028ee4`) and the
-  plane-beach case on it reads **180° at every step** (`Build-Revision: v2.4.2-alpha Galibier+`,
-  `repro/wind_on_main_patched`): the port works on `main`, not just on the tag. ✅ **PR prep (user, ~15:00):** fork `tyfolino/SFINCS` made, remote `fork`
-  added, first commit a9b7580 pushed. Then (user request) the added Fortran COMMENTS were
-  trimmed to neutral one-liners (no fix tag, dates or PR history; the warning reworded) —
-  diff now 48+/38−, one file — recompiled on `main` as job 61607027 (sha `546ff148…`) and
-  the plane-beach case on it reads 180° again. The user amends the commit (American
-  spelling in the message) and force-with-lease pushes; ✅ **PR #363 OPENED (user, ~15:20)** against `Deltares:main`, "Fixes #362".
-  **Phase 5 is CLOSED** on our side; what remains is upstream's review.
-- **User to do:** fill the placeholder and file the issue; `git -C ~/nj_sandy_sfincs/SFINCS-src-main
-  commit` the staged hunk (message suggestion: "SnapWave: build boundary spectra on the final
-  theta grid, centred on the imposed wave direction (fixes wind-mode rotation from #194)"),
-  push to the fork, PR against `main` citing the issue number; also commit the two files on
-  `nj/snapwave-winddir` (the v2.3.3 record). Claude does not commit.
-
-⚠️ **Ops note found on the way:** this VSCode shell is on **hal0434 = the `wave-apex` solve
-node** (an ssh session in `user.slice`, outside the job cgroup, so it competes at OS level —
-keep it light; the reproducer ran at `nice 19`, 2 threads, ~3 s total). While there: the
-solver has 64 threads all busy but sums to **~616 % CPU ≈ 6 effective cores** (`ps -L`, three
-3-s samples; `ps` lifetime average the same), against the ~30 that `sstat AveCPU` showed on
-09-13. One process, one node, not investigated — but if the 09-13 pace rule keeps missing,
-thread scaling on emeraldrapids is the first thing to measure (`sstat -j <id>.batch
---format=AveCPU` on all five when they finish).
-
-### ⏳ 2026-09-13 — PICK UP HERE: all six 09-12 jobs DONE and SCORED; Phase 4 arm 1 PASSES its engine gates, the IG cut FAILS its stability read → the three IG-on 40 h arms are HELD for a user decision; `wave-noig` is cleared
+### ✅ 2026-09-13 — all six 09-12 jobs DONE and SCORED; Phase 4 arm 1 PASSES its engine gates, the IG cut FAILS its stability read → the three IG-on 40 h arms are HELD for a user decision; `wave-noig` is cleared
 
 All six ran on `hal*` nodes (`sacct` checked); tables in `logs/phase4_2026-09-13/` and
 `logs/engine_gate_2026-09-11/`; two new/changed tools below. 163 tests OK (7 skipped).
@@ -604,7 +525,7 @@ Predictions (plan Phase 4, verbatim, plus the 09-12 reads):
 8. Runtime: 4 h 41 for 12 h on the cut → 25–40 h for the 73 h window; restart hooks cover a
    preemption.
 
-### ⏳ 2026-09-11 — PICK UP HERE (written ~14:20 before a context compaction): Phases 0, 1a, 1b, 3 DONE; Phase 2 (the patch) built and passing its first gates; G3 ×3 running
+### ✅ 2026-09-11 (written ~14:20 before a context compaction): Phases 0, 1a, 1b, 3 DONE; Phase 2 (the patch) built and passing its first gates; G3 ×3 running
 
 **The approved plan is `~/.claude/plans/alright-finally-and-this-calm-lollipop.md`** (Phase 0 →
 8; the 09-10 ADDENDUM in `~/.claude/plans/alright-i-think-we-nested-beacon.md` is the record of
