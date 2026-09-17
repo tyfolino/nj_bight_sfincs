@@ -163,7 +163,7 @@ KNOWN = {
         "score-only"
     ),
     V3: "v3 FROZEN 2026-08-26 — full Jersey shore, NACCS 224-point boundary (sha16 "
-        "19f53cfd4cb804fb), 4 arms (v1.5's three + ocean_south)",
+    "19f53cfd4cb804fb), 4 arms (v1.5's three + ocean_south)",
     V2_BARNEGAT_PREMASK: (
         "v2_barnegat PRE-repair mask — the 2026-07-26..29 campaign arms; not "
         "comparable to post-repair runs"
@@ -406,14 +406,15 @@ def assert_sealed_domain(model_dir: Path | str, context: str = "") -> None:
             b
             for b in BRACKETS.values()
             if not b.forcing_only  # shares the sealed fingerprint: refused by NAME below
-            and b.fingerprint.sha_z_mask != "PENDING" and got == b.fingerprint
+            and b.fingerprint.sha_z_mask != "PENDING"
+            and got == b.fingerprint
         ),
         None,
     )
     # A FORCING bracket carries the sealed fingerprint, so the name is the guard: a run
     # dir called BRACKET+... is never a candidate, whatever its mesh says.
     if brk is None and Path(model_dir).name.startswith(BRACKET_PREFIX):
-        bname = Path(model_dir).name[len(BRACKET_PREFIX):]
+        bname = Path(model_dir).name[len(BRACKET_PREFIX) :]
         brk = BRACKETS.get(bname) or next(
             (b for b in BRACKETS.values() if b.forcing_only), None
         )
@@ -518,7 +519,9 @@ def output_complete(model_dir: Path | str) -> tuple[bool | None, list[str]]:
                 z = np.asarray(ds["zsmax"].values, dtype="float64")
                 # -99999 is SFINCS' fill; the attribute is present but decode is off here.
                 if not np.isfinite(z).any() or not (z > -9.0e3).any():
-                    problems.append("sfincs_map.nc: zsmax is entirely fill (never written)")
+                    problems.append(
+                        "sfincs_map.nc: zsmax is entirely fill (never written)"
+                    )
     if not seen:
         return None, []
     return (not problems), problems
@@ -526,6 +529,16 @@ def output_complete(model_dir: Path | str) -> tuple[bool | None, list[str]]:
 
 def describe(model_dir: Path | str) -> str:
     """One-line audit of a model directory."""
+    ret = Path(model_dir) / ".retired"
+    if ret.exists():  # scripts/retire_arm.py moved the keeps here; the bulk is gone
+        import json
+
+        try:
+            rec = json.loads(ret.read_text())
+            when, why = rec.get("retired", "?")[:10], rec.get("reason", "")
+        except (OSError, ValueError):
+            when, why = "?", "(unreadable .retired)"
+        return f"  RET {str(model_dir):44s} retired {when}: {why}"
     try:
         fp = domain_fingerprint(model_dir)
     except FileNotFoundError as e:
@@ -547,7 +560,10 @@ def _main(argv: list[str] | None = None) -> int:
 
     args = list(sys.argv[1:] if argv is None else argv)
     if not args:
-        args = sorted(str(p) for p in exp_root().glob("*") if (p / "sfincs.nc").exists())
+        args = sorted(
+            str(p) for p in exp_root().glob("*") if (p / "sfincs.nc").exists()
+        )
+        args += sorted(str(p) for p in exp_root().glob("_retired/*") if p.is_dir())
     dom = _domain.active().name
     print(f"PREMIER = {PREMIER_NAME}   template = {TEMPLATE_NAME}")
     print(f"NJ_DOMAIN = {dom}")

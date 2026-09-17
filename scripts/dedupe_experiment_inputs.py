@@ -39,14 +39,14 @@ EXP = ROOT / "experiments"
 
 # Large, read-only inputs that are identical across runs staged from the same mesh.
 TARGETS = {"sfincs.nc", "sfincs_subgrid.nc", "roughness.nc"}
-TARGET_DIRS = {"subgrid"}          # dep_/manning_ subgrid GeoTIFFs
-MIN_BYTES = 1 << 20                # don't bother with small files
+TARGET_DIRS = {"subgrid"}  # dep_/manning_ subgrid GeoTIFFs
+MIN_BYTES = 1 << 20  # don't bother with small files
 
 
 def md5(p: Path, chunk: int = 1 << 22) -> str:
     h = hashlib.md5()
     with p.open("rb") as fh:
-        while (b := fh.read(chunk)):
+        while b := fh.read(chunk):
             h.update(b)
     return h.hexdigest()
 
@@ -62,7 +62,8 @@ def runs():
         if not dom.is_dir():
             continue
         for run in sorted(dom.iterdir()):
-            if run.is_dir():
+            # _retired/ holds keeps only (scripts/retire_arm.py); floodmaps/ is the gallery
+            if run.is_dir() and run.name not in {"_retired", "floodmaps"}:
                 yield run
 
 
@@ -102,20 +103,24 @@ def main() -> None:
         # frees one physical copy between them, not one per file. Counting files
         # overstated the 2026-08-05 reclaim as 17.5 GB when the truth was 9.3 GB.
         n_ino = len({f.stat().st_ino for f in files})
-        print(f"  {name:<28} {digest[:8]}  {len(files):2d} copies, {n_ino} inodes "
-              f"({size/(1<<20):6.0f} MB)  -> linking {len(dups)}, freeing "
-              f"{(n_ino - 1) * size / (1 << 20):.0f} MB")
+        print(
+            f"  {name:<28} {digest[:8]}  {len(files):2d} copies, {n_ino} inodes "
+            f"({size / (1 << 20):6.0f} MB)  -> linking {len(dups)}, freeing "
+            f"{(n_ino - 1) * size / (1 << 20):.0f} MB"
+        )
         for d in dups:
             if apply:
                 tmp = d.with_suffix(d.suffix + ".dedupe_tmp")
-                os.link(canon, tmp)      # link first, then atomically replace
+                os.link(canon, tmp)  # link first, then atomically replace
                 os.replace(tmp, d)
             linked += 1
         saved += (n_ino - 1) * size
 
     G = 1 << 30
-    print(f"\n{'APPLIED' if apply else 'DRY RUN'}: {linked} files -> hard links, "
-          f"{saved/G:.1f} GB reclaimed")
+    print(
+        f"\n{'APPLIED' if apply else 'DRY RUN'}: {linked} files -> hard links, "
+        f"{saved / G:.1f} GB reclaimed"
+    )
     if not apply:
         print("re-run with --apply to do it")
 

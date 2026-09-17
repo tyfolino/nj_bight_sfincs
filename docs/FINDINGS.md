@@ -681,6 +681,27 @@ Live campaign state is in [STATUS.md](STATUS.md). This file is for what is settl
     through the 12 h G3 gate (`engine_gate.py`) before any score is compared across it.
     STATUS 2026-09-17, `logs/engine_gate_2026-09-17_igk_toy.txt`.
 
+48. **The Sandy Hook shadow marks feel the waves as much as the rest of the domain — and
+    most of what they feel is OCEAN setup carried in through the entrance, not the bay wave
+    field.** Paired per-mark Δ (modelled level, `naccs-premier` − `naccs-nowaves`, fixed
+    engine, median estimator, 50 m, q ≤ 2) on the 28 scored marks in the zone box (lon
+    −74.30..−73.95, lat 40.38..40.52): median **+0.113 m** [+0.079, +0.158], mean +0.121
+    [+0.097, +0.145], all 28 positive; the 66 marks of the rest: median +0.113 [+0.102,
+    +0.147]. By basin: Raritan Bay +0.08 (n 19), Sandy Hook Bay +0.21 (4), Shrewsbury–
+    Navesink +0.18 (5); the two spit marks 6106 / 6140 are the largest, +0.27 / +0.24. The
+    gauge series say where it comes from: over 10-29 12:00 → 10-30 06:00 the Δ at the NY bay
+    gauges averages ~0 and swings ±0.4–0.8 m (the FINDINGS §40 seiche re-ring) but is
+    +0.09..+0.19 at the peak hour at every one of them, matching the ocean-side lift at
+    `usgs_stormtide_sea_bright` (+0.12 at peak, +0.15 mean); the back bays behind the
+    barrier islands carry a PERSISTENT +0.10..+0.14 (never negative) — imported setup. So the
+    zone's +0.11 is the domain-wide peak-hour lift with a local excess of ~+0.05–0.10 m in the
+    pocket (`sandy_hook` +0.185 vs the oceanfront +0.118; spit marks +0.13 above the domain
+    median). Consequence for Phase 4b: D3's pre-registered "< 0.05 m → drop D4/D5" line is
+    NOT met, so the spread cut D4 stays on the list — but the number a diffraction fix can
+    move is the local excess (≤ 0.1 m at the two spit marks and the pocket gauge), not the
+    +0.11. Pooled: ΔRMSE −0.066 m [−0.087, −0.046] (waves are worth 7 cm of HWM RMSE on this
+    engine). `logs/phase4b_2026-09-17/D3_paired_zone_premier_vs_nowaves.log`; STATUS.
+
 ### Closed — do not re-open
 
 Each of these cost a campaign and is settled. The evidence is in the archive's

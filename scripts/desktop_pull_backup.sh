@@ -85,7 +85,10 @@ RUN_FILTER=(
   --include='sfincs_his.nc'
   --include='sfincs.log'
   --include='sfincs.inp'
-  --include='provenance.txt'
+  --include='provenance*.txt'
+  --include='engine.txt'
+  --include='MANIFEST.md'
+  --include='.retired'
   --include='floodmap_hmax_lev3.tif'
   --include='.window'
   --include='sfincs.obs'
@@ -106,7 +109,7 @@ tier 1 : $HOME_R/nj_bight_sfincs/data/   -> $DEST/nj_bight_sfincs/data/
          $HOME_R/sfincs_data/            -> $DEST/sfincs_data/
          $HOME_R/nj_coast_sfincs/        -> $DEST/nj_coast_sfincs/
 tier 2 : $SCRATCH_R/experiments/         -> $DEST/nj_bight_sfincs/experiments/
-         keep: metrics*.csv report.html sfincs_his.nc sfincs.log sfincs.inp provenance.txt
+         keep: metrics*.csv report.html sfincs_his.nc sfincs.log sfincs.inp provenance*.txt engine.txt .retired MANIFEST.md
                floodmap_hmax_lev3.tif .window sfincs.obs sfincs.weir sfincs.crs snapwave.b* sfincs_net*.nc gis/
          drop: _template_sealed/ floodmaps/ subgrid/ snapwave.upw roughness.nc sfincs.nc sfincs_subgrid.nc
                sfincs_map.nc (kept only with --with-maps)

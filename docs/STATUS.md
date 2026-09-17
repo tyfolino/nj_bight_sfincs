@@ -32,7 +32,10 @@ IG toy + `v2.3.3-winddir-igk-fix-1` backport (a no-op on the toy); the v3 wavema
 user-reviewed on `reports/figures/wavemaker_line_v3_2026-09-17.png` — "good for now"); the
 rotated-raster trap in CLAUDE.md §5. Plan file updated through Phase 8.
 
-**Three to-dos while the gate runs (user-approved list, in order):**
+**Three to-dos while the gate runs (user-approved list, in order) — ✅ ALL THREE DONE 09-17
+evening (D3 block + Phase 6 block below; notebook re-render R4 = 61683482, then the user's
+push job `sbatch -t 0:10:00 --dependency=afterok:61683482 hpc/push_rendered_notebook.sh
+notebooks/v3/sandy-v3-viz-2026-09-14.ipynb`):**
 1. **Phase 4b D3** — paired per-mark Δ, `naccs-premier` (apex) vs `naccs-nowaves`, the 40
    Sandy-Hook-shadow marks (box lon −74.30..−73.95, lat 40.38..40.52) vs the rest:
    `scripts/paired_hwm_bootstrap.py` with a mark subset (add a `--bbox` if it lacks one).
@@ -49,6 +52,96 @@ Then, after the gate: the engine decision (rule in the 16:30 block) → the `wav
 arm = premier + `wvmfile` from the line above via `sf.wave_makers.create(...)` in staging
 (`model.py` needs a WaveConfig field for it), pre-registered (oceanfront HWM bias → 0, MOTF POD
 up in overwash zones, bays unchanged, runtime) — IG knobs read on the toy first.
+
+### 🔶 2026-09-17 EVENING — Phase 4b D3: does the Sandy Hook shadow feel the waves? (pre-registered BEFORE scoring)
+
+**Question.** The shadow diagnostics (D1, D2) showed SnapWave casts a razor shadow off the tip
+of Sandy Hook and the wind sea fills it at 0.3–0.45 m / 3 s. D3 asks whether that matters for
+the SCORE: if waves barely move the modelled level at the zone marks, a diffraction fix (D4/D5)
+cannot move the score and is dropped.
+
+**Diagnostic (chosen first).** Paired per-mark Δ = modelled level `naccs-premier` (apex band,
+fixed engine `bin:v2.3.3-winddir-fix-1@673ee3bf`) − `naccs-nowaves` (same engine, same
+template) via `scripts/paired_hwm_bootstrap.py --bbox -74.30 -73.95 40.38 40.52` (new option:
+zone vs rest, median estimator, 50 m, q ≤ 2; the residual difference at a mark IS the wave
+contribution to its modelled level, since obs cancels). Census on v3: **38 marks in the box
+after the region clip (25 raritan_bay, 6 sandy_hook_bay, 7 shrewsbury_navesink; no Staten
+Island mark falls in the box), 28 at q ≤ 2**; D1's "40" counted before the clip.
+- **Headline: the zone MEDIAN Δ and the bootstrap 95 % CI of the zone MEAN Δ.** Not the
+  per-mark spread: FINDINGS §40 says any perturbation re-rings Raritan Bay by ±0.2–0.3 m per
+  mark, so individual |Δ| > 0.05 m in the bay is expected seiche phase noise, not setup.
+- **Positive control: the REST (oceanfront + other bays) must show a clearly positive Δ**
+  (wave setup) — if the rest's Δ is also ~0, the diagnostic is void, not the answer.
+- Also reported: ΔRMSE paired in zone and rest; the two spit marks 6106 / 6140 individually
+  (the only marks within 1.5 km of the tip); Δ by basin inside the zone.
+
+**Decision line (from the plan):** zone median Δ < 0.05 m AND the CI upper bound on the zone
+mean Δ < 0.05 m → **D4/D5 DROP**. Otherwise D4 (the 12 h spread cut).
+
+**Prediction (written 09-17 evening, before the run):** zone median Δ between 0 and +0.05 m
+(a 0.4 m / 3 s wind sea sets up centimetres: setup ≈ 0.15–0.2 × breaking height); rest median
+Δ ≥ +0.05 m with oceanfront marks +0.1..+0.3 m; the spit marks within ±0.05 m; the seiche
+basins' per-mark spread ±0.2–0.3 m as §40. **Expected verdict: DROP D4/D5.** A MISS (zone
+median ≥ 0.05 m) would mean the bay wave field is doing real work on the score and the shadow
+edge matters → D4.
+
+**RESULT (run 09-17 ~19:00, `logs/phase4b_2026-09-17/D3_paired_zone_premier_vs_nowaves.log`)
+— PREDICTION MISSED; the drop line is NOT met.** 28 zone marks vs 66 rest (94 common):
+
+| set | n | Δ median [95 % CI] | Δ mean [95 % CI] | n(Δ>0) | n(\|Δ\|>0.05) | ΔRMSE paired |
+|---|---|---|---|---|---|---|
+| ZONE | 28 | **+0.113** [+0.079, +0.158] | +0.121 [+0.097, +0.145] | 28 | 24 | −0.053 [−0.084, −0.016] |
+| REST | 66 | +0.113 [+0.102, +0.147] | +0.122 [+0.100, +0.143] | 60 | 55 | −0.075 [−0.101, −0.049] |
+
+Zone by basin: raritan_bay +0.080 (n 19, +0.03..+0.18), sandy_hook_bay +0.211 (4),
+shrewsbury_navesink +0.175 (5). The spit marks: 6106 +0.265, 6140 +0.244 — the largest in the
+zone. The positive control held (rest +0.11). Pooled ΔRMSE −0.066 [−0.087, −0.046].
+**Second field (gauge series, premier − nowaves, 10-29 12:00 → 10-30 06:00):** NY bay gauges
+mean Δ ≈ 0 (±0.4–0.8 m swings = §40 seiche phase) but **+0.09..+0.19 at the peak hour at all
+five** (sandy_hook +0.185, great_kills +0.143, narrows_si +0.098), against the ocean-side
+`usgs_stormtide_sea_bright` +0.118 at peak / +0.152 mean; back bays behind the barrier islands
++0.10..+0.14 persistent, never negative. **Reading: the zone's +0.11 is mostly the ocean setup
+lifting the whole system at the peak; the local, in-bay excess is ~+0.05–0.10 m in the pocket
+and at the spit** — that is the ceiling for what a diffraction fix could move. FINDINGS §48.
+**Decision by the pre-registered rule: D4 (the 12 h `snapwave.bds` 30° → 60° spread cut, G3
+recipe, ~5 h, diagnostic not arm) STAYS on the list** — schedule after the G5 gate and the
+wavemaker arm; D5 (the HHB diffraction patch) only if D4 says spread does not fill the pocket.
+
+### ✅ 2026-09-17 EVENING — Phase 6: `scripts/retire_arm.py` built; manifest run, NOTHING retired yet (the user ticks)
+
+**What it is.** `retire_arm.py <arm>… [--reason] [--apply] [--root]` per the plan spec: the
+default is a manifest only (every file KEEP / DELETE, apparent vs TRUE reclaim where true
+counts `st_nlink == 1` only, `mmlsquota … scratch` before/after); `--apply` moves every KEEP
+into `_retired/<arm>/` with `os.replace`, verifies each landed at its recorded size, and only
+then unlinks the DELETEs, `rmdir`s (never `rmtree`; a leftover stops it), writes
+`_retired/<arm>/.retired` (JSON) and appends `_retired/MANIFEST.md`. Refusals: `_*`,
+`floodmaps`, symlinks, `restart_segments/`, a map < 30 min old or a queued job carrying the
+name, an existing `_retired/<arm>`, and ANY unclassified file (no silent default). Hooks:
+`python -m nj_sfincs.premier` now also globs `_retired/*` and prints `RET <dir> retired
+<date>: <reason>`; `dedupe_experiment_inputs.runs()` skips `_retired` / `floodmaps`;
+`desktop_pull_backup.sh` keeps `provenance*.txt`, `engine.txt`, `.retired`, `MANIFEST.md`.
+Test `tests/test_retire_arm.py` (5): synthetic root with canary keeps + a hard-linked pair,
+spies on `os.replace` / `os.unlink` — every move precedes the first unlink, a simulated
+verify failure → zero unlinks, refusals, manifest run byte-identical, true reclaim counts
+singletons only. Suite 173 OK.
+
+**Manifest run (`logs/phase6_retire_manifest_2026-09-17.txt`, scratch at 170 G of 1 T):**
+
+| arm | true reclaim | note |
+|---|---|---|
+| `wave-stwave` | 5.6 G | 🔴 **its `sfincs.nc` is a DIFFERENT mesh from the template (md5 differs, nlink 3): the "mesh with the old −10 m line" that `wave_shelf_reference.py --ref-mesh` NEEDS for the G5 read.** Copy that file somewhere durable (e.g. `data/quadtree/v3_mesh_10m_line_stwave.nc`) and point `--ref-mesh` there BEFORE retiring. |
+| `diag-premier-norain` | 10.4 G | container diag, superseded |
+| `bed-buildings` | 10.6 G | container, the 09-04 buildings arm (now in the premier) |
+| `BRACKET+setup-stockdon` | 3.9 G | inadmissible bound, scored in `bracket_metrics.csv` |
+| `wave-shelf-steps` | 12.6 G | container; F.4 comparison done 09-13 |
+| `wave-nowind+wave-shelf-steps` | 11.9 G | ⚠️ still the wind-off reference for `snapwave_direction_check.py bands --ref` — the G5 read may want it; retire AFTER the gate |
+| `wave-fw01+wave-shelf-steps` | 5.2 G | stale 18 % partial, no metrics row |
+| **total** | **60.1 G** (apparent 133.8 G — the rest is hard-linked subgrid/mesh/roughness, nlink 3–9) | |
+
+NOT candidates: the five `wave-band-sandy-hook[+…]` runs (the scored fixed-engine record on
+the old band), `naccs-nowaves`, `naccs-premier`. To execute, the user ticks arms and runs
+`NJ_DOMAIN=v3 python scripts/retire_arm.py <arms> --reason "…" --apply` (or asks; Claude can
+run it — it is a move + unlink, not a git action).
 
 ### ⏳ 2026-09-17 — PICK UP HERE: maintenance over; every solve and score landed, but the premier's row was lost and the notebook never rendered — both re-queued
 

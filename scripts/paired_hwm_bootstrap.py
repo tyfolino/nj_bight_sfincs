@@ -32,6 +32,7 @@ Usage:
         faber-nowaves+tide-anchor faber-nowaves+tide-shift
     PYTHONPATH=$PWD python scripts/paired_hwm_bootstrap.py A B --thresholds 0.01 0.05
 """
+
 from __future__ import annotations
 
 import argparse
@@ -41,13 +42,31 @@ import geopandas as gpd
 import numpy as np
 
 import nj_sfincs  # noqa: F401 — pins the pyproj-before-hydromt import order
-from nj_sfincs import validate
 from nj_sfincs import domain as _domain
+from nj_sfincs import validate
 from nj_sfincs.config import exp_root
-from nj_sfincs.config import DATA
 from nj_sfincs.validate import DEPTH_MIN
 
 GROUND_CAP = 0.5  # m; matches hwm_metrics
+
+
+def scored_marks():
+    """The HWM table in the SAME order/clip ``residuals`` scores it, with lon/lat and basin.
+
+    ``residuals`` returns arrays aligned to this table; use it to subset by box or basin.
+    """
+    from nj_sfincs.validate.metrics import _clip_to_region
+
+    hwm = gpd.read_file(str(_domain.active().hwm_geojson)).to_crs(
+        f"EPSG:{_domain.active().epsg}"
+    )
+    hwm = _clip_to_region(hwm)
+    ll = hwm.to_crs("EPSG:4326")
+    hwm = hwm.assign(lon=ll.geometry.x.values, lat=ll.geometry.y.values)
+    hwm["basin"] = np.asarray(
+        _domain.classify_hwm_basin(hwm.geometry.x.values, hwm.geometry.y.values)
+    )
+    return hwm
 
 
 def residuals(model_dir: Path, estimator: str, radius_m: float):
@@ -55,9 +74,7 @@ def residuals(model_dir: Path, estimator: str, radius_m: float):
     from nj_sfincs.validate.metrics import _clip_to_region
 
     _mod, da_hmax, da_dep = validate.load_floodmap(model_dir)
-    hwm = gpd.read_file(str(_domain.active().hwm_geojson)).to_crs(
-        da_dep.rio.crs
-    )
+    hwm = gpd.read_file(str(_domain.active().hwm_geojson)).to_crs(da_dep.rio.crs)
     # Same region clip hwm_metrics applies (2026-08-17): an out-of-region mark scores
     # as dry against bare earth in EVERY arm — near-identical large residuals that
     # dilute the paired delta (~3x on the first v1.5 comparison, STATUS).
@@ -93,17 +110,38 @@ def residuals(model_dir: Path, estimator: str, radius_m: float):
 
 
 def main() -> int:
-    p = argparse.ArgumentParser(description=__doc__,
-                                formatter_class=argparse.RawDescriptionHelpFormatter)
+    p = argparse.ArgumentParser(
+        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
+    )
     p.add_argument("arm_a")
     p.add_argument("arm_b", help="the incumbent / bar; the reported delta is A - B")
-    p.add_argument("--estimator", default="median", choices=["median", "max"],
-                   help="must match the runs being compared (default: median)")
+    p.add_argument(
+        "--estimator",
+        default="median",
+        choices=["median", "max"],
+        help="must match the runs being compared (default: median)",
+    )
     p.add_argument("--radius-m", type=float, default=50.0)
     p.add_argument("--n-boot", type=int, default=200_000)
     p.add_argument("--seed", type=int, default=20261007)
-    p.add_argument("--thresholds", type=float, nargs="*", default=[0.0, 0.01, 0.05],
-                   help="report P(delta > t) for each; use your PRE-REGISTERED lines")
+    p.add_argument(
+        "--thresholds",
+        type=float,
+        nargs="*",
+        default=[0.0, 0.01, 0.05],
+        help="report P(delta > t) for each; use your PRE-REGISTERED lines",
+    )
+    p.add_argument(
+        "--bbox",
+        type=float,
+        nargs=4,
+        metavar=("LON_MIN", "LON_MAX", "LAT_MIN", "LAT_MAX"),
+        help="ALSO report the marks inside this lon/lat box vs the rest "
+        "(Phase 4b D3: the Sandy Hook shadow zone). The per-mark "
+        "difference of residuals is the A-minus-B change in MODELLED "
+        "level, so its zone median/mean is the zone's wave (or "
+        "whatever-A-changes) contribution.",
+    )
     a = p.parse_args()
 
     root = exp_root()
@@ -114,8 +152,10 @@ def main() -> int:
             raise SystemExit(f"no sfincs_map.nc in {d}")
         m, r = residuals(d, a.estimator, a.radius_m)
         masks[arm], res[arm] = m, r
-        print(f"{arm:<32} n={m.sum():3d}  RMSE={np.sqrt((r[m] ** 2).mean()):.4f}  "
-              f"bias={r[m].mean():+.4f}")
+        print(
+            f"{arm:<32} n={m.sum():3d}  RMSE={np.sqrt((r[m] ** 2).mean()):.4f}  "
+            f"bias={r[m].mean():+.4f}"
+        )
         validate.load_floodmap_cache_clear()
 
     common = masks[a.arm_a] & masks[a.arm_b]
@@ -123,13 +163,17 @@ def main() -> int:
     for arm in (a.arm_a, a.arm_b):
         dropped = int(masks[arm].sum() - common.sum())
         if dropped:
-            print(f"⚠️  {arm}: {dropped} mark(s) scored here but not in the other arm — "
-                  "excluded so both are measured on one common set")
-    print(f"\ncommon scored marks: {common.sum()}   "
-          f"(estimator={a.estimator}, radius={a.radius_m:g} m)")
+            print(
+                f"⚠️  {arm}: {dropped} mark(s) scored here but not in the other arm — "
+                "excluded so both are measured on one common set"
+            )
+    print(
+        f"\ncommon scored marks: {common.sum()}   "
+        f"(estimator={a.estimator}, radius={a.radius_m:g} m)"
+    )
 
     ra, rb = res[a.arm_a][idx], res[a.arm_b][idx]
-    point = np.sqrt((ra ** 2).mean()) - np.sqrt((rb ** 2).mean())
+    point = np.sqrt((ra**2).mean()) - np.sqrt((rb**2).mean())
     rng = np.random.default_rng(a.seed)
     draws = rng.integers(0, len(idx), size=(a.n_boot, len(idx)))
     d = np.sqrt((ra[draws] ** 2).mean(1)) - np.sqrt((rb[draws] ** 2).mean(1))
@@ -140,10 +184,105 @@ def main() -> int:
     print(f"   P(delta < 0, i.e. A better) = {np.mean(d < 0):.3f}")
     for t in a.thresholds:
         print(f"   P(delta > {t:+.3f} m) = {np.mean(d > t):.3f}")
-    print("\nReport the CI and the threshold probabilities together. A CI that excludes "
-          "zero\nmeans the difference is real; whether it clears a PRE-REGISTERED line is "
-          "a separate\nquestion with its own probability.")
+    print(
+        "\nReport the CI and the threshold probabilities together. A CI that excludes "
+        "zero\nmeans the difference is real; whether it clears a PRE-REGISTERED line is "
+        "a separate\nquestion with its own probability."
+    )
+    if a.bbox:
+        zone_report(a, res, common, rng)
     return 0
+
+
+def zone_report(a, res, common, rng):
+    """Zone-vs-rest split (``--bbox``): per-mark Δ modelled level, ΔRMSE, per-basin, ids."""
+    lon0, lon1, lat0, lat1 = a.bbox
+    hwm = scored_marks()
+    if len(hwm) != len(common):
+        raise SystemExit(
+            f"scored_marks() has {len(hwm)} rows but residuals scored "
+            f"{len(common)} — the clip/order drifted; fix before reading"
+        )
+    inbox = (
+        (hwm["lon"].values >= lon0)
+        & (hwm["lon"].values <= lon1)
+        & (hwm["lat"].values >= lat0)
+        & (hwm["lat"].values <= lat1)
+    )
+    ra_all, rb_all = res[a.arm_a], res[a.arm_b]
+    d_all = ra_all - rb_all  # = modelled_A - modelled_B (obs cancels)
+    print(
+        f"\n=== --bbox lon {lon0}..{lon1} lat {lat0}..{lat1}: "
+        f"{int((inbox & common).sum())} scored marks in the ZONE, "
+        f"{int((~inbox & common).sum())} in the REST "
+        f"({int(inbox.sum())} in the box before the q/score filter)"
+    )
+    print(
+        "per-mark Δ = modelled level (A − B); a wave arm vs a waves-off arm reads the wave"
+        " contribution\n"
+    )
+
+    def boot(sel):
+        i = np.nonzero(sel)[0]
+        A, B = ra_all[i], rb_all[i]
+        dd = A - B
+        n = len(i)
+        draws = rng.integers(0, n, size=(min(a.n_boot, 100_000), n))
+        dmean = dd[draws].mean(1)
+        dmed = np.median(dd[draws], axis=1)
+        drm = np.sqrt((A[draws] ** 2).mean(1)) - np.sqrt((B[draws] ** 2).mean(1))
+        return dict(
+            n=n,
+            med=float(np.median(dd)),
+            mean=float(dd.mean()),
+            mean_ci=np.percentile(dmean, [2.5, 97.5]),
+            med_ci=np.percentile(dmed, [2.5, 97.5]),
+            n_up=int((dd > 0).sum()),
+            n_gt05=int((np.abs(dd) > 0.05).sum()),
+            rmse_a=float(np.sqrt((A**2).mean())),
+            rmse_b=float(np.sqrt((B**2).mean())),
+            drmse_ci=np.percentile(drm, [2.5, 97.5]),
+            bias_a=float(A.mean()),
+            bias_b=float(B.mean()),
+        )
+
+    for label, sel in (("ZONE", common & inbox), ("REST", common & ~inbox)):
+        if sel.sum() < 2:
+            print(f"  {label}: n={int(sel.sum())} — nothing to bootstrap")
+            continue
+        r = boot(sel)
+        print(
+            f"  {label:4s} n={r['n']:3d}  Δ median {r['med']:+.3f} m "
+            f"[{r['med_ci'][0]:+.3f}, {r['med_ci'][1]:+.3f}]   "
+            f"Δ mean {r['mean']:+.3f} m [{r['mean_ci'][0]:+.3f}, {r['mean_ci'][1]:+.3f}]"
+            f"   n(Δ>0)={r['n_up']}  n(|Δ|>0.05)={r['n_gt05']}"
+        )
+        print(
+            f"       RMSE A {r['rmse_a']:.3f} B {r['rmse_b']:.3f}  "
+            f"ΔRMSE {r['rmse_a'] - r['rmse_b']:+.3f} "
+            f"[{r['drmse_ci'][0]:+.3f}, {r['drmse_ci'][1]:+.3f}]   "
+            f"bias A {r['bias_a']:+.3f} B {r['bias_b']:+.3f}"
+        )
+
+    basins = hwm["basin"].values
+    print("\n  zone by basin:")
+    for b in sorted(set(basins[common & inbox])):
+        s = common & inbox & (basins == b)
+        dd = d_all[s]
+        print(
+            f"    {b:22s} n={int(s.sum()):2d}  Δ median {np.median(dd):+.3f}  "
+            f"mean {dd.mean():+.3f}  min {dd.min():+.3f}  max {dd.max():+.3f}"
+        )
+    print("\n  zone marks (hwm_id, basin, lon, lat, obs, res A, res B, Δ):")
+    order = np.nonzero(common & inbox)[0]
+    order = order[np.argsort(-np.abs(d_all[order]))]
+    for k in order:
+        print(
+            f"    {hwm['hwm_id'].values[k]!s:>6} {basins[k]:20s} "
+            f"{hwm['lon'].values[k]:9.4f} {hwm['lat'].values[k]:8.4f} "
+            f"{hwm['elev_m'].values[k]:6.3f}  {ra_all[k]:+.3f} {rb_all[k]:+.3f}  "
+            f"{d_all[k]:+.3f}"
+        )
 
 
 if __name__ == "__main__":
