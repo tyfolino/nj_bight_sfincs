@@ -162,6 +162,12 @@ not trip that guard. Do not run the sweep driver to "just rebuild" a template.
   pixels move (v3, 2026-09-04: 1.25 M faces got a new `z_zmin`, 29 by > 1 m, from a tier
   that touched 12% of cells). Use `scripts/rebuild_subgrid.py --overlay`, which runs the
   premier's merge untouched and paints the raster on top with nearest. STATUS 09-04.
+- 🔴 **The v3 subgrid rasters are ROTATED.** `experiments/v3/_template_sealed/subgrid/*.tif`
+  are written on the quadtree frame (rotation 359.183°): the GeoTIFF transform has b, d ≠ 0.
+  Any code that maps pixels to coordinates with `x0 + col*res` is wrong by up to 3 km at
+  the far end of the domain — the first wavemaker line (2026-09-17) ran through land and on
+  the wrong side of the barrier islands. Go through the affine (`~transform`,
+  `rasterio.sample`); rioxarray's "non-rectilinear or with rotation" warning is that fact.
 - **eHydro sign convention flips by USACE district.** New York district ships negative
   elevations; Philadelphia ships positive depths. A hardcoded formula produces a silently
   empty raster on the wrong side.

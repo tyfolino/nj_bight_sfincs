@@ -8,6 +8,48 @@ Last updated: **2026-09-17 15:30** — post-maintenance audit: all 5 fixed-engin
 
 ## ⏳ PICK UP — next session
 
+### ⏳ 2026-09-17 EVENING — PICK UP HERE (written before a context compaction)
+
+**Running:** the G5 Galibier gate — three 24 h cuts of the apex premier, `G5_v233` 61679637
+(hal0383), `G5_main_default` 61679638 (hal0386, restarted from scratch after a preemption ~1 h
+in), `G5_main_gammax2` 61679639 (hal0385); `/scratch/tpj8/engine_gate/G5_*`; ~10 h each, so
+the first two land ~02:30–03:00, the default ~04:00. Pre-registration + decision rule: the
+16:30 block below. **Read in this order:** `sacct -j … --format=NodeList` (hal, not halk) →
+`engine_gate.py compare G5_v233 G5_main_default` and `… G5_main_gammax2` (JSON to
+`logs/engine_gate_2026-09-17/`) → `snapwave_bay_census.py` + `snapwave_direction_check.py
+convergence` on each (spikes, cap-hits; pick cap-hit-free hours) → `wave_shelf_reference.py
+<cut> --premier G5_v233 --ref-mesh experiments/v3/wave-stwave/sfincs.nc --times <cap-hit-free
+hours ≤ 10-29 00:00>` → shoreline setup: mean `zs` over the last 6 h on SFINCS-active faces
+with mesh z −2..0 m, per shelf site (Sea Bright / Atlantic City / Ocean City / Sea Isle boxes)
+and per HWM basin (no script yet — ~40 lines on the `snapwave_direction_check.load_run` loader).
+
+**Done today, all STAGED, not committed (the user commits):** premier re-score + `lockf` fix;
+notebook rendered + pushed (`0a87b5d`); Ruff + pypdf in the env; four paired pairs; apex
+re-baseline (registry, dirs, rows, `metrics_2026-09-17_pre_apex_rebaseline.csv`); FINDINGS
+§45 (IG uncoupled without a wavemaker), §46 (apex band), §47 (Galibier breaking/setup); the
+IG toy + `v2.3.3-winddir-igk-fix-1` backport (a no-op on the toy); the v3 wavemaker line
+(`data/wavemakers_v3/v3_wavemaker_5m_mhw.geojson`, 10 pieces, 142.8 km, 600 m inlet setback,
+user-reviewed on `reports/figures/wavemaker_line_v3_2026-09-17.png` — "good for now"); the
+rotated-raster trap in CLAUDE.md §5. Plan file updated through Phase 8.
+
+**Three to-dos while the gate runs (user-approved list, in order):**
+1. **Phase 4b D3** — paired per-mark Δ, `naccs-premier` (apex) vs `naccs-nowaves`, the 40
+   Sandy-Hook-shadow marks (box lon −74.30..−73.95, lat 40.38..40.52) vs the rest:
+   `scripts/paired_hwm_bootstrap.py` with a mark subset (add a `--bbox` if it lacks one).
+   Decides D4/D5. Pre-register first: if the zone's wave contribution is < 0.05 m, D4/D5 drop.
+2. **Phase 6 `scripts/retire_arm.py`** — the plan's spec (refusals, move-KEEPs-before-unlink,
+   `_retired/<arm>/` + `MANIFEST.md`, `premier._main` prints `RET`, test
+   `tests/test_retire_arm.py`); manifest-only by default; nothing deleted until the user ticks
+   the list. Candidates now: the six retired container arms + the stale `wave-fw01+…` dir
+   (~6 G of map each) — NOT the five `wave-band-sandy-hook[+…]` runs (the scored record).
+3. **Re-render the epoch notebook** on the renamed arms: `scripts/make_v3_epoch_notebook.py`
+   (arm list already updated) → `render_notebook_profiled.py` at ≥ 200 G (HWM panel cell
+   needs 165 G for six arms), then the user's push job.
+Then, after the gate: the engine decision (rule in the 16:30 block) → the `wave-wavemaker`
+arm = premier + `wvmfile` from the line above via `sf.wave_makers.create(...)` in staging
+(`model.py` needs a WaveConfig field for it), pre-registered (oceanfront HWM bias → 0, MOTF POD
+up in overwash zones, bays unchanged, runtime) — IG knobs read on the toy first.
+
 ### ⏳ 2026-09-17 — PICK UP HERE: maintenance over; every solve and score landed, but the premier's row was lost and the notebook never rendered — both re-queued
 
 **What actually happened Monday evening (`sacct -S 2026-09-13 -X`, all on `hal*`, no halk).**
@@ -101,6 +143,40 @@ ran; median, 50 m, B 200 k, Δ = A − premier unless stated):**
 4. **Apex** (its own 09-13 pre-registration, HWM part) — `wave-apex` vs premier: the band
    extension feeds Lower Bay; predict Δ < 0 with the CI excluding zero only if the ~40
    shadow-zone marks move; otherwise a null. Headline test stays the Lower Bay N vs CORA read.
+
+**🧱 18:00 → 19:00 — THE v3 WAVEMAKER LINE IS BUILT: `scripts/build_wavemaker_line.py` →
+`data/wavemakers_v3/v3_wavemaker_5m_mhw.geojson` (tracked; + `.report.csv`), map
+`reports/figures/wavemaker_line_v3_2026-09-17.png`.** 🔴 **Trap found on the way (the user saw
+the first line on land / on the wrong side of the barrier islands in QGIS): the v3 subgrid
+rasters are written on the ROTATED quadtree frame — `dep_subgrid_lev0.tif` has transform
+b, d = ±0.356 (rotation 359.183°) — so any pixel↔map conversion that assumes an axis-aligned
+north-up grid is off by up to 3 km at the far end of the domain.** Every conversion now goes
+through the affine (`~transform` for sampling, `transform * (col, row)` for the contour grid).
+The 213 "refinement-boundary flags" of the first build were this error, not a mesh property:
+**0 flags** on the corrected line at 5 m (the 4.5/5.5 m sensitivity read is void).
+Method: contour of the 25 m bed at MHW 0.6 − 5 m = **−4.4 m NAVD88**, smoothed twice — the σ 400 m
+bed decides WHERE along the coast the line runs, then every vertex is snapped along its
+shore-normal onto the σ 75 m bed's real crossing (heavy smoothing dragged the Monmouth contour
+onto the beach), then a 1 km / 300 m moving average, simplify 20 m, 100 m vertices. Open coast
+only, per vertex on bed profiles: the heavy bed reaches −8 m within 2–6 km seaward AND the light
+bed reaches MHW within 1.2 km landward (majority over 300 m, so a ≥ 500 m inlet mouth breaks the
+line; a 2.5 km probe bridged every inlet, and a land test on the σ 400 m bed smeared every barrier
+island below MHW and dropped LBI). Vertices with no land→water crossing within 1.5 km, a light
+bed > 2 m off target, or a RAW pixel > 3 m shallower / 6 m deeper (groin, jetty, channel) are
+dropped and the run split, re-checked after resampling. Gates y ≤ 4,480,000 (Sandy Hook tip —
+nothing in the bays) and x ≥ 520,000 (Delaware Bay). **Orientation: land on the LEFT of the
+vertex order (the toy: W→E generated N) = south→north.** Result (19:30, after the user's read of the map): **10 pieces, 142.8 km, raw bed −7.7..−1.7 m,
+0 refinement flags**, every piece peeled of end vertices turning > 35° off its median heading
+(the Barnegat hook into the ebb delta) and set back **600 m from every end** (`--end-trim-m`),
+so no IG generation within 600 m of an inlet; the 4.7 km Brigantine piece fell under the 3 km
+minimum with the setback and is out (4362–4373 km has no line); breaks at Cape May Inlet
+(4329 km N), Townsends (4339), Corson's–Great Egg (4348–4352), Absecon (4357), Brigantine–Little
+Egg (4366–4372), Barnegat (4401), Manasquan (4439.4), Shark River (4454–4456), Sandy Hook north
+beach (4471–4475). On the map the line sits just seaward of every beach, the archive's v1 line
+(dashed) lies on top of it on Monmouth, and the one blemish is a small hook into the Barnegat
+Inlet ebb delta at the north end of piece 7 — trim in QGIS or shorten `--probe-land-m`.
+Test: `tests/test_wavemaker_line.py` (synthetic beach + island + inlet + shoal, north-up
+raster; 168 tests OK).
 
 **📝 16:30 — PRE-REGISTRATION, G5: the Galibier breaking/setup gate (written before submission).**
 Three 24 h cuts of the apex premier's inputs (`engine_gate.py make … --hours 24`, hard-linked

@@ -16,6 +16,8 @@ data/*/*
 !data/data_catalog.yml
 !data/region_*.geojson
 !data/quadtree/*.geojson
+!data/wavemakers_v3/*.geojson
+!data/wavemakers_v3/*.csv
 !data/flux_crosssections.geojson
 !data/flux_crosssections.crs
 !data/roughness/*.csv
