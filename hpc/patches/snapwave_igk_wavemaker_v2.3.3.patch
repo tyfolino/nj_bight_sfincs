@@ -1,0 +1,66 @@
+diff --git a/source/src/sfincs_lib.f90 b/source/src/sfincs_lib.f90
+index a8b8fda..31a39b0 100644
+--- a/source/src/sfincs_lib.f90
++++ b/source/src/sfincs_lib.f90
+@@ -94,7 +94,7 @@ module sfincs_lib
+    !
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !
+-   build_revision = "$Rev: v2.3.3 mt. Faber+"
++   build_revision = "$Rev: v2.3.3 mt. Faber+ nj-winddir-fix-1 nj-igk-fix-1"
+    build_date     = "$Date: 2025-05-12"
+    !
+    call write_log('', 1)
+diff --git a/source/src/sfincs_wavemaker.f90 b/source/src/sfincs_wavemaker.f90
+index 4595f00..fee95ca 100644
+--- a/source/src/sfincs_wavemaker.f90
++++ b/source/src/sfincs_wavemaker.f90
+@@ -1007,7 +1007,7 @@
+                   wavemaker_index_nmi(iwm) = iz
+                   wavemaker_index_nmb(iwm) = ip
+                   wavemaker_idir(iwm)      = -1
+-                  wavemaker_angfac(iwm)    = max(sin(pi - phi(ip)), 0.0)
++                  wavemaker_angfac(iwm)    = max(-sin(phi(ip)), 0.0)   ! nj-igk-fix-1: as v2.4.0 ('waves forced from the north')
+                   !
+                   wavemaker_ndm(nok) = iwm
+                   !
+@@ -1029,7 +1029,7 @@
+                   wavemaker_index_nmi(iwm) = iz
+                   wavemaker_index_nmb(iwm) = ip
+                   wavemaker_idir(iwm)      = -1
+-                  wavemaker_angfac(iwm)    = max(sin(pi - phi(ip)), 0.0)
++                  wavemaker_angfac(iwm)    = max(-sin(phi(ip)), 0.0)   ! nj-igk-fix-1: as v2.4.0 ('waves forced from the north')
+                   !
+                endif
+                !
+@@ -1096,7 +1096,7 @@
+                   wavemaker_index_nmi(iwm) = iz
+                   wavemaker_index_nmb(iwm) = ip
+                   wavemaker_idir(iwm)      = -1
+-                  wavemaker_angfac(iwm)    = max(sin(pi - phi(ip)), 0.0)
++                  wavemaker_angfac(iwm)    = max(-sin(phi(ip)), 0.0)   ! nj-igk-fix-1: as v2.4.0 ('waves forced from the north')
+                   !
+                   wavemaker_ndm(nok) = iwm
+                   !
+@@ -1118,7 +1118,7 @@
+                   wavemaker_index_nmi(iwm) = iz
+                   wavemaker_index_nmb(iwm) = ip
+                   wavemaker_idir(iwm)      = -1
+-                  wavemaker_angfac(iwm)    = max(sin(pi - phi(ip)), 0.0)
++                  wavemaker_angfac(iwm)    = max(-sin(phi(ip)), 0.0)   ! nj-igk-fix-1: as v2.4.0 ('waves forced from the north')
+                   !
+                endif
+                !
+diff --git a/source/src/snapwave/snapwave_solver.f90 b/source/src/snapwave/snapwave_solver.f90
+index 53cc31d..9c9ab5d 100644
+--- a/source/src/snapwave/snapwave_solver.f90
++++ b/source/src/snapwave/snapwave_solver.f90
+@@ -74,7 +74,7 @@ module snapwave_solver
+       if (igwaves) then
+          cg_ig   = Cg
+          expon   = -(sigm_ig*sqrt(depth/g))**(2.5)
+-         kwav_ig  = sig**2/g*(1.0-exp(expon))**(-0.4)
++         kwav_ig  = sigm_ig**2/g*(1.0-exp(expon))**(-0.4)   ! nj-igk-fix-1: IG wavenumber from the IG frequency (was sig, the short-wave one; fixed upstream in v2.4.0)
+       else
+          cg_ig   = 0.0
+          kwav_ig = 0.0 

@@ -4,7 +4,7 @@
 12 KB "current state" memory file and its 26 reverse-chronological campaign logs; the point
 of the format is that a reader gets the current state without replaying how it was reached.
 
-Last updated: **2026-09-17 10:30** — post-maintenance audit: all 5 fixed-engine solves + per-arm validates DONE on `hal*`; 🔴 the premier's fresh score was LOST to a node-local `flock` (fixed → `lockf`), re-score 61670566 DONE (premier 0.382 / −0.181); 🔴 IG was never coupled (no wavemaker, FINDINGS §45); apex is a real −1.5 cm one-flag win → PROMOTED INTO THE PREMIER (re-baseline 10:30, old-band runs renamed `wave-band-sandy-hook[+…]`), friction +1 cm, buildings undecided; the notebook render was OOM-killed at 100 G (the HWM panel cell needs 165 G for 6 arms) → re-rendered at 400 G and PUSHED (`0a87b5d`); dead queue entries cancelled. History before 09-17 is in the dated sections below and in git.
+Last updated: **2026-09-17 15:30** — post-maintenance audit: all 5 fixed-engine solves + per-arm validates DONE on `hal*`; 🔴 the premier's fresh score was LOST to a node-local `flock` (fixed → `lockf`), re-score 61670566 DONE (premier 0.382 / −0.181); 🔴 IG was never coupled (no wavemaker, FINDINGS §45); apex is a real −1.5 cm one-flag win → PROMOTED INTO THE PREMIER (re-baseline 10:30, old-band runs renamed `wave-band-sandy-hook[+…]`), friction +1 cm, buildings undecided; the notebook render was OOM-killed at 100 G (the HWM panel cell needs 165 G for 6 arms) → re-rendered at 400 G and PUSHED (`0a87b5d`); dead queue entries cancelled. History before 09-17 is in the dated sections below and in git.
 
 ## ⏳ PICK UP — next session
 
@@ -102,6 +102,91 @@ ran; median, 50 m, B 200 k, Δ = A − premier unless stated):**
    extension feeds Lower Bay; predict Δ < 0 with the CI excluding zero only if the ~40
    shadow-zone marks move; otherwise a null. Headline test stays the Lower Bay N vs CORA read.
 
+**📝 16:30 — PRE-REGISTRATION, G5: the Galibier breaking/setup gate (written before submission).**
+Three 24 h cuts of the apex premier's inputs (`engine_gate.py make … --hours 24`, hard-linked
+inputs, t0 → 10-29 00:00, Hs at the boundary reaching ~5.5 m at Atlantic City), same node class,
+64 threads: **G5_v233** = `v2.3.3-winddir-fix-1` (the premier's engine, the reference),
+**G5_main_default** = `main-winddir-fix-1` (v2.4.2-alpha: `snapwave_gammax` 999 = clamp AND
+force-cap off, `baldock_exponent 2`), **G5_main_gammax2** = the same with `snapwave_gammax = 2`
+(July's "clamped Galibier"). Read with `engine_gate.py compare`, `wave_shelf_reference.py`,
+`snapwave_bay_census.py`, `snapwave_direction_check.py convergence`, and a shoreline-setup read
+(mean `zs` over the last 6 h on SFINCS-active cells with mesh z −2..0 m, per shelf site and per
+HWM basin). Predictions, in the order they will be read:
+1. **Stability (main_default):** if the July explosion was the missing clamp and not the swell
+   direction, `n_spike` cell-hours and `field_max` exceed G5_v233's by ≥ 10× and `zs` shows a
+   force-explosion signature (|Δzs| > 1 m somewhere offshore). If it holds (spikes within 3× and
+   no |Δzs| > 0.5 m offshore), Galibier's exponent-2 dissipation is an adequate rail on v3 with
+   correctly directed swell — the July verdict was contaminated by §43.
+2. **Shelf (both main cuts):** the −9 m shelf ratio vs CORA at the four sites within ±0.05 of
+   G5_v233 at the cap-hit-free hours (the toy moved hm0 by ≤ 0.03 at −6..−4 m). A larger move
+   means Galibier's breaking acts on the shelf, not only in the surf zone, and the September
+   shelf reads would need redoing on the new engine.
+3. **Shoreline setup (headline):** main ≥ 2× v2.3.3 in the −2..0 m band at the four sites
+   (toy: 5×); gammax2 between the two. Absolute size at hour 24: v2.3.3 ~0.05–0.1 m.
+4. **Where it goes:** the extra setup shows in the open-coast basins (`atlantic_oceanfront`,
+   `south_coast`, `absecon_atlantic_city` faces) and NOT in the bays (`raritan_bay`,
+   `cape_may_back_bays`), which July's clamped Galibier found the other way round (estuary
+   filled, coast +1 m) — that was misdirected swell; the prediction here is the opposite sign.
+5. **Runtime:** main within 1.5× of v2.3.3 wall (RF tables are meant to be faster).
+**SUBMITTED 16:40: G5_v233 = 61679637, G5_main_default = 61679638, G5_main_gammax2 = 61679639**
+(`run.submit_slurm`, explicit binaries, `--constraint=emeraldrapids`, 14 h, 64 threads; ids in
+`logs/engine_gate_2026-09-17_G5.jobs`; dirs `/scratch/tpj8/engine_gate/G5_*`, 9.9 G apparent each,
+25 hard-linked inputs; `sfincs.inp` differs from the premier's only in `tstop` and the dropped
+restart keys, plus `snapwave_gammax = 2.0` on the third). Expected ~10 h wall each at the premier's
+pace; 2 emeraldrapids nodes idle at submission → the third queues. Check `sacct --format=NodeList`
+before reading anything (no halk). Void conditions: a cut that dies or TIMEOUTs; a `halk` node; cap-hit-contaminated hours in the
+site read (use the `convergence` table, as on 09-17). Decision rule stated now: only a PASS on 1
+AND 2 with a ≥ 2× setup on 3 in the open-coast basins makes main a candidate epoch worth the
+G1/G2 gates and a full solve; anything else keeps v2.3.3 and the wavemaker arm goes on it.
+
+**🧪 15:30 — WAVEMAKER TOY CASE + the v2.4.0 IG backport (user: "start with the toy case to see what
+2.4 fixes; can we backport the IG fix into 2.3.3?").** `git diff v2.3.3..v2.4.0_Galibier_release`
+(one squash commit, 75 files, +20 k lines) has no isolated "IG fix"; what changed for IG is
+(a) **`snapwave_solver.f90:77` — the IG wavenumber was built from the SHORT-wave frequency**
+(`kwav_ig = sig**2/g…` → `sigm_ig**2/g…`), (b) `snapwave_gammaig` default 0.2 → 0.7, (c) the IG
+sink now depth-limited via `gammax` and the source term computed once per first sweep, and (d) the
+wavemaker orientation factor `sin(pi − phi)` → `−sin(phi)` on four lines (the "waves forced from
+the north" fix) plus a warning for wavemaker points on a quadtree refinement boundary. (a)+(d) are
+backported as **`hpc/patches/snapwave_igk_wavemaker_v2.3.3.patch`** on top of the winddir patch
+(source copy `/scratch/tpj8/sfincs-build/src-igk-fix-1`, the user's `SFINCS-src` tree untouched),
+built as **`sfincs-native/v2.3.3-winddir-igk-fix-1-gf11`** (job 61679229, 2 min, sha `34048c58…`,
+Build-Revision `… nj-winddir-fix-1 nj-igk-fix-1`).
+
+`make_snapwave_reproducer.py build --ig` (NEW): the plane beach, wind OFF, three cases — `ig_nowm`
+(IG on, no wavemaker = the premier's situation), `ig_wm` (+ a west→east wavemaker line at the −4 m
+contour, inside the 50 m refinement band), `ig_wm_g07` (+ `snapwave_gammaig 0.7`) — plus a `noig`
+control; transect obs at z −8/−4/−2/−1/−0.5/0/+0.5 m, `dthisout 2 s`; `compare-ig` prints the
+hm0/hm0ig profile and per-station IG amplitude (zs std over the last hour), max and mean. Three
+engines: v2.3.3-winddir-fix-1, the igk backport, main (v2.4.2-alpha + winddir fix). All 12 runs
+≤ 2 s. Table: `logs/engine_gate_2026-09-17_igk_toy.txt`; cases `/scratch/tpj8/engine_gate/repro_ig/`.
+1. **No wavemaker → no IG in the water level, on every engine**: zs std 0.001–0.002 m at every
+   station in `ig_nowm`/`noig` (FINDINGS §45 confirmed on the toy).
+2. **With the line the IG signal appears landward of it and nowhere seaward**: std 0.074 m at
+   −2 m (≈ 0.30 m Hs-equivalent), 0.065 at −1, 0.056 at −0.5, 0.017 at the shoreline; 0.002 at
+   the line itself and at −8 m. Max zs at −2 m 0.24 (v2.3.3) / 0.30 (main).
+3. **The backport is a near no-op on a plane beach**: hm0ig 0.44 → 0.46 at −4..−2 m, 0.29 → 0.30,
+   0.15 → 0.16; injected signal 0.074 → 0.076. On a shore-normal beach `kwav_ig` only enters the
+   depth cap and the refraction term; on v3 (oblique swell, real bathymetry) it may matter
+   more, but it does NOT explain the 1–2 m IG field of 09-17 — that is the method's scale (IG at
+   the −4 m line is ~20 % of the offshore Hs here: 0.4 m for Hs 2; Herbers offshore 4.5 %).
+4. **`gammaig 0.7` (the v2.4.0 default) grows the nearshore IG** (0.62–0.67 at −2..−1 vs 0.29)
+   but the wavemaker reads the −4 m value, so the injected signal is unchanged (0.078).
+5. 🔴 **The real v2.3.3 → v2.4.x difference is SHORT-WAVE BREAKING, not IG** (`noig` control, same
+   `snapwave_gamma 0.7` / `alpha 1.0` defaults on both): main keeps more energy in the last
+   metres — hm0 0.74 vs 0.65 at −2..−1 m, **0.34 vs 0.22 at −1..0** — and the mean water level
+   at the shoreline is **0.136 m vs 0.026 m** (−0.5 m: 0.106 vs 0.037): ~5× the setup for a
+   2 m / 10 s sea. Galibier's `snapwave_baldock_exponent 2`, `snapwave_gamma_fac_br 0.45` and
+   the RF-table solver are the candidates. That is the change that would touch our low bias —
+   and the one the 09-11 gates exist for: the 12 h G3 cut on v3 with `main-winddir-fix-1-gf11`,
+   scored on shelf ratio vs CORA, cap-hits, and the shoreline setup at the four sites.
+**Verdict:** the IG backport is safe and cheap but buys nothing measurable; the wavemaker works
+identically on 2.3.3 and main at the line. The engine question is now about breaking/setup, and it
+is a user decision: (A) stay on v2.3.3 + winddir(+igk) and add the wavemaker arm; (B) gate main
+on the G3 cut first (≈ 5 h icelake, `engine_gate.py`), then decide the epoch. ⚠️ Not tested: the
+orientation fix (d) needs a rotated toy (waves generated SOUTH); on an east-facing coast the line
+runs N–S and uses the `cos` branches Galibier did not change. Wavemaker line rule from v2.4.0:
+never on a refinement boundary — our −5 m contour must sit inside the 25 m corridor.
+
 **🔵 10:30 — APEX RE-BASELINE (user decision: "all future runs share that boundary").** The
 premier's SnapWave band is now `v3_shelf_steps_apex` (east leg to the Long Island shore, 63
 support points, open-coast demotion lifted): `_V3_PREMIER_WAVES` carries the three fields, the
@@ -125,10 +210,10 @@ All five old-band names are registered (`_V3_OLD_BAND`) so they audit and re-sco
 nj_sfincs.premier` 15/16 after the rename (the stale `wave-fw01+…` dir is the 16th).
 `naccs-nowaves` is unchanged and is still the premier's waves-off pair (no band). Gallery tifs
 renamed with the dirs; `logs/` and the 09-14 notebook keep the old names (the notebook generator's
-arm list is updated for the next epoch notebook). `report.html` regenerated from the renamed table.
+arm list is updated for the next epoch notebook). `report.html` regenerated from the renamed table; `docs/snapwave_parameters.md` + `reports/snapwave_parameters.html` regenerated for the apex premier (63 support points, imposed direction, patched engine — the plan's Phase 0 item 5 leftover, closed).
 **Re-runs now needed for clean one-flag pairs on the apex band: `bed-nobuildings` (the only
 undecided lever, ~25 h) — `wave-fw02` (settled: worse) and `wave-noig` (uncoupled) need not be
-re-run unless a wavemaker arm makes IG live.** The user decides which to submit.
+re-run unless a wavemaker arm makes IG live.** The user decides which to submit. `--check naccs-premier,bed-nobuildings` → 2/2 OK on the new registry. 🔴 **Do NOT stage `naccs-premier` again: the dir IS the solved apex run** (`--check` says it "would DESTROY and re-stage" it) — stage only the arms that still need a solve.
 
 **✅ 09:50 — the four paired pairs landed (`logs/paired_<arm>_vs_premier_2026-09-17.log`, Δ = arm − premier,
 median 50 m, 94 marks, B 200 k), scored against the 09:20 pre-registration:**

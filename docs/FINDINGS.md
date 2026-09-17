@@ -665,6 +665,22 @@ Live campaign state is in [STATUS.md](STATUS.md). This file is for what is settl
     made on the old band are `wave-band-sandy-hook[+…]` in `metrics.csv`; the table before
     the rename is `metrics_2026-09-17_pre_apex_rebaseline.csv`. STATUS 2026-09-17.
 
+47. **SFINCS v2.4.0 (Galibier) changes SHORT-WAVE BREAKING and shoreline setup far more than
+    it changes IG.** On the plane-beach toy (Hs 2 m, Tp 10 s, shore-normal, wind off, IG off,
+    identical `snapwave_gamma 0.7` / `alpha 1.0`), main (v2.4.2-alpha) keeps hm0 0.34 m in the
+    last metre of depth where v2.3.3 keeps 0.22, and the mean water level at the shoreline is
+    0.136 m against 0.026 m — five times the setup. Galibier's `snapwave_baldock_exponent`
+    (default 2), `snapwave_gamma_fac_br` (0.45) and the RF-table solver are the candidates.
+    Its IG-side changes (the IG wavenumber built from the short-wave frequency in v2.3.3,
+    `snapwave_solver.f90:77`; `snapwave_gammaig` 0.2 → 0.7; the wavemaker orientation factor)
+    move the toy by ≤ 0.02 m of hm0ig and 0.002 m of injected IG amplitude; the backport is
+    `hpc/patches/snapwave_igk_wavemaker_v2.3.3.patch`, engine `v2.3.3-winddir-igk-fix-1-gf11`.
+    The wavemaker itself behaves the same on both engines: nothing seaward of the line, an IG
+    signal of ~0.3 m Hs-equivalent at −2 m from a 0.4 m `hm0ig` at the −4 m line. Consequence:
+    moving the premier to v2.4.x is a breaking/setup epoch, not an IG fix, and it must go
+    through the 12 h G3 gate (`engine_gate.py`) before any score is compared across it.
+    STATUS 2026-09-17, `logs/engine_gate_2026-09-17_igk_toy.txt`.
+
 ### Closed — do not re-open
 
 Each of these cost a campaign and is settled. The evidence is in the archive's
