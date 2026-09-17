@@ -4,11 +4,82 @@
 12 KB "current state" memory file and its 26 reverse-chronological campaign logs; the point
 of the format is that a reader gets the current state without replaying how it was reached.
 
-Last updated: **2026-09-14 15:45** — 4 of 5 fixed-engine solves DONE clean; `wave-noig` scored (RMSE 0.383, CSI 0.706; waves-on vs off paired −0.051 [−0.073, −0.033]); premier 3-arm validate running; `wave-apex` lands tonight; Phase 5 CLOSED (issue #362, PR #363); 🔴 64-thread solves use ~6 effective cores; maintenance Tue 08:00 → Wed 23:59. History before 09-14 is in the dated sections below and in git.
+Last updated: **2026-09-17 08:50** — post-maintenance audit: all 5 fixed-engine solves + per-arm validates DONE on `hal*`; 🔴 the premier's fresh score was LOST to a node-local `flock` (fixed → `lockf`), re-score 61670566 running; the notebook render was OOM-killed at 100 G → profiled re-render 61670576 at 400 G chained; 5 dead queue entries for the user to `scancel`. History before 09-17 is in the dated sections below and in git.
 
 ## ⏳ PICK UP — next session
 
-### ⏳ 2026-09-14 — PICK UP HERE: 4 of 5 solves DONE, `wave-noig` scored, the premier's 3-arm validate RUNNING, `wave-apex` finishing tonight; Phase 5 CLOSED (issue #362, PR #363); maintenance Tue 08:00 → Wed 23:59
+### ⏳ 2026-09-17 — PICK UP HERE: maintenance over; every solve and score landed, but the premier's row was lost and the notebook never rendered — both re-queued
+
+**What actually happened Monday evening (`sacct -S 2026-09-13 -X`, all on `hal*`, no halk).**
+`wave-apex` 61543164 COMPLETED 25 h 33 on hal0434 (17:43, `segments 0`, 73 h map) and its
+validate 61543165 scored it (55 min, hal0324). The three per-arm validates 61614852/3/4
+COMPLETED in 12–14 min each at 200 G. Run dirs: all five carry
+`bin:v2.3.3-winddir-fix-1-gf11@673ee3bf` in `engine.txt`, whole 73 h maps, `rst_removed 12`;
+`python -m nj_sfincs.premier` 15/16 OK (the one BAD is the stale 18 % `wave-fw01+wave-shelf-steps`
+dir, no metrics row, its 66 % partial went with `/scratch/partials` on 09-14 — delete or leave).
+The apex safety-net pair 61593242/61593265 never fired (apex finished clean). `git status` clean,
+so the 09-13 halk0081 VSCode session flushed nothing late.
+
+🔴 **The premier's fresh score never reached `metrics.csv`.** Its row still reads
+`container:v2.3.3-faber (inferred)`, 0.384 / −0.156, CSI 0.710 / 0.894 / 0.224 — byte-for-byte
+the 09-04 container premier. The floodmap gallery tifs of all three validates were written within
+2 s of each other (17:13:09–11), so the three read-merge-writes overlapped, and the engine-label
+counts in the three logs show the order: 61614852 wrote premier→`bin` (5 container + 4 bin rows),
+61614853 had read the PRE-852 table and wrote 6 + 4 (premier back to container), 61614854 read
+853's and wrote 6 + 5, apex 6 + 6. **Cause: `fcntl.flock` is node-local on GPFS** — the three
+jobs were on hal0331 / hal0333 / hal0261, so the 09-14 lock serialised nothing. Fixed:
+`_write_outputs` now takes a POSIX **`fcntl.lockf`** (cluster-wide on GPFS, and acquiring it
+revalidates the client's cached view of the file) and reads the table back after the write,
+printing `🔴 <arm>: row MISSING` if its own row is gone; the test mocks `lockf` and fails on any
+`flock`. 167 tests OK (7 skipped). **Re-score submitted: 61670566** (`--validate-only
+naccs-premier`, 200 G, 2.5 h) — until it lands the premier row in the table is the CONTAINER
+run's; do not quote it as the fixed-engine baseline.
+
+🔴 **The notebook render 61614855 was OOM-KILLED at 100 G after 8 min** (`DeadKernelError`;
+`sacct` MaxRSS reads 32 G because it is a 30 s sample) — nothing was written, so `push_nb`
+61615235 and the apex chain (61614856 → 61615241) sat `DependencyNeverSatisfied` through the
+outage, which is why nothing reached GitHub. Which cell did it is unknown; NEW
+**`scripts/render_notebook_profiled.py`** executes a notebook in place via `nbclient` and logs
+per-cell wall time + peak kernel-tree RSS (psutil, 0.25 s), writing the notebook even on a
+failed cell. **Re-render submitted: 61670576** (`afterok:61670566`, 400 G → an emeraldrapids
+node, 8 cores, 3 h; log `logs/nb_v3_epoch_61670576.out`). All six arms have a map and a row now,
+so ONE render covers the apex too; ids in `logs/nb_v3_epoch.jobs`. Read the `[cell N] done …
+peak RSS` lines afterwards and put the number in this file — that is the memory budget for every
+future render of a 6-arm notebook.
+
+**The user's two lines** (the classifier refuses Claude both `scancel` and the external-write
+push job):
+```
+scancel 61593242 61593265 61614856 61615235 61615241
+sbatch -p main --exclude=halk[0001-0159] -c 1 --mem=2G -t 0:15:00 --dependency=afterok:61670576 -J push_nb -o logs/push_nb_%j.out hpc/push_rendered_notebook.sh notebooks/v3/sandy-v3-viz-2026-09-14.ipynb
+```
+
+**Scores as the table stands (94 marks, `_scored` median 50 m; premier row = CONTAINER, pending 61670566):**
+
+| arm | RMSE / bias | CSI / POD / FAR | engine |
+|---|---|---|---|
+| `naccs-premier` | 0.384 / −0.156 | 0.710 / 0.894 / 0.224 | ⚠️ container (stale) |
+| `wave-noig` | 0.383 / −0.181 | 0.706 / 0.881 / 0.219 | bin |
+| `wave-fw02` | 0.392 / −0.211 | 0.701 / 0.872 / 0.218 | bin |
+| `bed-nobuildings` | 0.361 / −0.137 | 0.720 / 0.909 / 0.224 | bin |
+| `naccs-nowaves` | 0.434 / −0.275 | 0.697 / 0.853 / 0.207 | bin |
+| `wave-apex` | 0.368 / −0.154 | 0.706 / 0.881 / 0.219 | bin |
+
+Unpaired reads only — the paired CIs (`scripts/paired_hwm_bootstrap.py`) are the 09-14 "Next"
+list and still wait on the premier's real row. Two things already visible: `wave-apex` and
+`wave-noig` agree on CSI / POD / FAR to 3 decimals (0.706 / 0.881 / 0.219) — checked: distinct
+caches (different sizes and mtimes) and they part at the 4th decimal (CSI 0.70604 vs 0.70635),
+so the apex band moves the NJ-side extent by ~nothing, as expected for a Lower-Bay change; and `bed-nobuildings` is the best point estimate on both HWM and extent, the buildings-tier
+footprint-drying effect of 09-04 again (compare on `motf_csi_buildings_masked.csv`).
+
+**Next, in order:** (1) 61670566 lands → confirm the premier row reads `bin:` (the read-back
+guard prints it) → `python -m nj_sfincs.premier`; (2) 61670576 renders → user submits the push
+line → notebook on GitHub; record the per-cell peak RSS here; (3) the 09-14 "Next" list below,
+unchanged: Phase 8 IG read on the premier, the three one-flag pairs premier vs `wave-noig` /
+`wave-fw02` / `bed-nobuildings` with paired CIs, `snapwave_direction_check.py direction` 73/73,
+`wave-apex` against its 09-13 pre-registration, then the carried items.
+
+### ✅ 2026-09-14 — 4 of 5 solves DONE, `wave-noig` scored, the premier's 3-arm validate RUNNING, `wave-apex` finishing tonight; Phase 5 CLOSED (issue #362, PR #363); maintenance Tue 08:00 → Wed 23:59
 
 **State at 15:45.** All five 09-13 solves ran on `hal*` emeraldrapids nodes with the patched
 binary (`bin:v2.3.3-winddir-fix-1-gf11@673ee3bf`). Every finished map: 73 hourly steps to
@@ -127,23 +198,7 @@ the three) and **R2 61614856** (`afterok` 61543165 + R1). The first render/push 
 → user `scancel 61613724 61613725 61614822 61614824` and re-submit the two push jobs against
 R1/R2 (lines below, ids updated).
 
-**Push to GitHub after each render (user request — Amarel is unreachable Wednesday):**
-`hpc/push_rendered_notebook.sh <nb>` (NEW) commits ONLY the notebook and pushes over SSH by
-explicit URL (`git@github.com:tyfolino/nj_bight_sfincs.git`; HTTPS has no credential helper
-here, and SSH from compute nodes was tested OK, job 61614060/hal0330). The GIFs are gitignored
-but the notebook embeds them. ⚠️ The classifier refused to let Claude `sbatch` it (external
-write) — **the user submits**:
-```
-sbatch -p main --exclude=halk[0001-0159] -c 1 --mem=2G -t 0:15:00 --dependency=afterok:61614855 -J push_nb -o logs/push_nb_%j.out hpc/push_rendered_notebook.sh notebooks/v3/sandy-v3-viz-2026-09-14.ipynb
-sbatch -p main --exclude=halk[0001-0159] -c 1 --mem=2G -t 0:15:00 --dependency=afterok:61614856 -J push_nb_apex -o logs/push_nb_%j.out hpc/push_rendered_notebook.sh notebooks/v3/sandy-v3-viz-2026-09-14.ipynb
-```
-(the second is `afterok` the apex render, which itself waits on the first render, so the two
-pushes cannot interleave). It is an AUTOMATED commit under the user's git identity, made at
-the user's request; the message says so.
-
-**Thursday checklist (Amarel back Wed 23:59):** `sacct -u tpj8 -S 2026-09-13 -X` — apex
-COMPLETED on `hal*`, validates COMPLETED, `metrics.csv` rows for all five with the patched
-`engine`; `scancel 61593242 61593265` if unused; `git status` clean; then "Next" above.
+**Push / Thursday checklist — SUPERSEDED by the 09-17 section above** (the render OOM'd, the push chain never fired, the checklist was run on 09-17). `hpc/push_rendered_notebook.sh <nb>` commits ONLY the notebook and pushes over SSH by explicit URL (`git@github.com:tyfolino/nj_bight_sfincs.git`; HTTPS has no credential helper here); it is an AUTOMATED commit under the user's git identity, made at the user's request, and the user submits it (the classifier refuses Claude the external write).
 
 ### ✅ 2026-09-13 — all six 09-12 jobs DONE and SCORED; Phase 4 arm 1 PASSES its engine gates, the IG cut FAILS its stability read → the three IG-on 40 h arms are HELD for a user decision; `wave-noig` is cleared
 

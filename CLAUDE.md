@@ -260,8 +260,10 @@ not trip that guard. Do not run the sweep driver to "just rebuild" a template.
   *immediately outside a forced boundary* — so it is a forcing INPUT, not an independent
   holdout. The model holdouts are the interior Raritan gauges.
 - Prefer coordinate boxes and thresholds over auto-derived polygons.
-- `ruff.toml` sets line length 88 and pins the lint select explicitly. Ruff is *not* in the
-  pinned env — install it separately. Format the files you are editing, not the tree.
+- `ruff.toml` sets line length 88 and pins the lint select explicitly. Ruff IS in the
+  sfincs env since 2026-09-17 (`micromamba install -n sfincs -c conda-forge ruff`), so the
+  §4 PATH export finds it; the earlier copy in `~/.local/bin` was never on that PATH, which
+  is why it "kept disappearing". Format the files you are editing, not the tree.
 - A new investigation **edits `docs/STATUS.md` in place**. Git has the history. That
   discipline is what keeps the docs small; the previous repo grew 26 reverse-chronological
   campaign logs, and summarising 5,700 such lines only produces 1,500 such lines.

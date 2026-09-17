@@ -68,10 +68,14 @@ class TestDomainRegistry(_DomainEnv):
             names = domain.hwm_basin_names(dom)
             self.assertTrue(names, f"{name} has no HWM basin rules")
             self.assertEqual(
-                len(names), len(set(names)), f"{name} has duplicate basin names: {names}"
+                len(names),
+                len(set(names)),
+                f"{name} has duplicate basin names: {names}",
             )
             self.assertNotIn(
-                "unassigned", names, "'unassigned' is the fallback bucket, not a rule name"
+                "unassigned",
+                names,
+                "'unassigned' is the fallback bucket, not a rule name",
             )
 
     def test_waterlevel_support_is_declared(self):
@@ -80,20 +84,24 @@ class TestDomainRegistry(_DomainEnv):
             if dom.acquisition_only or dom.building:
                 continue  # must stay None until hydromt selects on the real mesh
             self.assertIsNotNone(
-                dom.n_waterlevel_support, f"{name} does not declare n_waterlevel_support"
+                dom.n_waterlevel_support,
+                f"{name} does not declare n_waterlevel_support",
             )
 
     def test_obs_gauge_names_are_unique_per_domain(self):
         """Every his-based metric matches its station by SUBSTRING on this name."""
         for name, dom in domain.DOMAINS.items():
             names = [g.name for g in dom.obs_gauges]
-            self.assertEqual(len(names), len(set(names)), f"{name} has duplicate gauges")
+            self.assertEqual(
+                len(names), len(set(names)), f"{name} has duplicate gauges"
+            )
             # substring matching means one name must not be contained in another
             for a in names:
                 for b in names:
                     if a is not b:
                         self.assertNotIn(
-                            a, b,
+                            a,
+                            b,
                             f"gauge {a!r} is a substring of {b!r} on {name}: his lookup "
                             "matches by substring and would return the wrong station",
                         )
@@ -102,7 +110,8 @@ class TestDomainRegistry(_DomainEnv):
         for name, dom in domain.DOMAINS.items():
             for g in dom.obs_gauges:
                 self.assertIn(
-                    g.series_source, ("his", "map"),
+                    g.series_source,
+                    ("his", "map"),
                     f"{name}/{g.name} has series_source={g.series_source!r}",
                 )
 
@@ -169,18 +178,24 @@ class TestBoxesAreFullyBounded(_DomainEnv):
                 self.assertGreaterEqual(arm.min_cells, 1, f"{name}/{arm.name}")
                 self.assertLess(arm.min_cells, arm.max_cells, f"{name}/{arm.name}")
                 self.assertLess(
-                    arm.max_bed_m, 0.0,
+                    arm.max_bed_m,
+                    0.0,
                     f"{name}/{arm.name}: max_bed_m >= 0 admits a BC on dry ground",
                 )
-                self.assertIn(arm.btype, ("waterlevel", "outflow"), f"{name}/{arm.name}")
+                self.assertIn(
+                    arm.btype, ("waterlevel", "outflow"), f"{name}/{arm.name}"
+                )
 
 
 class TestFingerprints(_DomainEnv):
     def test_every_domain_has_a_fingerprint(self):
         self.assertEqual(
             set(premier.EXPECTED),
-            {n for n, d in domain.DOMAINS.items()
-             if not (d.acquisition_only or d.building)},
+            {
+                n
+                for n, d in domain.DOMAINS.items()
+                if not (d.acquisition_only or d.building)
+            },
             "a domain without a fingerprint audits UNRECOGNISED, which reads exactly "
             "like a real domain error and trains you to ignore the one alarm that matters",
         )
@@ -227,7 +242,9 @@ class TestFingerprints(_DomainEnv):
     def test_bracket_base_domain_is_registered(self):
         for name, brk in premier.BRACKETS.items():
             self.assertIn(
-                brk.base_domain, domain.DOMAINS, f"bracket {name!r} names an unknown base"
+                brk.base_domain,
+                domain.DOMAINS,
+                f"bracket {name!r} names an unknown base",
             )
 
     def test_known_covers_every_expected_fingerprint(self):
@@ -261,7 +278,8 @@ class TestMeshKeySharing(_DomainEnv):
             )
             regions = {str(d.region) for d in doms}
             self.assertEqual(
-                len(regions), 1,
+                len(regions),
+                1,
                 f"domains sharing mesh_key {key!r} have different regions {regions} — "
                 "a shared mesh means a shared region polygon",
             )
@@ -310,7 +328,9 @@ class TestExperimentsAreDomainScoped(_DomainEnv):
         for dname, arms in EXPERIMENTS_BY_DOMAIN.items():
             for aname, exp in arms.items():
                 self.assertEqual(
-                    aname, exp.name, f"{dname}: key {aname!r} != Experiment.name {exp.name!r}"
+                    aname,
+                    exp.name,
+                    f"{dname}: key {aname!r} != Experiment.name {exp.name!r}",
                 )
 
     def test_registered_domains_have_an_entry(self):
@@ -396,8 +416,11 @@ class TestWaterlevelSupportOverride(_DomainEnv):
         }
         self.assertEqual(
             set(PINNED),
-            {n for n, d in domain.DOMAINS.items()
-             if not (d.acquisition_only or d.building)},
+            {
+                n
+                for n, d in domain.DOMAINS.items()
+                if not (d.acquisition_only or d.building)
+            },
             "a domain is missing from PINNED — add it here DELIBERATELY, with the count "
             "you intend, rather than letting the registry answer its own question",
         )
@@ -415,7 +438,8 @@ class TestWaterlevelSupportOverride(_DomainEnv):
 
         e = Experiment("x", WaveConfig(use_waves=False))
         self.assertIsNone(
-            e.n_waterlevel_support, "the override must be opt-in; None = inherit the domain"
+            e.n_waterlevel_support,
+            "the override must be opt-in; None = inherit the domain",
         )
 
     def test_only_declared_arms_override(self):
@@ -550,7 +574,8 @@ class TestWavesOffIsWrittenNotAssumed(_DomainEnv):
             for name, exp in arms.items():
                 if "nowaves" in name:
                     self.assertFalse(
-                        exp.waves.use_waves, f"{dname}/{name} is named 'nowaves' but has waves ON"
+                        exp.waves.use_waves,
+                        f"{dname}/{name} is named 'nowaves' but has waves ON",
                     )
 
 
@@ -578,9 +603,12 @@ class TestRainOffIsWrittenNotMerelyNotWritten(_DomainEnv):
                     exp.rain, f"{dname}/{name} is named 'norain' but rain is ON"
                 )
                 prem = arms.get("naccs-premier")
-                self.assertIsNotNone(prem, f"{dname}: norain arm but no premier to diff")
+                self.assertIsNotNone(
+                    prem, f"{dname}: norain arm but no premier to diff"
+                )
                 self.assertEqual(
-                    exp.waves, prem.waves,
+                    exp.waves,
+                    prem.waves,
                     f"{dname}/{name} differs from the premier in WAVES, not only rain",
                 )
                 self.assertEqual(exp.waterlevel_geodataset, prem.waterlevel_geodataset)
@@ -657,8 +685,13 @@ class TestBracketRowsStayOutOfMetrics(unittest.TestCase):
         import run_experiments as rx
 
         df = pd.DataFrame.from_dict(
-            {"naccs-premier": {"domain": "v3", "x": 1},
-             "BRACKET+setup-stockdon": {"domain": "BRACKET:setup-stockdon INADMISSIBLE", "x": 2}},
+            {
+                "naccs-premier": {"domain": "v3", "x": 1},
+                "BRACKET+setup-stockdon": {
+                    "domain": "BRACKET:setup-stockdon INADMISSIBLE",
+                    "x": 2,
+                },
+            },
             orient="index",
         )
         cand, brk = rx._split_brackets(df)
@@ -708,9 +741,11 @@ class TestMetricsMergeKeepsOtherArms(unittest.TestCase):
     def test_write_outputs_serialises_on_a_lock_file(self):
         """Chained per-solve validates can finish together; the merge must not race.
 
-        The writer takes an exclusive flock on ``metrics.lock`` beside the table for
-        the whole read-merge-write, so a second job blocks instead of overwriting the
-        row the first one just folded in (2026-09-14).
+        The writer takes an exclusive POSIX ``lockf`` on ``metrics.lock`` beside the
+        table for the whole read-merge-write, so a second job blocks instead of
+        overwriting the row the first one just folded in (2026-09-14). 🔴 ``lockf``, not
+        ``flock``: BSD flock is node-local on GPFS and the validates run on different
+        nodes — three flock-"serialised" writes lost the premier's row on 2026-09-14.
         """
         import fcntl
         import tempfile
@@ -725,20 +760,32 @@ class TestMetricsMergeKeepsOtherArms(unittest.TestCase):
             pd.DataFrame({"motf_csi": [0.71]}, index=["naccs-premier"]).to_csv(csv)
             seen = {}
 
-            def flock(fd, op):
+            def lockf(fd, op, *a):
+                if op == fcntl.LOCK_UN:
+                    seen["unlocked"] = True
+                    return
                 seen["op"] = op
                 seen["exists_before_write"] = not csv.read_text().count("wave-noig")
 
-            with mock.patch.object(rx, "METRICS_CSV", csv), mock.patch.object(
-                rx, "BRACKET_METRICS_CSV", Path(td) / "bracket_metrics.csv"
-            ), mock.patch.object(rx, "EXP_ROOT", Path(td)), mock.patch.object(
-                fcntl, "flock", side_effect=flock
+            with (
+                mock.patch.object(rx, "METRICS_CSV", csv),
+                mock.patch.object(
+                    rx, "BRACKET_METRICS_CSV", Path(td) / "bracket_metrics.csv"
+                ),
+                mock.patch.object(rx, "EXP_ROOT", Path(td)),
+                mock.patch.object(fcntl, "lockf", side_effect=lockf),
+                mock.patch.object(
+                    fcntl,
+                    "flock",
+                    side_effect=AssertionError("flock is node-local on GPFS"),
+                ),
             ):
                 rx._write_outputs(
                     pd.DataFrame({"motf_csi": [0.70]}, index=["wave-noig"])
                 )
             self.assertEqual(seen["op"], fcntl.LOCK_EX)
             self.assertTrue(seen["exists_before_write"])  # lock taken BEFORE the read
+            self.assertTrue(seen["unlocked"])
             self.assertTrue((Path(td) / "metrics.lock").exists())
             out = pd.read_csv(csv, index_col=0)
             self.assertEqual(sorted(out.index), ["naccs-premier", "wave-noig"])
@@ -798,7 +845,9 @@ class TestStagingIsSafeBeforeItIsDestructive(_DomainEnv):
                 _shutil.copytree,
             )
             rx.EXP_ROOT = fake_root
-            rx.EXPERIMENTS[name] = Experiment(name, WaveConfig(use_waves=False), "probe")
+            rx.EXPERIMENTS[name] = Experiment(
+                name, WaveConfig(use_waves=False), "probe"
+            )
             premier.assert_sealed_domain = refuse
             premier.assert_bracket = refuse
             _shutil.rmtree = lambda *a, **k: events.append("rmtree")
@@ -826,7 +875,9 @@ class TestStagingIsSafeBeforeItIsDestructive(_DomainEnv):
                 "already destroyed.",
             )
             self.assertNotIn(
-                "rmtree", events, f"nothing destructive may run after a refusal; got {events}"
+                "rmtree",
+                events,
+                f"nothing destructive may run after a refusal; got {events}",
             )
             self.assertTrue(canary.exists())
             self.assertEqual(canary.read_text(), "precious solver output")
@@ -844,13 +895,17 @@ class TestStagingIsSafeBeforeItIsDestructive(_DomainEnv):
             saved_root, saved_assert = rx.EXP_ROOT, premier.assert_sealed_domain
             premier.assert_sealed_domain = lambda *_a, **_k: None
             rx.EXP_ROOT = fake_root
-            rx.EXPERIMENTS[name] = Experiment(name, WaveConfig(use_waves=False), "probe")
+            rx.EXPERIMENTS[name] = Experiment(
+                name, WaveConfig(use_waves=False), "probe"
+            )
             try:
                 rx.check_template_domain(name)
             finally:
                 rx.EXP_ROOT, premier.assert_sealed_domain = saved_root, saved_assert
                 rx.EXPERIMENTS.pop(name, None)
-            self.assertFalse(fake_root.exists(), "check_template_domain created directories")
+            self.assertFalse(
+                fake_root.exists(), "check_template_domain created directories"
+            )
 
     def test_all_sweep_requires_confirmation(self):
         """``--experiments all`` rmtree's every destination. It must not be the default.
@@ -1014,8 +1069,11 @@ class TestAcquisitionOnly(_DomainEnv):
         import dataclasses
 
         bad = dataclasses.replace(
-            domain.DOMAINS["v3"], acquisition_only=True, building=False,
-            region=domain.DATA / "region_v9_PROVISIONAL_bbox.geojson",  # name only; never read
+            domain.DOMAINS["v3"],
+            acquisition_only=True,
+            building=False,
+            region=domain.DATA
+            / "region_v9_PROVISIONAL_bbox.geojson",  # name only; never read
             mesh_key="borrowed",
         )
         with self.assertRaises(ValueError):
@@ -1087,8 +1145,9 @@ class TestBuilding(_DomainEnv):
             self.assertIsNone(dom.mesh_key, name)
             self.assertIsNone(dom.n_waterlevel_support, name)
         # the guard itself, exercised on a synthetic building domain
-        synthetic = dataclasses.replace(domain.DOMAINS["v3"], building=True,
-                                        n_waterlevel_support=None)
+        synthetic = dataclasses.replace(
+            domain.DOMAINS["v3"], building=True, n_waterlevel_support=None
+        )
         domain._check_building(synthetic)
         bad = dataclasses.replace(synthetic, mesh_key="borrowed")
         with self.assertRaises(ValueError):
@@ -1117,4 +1176,3 @@ class TestBuilding(_DomainEnv):
             self.assertNotEqual(dom.hwm_geojson.parent.name, "validation", name)
             self.assertNotEqual(dom.motf_tif.parent.name, "validation", name)
             self.assertNotEqual(dom.discharge_geodataset, "usgs_sandy_discharge", name)
-

@@ -145,7 +145,9 @@ def check_template_domain(name: str) -> None:
     # bracket it claims to be AND that the caller passed NJ_ALLOW_BRACKET.
     if exp.bracket:
         premier.assert_bracket(
-            TEMPLATE, exp.bracket, context=f"staging bracket '{name}' from {TEMPLATE.name}"
+            TEMPLATE,
+            exp.bracket,
+            context=f"staging bracket '{name}' from {TEMPLATE.name}",
         )
         print(
             f"[{name}] *** INADMISSIBLE BRACKET '{exp.bracket}' "
@@ -201,7 +203,10 @@ def swap_subgrid(exp_dir: Path, src: Path, name: str) -> None:
         raise SystemExit(f"[{name}] subgrid_from refused: {gap}")
     premier.assert_sealed_domain(src, context=f"subgrid_from '{src.name}' for '{name}'")
     prov = src / "provenance.txt"
-    print(f"[{name}] subgrid ← {src}" + (f" ({prov.read_text()[:120]!r}...)" if prov.exists() else ""))
+    print(
+        f"[{name}] subgrid ← {src}"
+        + (f" ({prov.read_text()[:120]!r}...)" if prov.exists() else "")
+    )
 
     def _link(a: Path, b: Path) -> None:
         b.unlink(missing_ok=True)
@@ -301,7 +306,9 @@ def collect_metrics(names: list[str]) -> pd.DataFrame:
         exp = EXPERIMENTS.get(name)
         if exp is not None and exp.bracket:
             rows[name]["domain"] = f"BRACKET:{exp.bracket} INADMISSIBLE"
-            print(f"[{name}] bracket row — writes to the bracket report, never metrics.csv")
+            print(
+                f"[{name}] bracket row — writes to the bracket report, never metrics.csv"
+            )
             continue
         sealed = premier.is_sealed(exp_dir)
         dom = domain.active().name
@@ -430,10 +437,18 @@ def main(argv=None) -> int:
         if not args.yes:
             # A sweep is hours of compute and it rmtree's every destination. Say what it
             # will do and make the caller agree.
-            print(f"[sweep] '--experiments all' on domain '{domain.active().name}' would")
-            print(f"        DESTROY and re-stage {len(names)} directories under {EXP_ROOT}:")
+            print(
+                f"[sweep] '--experiments all' on domain '{domain.active().name}' would"
+            )
+            print(
+                f"        DESTROY and re-stage {len(names)} directories under {EXP_ROOT}:"
+            )
             for n in names:
-                mark = "  (has output)" if (EXP_ROOT / n / "sfincs_map.nc").exists() else ""
+                mark = (
+                    "  (has output)"
+                    if (EXP_ROOT / n / "sfincs_map.nc").exists()
+                    else ""
+                )
                 print(f"          {n}{mark}")
             if not sys.stdin.isatty():
                 p.error("refusing '--experiments all' with no tty; pass --yes.")
@@ -621,10 +636,19 @@ def _write_outputs(df: pd.DataFrame) -> None:
     # solve), and each one folds its rows INTO the shared table below with a
     # read-merge-write. Serialise them on a lock file so the last writer cannot drop a
     # row another job merged a moment earlier (2026-09-14).
+    # 🔴 POSIX ``lockf``, NOT BSD ``flock``: on GPFS a flock is honoured only WITHIN one
+    # node, and the per-arm validates run on different nodes. Three of them wrote within
+    # two seconds of each other on 2026-09-14 (three nodes), the flock serialised nothing,
+    # and the premier's freshly scored row was dropped by the next writer's stale read.
+    # A POSIX record lock is cluster-wide on GPFS and taking it also revalidates the
+    # client's cached view of the file.
     METRICS_CSV.parent.mkdir(parents=True, exist_ok=True)
-    with open(METRICS_CSV.with_suffix(".lock"), "w") as lock:
-        fcntl.flock(lock, fcntl.LOCK_EX)
-        _write_outputs_locked(df)
+    with open(METRICS_CSV.with_suffix(".lock"), "a+") as lock:
+        fcntl.lockf(lock, fcntl.LOCK_EX)
+        try:
+            _write_outputs_locked(df)
+        finally:
+            fcntl.lockf(lock, fcntl.LOCK_UN)
 
 
 def _write_outputs_locked(df: pd.DataFrame) -> None:
@@ -634,13 +658,25 @@ def _write_outputs_locked(df: pd.DataFrame) -> None:
     if not brk.empty:
         brk = _merge_metrics(brk, BRACKET_METRICS_CSV)
         brk.to_csv(BRACKET_METRICS_CSV)
-        print(f"\nwrote {BRACKET_METRICS_CSV} ({len(brk)} INADMISSIBLE bracket row(s), "
-              "kept out of metrics.csv)")
+        print(
+            f"\nwrote {BRACKET_METRICS_CSV} ({len(brk)} INADMISSIBLE bracket row(s), "
+            "kept out of metrics.csv)"
+        )
     if df.empty:
         return
     df = _merge_metrics(df)
     df.to_csv(METRICS_CSV)
     print(f"\nwrote {METRICS_CSV}")
+    # Read it back: a row this job scored that is not in the table is a lost write, and
+    # a lost write that only shows up as a stale engine label weeks later is the
+    # 2026-09-14 failure. Loud, not fatal — the numbers are still in this log.
+    back = pd.read_csv(METRICS_CSV, index_col=0)
+    for name in df.index:
+        if name not in back.index:
+            print(
+                f"🔴 {name}: row MISSING from {METRICS_CSV} after the write — "
+                "another writer clobbered it; re-run --validate-only for this arm"
+            )
     for line in hwm_count_mismatches(df):
         print(line)
     try:
