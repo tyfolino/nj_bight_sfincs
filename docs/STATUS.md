@@ -10,7 +10,7 @@ Last updated: **2026-09-17 15:30** — post-maintenance audit: all 5 fixed-engin
 
 ### ⏳ 2026-09-17 EVENING — PICK UP HERE (written before a context compaction)
 
-**Running:** the G5 Galibier gate — three 24 h cuts of the apex premier, `G5_v233` 61679637
+**Running:** D4 spread cut `D4_bds60` 61683588 (control = `G5_v233`; pre-registration in the D4 block below) and the G5 Galibier gate — three 24 h cuts of the apex premier, `G5_v233` 61679637
 (hal0383), `G5_main_default` 61679638 (hal0386, restarted from scratch after a preemption ~1 h
 in), `G5_main_gammax2` 61679639 (hal0385); `/scratch/tpj8/engine_gate/G5_*`; ~10 h each, so
 the first two land ~02:30–03:00, the default ~04:00. Pre-registration + decision rule: the
@@ -33,7 +33,7 @@ user-reviewed on `reports/figures/wavemaker_line_v3_2026-09-17.png` — "good fo
 rotated-raster trap in CLAUDE.md §5. Plan file updated through Phase 8.
 
 **Three to-dos while the gate runs (user-approved list, in order) — ✅ ALL THREE DONE 09-17
-evening (D3 block + Phase 6 block below; notebook re-render R4 = 61683482, then the user's
+evening (D3 block + Phase 6 block below; notebook re-render R4 = 61683482 ✅ COMPLETED hal0405 15 min 21, peak RSS 151 G, 0 error cells, all six renamed arms in; then the user's
 push job `sbatch -t 0:10:00 --dependency=afterok:61683482 hpc/push_rendered_notebook.sh
 notebooks/v3/sandy-v3-viz-2026-09-14.ipynb`):**
 1. **Phase 4b D3** — paired per-mark Δ, `naccs-premier` (apex) vs `naccs-nowaves`, the 40
@@ -52,6 +52,39 @@ Then, after the gate: the engine decision (rule in the 16:30 block) → the `wav
 arm = premier + `wvmfile` from the line above via `sf.wave_makers.create(...)` in staging
 (`model.py` needs a WaveConfig field for it), pre-registered (oceanfront HWM bias → 0, MOTF POD
 up in overwash zones, bays unchanged, runtime) — IG knobs read on the toy first.
+
+### ⏳ 2026-09-17 EVENING — Phase 4b D4 staged: the spread cut (pre-registered BEFORE submission)
+
+**What.** One 24 h cut of the apex premier on the premier's engine (`v2.3.3-winddir-fix-1`),
+`/scratch/tpj8/engine_gate/D4_bds60`, identical to `G5_v233` (same window 10-28 00:00 →
+10-29 00:00, same `sfincs.inp`) except `snapwave.bds`: directional spread **30° → 60°** at
+every boundary support point and hour (the cut's own copy; the premier's hard-linked file
+is untouched — checked by reading both back). **Control = `G5_v233`**, so no second job.
+`--constraint=emeraldrapids`, 14 h limit, ~10 h expected. **Submitted 61683588** (queued behind the
+three G5 cuts; `logs/engine_gate_2026-09-17_D4.jobs`). Read it AFTER the gate, in the order above.
+
+**Question.** D3 said the in-bay wave contribution the shadow could hide is ≤ 0.1 m at the
+spit. D4 asks whether that shadow is SPREAD-limited (a wider incoming directional spread
+leaks swell round the tip, so a diffraction term would be doing what a spread tune does) or
+GEOMETRY-limited (the pocket stays empty whatever the spread — only diffraction fills it).
+
+**Diagnostic (chosen first).** `snapwave_bay_census.py D4_bds60` vs `G5_v233` at matched
+hours — pocket / Raritan S / Lower Bay N `hm0` medians, the D2 zones — over the swell-led
+hours 10-28 12:00 → 10-29 00:00, cap-hit-free hours only (`convergence` table); plus
+`engine_gate.py compare G5_v233 D4_bds60` for the shelf (zs, hm0 on the open coast must not
+move: |Δ hm0| p99 ≤ 0.05 m on the shelf band is the sanity line — a wider spread should
+change the SHADOW, not the ocean) and `zs` at the `sandy_hook` gauge over the last 6 h.
+- **Spread-limited:** pocket median `hm0` UP by ≥ 0.10 m at ≥ 3 of the swell hours with the
+  shelf unchanged → the shadow edge is a boundary-spread property; D5 (a diffraction patch)
+  is redundant with a spread choice and DROPS; the follow-up is a justified `bds` value
+  from CORA's directional spread at the entrance, if any.
+- **Geometry-limited:** pocket up by < 0.05 m → only a diffraction term can fill the
+  pocket; D5 becomes a real decision (still deferred behind the wavemaker arm).
+- Between 0.05 and 0.10: report, no decision; D5 stays deferred.
+**Prediction (written before submission):** partially spread-limited — pocket +0.05..+0.15 m
+at the swell hours, Raritan S +0.02..+0.08, Lower Bay N ±0.03, shelf |Δ hm0| p99 < 0.05 m,
+`sandy_hook` zs |Δ| < 0.02 m in this pre-peak window, wall ≈ 10 h. Void conditions: halk
+node; TIMEOUT; cap-hit-contaminated hours (skip them, as on 09-17).
 
 ### 🔶 2026-09-17 EVENING — Phase 4b D3: does the Sandy Hook shadow feel the waves? (pre-registered BEFORE scoring)
 
