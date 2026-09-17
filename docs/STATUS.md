@@ -4,7 +4,7 @@
 12 KB "current state" memory file and its 26 reverse-chronological campaign logs; the point
 of the format is that a reader gets the current state without replaying how it was reached.
 
-Last updated: **2026-09-17 08:50** — post-maintenance audit: all 5 fixed-engine solves + per-arm validates DONE on `hal*`; 🔴 the premier's fresh score was LOST to a node-local `flock` (fixed → `lockf`), re-score 61670566 running; the notebook render was OOM-killed at 100 G → profiled re-render 61670576 at 400 G chained; 5 dead queue entries for the user to `scancel`. History before 09-17 is in the dated sections below and in git.
+Last updated: **2026-09-17 08:50** — post-maintenance audit: all 5 fixed-engine solves + per-arm validates DONE on `hal*`; 🔴 the premier's fresh score was LOST to a node-local `flock` (fixed → `lockf`), re-score 61670566 DONE (premier 0.382 / −0.181, IG ≈ no-IG); the notebook render was OOM-killed at 100 G → profiled re-render 61670576 at 400 G chained; 5 dead queue entries for the user to `scancel`. History before 09-17 is in the dated sections below and in git.
 
 ## ⏳ PICK UP — next session
 
@@ -54,11 +54,15 @@ scancel 61593242 61593265 61614856 61615235 61615241
 sbatch -p main --exclude=halk[0001-0159] -c 1 --mem=2G -t 0:15:00 --dependency=afterok:61670576 -J push_nb -o logs/push_nb_%j.out hpc/push_rendered_notebook.sh notebooks/v3/sandy-v3-viz-2026-09-14.ipynb
 ```
 
-**Scores as the table stands (94 marks, `_scored` median 50 m; premier row = CONTAINER, pending 61670566):**
+**✅ 09:05 — 61670566 COMPLETED (14 min, hal0323), the premier row now reads `bin:` and the
+read-back guard printed nothing.** The user ran the `scancel` and submitted the push
+(**61670617**, `afterok` the render 61670576, which started 09:04 on hal0383).
+
+**Scores on the fixed engine (94 marks, `_scored` median 50 m; unpaired — the paired CIs are next):**
 
 | arm | RMSE / bias | CSI / POD / FAR | engine |
 |---|---|---|---|
-| `naccs-premier` | 0.384 / −0.156 | 0.710 / 0.894 / 0.224 | ⚠️ container (stale) |
+| `naccs-premier` (IG on) | **0.382 / −0.181** | 0.706 / 0.880 / 0.219 | bin |
 | `wave-noig` | 0.383 / −0.181 | 0.706 / 0.881 / 0.219 | bin |
 | `wave-fw02` | 0.392 / −0.211 | 0.701 / 0.872 / 0.218 | bin |
 | `bed-nobuildings` | 0.361 / −0.137 | 0.720 / 0.909 / 0.224 | bin |
@@ -66,14 +70,18 @@ sbatch -p main --exclude=halk[0001-0159] -c 1 --mem=2G -t 0:15:00 --dependency=a
 | `wave-apex` | 0.368 / −0.154 | 0.706 / 0.881 / 0.219 | bin |
 
 Unpaired reads only — the paired CIs (`scripts/paired_hwm_bootstrap.py`) are the 09-14 "Next"
-list and still wait on the premier's real row. Two things already visible: `wave-apex` and
+list. First read of the premier's real row: **IG is worth ~nothing at the HWMs** — premier
+(IG on) vs `wave-noig` (IG off) 0.382 / −0.181 vs 0.383 / −0.181, CSI 0.706 both, POD 0.880 vs
+0.881; the paired Δ will say whether even that 1 mm is signal. So the Phase 8 IG question on v3
+collapses to the stability read (`hm0ig` max, cells > 1 m) and runtime (premier 25 h 36 vs noig
+21 h 47 — IG costs ~4 h of wall), not to the score. Also visible: `wave-apex` and
 `wave-noig` agree on CSI / POD / FAR to 3 decimals (0.706 / 0.881 / 0.219) — checked: distinct
 caches (different sizes and mtimes) and they part at the 4th decimal (CSI 0.70604 vs 0.70635),
 so the apex band moves the NJ-side extent by ~nothing, as expected for a Lower-Bay change; and `bed-nobuildings` is the best point estimate on both HWM and extent, the buildings-tier
 footprint-drying effect of 09-04 again (compare on `motf_csi_buildings_masked.csv`).
 
-**Next, in order:** (1) 61670566 lands → confirm the premier row reads `bin:` (the read-back
-guard prints it) → `python -m nj_sfincs.premier`; (2) 61670576 renders → user submits the push
+**Next, in order:** (1) ~~61670566 lands → confirm the premier row reads `bin:`~~ ✅ 09:05
+(`python -m nj_sfincs.premier` 15/16 OK, run this morning, nothing changed since); (2) 61670576 renders → user submits the push
 line → notebook on GitHub; record the per-cell peak RSS here; (3) the 09-14 "Next" list below,
 unchanged: Phase 8 IG read on the premier, the three one-flag pairs premier vs `wave-noig` /
 `wave-fw02` / `bed-nobuildings` with paired CIs, `snapwave_direction_check.py direction` 73/73,
