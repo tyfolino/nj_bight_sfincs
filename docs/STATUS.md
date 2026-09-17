@@ -4,7 +4,7 @@
 12 KB "current state" memory file and its 26 reverse-chronological campaign logs; the point
 of the format is that a reader gets the current state without replaying how it was reached.
 
-Last updated: **2026-09-17 09:50** — post-maintenance audit: all 5 fixed-engine solves + per-arm validates DONE on `hal*`; 🔴 the premier's fresh score was LOST to a node-local `flock` (fixed → `lockf`), re-score 61670566 DONE (premier 0.382 / −0.181); 🔴 IG was never coupled (no wavemaker, FINDINGS §45); apex is a real −1.5 cm one-flag win, friction +1 cm, buildings undecided; the notebook render was OOM-killed at 100 G (the HWM panel cell needs 165 G for 6 arms) → re-rendered at 400 G and PUSHED (`0a87b5d`); dead queue entries cancelled. History before 09-17 is in the dated sections below and in git.
+Last updated: **2026-09-17 10:30** — post-maintenance audit: all 5 fixed-engine solves + per-arm validates DONE on `hal*`; 🔴 the premier's fresh score was LOST to a node-local `flock` (fixed → `lockf`), re-score 61670566 DONE (premier 0.382 / −0.181); 🔴 IG was never coupled (no wavemaker, FINDINGS §45); apex is a real −1.5 cm one-flag win → PROMOTED INTO THE PREMIER (re-baseline 10:30, old-band runs renamed `wave-band-sandy-hook[+…]`), friction +1 cm, buildings undecided; the notebook render was OOM-killed at 100 G (the HWM panel cell needs 165 G for 6 arms) → re-rendered at 400 G and PUSHED (`0a87b5d`); dead queue entries cancelled. History before 09-17 is in the dated sections below and in git.
 
 ## ⏳ PICK UP — next session
 
@@ -101,6 +101,34 @@ ran; median, 50 m, B 200 k, Δ = A − premier unless stated):**
 4. **Apex** (its own 09-13 pre-registration, HWM part) — `wave-apex` vs premier: the band
    extension feeds Lower Bay; predict Δ < 0 with the CI excluding zero only if the ~40
    shadow-zone marks move; otherwise a null. Headline test stays the Lower Bay N vs CORA read.
+
+**🔵 10:30 — APEX RE-BASELINE (user decision: "all future runs share that boundary").** The
+premier's SnapWave band is now `v3_shelf_steps_apex` (east leg to the Long Island shore, 63
+support points, open-coast demotion lifted): `_V3_PREMIER_WAVES` carries the three fields, the
+`wave-apex` entry is gone (promoted), `tests/test_engine_epoch.py` pins the new constant. The
+one-flag arms `wave-fw02` / `wave-noig` / `bed-nobuildings` stay registered as the NEW premier's
+arms but 🔴 **have not been run on the apex band** — their scored twins are the old-band rows.
+On disk and in `metrics.csv` (snapshot `metrics_2026-09-17_pre_apex_rebaseline.csv`, manifest
+`logs/rebaseline_2026-09-17_apex.tsv`, a `RENAMED.txt` in each dir; inner `provenance.txt` /
+`engine.txt` / `sfincs.log` still carry the old names):
+
+| was | is now |
+|---|---|
+| `wave-apex` | **`naccs-premier`** |
+| `naccs-premier` | `wave-band-sandy-hook` |
+| `wave-noig` | `wave-band-sandy-hook+wave-noig` |
+| `wave-fw02` | `wave-band-sandy-hook+wave-fw02` |
+| `bed-nobuildings` | `bed-nobuildings+wave-band-sandy-hook` |
+| `bed-nobuildings+wave-fw02+wave-noig` | `bed-nobuildings+wave-band-sandy-hook+wave-fw02+wave-noig` |
+
+All five old-band names are registered (`_V3_OLD_BAND`) so they audit and re-score; `python -m
+nj_sfincs.premier` 15/16 after the rename (the stale `wave-fw01+…` dir is the 16th).
+`naccs-nowaves` is unchanged and is still the premier's waves-off pair (no band). Gallery tifs
+renamed with the dirs; `logs/` and the 09-14 notebook keep the old names (the notebook generator's
+arm list is updated for the next epoch notebook). `report.html` regenerated from the renamed table.
+**Re-runs now needed for clean one-flag pairs on the apex band: `bed-nobuildings` (the only
+undecided lever, ~25 h) — `wave-fw02` (settled: worse) and `wave-noig` (uncoupled) need not be
+re-run unless a wavemaker arm makes IG live.** The user decides which to submit.
 
 **✅ 09:50 — the four paired pairs landed (`logs/paired_<arm>_vs_premier_2026-09-17.log`, Δ = arm − premier,
 median 50 m, 94 marks, B 200 k), scored against the 09:20 pre-registration:**

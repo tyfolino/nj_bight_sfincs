@@ -38,13 +38,23 @@ def _diff_fields(a, b) -> set[str]:
 
 class TestPremierConstant(unittest.TestCase):
     def test_premier_is_shelf_steps_plus_fw01_plus_ig(self):
+        # 2026-09-17: the premier carries the APEX band (east leg to the Long Island
+        # shore, +3 support points, open-coast demotion lifted) — user decision after
+        # the paired −0.0145 m [−0.0249, −0.0053] read (STATUS 09-17).
         self.assertEqual(
             PREMIER.waves,
-            replace(_V3_SHELF_STEPS_WAVES, snapwave_fw=0.01, wave_igwaves=True),
+            replace(
+                _V3_SHELF_STEPS_WAVES,
+                snapwave_fw=0.01,
+                wave_igwaves=True,
+                snapwave_domain="v3_shelf_steps_apex",
+                wave_n_support=63,
+                open_coast_max_y=float("inf"),
+            ),
         )
         self.assertTrue(PREMIER.waves.wave_wind)
         self.assertEqual(PREMIER.waves.sector(), 360)
-        self.assertEqual(PREMIER.waves.wave_n_support, 60)
+        self.assertEqual(PREMIER.waves.wave_n_support, 63)
         self.assertEqual(PREMIER.subgrid_from, "_subgrid_buildings")
         self.assertIsNone(PREMIER.bracket)
 
@@ -53,15 +63,24 @@ class TestPremierConstant(unittest.TestCase):
             "wave-fw02": {"snapwave_fw"},
             "wave-noig": {"wave_igwaves"},
             "bed-nobuildings": {"subgrid_from"},
-            # One lever, three fields (2026-09-13): the band table, +3 support points
-            # for the new 11.8 km leg, and the open-coast demotion lifted for this arm.
-            "wave-apex": {"snapwave_domain", "wave_n_support", "open_coast_max_y"},
-            "bed-nobuildings+wave-fw02+wave-noig": {
-                "snapwave_fw",
-                "wave_igwaves",
-                "subgrid_from",
-            },
         }
+        # The old band is one lever, three fields (2026-09-13): the band table, the
+        # support-point count, and the open-coast demotion. Every renamed old-band run
+        # differs from the premier by those three plus what its name says.
+        band = {"snapwave_domain", "wave_n_support", "open_coast_max_y"}
+        expect.update(
+            {
+                "wave-band-sandy-hook": band,
+                "wave-band-sandy-hook+wave-fw02": band | {"snapwave_fw"},
+                "wave-band-sandy-hook+wave-noig": band | {"wave_igwaves"},
+                "bed-nobuildings+wave-band-sandy-hook": band | {"subgrid_from"},
+                "bed-nobuildings+wave-band-sandy-hook+wave-fw02+wave-noig": band
+                | {"snapwave_fw", "wave_igwaves", "subgrid_from"},
+            }
+        )
+        self.assertEqual(
+            V3["wave-band-sandy-hook"].waves.snapwave_domain, "v3_shelf_steps"
+        )
         for name, fields in expect.items():
             self.assertEqual(_diff_fields(V3[name], PREMIER), fields, name)
         self.assertEqual(V3["wave-fw02"].waves.snapwave_fw, 0.02)
@@ -85,6 +104,8 @@ class TestPremierConstant(unittest.TestCase):
             "wave-fw01+wave-shelf-steps",
             "wave-nowind+wave-shelf-steps",
             "BRACKET+setup-stockdon",
+            "wave-apex",  # promoted INTO the premier 2026-09-17
+            "bed-nobuildings+wave-fw02+wave-noig",  # renamed …+wave-band-sandy-hook+…
         ):
             self.assertNotIn(old, V3, old)
 

@@ -15,7 +15,12 @@ from pathlib import Path
 import nbformat as nbf
 
 DATE = "2026-09-14"
-OUT = Path(__file__).resolve().parents[1] / "notebooks" / "v3" / f"sandy-v3-viz-{DATE}.ipynb"
+OUT = (
+    Path(__file__).resolve().parents[1]
+    / "notebooks"
+    / "v3"
+    / f"sandy-v3-viz-{DATE}.ipynb"
+)
 
 SETUP = f'''import os
 from pathlib import Path
@@ -41,12 +46,12 @@ TAG = "{DATE}"
 # Filtered below to the arms that have both a map and a scored metrics row, so this
 # notebook re-executes cleanly as later arms land.
 CANDIDATES = {{
-    "naccs-premier": "naccs-premier",
-    "wave-noig": "wave-noig",
-    "wave-fw02": "wave-fw02",
-    "bed-nobuildings": "bed-nobuildings",
+    "naccs-premier (apex band)": "naccs-premier",
+    "old band": "wave-band-sandy-hook",
+    "old band, no IG": "wave-band-sandy-hook+wave-noig",
+    "old band, fw 0.02": "wave-band-sandy-hook+wave-fw02",
+    "old band, no buildings": "bed-nobuildings+wave-band-sandy-hook",
     "naccs-nowaves": "naccs-nowaves",
-    "wave-apex": "wave-apex",
 }}
 _m = pd.read_csv(EXP / "metrics.csv", index_col=0)
 RUNS = {{k: v for k, v in CANDIDATES.items()
@@ -70,7 +75,7 @@ ARMS_TABLE = """## Arms — every run in this notebook is on the fixed engine (`
 | `wave-apex` | on | 0.01 | on | yes | **extended north to Rockaway** | swell supply into Lower Bay |
 """
 
-METRICS = '''csv = EXP / "metrics.csv"
+METRICS = """csv = EXP / "metrics.csv"
 m = pd.read_csv(csv, index_col=0).loc[list(RUNS.values())]
 HEADLINE = [
     "hwm_n_scored", "hwm_rmse_scored_m", "hwm_bias_scored_m",
@@ -79,9 +84,9 @@ HEADLINE = [
     "engine", "snapwave_direction", "subgrid",
 ]
 display(m[[c for c in HEADLINE if c in m.columns]].round(3))
-'''
+"""
 
-GAUGE_METRICS = '''m = pd.read_csv(EXP / "metrics.csv", index_col=0).loc[list(RUNS.values())]
+GAUGE_METRICS = """m = pd.read_csv(EXP / "metrics.csv", index_col=0).loc[list(RUNS.values())]
 
 COLS = {
     "peak_obs": "peak_obs_{n}_m",
@@ -110,7 +115,7 @@ for arm in m.index:
 
 gm = pd.DataFrame(rows).set_index(["gauge", "kind", "crest", "arm"]).round(3)
 display(gm)
-'''
+"""
 
 
 def anim(run, var, window):
@@ -121,7 +126,7 @@ display(Image(filename=str(p)))
 '''
 
 
-INTERACTIVE = '''import holoviews as hv
+INTERACTIVE = """import holoviews as hv
 import ipywidgets as widgets
 
 hv.extension("bokeh")
@@ -134,7 +139,7 @@ hv.extension("bokeh")
 )
 def browse(run="naccs-premier", var="depth", window="absecon"):
     display(animate.explore_field(run, var=var, window=window))
-'''
+"""
 
 
 def main() -> None:
@@ -142,34 +147,58 @@ def main() -> None:
     c = nb.cells
     c.append(nbf.v4.new_code_cell(SETUP))
     c.append(nbf.v4.new_markdown_cell(ARMS_TABLE))
-    c.append(nbf.v4.new_markdown_cell(
-        "## Water-level boundary — forced cells + NACCS support (every arm shares one boundary; one panel)"))
-    c.append(nbf.v4.new_code_cell(
-        'plots.plot_waterlevel_boundary_panels({"naccs-premier": "naccs-premier"}, ncol=1);'))
+    c.append(
+        nbf.v4.new_markdown_cell(
+            "## Water-level boundary — forced cells + NACCS support (every arm shares one boundary; one panel)"
+        )
+    )
+    c.append(
+        nbf.v4.new_code_cell(
+            'plots.plot_waterlevel_boundary_panels({"naccs-premier": "naccs-premier"}, ncol=1);'
+        )
+    )
     c.append(nbf.v4.new_markdown_cell("## Metrics"))
     c.append(nbf.v4.new_code_cell(METRICS))
-    c.append(nbf.v4.new_markdown_cell(
-        "## Gauges — ⚠️ Ship Bottom · Sea Isle · Stone Harbor obs peaks are pre-storm gap artefacts; "
-        "Sandy Hook died mid-storm (read its pre-failure peak)"))
+    c.append(
+        nbf.v4.new_markdown_cell(
+            "## Gauges — ⚠️ Ship Bottom · Sea Isle · Stone Harbor obs peaks are pre-storm gap artefacts; "
+            "Sandy Hook died mid-storm (read its pre-failure peak)"
+        )
+    )
     c.append(nbf.v4.new_code_cell("plots.plot_gauge_verification(RUNS, ncol=NCOL);"))
-    c.append(nbf.v4.new_markdown_cell(
-        "## Gauge metrics — `tide` gauges: read range/phase. `surge` gauges: read peak."))
+    c.append(
+        nbf.v4.new_markdown_cell(
+            "## Gauge metrics — `tide` gauges: read range/phase. `surge` gauges: read peak."
+        )
+    )
     c.append(nbf.v4.new_code_cell(GAUGE_METRICS))
-    c.append(nbf.v4.new_markdown_cell(
-        "## HWM — ⚠️ bay marks carry ±0.3 m of seiche PHASE between arms (FINDINGS §40); "
-        "compare arms PAIRED, never by pooled RMSE alone"))
+    c.append(
+        nbf.v4.new_markdown_cell(
+            "## HWM — ⚠️ bay marks carry ±0.3 m of seiche PHASE between arms (FINDINGS §40); "
+            "compare arms PAIRED, never by pooled RMSE alone"
+        )
+    )
     c.append(nbf.v4.new_code_cell("plots.plot_hwm_residual_panels(RUNS, ncol=NCOL);"))
-    c.append(nbf.v4.new_markdown_cell(
-        "## MOTF — `naccs-nowaves` is a legitimate configuration but its extent is not ranked "
-        "against waves-on arms; buildings arms dry their footprints (compare on the masked CSI)"))
-    c.append(nbf.v4.new_code_cell("plots.plot_motf_panels(RUNS, ncol=NCOL, split_fa=True);"))
+    c.append(
+        nbf.v4.new_markdown_cell(
+            "## MOTF — `naccs-nowaves` is a legitimate configuration but its extent is not ranked "
+            "against waves-on arms; buildings arms dry their footprints (compare on the masked CSI)"
+        )
+    )
+    c.append(
+        nbf.v4.new_code_cell("plots.plot_motf_panels(RUNS, ncol=NCOL, split_fa=True);")
+    )
     c.append(nbf.v4.new_markdown_cell("## Animations — the premier"))
     c.append(nbf.v4.new_code_cell(anim("naccs-premier", "depth", "raritan")))
     c.append(nbf.v4.new_code_cell(anim("naccs-premier", "depth", "cape_may")))
     c.append(nbf.v4.new_code_cell(anim("naccs-premier", "hm0", "cape_may")))
     c.append(nbf.v4.new_markdown_cell("## Interactive — pick a run, field, window"))
     c.append(nbf.v4.new_code_cell(INTERACTIVE))
-    nb.metadata["kernelspec"] = {"name": "python3", "display_name": "Python 3", "language": "python"}
+    nb.metadata["kernelspec"] = {
+        "name": "python3",
+        "display_name": "Python 3",
+        "language": "python",
+    }
     OUT.parent.mkdir(parents=True, exist_ok=True)
     nbf.write(nb, OUT)
     print(f"wrote {OUT} ({len(c)} cells)")

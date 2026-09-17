@@ -646,6 +646,25 @@ Live campaign state is in [STATUS.md](STATUS.md). This file is for what is settl
     case (`scripts/make_snapwave_reproducer.py`, ~1 s) is where the injected signal is read
     first. STATUS 2026-09-17.
 
+46. ⭐ **Extending the SnapWave band north across the Sandy Hook–Rockaway apron to the Long
+    Island shore is a real, one-flag HWM improvement on v3 and is the premier's boundary
+    from 2026-09-17.** Paired against the Sandy-Hook-cut band on the same binary (94 marks,
+    median, 50 m): ΔRMSE **−0.0145 m, 95 % CI [−0.0249, −0.0053]**, P 1.000; `sandy_hook_bay`
+    bias −0.250 → −0.109, `raritan_bay` −0.296 → −0.234, `lower_bay_si_shore` −0.166 → −0.257
+    (the one basin that worsens); Great Kills peak −0.56 → −0.43, Sandy Hook pre-fail −0.20 →
+    −0.14; extent CSI unchanged (0.706). Mechanism: the apron (18–29 m deep, 1,671 CORA
+    nodes) was wave-inactive, so nothing reached the Lower Bay entrance from the E–SE; with
+    it active, Lower Bay N hm0 is +0.14 m on average over the window (≥ +0.1 m on 43 of 73
+    hours, +0.3 m at 14:00/16:00 on 10-29) — but the bay still sits ~40 % under CORA at the
+    surge peak (1.53 vs 2.67 m at 10-30 01:00), so the entrance is A supply path, not THE
+    deficit. ⚠️ Two reads that looked like failures were the §44 limit cycle: the single
+    pre-registered hour (10-29 12:00, Δ +0.05) is a trough of the hourly series, and the
+    southern shelf sites differ by 0.2–0.4 in ratio only on hours where one arm had just hit
+    the iteration cap — on cap-hit-free hours the four NJ sites agree to ±0.01. Any
+    single-hour criterion on a wind-on SnapWave arm must name a cap-hit-free hour. The runs
+    made on the old band are `wave-band-sandy-hook[+…]` in `metrics.csv`; the table before
+    the rename is `metrics_2026-09-17_pre_apex_rebaseline.csv`. STATUS 2026-09-17.
+
 ### Closed — do not re-open
 
 Each of these cost a campaign and is settled. The evidence is in the archive's
