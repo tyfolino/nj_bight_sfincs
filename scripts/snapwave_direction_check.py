@@ -478,12 +478,13 @@ def main(argv=None) -> int:
         elif a.cmd == "bands":
             shelf = tuple(a.shelf)
             df = bands_table(run, shelf=shelf)
+            n_cells = df.attrs["n"]  # _side_by_side returns a new frame without attrs
             if ref is not None:
                 df = _side_by_side(
                     df, bands_table(ref, shelf=shelf), ["entry", "mid", "shelf9m"]
                 )
             print(
-                f"{run.path.name}: cells entry/mid/shelf9m = {df.attrs['n']}; "
+                f"{run.path.name}: cells entry/mid/shelf9m = {n_cells}; "
                 f"ratios are median hm0 / imposed median on the boundary cells; "
                 f"shelf band z in {shelf}"
             )

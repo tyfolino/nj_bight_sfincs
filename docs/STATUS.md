@@ -4,7 +4,7 @@
 12 KB "current state" memory file and its 26 reverse-chronological campaign logs; the point
 of the format is that a reader gets the current state without replaying how it was reached.
 
-Last updated: **2026-09-17 08:50** — post-maintenance audit: all 5 fixed-engine solves + per-arm validates DONE on `hal*`; 🔴 the premier's fresh score was LOST to a node-local `flock` (fixed → `lockf`), re-score 61670566 DONE (premier 0.382 / −0.181, IG ≈ no-IG); the notebook render was OOM-killed at 100 G → profiled re-render 61670576 at 400 G chained; 5 dead queue entries for the user to `scancel`. History before 09-17 is in the dated sections below and in git.
+Last updated: **2026-09-17 09:50** — post-maintenance audit: all 5 fixed-engine solves + per-arm validates DONE on `hal*`; 🔴 the premier's fresh score was LOST to a node-local `flock` (fixed → `lockf`), re-score 61670566 DONE (premier 0.382 / −0.181); 🔴 IG was never coupled (no wavemaker, FINDINGS §45); apex is a real −1.5 cm one-flag win, friction +1 cm, buildings undecided; the notebook render was OOM-killed at 100 G (the HWM panel cell needs 165 G for 6 arms) → re-rendered at 400 G and PUSHED (`0a87b5d`); dead queue entries cancelled. History before 09-17 is in the dated sections below and in git.
 
 ## ⏳ PICK UP — next session
 
@@ -43,9 +43,16 @@ outage, which is why nothing reached GitHub. Which cell did it is unknown; NEW
 per-cell wall time + peak kernel-tree RSS (psutil, 0.25 s), writing the notebook even on a
 failed cell. **Re-render submitted: 61670576** (`afterok:61670566`, 400 G → an emeraldrapids
 node, 8 cores, 3 h; log `logs/nb_v3_epoch_61670576.out`). All six arms have a map and a row now,
-so ONE render covers the apex too; ids in `logs/nb_v3_epoch.jobs`. Read the `[cell N] done …
-peak RSS` lines afterwards and put the number in this file — that is the memory budget for every
-future render of a 6-arm notebook.
+so ONE render covers the apex too; ids in `logs/nb_v3_epoch.jobs`.
+✅ **09:03 — rendered (61670576, hal0383, 15 min 08, 18.6 MB, no error cells; `in this notebook: ['naccs-premier', 'wave-noig', 'wave-fw02', 'bed-nobuildings', 'naccs-nowaves', 'wave-apex']`)
+and PUSHED by the user's 61670617 → commit `0a87b5d` on GitHub.** 🔴 **Memory budget for a 6-arm
+epoch notebook, per cell (`render_notebook_profiled.py`, kernel-tree RSS):** gauges (cell 7)
+24 G / 295 s; **HWM residual panels (cell 11) 165 G / 322 s — the cell that killed the 100 G
+render**; MOTF panels (cell 13) 57 G / 118 s; each animation 52 G / 20–30 s; interactive 52 G.
+**Submit renders at ≥ 200 G (emeraldrapids, 515 G nodes).** The HWM panel cost is
+`load_floodmap` per arm without releasing the previous arm's rasters (`plots.py:332`) — a
+`del`/`gc.collect()` per panel, or reading the cached `floodmap_hmax_lev3.tif` windows instead of
+the full rasters, would bring it under 128 G; not done, flagged.
 
 **The user's two lines** (the classifier refuses Claude both `scancel` and the external-write
 push job):
@@ -70,19 +77,118 @@ read-back guard printed nothing.** The user ran the `scancel` and submitted the 
 | `wave-apex` | 0.368 / −0.154 | 0.706 / 0.881 / 0.219 | bin |
 
 Unpaired reads only — the paired CIs (`scripts/paired_hwm_bootstrap.py`) are the 09-14 "Next"
-list. First read of the premier's real row: **IG is worth ~nothing at the HWMs** — premier
-(IG on) vs `wave-noig` (IG off) 0.382 / −0.181 vs 0.383 / −0.181, CSI 0.706 both, POD 0.880 vs
-0.881; the paired Δ will say whether even that 1 mm is signal. So the Phase 8 IG question on v3
-collapses to the stability read (`hm0ig` max, cells > 1 m) and runtime (premier 25 h 36 vs noig
-21 h 47 — IG costs ~4 h of wall), not to the score. Also visible: `wave-apex` and
+list. First read of the premier's real row: premier (IG on) vs `wave-noig` (IG off) 0.382 / −0.181 vs
+0.383 / −0.181, CSI 0.706 both — ~~IG is worth nothing at the HWMs~~ **RETRACTED 09:30: IG is not
+coupled to SFINCS without a wavemaker, see below; the identity is by construction.** Runtime:
+premier 25 h 36 vs noig 21 h 47 — IG costs ~4 h of wall. Also visible: `wave-apex` and
 `wave-noig` agree on CSI / POD / FAR to 3 decimals (0.706 / 0.881 / 0.219) — checked: distinct
 caches (different sizes and mtimes) and they part at the 4th decimal (CSI 0.70604 vs 0.70635),
 so the apex band moves the NJ-side extent by ~nothing, as expected for a Lower-Bay change; and `bed-nobuildings` is the best point estimate on both HWM and extent, the buildings-tier
 footprint-drying effect of 09-04 again (compare on `motf_csi_buildings_masked.csv`).
 
+**📝 09:20 — PRE-REGISTRATION for the premier's paired pairs (written before `paired_hwm_bootstrap.py`
+ran; median, 50 m, B 200 k, Δ = A − premier unless stated):**
+1. **IG** — `wave-noig` vs premier: the unpaired rows are identical to 1 mm, so predict |ΔRMSE| ≤
+   0.01 m with the 95 % CI including zero. A CI excluding zero either way would say IG moves
+   individual marks in a way that cancels in the pool — worth a per-region look, not a verdict.
+2. **Friction** — `wave-fw02` vs premier: doubling `snapwave_fw` dissipates more swell → less
+   setup → more negative bias. Predict Δ > 0 (fw02 WORSE) with the CI excluding zero, magnitude
+   +0.005..+0.02 m (the 09-14 two-lever F.4 pair gave −0.010 with buildings mixed in).
+3. **Buildings** — `bed-nobuildings` vs premier: the plan's 09-04 line is "buildings within
+   ±0.02 m paired". Unpaired the no-buildings arm is BETTER by 0.021, so predict Δ < 0 and
+   the CI touching −0.02; if it clears −0.02 the buildings tier is costing more than the 09-04
+   read said and the footprint-masked CSI must be quoted beside it.
+4. **Apex** (its own 09-13 pre-registration, HWM part) — `wave-apex` vs premier: the band
+   extension feeds Lower Bay; predict Δ < 0 with the CI excluding zero only if the ~40
+   shadow-zone marks move; otherwise a null. Headline test stays the Lower Bay N vs CORA read.
+
+**✅ 09:50 — the four paired pairs landed (`logs/paired_<arm>_vs_premier_2026-09-17.log`, Δ = arm − premier,
+median 50 m, 94 marks, B 200 k), scored against the 09:20 pre-registration:**
+
+| pair | ΔRMSE | 95 % CI | P(arm better) | pre-registered | verdict |
+|---|---|---|---|---|---|
+| 1 IG: `wave-noig` | +0.0005 | [−0.0024, +0.0036] | 0.42 | \|Δ\| ≤ 0.01, CI includes 0 | ✅ as predicted — and by construction (below) |
+| 2 friction: `wave-fw02` | **+0.0095** | [+0.0020, +0.0184] | 0.006 | Δ > 0, CI excludes 0, +0.005..+0.02 | ✅ PASS — `fw 0.02` is worse by ~1 cm; the premier's 0.01 is the right default |
+| 3 buildings: `bed-nobuildings` | −0.0211 | [−0.0478, +0.0078] | 0.93 | Δ < 0, CI touching −0.02 | 🔶 point estimate on the line, CI 5.5 cm wide and crossing 0: the tier costs 0–5 cm of HWM RMSE and the marks disagree about it (footprint-drying, 09-04) Extent: headline CSI 0.706 vs 0.720 is the footprints drying — **masked CSI 0.721 vs 0.723**, POD 0.903 vs 0.917 (`logs/phase8_2026-09-17/motf_csi_buildings_masked_fixed_engine.csv`; MOTF-wet-but-model-dry footprint 20.1 vs 8.2 km²). On extent the tier is neutral once its own footprints are excluded; the HWM cost is what remains undecided. |
+| 4 apex: `wave-apex` | **−0.0145** | [−0.0249, −0.0053] | 1.000 | Δ < 0 only if the shadow-zone marks move | ✅ real, one-flag, 1.5 cm — carried by `sandy_hook_bay` (+0.14) and `raritan_bay` (+0.06), against `lower_bay_si_shore` (−0.09) |
+
+So on the fixed engine the premier's three one-flag pairs read: IG null (uncoupled), friction real
+at 1 cm, buildings undecided at the 2 cm level; and the apex band is the one lever today that
+moves the HWM score by a CI-excluding amount, in the pre-registered direction, without touching
+the coast south of Sandy Hook on cap-hit-free hours. Its extent CSI is unchanged (0.706 vs
+0.706). Decision for the user: promote the apex band into the premier definition (a re-baseline,
+FINDINGS §41-style), or keep it as a scored arm.
+
+**🔴 09:30 — IG WAS NEVER COUPLED: `snapwave_igwaves = 1` without a WAVEMAKER changes nothing in
+SFINCS.** Read in the v2.3.3 source while answering the user's "do we need the wavemaker like the
+Florence case?": the only thing SnapWave hands SFINCS is the wave force, and
+`snapwave_solver.f90:908` builds it from the SHORT-wave breaking dissipation alone
+(`F = Dw·k/σ/ρ/h`; `Dw_ig` is exported to the map as `hm0ig` and used nowhere else). The IG
+motion enters the water level only through the **wavemaker** (`sfincs_wavemaker.f90`,
+`wavemaker_wvmfile` polyline; Leijnse et al. 2025 Coastal Eng. 199:104726 Appendix B — the van
+Dongeren & Svendsen absorbing-generating boundary, fed `hm0ig` at its points and `tp_ig =
+snapwave_tpigmean` from SnapWave, randomly phased, long-crested; placed at ~5 m depth at high
+tide; 1.5 % of their runtime). No arm has ever carried one (`grep wvm experiments/v3/*/sfincs.inp`
+→ nothing). Consequences: (a) **the premier-vs-`wave-noig` null is BY CONSTRUCTION** — paired
+ΔRMSE +0.0005 m, 95 % CI [−0.0024, +0.0036], P 0.42/0.58 — and the 09:05 line above ("IG is worth
+~nothing at the HWMs") is RETRACTED as a physics read; IG has not been tested on v3 at all. (b) IG
+on the premier is pure cost: ~4 h of wall per solve for a field nobody consumes — `wave-noig` is the
+same model, cheaper. (c) The Phase 8 IG question becomes a **wavemaker arm** (`wave-wavemaker`
+= premier + `wavemaker_wvmfile`; hydromt path `sf.wave_makers.create(<MultiLineString geojson>)`,
+recipe in `~/nj_coast_sfincs/notebooks/reference/build_quadtree_…withwavemaker.ipynb`; vertex
+ORDER sets the generation side). ⚠️ Before building it: the premier's IG field is not a credible
+forcing yet — at the surge peak (10-30 03:00) **976,804 cells carry `hm0ig` > 1 m, 215,992 of
+them SFINCS-active, 177 k in the −10..−5 m band and 25 k in −5..−2 m, median 1.24 m, max 2.0 m**;
+`ig_ratio_p99` > 0.5 on 20 of 73 hours, `ig_max` ≥ 1.5 m on 67 of 73 (Phase 8 criteria FAIL on
+both, as the 09-13 cut predicted). Leijnse's own SFINCS put 0.67 m at the Wrightsville bar where
+XBeach had 0.33; ours would inject ~1.2 m at the 5 m line. The wavemaker arm needs the IG
+shoaling / breaking knobs (`snapwave_alphaigfac`, `snapwave_gammaig`, `snapwave_fwig`) read on
+the plane-beach reproducer first (`make_snapwave_reproducer.py` + a wavemaker line — ~1 s runs).
+`pypdf` is in the env now (`micromamba install`); the paper's text is extractable.
+
+**`wave-apex` against its 09-13 pre-registration (logs in `logs/phase8_2026-09-17/`):**
+1. **Lower Bay N vs CORA at 10-29 12:00: 0.87 → 0.92 m, Δ +0.05 (CORA 1.56) → MISS** (needed
+   ≥ +0.2; < 0.1 was pre-registered as "the entrance is not the supply path"). Pocket 0.75 → 0.76,
+   Raritan S 0.82 → 0.81. ⚠️ The hour is a trough of the series: Δlower_n is **+0.14 m on average
+   over the window, ≥ 0.1 on 43 of 73 hours, +0.29 at 14:00, +0.33 at 16:00, +0.19 at the surge
+   peak** (`apex−premier` census; `Δpocket` max +0.10, `Δraritan_s` max +0.27), and the deficit vs
+   CORA still opens to −1.1 m at 10-30 01:00 (1.53 vs 2.67). Reading: the apron IS a supply path
+   worth 0.1–0.3 m of bay hm0, and it is not enough — the bay stays ~40 % under CORA at the peak.
+   The pre-registered single-hour test is what was written; the hourly series is the new read.
+2. **NY gauges / bay basins (unpaired, `metrics.csv`):** Great Kills peak −0.56 → −0.43, Narrows
+   SI −0.10 → −0.02, Arthur Kill mouth −0.49 → −0.44, Sandy Hook pre-fail −0.20 → −0.14;
+   `sandy_hook_bay` HWM bias **−0.250 → −0.109**, `raritan_bay` −0.296 → −0.234,
+   `lower_bay_si_shore` −0.166 → **−0.257** (the one basin that worsens). Paired CI pending (job
+   running). Pooled: RMSE 0.368 vs 0.382, bias −0.154 vs −0.181, CSI 0.706 both.
+3. **South of Sandy Hook:** HWM basins within 0.01 (south_coast −0.387 vs −0.390, great_egg
+   −0.164 vs −0.171, cape_may +0.026 vs +0.022, atlantic_oceanfront −0.073 vs −0.077) → PASS.
+   `wave_shelf_reference.py` at the four default hours: **FAIL on paper** — 10-30T00:00 Atlantic
+   City 0.67 vs 1.00, Ocean City 0.51 vs 0.89, Sea Isle 0.53 vs 0.76 — but 🔴 **all four default
+   hours are cap-hit-contaminated in at least one arm** (apex call 96 blew up — 50 iterations,
+   error 4.28, 60 % ok — right before the 00:00 output; the premier's blow-up was call 98, right
+   after it). On the six hours where neither arm had hit the cap for two calls, the four sites agree
+   to **±0.01 at 10-29 22:00 → 10-30 03:00** (`…_caphitfree.log`); the two 10-28 hours still
+   differ (both arms had cap-hits two calls earlier). So the band edit did NOT leak south — the
+   differences are the FINDINGS §44 limit-cycle phase — but that is a post-hoc read on a diagnostic
+   the pre-registration did not name. Domain-wide `bands`: shelf9m mean Δ +0.003, p90 |Δ| 0.047.
+4. **Ring / direction / cap-hits / runtime:** direction **73 of 73** both arms (worst 0.0°);
+   cap-hits **57 of 145 vs 49** (within ±10 → PASS); runtime 25 h 33 vs 25 h 36 → PASS. ⚠️ Spike
+   census is NOT within reach: `n_spike` sum **835,573 vs 34,429** cell-hours, 10 hours > 1,000
+   vs 3, 126 k cells > 8 m at 10-28 01:00 and 10-29 07:00. Located: **all in the SnapWave-only
+   offshore band (msk ≠ 1), 15–30 m deep, y 4321–4495 km — the WHOLE NJ shelf, only 55 cells
+   north of Sandy Hook**, 0–47 SFINCS-active cells. Not the apron: the wind-mode solver
+   instability at a different phase (same as G3, 09-12), and it never touches a SFINCS cell.
+5. Hotspot 10-28 14:00: `field_max` 25 m at 10-28 09:00 (premier) / 01:00 (apex) — recorded.
+**Verdict:** by the letter of the pre-registration the arm is VOID on criterion 3 and a MISS on
+criterion 1; by the mechanism both are the limit cycle and the single-hour choice, and the bay
+reads (0.1–0.3 m more hm0, +0.14 m on the Sandy Hook Bay marks) are real and in the predicted
+direction. Not a premier replacement on this evidence; the paired CI decides whether it is a
+one-flag improvement worth keeping in the band definition. Two 12 h cuts (apex vs premier, G3
+recipe, cap-hit-free hours) would settle criterion 3 cheaply.
+
 **Next, in order:** (1) ~~61670566 lands → confirm the premier row reads `bin:`~~ ✅ 09:05
-(`python -m nj_sfincs.premier` 15/16 OK, run this morning, nothing changed since); (2) 61670576 renders → user submits the push
-line → notebook on GitHub; record the per-cell peak RSS here; (3) the 09-14 "Next" list below,
+(`python -m nj_sfincs.premier` 15/16 OK, run this morning, nothing changed since); (2) ~~61670576 renders → user submits the push
+line → notebook on GitHub; record the per-cell peak RSS here~~ ✅ 09:03, `0a87b5d`; (3) the 09-14 "Next" list below,
 unchanged: Phase 8 IG read on the premier, the three one-flag pairs premier vs `wave-noig` /
 `wave-fw02` / `bed-nobuildings` with paired CIs, `snapwave_direction_check.py direction` 73/73,
 `wave-apex` against its 09-13 pre-registration, then the carried items.

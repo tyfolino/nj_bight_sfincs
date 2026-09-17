@@ -624,16 +624,39 @@ Live campaign state is in [STATUS.md](STATUS.md). This file is for what is settl
     blow-ups onto the open shelf; the engine-side interior initial-guess remap is the open
     follow-up.
 
+45. 🔴 **`snapwave_igwaves = 1` does NOTHING to SFINCS water levels unless a WAVEMAKER is
+    defined — every "IG" arm ever scored (v1.5 `wave-ig`, v3 premier vs `wave-noig`) was a
+    null by construction.** The only quantity SnapWave hands the flow solver is the wave
+    force, and `snapwave_solver.f90:908` builds it from the short-wave breaking dissipation
+    alone (`F = Dw·k/σ/ρ/h`); the IG balance (§A2 of Leijnse et al. 2025, Coastal Eng.
+    199:104726) runs beside it and its output `hm0ig`/`tpig` is consumed by exactly one
+    module, `sfincs_wavemaker.f90` — the van Dongeren & Svendsen absorbing-generating
+    boundary on a `wavemaker_wvmfile` polyline (~5 m depth at high tide), which takes
+    `hm0ig` at its points and `tp_ig = snapwave_tpigmean` and injects a randomly phased
+    long-crested signal landward of the line. No run in either repo carries a wavemaker on
+    the premier lineage (`grep wvm experiments/*/*/sfincs.inp`). Measured on v3, 2026-09-17:
+    premier (IG on) vs `wave-noig` (IG off), same binary, paired ΔRMSE +0.0005 m, 95 % CI
+    [−0.0024, +0.0036] on 94 marks — identical to the millimetre, as it must be. IG on
+    costs ~4 h of a 25 h solve for a field nobody reads. What IG WOULD inject is not yet
+    credible either: at the surge peak 976,804 cells carry `hm0ig` > 1 m (215,992 of them
+    SFINCS-active, median 1.24 m in the −10..−5 m band, max 2.0 m), against 0.67 m at the
+    bar in Leijnse's SFINCS and 0.33 m in XBeach for a comparable storm. Any wavemaker arm
+    is therefore two changes — the line AND the IG shoaling/breaking knobs
+    (`snapwave_alphaigfac`, `snapwave_gammaig`, `snapwave_fwig`) — and the toy plane-beach
+    case (`scripts/make_snapwave_reproducer.py`, ~1 s) is where the injected signal is read
+    first. STATUS 2026-09-17.
+
 ### Closed — do not re-open
 
 Each of these cost a campaign and is settled. The evidence is in the archive's
 `docs/campaigns/`, indexed in [ARCHIVE.md](../ARCHIVE.md).
 
-- **Infragravity waves are a NULL LEVER, not an instability.** The old "IG caused blow-ups"
-  verdict came from a pre-sealed run whose blow-up traced to a *solver* bug. On a sealed
-  domain every metric moved ≤0.01 m. ⚠️ That was measured with MISDIRECTED waves (§43) at
-  a −10 m boundary; it is re-tested as `wave-ig` on the fixed engine (plan Phase 8) before
-  the "null lever" verdict is quoted for the shelf-steps band.
+- **~~Infragravity waves are a NULL LEVER~~ — RE-OPENED 2026-09-17, see §45.** The "null
+  lever" (every metric ≤ 0.01 m on the sealed domain, and again on v3: paired Δ +0.0005 m)
+  was measured with `snapwave_igwaves = 1` and NO wavemaker, so the IG field never reached
+  the water level; it is a null by construction, not a finding about IG. What stays closed:
+  the "IG caused blow-ups" verdict came from a pre-sealed run whose blow-up traced to a
+  *solver* bug. IG is untested on this coast until a wavemaker arm runs.
 - **SnapWave blow-ups (~1e13) are boundary points OUTSIDE the mesh** → depth 0 → runaway.
   Any SnapWave-active cell that is SFINCS-inactive and dry is a candidate.
 - **Surf-zone hm0 spikes are GEBCO integer bathymetry** filling nearshore NoData; offshore
