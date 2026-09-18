@@ -675,11 +675,29 @@ Live campaign state is in [STATUS.md](STATUS.md). This file is for what is settl
     `snapwave_solver.f90:77`; `snapwave_gammaig` 0.2 → 0.7; the wavemaker orientation factor)
     move the toy by ≤ 0.02 m of hm0ig and 0.002 m of injected IG amplitude; the backport is
     `hpc/patches/snapwave_igk_wavemaker_v2.3.3.patch`, engine `v2.3.3-winddir-igk-fix-1-gf11`.
-    The wavemaker itself behaves the same on both engines: nothing seaward of the line, an IG
-    signal of ~0.3 m Hs-equivalent at −2 m from a 0.4 m `hm0ig` at the −4 m line. Consequence:
+    The wavemaker itself behaves the same on both engines FOR A LINE WITH LAND ON ITS LEFT:
+    nothing seaward of the line, an IG signal of ~0.3 m Hs-equivalent at −2 m from a 0.4 m
+    `hm0ig` at the −4 m line. 🔴 **Orientation is the whole game, and the engines differ on a
+    reversed line (2026-09-18):** land on the RIGHT of the vertex order makes unpatched v2.3.3
+    inject NOTHING anywhere (a mis-oriented piece dies silently), while the backport and
+    Galibier inject SEAWARD. The backport therefore carries upstream's semantics; the rule is
+    "land on the LEFT", and every piece of a line must be checked against the bed
+    (`logs/engine_gate_2026-09-18_wvm_orientation_v3_pieces.txt`: all 10 v3 pieces pass). Consequence:
     moving the premier to v2.4.x is a breaking/setup epoch, not an IG fix, and it must go
     through the 12 h G3 gate (`engine_gate.py`) before any score is compared across it.
     STATUS 2026-09-17, `logs/engine_gate_2026-09-17_igk_toy.txt`.
+    **On v3 the epoch is REFUSED (the G5 gate, three 24 h cuts of the apex premier to 10-29 00:00,
+    read 2026-09-18 against a pre-registration).** Unclamped main (`snapwave_gammax` 999) explodes at
+    hour 1 with CORRECTLY directed swell — 440 k spike cells, hm0 to 38 km, |Δzs| > 1 m on 218 k
+    open-ocean cell-hours, the back bays +2 m — so July's explosion was the missing clamp, not §43.
+    Clamped main (`gammax 2`) is stable offshore (|Δzs| p99 0.07 m, no cell-hour > 1 m), holds the −9 m
+    shelf within 0.03 of v2.3.3 at three of four sites, and lifts shoreline setup by only 1.1–1.4×
+    (0.14–0.18 m against 0.13 at hour 24, Sea Bright / Atlantic City) — in the open-coast basins
+    (+0.03..+0.10) and not the NY bays (−0.05..−0.10). It runs 1.7× faster with no cap-hits because
+    it STOPS on `%ok ≥ 99` (`converged at iteration 3 error = 85`) where v2.3.3 iterates the error
+    down, and its IG solve reports `%ok_ig 48` at "converged". The toy's 5× does not transfer to the
+    real coast. v2.3.3 stays the premier engine; the wavemaker arm goes on it. STATUS 2026-09-18,
+    `logs/engine_gate_2026-09-17/`.
 
 48. **The Sandy Hook shadow marks feel the waves as much as the rest of the domain — and
     most of what they feel is OCEAN setup carried in through the entrance, not the bay wave
@@ -701,6 +719,11 @@ Live campaign state is in [STATUS.md](STATUS.md). This file is for what is settl
     move is the local excess (≤ 0.1 m at the two spit marks and the pocket gauge), not the
     +0.11. Pooled: ΔRMSE −0.066 m [−0.087, −0.046] (waves are worth 7 cm of HWM RMSE on this
     engine). `logs/phase4b_2026-09-17/D3_paired_zone_premier_vs_nowaves.log`; STATUS.
+    **The shadow is GEOMETRY-limited, not spread-limited (D4, 2026-09-18):** doubling the boundary
+    directional spread (`snapwave.bds` 30° → 60°, one 24 h cut on the premier's engine) leaves the
+    pocket's median hm0 unchanged (−0.005 m at the five swell hours cap-hit-free in both runs, no
+    hour ≥ +0.10) while taking ~0.05 of the CORA ratio off the Atlantic City shelf. Only a diffraction
+    term can fill the pocket, and §48's ceiling (≤ 0.1 m at the spit) is all it could be worth.
 
 ### Closed — do not re-open
 

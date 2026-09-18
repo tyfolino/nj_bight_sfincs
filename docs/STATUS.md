@@ -4,26 +4,87 @@
 12 KB "current state" memory file and its 26 reverse-chronological campaign logs; the point
 of the format is that a reader gets the current state without replaying how it was reached.
 
-Last updated: **2026-09-17 15:30** — post-maintenance audit: all 5 fixed-engine solves + per-arm validates DONE on `hal*`; 🔴 the premier's fresh score was LOST to a node-local `flock` (fixed → `lockf`), re-score 61670566 DONE (premier 0.382 / −0.181); 🔴 IG was never coupled (no wavemaker, FINDINGS §45); apex is a real −1.5 cm one-flag win → PROMOTED INTO THE PREMIER (re-baseline 10:30, old-band runs renamed `wave-band-sandy-hook[+…]`), friction +1 cm, buildings undecided; the notebook render was OOM-killed at 100 G (the HWM panel cell needs 165 G for 6 arms) → re-rendered at 400 G and PUSHED (`0a87b5d`); dead queue entries cancelled. History before 09-17 is in the dated sections below and in git.
+Last updated: **2026-09-18 14:30** — the G5 Galibier gate and the D4 spread cut landed overnight (all four COMPLETED on `hal038x`, whole 24 h windows) and are READ against their pre-registrations (`logs/engine_gate_2026-09-17/`): 🔴 unclamped Galibier EXPLODES with correctly directed swell (so July was the missing clamp, not §43); clamped Galibier is stable and shelf-faithful but lifts shoreline setup only 1.1–1.4× (rule wanted ≥ 2×) and its speed is a looser convergence stop → **v2.3.3 STAYS, the wavemaker arm goes on it**; D4: a 30° → 60° spread leaves the Sandy Hook pocket unchanged (median Δhm0 −0.005 m) while lowering the Atlantic City shelf ~0.05 → the shadow is **GEOMETRY-limited** (prediction missed), D5 is a real decision, still behind the wavemaker arm; 14:30 the wavemaker build is settled (`v2.3.3-winddir-igk-fix-1-gf11`: the reversed-line toy shows the backport = Galibier's orientation semantics, the unpatched build injects nothing on a mis-oriented line; all 10 v3 pieces have land on the left). History before 09-18 is in the dated sections below and in git.
 
 ## ⏳ PICK UP — next session
 
-### ⏳ 2026-09-17 EVENING — PICK UP HERE (written before a context compaction)
+### ⏳ 2026-09-18 MORNING — PICK UP HERE: G5 gate + D4 landed and are READ (v2.3.3 stays; the shadow is geometry-limited)
 
-**Running:** D4 spread cut `D4_bds60` 61683588 (control = `G5_v233`; pre-registration in the D4 block below) and the G5 Galibier gate — three 24 h cuts of the apex premier, `G5_v233` 61679637
-(hal0383), `G5_main_default` 61679638 (hal0386, restarted from scratch after a preemption ~1 h
-in), `G5_main_gammax2` 61679639 (hal0385); `/scratch/tpj8/engine_gate/G5_*`; ~10 h each, so
-the first two land ~02:30–03:00, the default ~04:00. Pre-registration + decision rule: the
-16:30 block below. **Read in this order:** `sacct -j … --format=NodeList` (hal, not halk) →
-`engine_gate.py compare G5_v233 G5_main_default` and `… G5_main_gammax2` (JSON to
-`logs/engine_gate_2026-09-17/`) → `snapwave_bay_census.py` + `snapwave_direction_check.py
-convergence` on each (spikes, cap-hits; pick cap-hit-free hours) → `wave_shelf_reference.py
-<cut> --premier G5_v233 --ref-mesh experiments/v3/wave-stwave/sfincs.nc --times <cap-hit-free
-hours ≤ 10-29 00:00>` → shoreline setup: mean `zs` over the last 6 h on SFINCS-active faces
-with mesh z −2..0 m, per shelf site (Sea Bright / Atlantic City / Ocean City / Sea Isle boxes)
-and per HWM basin (no script yet — ~40 lines on the `snapwave_direction_check.load_run` loader).
+**Landed overnight, ALL READ 09-18 morning** (`logs/engine_gate_2026-09-17/`: `compare_G5_v233_vs_*.json`,
+`census_*`, `convergence_*`, `shelf_*`, `g5_reads_2026-09-18.log` = setup / basins / shelf band / spikes / gauges,
+`g5_reads2_2026-09-18.log` = open-ocean spikes + per-site shelf-ratio summary; the ~40-line reader is the
+scratch `g5_reads.py`, not promoted). All four `COMPLETED 0:0` on `hal038x` (no halk), 25 map hours 10-28 00:00 →
+10-29 00:00, 145 his rows, clean `Closing off SFINCS`: `G5_v233` 61679637 10 h 21 (hal0383), `G5_main_default`
+61679638 4 h 12 (hal0386), `G5_main_gammax2` 61679639 6 h 08 (hal0385), `D4_bds60` 61683588 10 h 36 (hal0387).
+`engine_gate.py compare` says FAIL on all three, as it must (it is the reproduction gate; the sizes are the read).
 
-**Done today, all STAGED, not committed (the user commits):** premier re-score + `lockf` fix;
+**G5 VERDICT — v2.3.3 STAYS; the wavemaker arm goes on it.** The rule needed PASS on 1 AND 2 with ≥ 2× on 3;
+it got a FAIL on 1 and a MISS on 3. Prediction by prediction:
+1. **Stability, `main_default` (gammax 999): EXPLODED, as July did — with CORRECTLY DIRECTED swell, so §43 was
+   not what killed it; the missing clamp is the explosion.** Hour 1: `n_spike` 440,036 (v233 6,515 → 67×),
+   `field_max` 38,375 m (v233 17.6); |Δzs| > 1 m on 218,065 open-ocean cell-hours (z < −5, open-coast basins),
+   max 856 m; over the last 6 h the back-bay gauges sit +1.7..+2.6 m above v233 (Mantoloking +2.6, Absecon
+   Creek +2.1, Ship Bottom +2.0, Barnegat Light +1.7), the LBI / Barnegat Bay shore bands +2.2 / +2.5 m; the
+   shelf wave field then DIES (`SnapWave_keeps` 0.00–0.30 of CORA at three of four sites). Average `dt` 0.458 s
+   vs 0.693 — the CFL signature. `noaa_atlantic_city` max |Δ| 7.1 m.
+2. **Shelf, `gammax2`: PASS.** −9 m shelf ratio vs CORA, gammax2 − v233, last-6-h medians: Atlantic City −0.03,
+   Ocean City −0.03, Sea Isle −0.02, Sea Bright −0.10 (the control column is itself jumpy there: 2.60 / 1.58 /
+   1.81 at cap-hit-free hours — the 150 m strip is noise-prone; where the control is quiet gammax2 is within
+   ±0.03). Open-coast shelf band (swm 1, z −9.8..−8.5, y ≤ 4,480,000, 27,197 faces) over the 12 matched
+   cap-hit-free hours: median Δhm0 −0.06 m, |Δ| p50 0.095. ⚠️ The p99 line (≤ 0.05) is unmeetable on this
+   field: the control's own spikes alone give the SAME-engine D4 cut a p99 of 1.57 m; use site medians.
+   **Stability, `gammax2`: holds offshore** — open-ocean |Δzs| p99 0.071 m, max 0.90, **0** cell-hours > 1 m
+   (D4, same engine: 18). Its 40.8 m `zs` spike is ONE deep face in Sandy Hook Bay at hour 2 (z −14.6,
+   lon −73.985 lat 40.480); 19,800 Sandy Hook Bay faces carry |Δzs| > 1 m at some hour — the §40 re-ring plus
+   that spike (the NY bay gauges' full-window max |Δ| 0.6–1.0 m equals D4's 0.4–0.9 on the same engine).
+3. **Shoreline setup (headline), `gammax2`: MISS — 1.1–1.4×, not ≥ 2× (the toy said 5×).** Proxy setup =
+   mean `zs` over the last 6 h on active faces z −2..0 m MINUS the −9.8..−8.5 m shelf in the same 8 km strip:
+   Sea Bright 0.182 vs 0.131, Atlantic City 0.144 vs 0.126, Ocean City 0.109 vs 0.081, Sea Isle 0.078 vs 0.027
+   (2.9×, off a 3 cm base). v233's absolute setup at hour 24 is 0.03–0.13 m, as predicted.
+4. **Where it goes: PASS in sign.** Shore-band mean `zs`, gammax2 − v233, per HWM basin: open coast
+   +0.03..+0.10 (`atlantic_oceanfront` +0.033, `absecon_atlantic_city` +0.032, `cape_may` +0.042, `great_egg`
+   +0.080, `manasquan` +0.102); the NY bays DOWN — `raritan_bay` −0.051, `shrewsbury_navesink` −0.096,
+   `lower_bay_si_shore` −0.043, `sandy_hook_bay` −0.016 (seiche phase or the hour-2 spike; not resolved,
+   and not needed for the verdict).
+5. **Runtime: PASS** — gammax2 0.59× of v233's wall (0 of 49 cap-hits vs 31 of 49). ⚠️ **The speed is a
+   LOOSER STOP, not better convergence:** Galibier logs `converged at iteration 3 error = 85.29 %ok = 99.31` —
+   it stops on `%ok`, where v233 iterates to the cap at %ok 99.3–99.9 with error ~1. And Galibier's IG solve
+   prints `%ok_ig = 48` at "converged" on every call: the IG field is half-converged. Also `n_ig_gt1` 692 k
+   faces at hour 24 vs v233's 147 k (gammaig 0.7 default + the IG-wavenumber fix) — irrelevant to `zs` while
+   IG is uncoupled (§45), decisive the moment a wavemaker arm runs on Galibier.
+
+**D4 VERDICT — GEOMETRY-LIMITED; D5 (the diffraction patch) is a real decision, still deferred behind the
+wavemaker arm. PREDICTION MISSED** (it said partially spread-limited, pocket +0.05..+0.15 m). Pocket median
+`hm0`, D4 − v233, at the 5 swell hours cap-hit-free in BOTH runs (14, 15, 18, 23, 00): +0.073, −0.065, −0.005,
+−0.081, +0.064 → median **−0.005**, ZERO hours ≥ +0.10; over all 13 swell hours the median is +0.008. Raritan S
+±0.08, Lower Bay N −0.11..+0.22 (wind-sea hour-to-hour noise in both runs). The shelf sanity line was NOT clean:
+Atlantic City shelf ratio −0.05..−0.06 at every late hour (≈ −0.2 m hm0), Sea Isle −0.02, Ocean City +0.06;
+open-coast band median Δhm0 −0.033, |Δ| p50 0.215 — a 60° spread takes a little energy OFF the shelf, and none
+of it reaches the pocket. `sandy_hook` gauge last-6-h mean +0.095 (predicted |Δ| < 0.02 — MISSED; the §40
+re-ring: max |Δ| 0.60, the same size the engine change gives), ocean-side `usgs_stormtide_sea_bright` +0.016 /
+max 0.077. D4 cap-hits 13 of 49 (v233 31 of 49); hours 10, 12, 19–22 are spike-contaminated in D4 and excluded.
+Follow-up from the pre-registration (a justified `bds` from CORA's directional spread) is moot: spread is not the lever.
+
+**Next (in order):** (a) ✅ RESOLVED 14:30 — the wavemaker arm runs on **`v2.3.3-winddir-igk-fix-1-gf11`**
+(`34048c58`, the premier's build + the IG-wavenumber and wavemaker-orientation backport). The reversed-line toy
+(`logs/engine_gate_2026-09-18_wvm_orientation_toy.txt`; `repro_ig/<build>/ig_wm_rev`, the −4 m line drawn E→W
+so land is on the RIGHT): with land on the LEFT all three builds inject landward (IG std 0.07–0.08 m at −2 m,
+nothing at −8 m); with land on the RIGHT the unpatched premier build injects **nothing anywhere** (std 0.000 at
+every station — a mis-oriented piece dies silently), while the backport and Galibier both inject **seaward**
+(std 0.042 / 0.046 at −8 m, ≤ 0.007 landward). So the backport reproduces upstream's orientation semantics
+exactly, the "land on the LEFT of the vertex order" rule is the real one, and `hm0ig` is identical forward and
+reversed (the wavemaker does not feed back into SnapWave). Every one of the v3 line's 10 pieces has land on its
+left: 300 m left / right bed samples at every segment midpoint give z_left −0.6..+3.8 m vs z_right −5.6..−11.2 m,
+fraction left-shallower 1.00 on all 10 (`logs/engine_gate_2026-09-18_wvm_orientation_v3_pieces.txt`; re-run that
+check after ANY edit of the line). first, then pick. (b) Stage `wave-wavemaker` = premier + `wvmfile` from `data/wavemakers_v3/v3_wavemaker_5m_mhw.geojson`
+via `sf.wave_makers.create(...)` (a `WaveConfig` field in `model.py`), pre-register (oceanfront HWM bias → 0, MOTF
+POD up in overwash zones, bays unchanged, runtime), submit `--constraint=emeraldrapids`, budget ~36 h. (c) Phase 6
+retire list: 🔴 copy `experiments/v3/wave-stwave/sfincs.nc` → `data/quadtree/v3_mesh_10m_line_stwave.nc` BEFORE
+retiring `wave-stwave` — the G5 shelf read above used it as `--ref-mesh`. (d) The four cut dirs
+(`/scratch/tpj8/engine_gate/G5_*`, `D4_bds60`, ~2 G map each) are diagnostics, not arms: keep until the wavemaker
+arm is read, then delete by hand. (e) FINDINGS §47 / §48 carry the two verdicts (done 09-18).
+
+**Done 09-17, all STAGED, not committed (the user commits):** premier re-score + `lockf` fix;
 notebook rendered + pushed (`0a87b5d`); Ruff + pypdf in the env; four paired pairs; apex
 re-baseline (registry, dirs, rows, `metrics_2026-09-17_pre_apex_rebaseline.csv`); FINDINGS
 §45 (IG uncoupled without a wavemaker), §46 (apex band), §47 (Galibier breaking/setup); the
@@ -85,6 +146,7 @@ change the SHADOW, not the ocean) and `zs` at the `sandy_hook` gauge over the la
 at the swell hours, Raritan S +0.02..+0.08, Lower Bay N ±0.03, shelf |Δ hm0| p99 < 0.05 m,
 `sandy_hook` zs |Δ| < 0.02 m in this pre-peak window, wall ≈ 10 h. Void conditions: halk
 node; TIMEOUT; cap-hit-contaminated hours (skip them, as on 09-17).
+**RESULT (read 09-18 morning, `logs/engine_gate_2026-09-17/census_D4_bds60.log`, `g5_reads*_2026-09-18.log`): GEOMETRY-LIMITED — pocket median Δhm0 −0.005 m at the 5 matched cap-hit-free swell hours, zero hours ≥ +0.10, while the Atlantic City shelf ratio fell 0.05; prediction MISSED. Full read in the 09-18 PICK UP block.**
 
 ### 🔶 2026-09-17 EVENING — Phase 4b D3: does the Sandy Hook shadow feel the waves? (pre-registered BEFORE scoring)
 
@@ -340,6 +402,7 @@ before reading anything (no halk). Void conditions: a cut that dies or TIMEOUTs;
 site read (use the `convergence` table, as on 09-17). Decision rule stated now: only a PASS on 1
 AND 2 with a ≥ 2× setup on 3 in the open-coast basins makes main a candidate epoch worth the
 G1/G2 gates and a full solve; anything else keeps v2.3.3 and the wavemaker arm goes on it.
+**RESULT (read 09-18 morning): v2.3.3 STAYS. 1 FAIL (unclamped main explodes at hour 1 with correctly directed swell — the clamp, not §43, was July's problem), 2 PASS (gammax2 within 0.03 of v233 on the shelf), 3 MISS (setup 1.1–1.4×, not ≥ 2×), 4 PASS in sign, 5 PASS but the speed is a looser convergence stop (`%ok ≥ 99`, error 85; `%ok_ig 48`). Full read in the 09-18 PICK UP block; FINDINGS §47.**
 
 **🧪 15:30 — WAVEMAKER TOY CASE + the v2.4.0 IG backport (user: "start with the toy case to see what
 2.4 fixes; can we backport the IG fix into 2.3.3?").** `git diff v2.3.3..v2.4.0_Galibier_release`
