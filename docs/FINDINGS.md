@@ -746,7 +746,7 @@ Each of these cost a campaign and is settled. The evidence is in the archive's
 - **CORA is rejected for WATER LEVEL** (tide late, levels 0.14–0.31 m low) and **adopted for
   WAVES**. ❌ "CORA runs low" does NOT extend to its waves. 🔑 Its `*_map.zarr` are kerchunk
   reference files, not real zarr stores.
-- **The Galibier engine is retired.** The Faber container (`sfincs-cpu.sif`, v2.3.3) was
+- **The Galibier engine is retired** — and re-tested on v3 2026-09-18 (§47: unclamped explodes, clamped buys 1.1–1.4× setup on a looser stop) and refused again. The Faber container (`sfincs-cpu.sif`, v2.3.3) was
   the engine for every run to 2026-09-10; from the Phase-2 rebuild onward the engine is the
   native patched v2.3.3 build (`Build-Revision … nj-winddir-fix-1`, §43). Every metrics
   row carries an `engine` column from that epoch; do not compare across it without saying so.

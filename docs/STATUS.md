@@ -14,8 +14,9 @@ Last updated: **2026-09-18 14:30** — the G5 Galibier gate and the D4 spread cu
 
 **Landed overnight, ALL READ 09-18 morning** (`logs/engine_gate_2026-09-17/`: `compare_G5_v233_vs_*.json`,
 `census_*`, `convergence_*`, `shelf_*`, `g5_reads_2026-09-18.log` = setup / basins / shelf band / spikes / gauges,
-`g5_reads2_2026-09-18.log` = open-ocean spikes + per-site shelf-ratio summary; the ~40-line reader is the
-scratch `g5_reads.py`, not promoted). All four `COMPLETED 0:0` on `hal038x` (no halk), 25 map hours 10-28 00:00 →
+`g5_reads2_2026-09-18.log` = open-ocean spikes + per-site shelf-ratio summary; the reader is PROMOTED as
+`scripts/engine_gate_reads.py --control <ctl> --cuts <cut>… --logs <dir>` (16:00; reproduces every number here,
+cap-hit-free hours read from the `convergence_*.csv` tables). All four `COMPLETED 0:0` on `hal038x` (no halk), 25 map hours 10-28 00:00 →
 10-29 00:00, 145 his rows, clean `Closing off SFINCS`: `G5_v233` 61679637 10 h 21 (hal0383), `G5_main_default`
 61679638 4 h 12 (hal0386), `G5_main_gammax2` 61679639 6 h 08 (hal0385), `D4_bds60` 61683588 10 h 36 (hal0387).
 `engine_gate.py compare` says FAIL on all three, as it must (it is the reproduction gate; the sizes are the read).
@@ -81,8 +82,9 @@ fraction left-shallower 1.00 on all 10 (`logs/engine_gate_2026-09-18_wvm_orienta
 check after ANY edit of the line). first, then pick. (b) Stage `wave-wavemaker` = premier + `wvmfile` from `data/wavemakers_v3/v3_wavemaker_5m_mhw.geojson`
 via `sf.wave_makers.create(...)` (a `WaveConfig` field in `model.py`), pre-register (oceanfront HWM bias → 0, MOTF
 POD up in overwash zones, bays unchanged, runtime), submit `--constraint=emeraldrapids`, budget ~36 h. (c) Phase 6
-retire list: 🔴 copy `experiments/v3/wave-stwave/sfincs.nc` → `data/quadtree/v3_mesh_10m_line_stwave.nc` BEFORE
-retiring `wave-stwave` — the G5 shelf read above used it as `--ref-mesh`. (d) The four cut dirs
+retire list: ✅ 16:00 the old −10 m line's `snapwave_mask` is kept as `data/quadtree/v3_snapwave_mask_10m_line_stwave.nc`
+(int8 + zlib, 6,464 boundary cells, byte-equal to `wave-stwave/sfincs.nc`, gitignored) and `wave_shelf_reference.py`
+defaults to it — so `wave-stwave` CAN now be retired; `wave-nowind+wave-shelf-steps` still waits for the wavemaker read. (d) The four cut dirs
 (`/scratch/tpj8/engine_gate/G5_*`, `D4_bds60`, ~2 G map each) are diagnostics, not arms: keep until the wavemaker
 arm is read, then delete by hand. (e) FINDINGS §47 / §48 carry the two verdicts (done 09-18).
 
@@ -269,7 +271,7 @@ singletons only. Suite 173 OK.
 
 | arm | true reclaim | note |
 |---|---|---|
-| `wave-stwave` | 5.6 G | 🔴 **its `sfincs.nc` is a DIFFERENT mesh from the template (md5 differs, nlink 3): the "mesh with the old −10 m line" that `wave_shelf_reference.py --ref-mesh` NEEDS for the G5 read.** Copy that file somewhere durable (e.g. `data/quadtree/v3_mesh_10m_line_stwave.nc`) and point `--ref-mesh` there BEFORE retiring. |
+| `wave-stwave` | 5.6 G | ✅ its `sfincs.nc` held the old −10 m SnapWave line; that mask is kept as `data/quadtree/v3_snapwave_mask_10m_line_stwave.nc` (09-18) and the shelf script defaults to it — retirable. |
 | `diag-premier-norain` | 10.4 G | container diag, superseded |
 | `bed-buildings` | 10.6 G | container, the 09-04 buildings arm (now in the premier) |
 | `BRACKET+setup-stockdon` | 3.9 G | inadmissible bound, scored in `bracket_metrics.csv` |

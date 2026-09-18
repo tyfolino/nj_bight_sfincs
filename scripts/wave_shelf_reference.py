@@ -82,7 +82,13 @@ def main() -> None:
     ap.add_argument("--times", nargs="*", default=list(DEFAULT_TIMES))
     args = ap.parse_args()
     dom = _domain.active()
-    ref_mesh = args.ref_mesh or (args.run.parent / "_template_sealed" / "sfincs.nc")
+    # 2026-09-18: the sealed v3 template carries no SnapWave boundary, and the arm that
+    # held the old -10 m line (`wave-stwave`) is on the retire list, so its mask alone is
+    # kept under data/quadtree (3 MB, same face order). Preferred over the template.
+    _kept = _domain.DATA / "quadtree" / "v3_snapwave_mask_10m_line_stwave.nc"
+    ref_mesh = args.ref_mesh or (
+        _kept if _kept.exists() else args.run.parent / "_template_sealed" / "sfincs.nc"
+    )
     prem = args.premier
     T = Transformer.from_crs(4326, dom.epsg, always_xy=True)
     kw = {"decode_times": {"timemax": False}}
@@ -105,7 +111,7 @@ def main() -> None:
         # that still holds the -10 m line, e.g. experiments/v3/wave-stwave/sfincs.nc.
         raise SystemExit(
             f"{ref_mesh}: snapwave_mask has no boundary (==2) cells; pass --ref-mesh "
-            "<mesh with the old -10 m line>, e.g. experiments/v3/wave-stwave/sfincs.nc"
+            "<mesh with the old -10 m line>, e.g. data/quadtree/v3_snapwave_mask_10m_line_stwave.nc"
         )
     pm = xr.open_dataset(prem / "sfincs_map.nc", **kw) if prem is not None else None
     tlast = mp["time"].values.max()
