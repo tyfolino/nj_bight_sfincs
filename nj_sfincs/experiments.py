@@ -257,6 +257,29 @@ _V3: dict[str, Experiment] = {
         **_V3_BUILDINGS,
         **_V3_WL,
     ),
+    "wave-wavemaker": Experiment(
+        "wave-wavemaker",
+        replace(
+            _V3_PREMIER_WAVES,
+            wavemaker=True,
+            wavemaker_line=DATA / "wavemakers_v3" / "v3_wavemaker_5m_mhw.geojson",
+        ),
+        "Premier plus the ocean-side WAVEMAKER line: 10 pieces, 142.8 km, along the "
+        "MHW-5 m contour of the open coast, 600 m setback from every inlet, land on "
+        "the LEFT of every piece's vertex order (checked against the bed 2026-09-18). "
+        "The first arm on which the infragravity balance can touch the water level at "
+        "all (FINDINGS 45: without a wavemaker IG is a null by construction), so this "
+        "is the IG lever, one change from the premier. Engine: v2.3.3-winddir-igk-fix-1 "
+        "(the wavemaker-orientation + IG-wavenumber backport; the premier's build "
+        "injects NOTHING on a mis-oriented line, FINDINGS 47). IG knobs at the engine "
+        "defaults (gamma_ig 0.2). PRE-REGISTRATION in STATUS (09-18): oceanfront HWM "
+        "bias moves toward 0 (+0.05..+0.15 m on atlantic_oceanfront / south_coast / "
+        "lbi_barrier / absecon_atlantic_city marks, paired), bays unchanged within "
+        "+-0.02 m paired median, MOTF POD up in overwash zones, no cell zs > 5 m, "
+        "nothing seaward of the line, runtime <= 1.3x the premier.",
+        **_V3_BUILDINGS,
+        **_V3_WL,
+    ),
     "bed-nobuildings": Experiment(
         "bed-nobuildings",
         _V3_PREMIER_WAVES,

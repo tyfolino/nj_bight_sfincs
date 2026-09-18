@@ -10,6 +10,8 @@ Last updated: **2026-09-18 14:30** — the G5 Galibier gate and the D4 spread cu
 
 ### ⏳ 2026-09-18 MORNING — PICK UP HERE: G5 gate + D4 landed and are READ (v2.3.3 stays; the shadow is geometry-limited)
 
+**RUNNING (15:15): `wave-wavemaker` solve 61696255 → validate 61696256** — the IG lever, pre-registered in the AFTERNOON block below; ~28–33 h on emeraldrapids, so it lands ~2026-09-19 evening. Read in this order: `sacct --format=NodeList` → `wvmfile` + `engine.txt` in the run dir → the pre-registration's diagnostics (1)–(6).
+
 **Landed overnight, ALL READ 09-18 morning** (`logs/engine_gate_2026-09-17/`: `compare_G5_v233_vs_*.json`,
 `census_*`, `convergence_*`, `shelf_*`, `g5_reads_2026-09-18.log` = setup / basins / shelf band / spikes / gauges,
 `g5_reads2_2026-09-18.log` = open-ocean spikes + per-site shelf-ratio summary; the ~40-line reader is the
@@ -113,6 +115,49 @@ Then, after the gate: the engine decision (rule in the 16:30 block) → the `wav
 arm = premier + `wvmfile` from the line above via `sf.wave_makers.create(...)` in staging
 (`model.py` needs a WaveConfig field for it), pre-registered (oceanfront HWM bias → 0, MOTF POD
 up in overwash zones, bays unchanged, runtime) — IG knobs read on the toy first.
+
+### ⏳ 2026-09-18 AFTERNOON — `wave-wavemaker` staged: the IG lever (pre-registered BEFORE submission)
+
+**What.** `wave-wavemaker` = the apex premier + `wvmfile` = `data/wavemakers_v3/v3_wavemaker_5m_mhw.geojson`
+(10 pieces, 142.8 km, MHW − 5 m contour, 600 m inlet setback, land on the LEFT of every piece — bed check
+`logs/engine_gate_2026-09-18_wvm_orientation_v3_pieces.txt`), written by `sf.wave_makers.create(..., merge=False)`
+in `add_waves` (the pre-existing `WaveConfig.wavemaker` / `wavemaker_line` plumbing; registry entry + one-field
+test added 09-18). Everything else is the premier's: IG on at engine defaults (`gamma_ig` 0.2, `fw_ig` 0.015),
+fw 0.01, apex band, 63 support points, buildings. **Engine: `v2.3.3-winddir-igk-fix-1-gf11` (`34048c58`)** —
+NOT the premier's build: the reversed-line toy (14:30 above) shows the unpatched build injects nothing on a
+mis-oriented piece while the backport carries Galibier's semantics; on a correctly oriented line the two builds
+agree on the toy to ≤ 0.04 m of zs max. So the arm differs from the premier by the line AND the engine build; the
+build difference is measured on the toy as ≤ 0.02 m of hm0ig / 0.04 m of zs max with a wavemaker and NIL without
+one (`ig_nowm` identical on both), so it is not a confound for the premier comparison. Full 73 h window,
+`--constraint=emeraldrapids`, 40 h limit (premier paces 2.2–2.6 sim-h/wall-h → 28–33 h; restarts every 6 h).
+
+**Question.** FINDINGS §45: no run to date has let the IG balance touch the water level. Does injecting the IG
+signal at the 5 m line move the oceanfront marks, which the premier under-predicts, and does it leave the bays
+alone (the 600 m setback means no piece feeds an inlet)?
+
+**Diagnostics (chosen first).** `scripts/paired_hwm_bootstrap.py` wave-wavemaker vs naccs-premier, median
+estimator, 50 m, q ≤ 2: (1) paired Δ on the OPEN-COAST basins (`atlantic_oceanfront`, `south_coast`,
+`lbi_barrier`, `absecon_atlantic_city`, `cape_may`, `barnegat_barrier`) vs the BAYS (`raritan_bay`,
+`sandy_hook_bay`, `shrewsbury_navesink`, `lower_bay_si_shore`, `cape_may_back_bays`, `great_bay_mullica`,
+`barnegat_bay`); (2) the headline: open-coast basin bias (`_scored`, median, 50 m) before / after; (3) MOTF
+CSI / POD / FAR with the FA decomposition beside it; (4) `snapwave_bay_census.py` (IG ratio, spikes) and the
+his series at `usgs_stormtide_sea_bright` / `noaa_atlantic_city` (IG std over the peak hour: the toy gives
+0.07 m at −2 m); (5) nothing seaward of the line: `hm0ig`-driven `zs` std at −8 m ≈ the premier's; (6) wall.
+- **Lever is real:** open-coast paired median Δ ≥ +0.05 m with the 95 % CI above 0 AND bays within ±0.02 →
+  the wavemaker joins the premier candidates; then read the IG knobs (`gammaig`, `alphaigfac`, `fwig`) —
+  §45's 2–3× `hm0ig` overshoot makes overshoot the risk, so a +0.3 m oceanfront move is a knob read, not a win.
+- **Null:** open-coast |Δ| < 0.03 m with the CI straddling 0 → IG is not the oceanfront answer on this
+  coast; the closed "null lever" item goes back to Closed with THIS measurement behind it.
+- **Bays move (|Δ| > 0.05 paired median):** something other than the line changed — check the setback, the
+  Sandy Hook piece 9, and the engine-build confound before reading anything.
+**Prediction (written before submission):** open-coast paired median Δ **+0.05..+0.15 m** (the toy: +0.08 at
+the waterline, +0.15..+0.20 at −2..−1 m, and Sandy's oceanfront marks sit on the beach face); the oceanfront
+bias moves from negative toward 0 by that amount; bays |Δ| ≤ 0.02 paired median (Raritan per-mark ±0.2–0.3
+seiche as §40); MOTF POD up by < 0.01 (overwash strips are thin); IG std 0.05–0.10 m at the ocean gauges at
+the peak; runtime 1.0–1.3× the premier; no `zs` > 5 m. **Expected verdict: lever is real, modest.** Void
+conditions: halk node; TIMEOUT without a clean resume; a piece injecting seaward (zs std at −8 m up by
+> 0.02 m over the premier's); `wvmfile` missing from the staged `sfincs.inp`.
+**SUBMITTED 2026-09-18 15:15: solve 61696255 (`run.submit_slurm`, `bin:v2.3.3-winddir-igk-fix-1-gf11`, `--constraint=emeraldrapids`, 40 h, 64 G, `dtrstout 21600`), validate 61696256 (`afterok`, 200 G, 6 h); ids in `logs/wave-wavemaker_2026-09-18.jobs`.** Staged on hal0334 (staging log `logs/stage_wave-wavemaker_2026-09-18.log`): `sfincs.wvm` carries all 10 pieces with the geojson's vertex counts, every piece south→north; premier audit OK (`sha16 19f53cfd4cb804fb`); dedupe reclaimed 2.6 G; scratch 181 G of 1 T. Check `sacct -j 61696255 --format=NodeList` (hal, not halk) and the restart-file mtimes for pace before believing anything.
 
 ### ⏳ 2026-09-17 EVENING — Phase 4b D4 staged: the spread cut (pre-registered BEFORE submission)
 

@@ -63,6 +63,8 @@ class TestPremierConstant(unittest.TestCase):
             "wave-fw02": {"snapwave_fw"},
             "wave-noig": {"wave_igwaves"},
             "bed-nobuildings": {"subgrid_from"},
+            # 2026-09-18: the IG lever is the LINE (two fields: the switch and its path).
+            "wave-wavemaker": {"wavemaker", "wavemaker_line"},
         }
         # The old band is one lever, three fields (2026-09-13): the band table, the
         # support-point count, and the open-coast demotion. Every renamed old-band run
@@ -85,6 +87,9 @@ class TestPremierConstant(unittest.TestCase):
             self.assertEqual(_diff_fields(V3[name], PREMIER), fields, name)
         self.assertEqual(V3["wave-fw02"].waves.snapwave_fw, 0.02)
         self.assertFalse(V3["wave-noig"].waves.wave_igwaves)
+        self.assertTrue(V3["wave-wavemaker"].waves.wavemaker)
+        self.assertTrue(V3["wave-wavemaker"].waves.wave_igwaves)
+        self.assertTrue(V3["wave-wavemaker"].waves.wavemaker_line.exists())
 
     def test_nowaves_shares_the_premier_subgrid(self):
         self.assertFalse(V3["naccs-nowaves"].waves.use_waves)
