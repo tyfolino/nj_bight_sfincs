@@ -218,6 +218,21 @@ wet where water arrived; it does not, so I read target A as "the sheet cannot re
 transects — **that is an override of a pre-registered reading, and the user judges it.** What target A does establish
 without caveat: the effect is confined to < 1.5 km from the line, and the sheet-scored CSI is unchanged (0.706 → 0.708).
 
+**16:40 — user decisions: hold the bed lever for now (MOTF is a bathtub from marks, agreed); render a SINGLE-RUN v3
+notebook for `wave-wavemaker`.** `scripts/make_v3_epoch_notebook.py` now takes `--date`, `--arm LABEL=arm`, `--table
+<md>`, `--anim-run`, `--ncol` (defaults reproduce the 09-14 six-arm notebook byte-for-byte in source); the single-run
+notebook is `notebooks/v3/sandy-v3-viz-2026-09-20.ipynb` (21 cells: the config table from `table_2026-09-20.md` — NACCS
+water levels, CORA waves in the imposed direction, band extended north, wind on, `fw` 0.01, IG on + the −5 m wavemaker,
+buildings; boundary / metrics / gauges / gauge table / HWM / MOTF (header says it is a storm-tide surface) / four GIFs
+incl. `sandy_hook` / interactive). Render **R5 = 61720321** (`nb_v3_wvm`, main, no halk, 8 cores, 160 G, 2 h,
+`logs/nb_v3_wvm_61720321.out`; the six-arm render peaked at 151 G, one arm should sit well under). NOT auto-pushed — the
+user commits. ⚠️ Regenerating the DEFAULT notebook overwrites the RENDERED 09-14 file with an unexecuted one (I did, and
+restored it with `git checkout`); pass `--date` for anything but a deliberate re-render.
+✅ **R5 = 61720321 COMPLETED** (hal0319, 8 min 50, 0 error cells, 12 output cells, four GIFs
+`reports/figures/v3_{depth_raritan,depth_cape_may,hm0_cape_may,depth_sandy_hook}_2026-09-20.gif`). ⚠️ Peak RSS **111.9 G
+on the HWM panel for ONE arm** (`plot_hwm_residual_panels`; 151 G for six) — the panel's cost is mostly per-call, not per
+arm: never render a v3 notebook under 120 G. Notebook staged (the GIFs are embedded in its outputs; `reports/figures` is gitignored); the user commits.
+
 **Landed overnight, ALL READ 09-18 morning** (`logs/engine_gate_2026-09-17/`: `compare_G5_v233_vs_*.json`,
 `census_*`, `convergence_*`, `shelf_*`, `g5_reads_2026-09-18.log` = setup / basins / shelf band / spikes / gauges,
 `g5_reads2_2026-09-18.log` = open-ocean spikes + per-site shelf-ratio summary; the reader is PROMOTED as
