@@ -168,6 +168,11 @@ not trip that guard. Do not run the sweep driver to "just rebuild" a template.
   the far end of the domain — the first wavemaker line (2026-09-17) ran through land and on
   the wrong side of the barrier islands. Go through the affine (`~transform`,
   `rasterio.sample`); rioxarray's "non-rectilinear or with rotation" warning is that fact.
+  ⚠️ The run dir's `floodmap_hmax_lev3.tif` and `subgrid/dep_subgrid_merged.tif` are on that
+  frame too; the de-rotated product is `experiments/v3/floodmaps/<arm>_hmax_lev3.tif`. A
+  scorer that samples them with `x0 + col*res` reproduces the premier's CSI as 0.572
+  instead of 0.706 and finds an EMPTY beach band (2026-09-20) — a self-check against the
+  published row is what caught it.
 - **eHydro sign convention flips by USACE district.** New York district ships negative
   elevations; Philadelphia ships positive depths. A hardcoded formula produces a silently
   empty raster on the wrong side.

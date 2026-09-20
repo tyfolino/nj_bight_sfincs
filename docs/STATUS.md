@@ -8,6 +8,12 @@ Last updated: **2026-09-20 17:10** — `wave-wavemaker` (the IG lever) landed cl
 
 ## ⏳ PICK UP — next session
 
+**RUNNING (2026-09-20 17:03): `wave-wavemaker+wind-x110` solve 61721880 (hal0391, emeraldrapids, 40 h) → validate 61721881** — the
+wind-sensitivity probe (ERA5 × 1.10 on the wavemaker premier candidate), pre-registered in the 18:30 block of the 09-20
+section; lands ~09-22 morning. Read in this order: `sacct -j 61721880 --format=NodeList` → `wind_scale` column = 1.100 in
+`metrics.csv` → Great Kills / Arthur Kill Δpeak vs `wave-wavemaker` → paired bay marks → bay census. Held by user decision:
+the dune-failure `bed-` lever (§49) and v4 Delaware Bay.
+
 ### ⏳ 2026-09-18 MORNING — PICK UP HERE: G5 gate + D4 landed and are READ (v2.3.3 stays; the shadow is geometry-limited)
 
 ### ✅ 2026-09-20 — `wave-wavemaker` LANDED and READ: the IG lever is real, small, and set by the line-to-beach distance; NOT a premier candidate at the −5 m line (user decision on the next move)
