@@ -185,10 +185,38 @@ lidar maximum, not a dune-crest pick, so the test is conservative; the USGS TWL 
 **What this says, in one line:** the wavemaker's crests are the right ORDER and on the LOW side (0.46× Stockdon's swash);
 the model still sits 0.6 m under USGS's total water level at the beach; and the reason IG never reaches the streets in this
 model is the dune — 49 % of transects lost ≥ 20 m of sandline to Sandy, which SFINCS's fixed bed cannot do. The knob arm
-is not the lever; the dune is. Step 2 target A (MOTF by distance band) is re-running: the first pass failed its
-self-check (premier CSI 0.572 vs the published 0.706, and an EMPTY 0–400 m band) because the subgrid dep raster was
-sampled with `x0 + col·res` — the ROTATED-raster trap of CLAUDE.md §5, caught by the pre-registered self-check exactly as
-intended; the scorer now goes through the inverse affine for every raster.
+is not the lever; the dune is.
+
+**Step 2 (target A) — the MOTF extent by distance from the line (`score_beach_strip.py`, `beach_strip_motf.{csv,txt}`).**
+Self-check: the bands reproduce the published row to 3 decimals, not the pre-registered 4 (premier 0.7052 / 0.8796 /
+0.2195 vs 0.7060 / 0.8807 / 0.2193; wavemaker 0.7067 / 0.8840 / 0.2210 vs 0.7076 / 0.8851 / 0.2208) — the residual is the
+dep resampling (nearest through the rotated raster's affine vs `load_floodmap`'s de-rotated 3.125 m grid); the ARM-TO-ARM
+deltas match to 4 places (ΔCSI +0.0015 vs +0.0016, ΔPOD +0.0044 vs +0.0044), so the read stands with that caveat.
+⚠️ The FIRST pass was void — premier CSI 0.572 and an EMPTY 0–400 m band — because the subgrid dep was sampled with
+`x0 + col·res` on a ROTATED raster (CLAUDE.md §5); the pre-registered self-check caught it exactly as intended, and the
+run-dir `floodmap_hmax_lev3.tif` is on the same rotated frame (the de-rotated product is `floodmaps/<arm>_hmax_lev3.tif`).
+
+| band from the line | premier POD / FAR / CSI | wavemaker POD / FAR / CSI | ΔPOD | ΔFAR | newly wet km² (in MOTF) |
+|---|---|---|---|---|---|
+| 0–400 m (beach + dune) | 0.729 / 0.114 / 0.666 | 0.803 / 0.214 / 0.659 | **+0.074** | **+0.100** | 3.21 (1.21) |
+| 400–800 m | 0.609 / 0.052 / 0.589 | 0.637 / 0.072 / 0.607 | +0.028 | +0.020 | 1.86 (1.17) |
+| 800–1,500 m | 0.684 / 0.035 / 0.668 | 0.699 / 0.037 / 0.680 | +0.014 | +0.003 | 0.93 (0.78) |
+| 1,500–3,000 m | 0.895 / 0.025 / 0.874 | 0.898 / 0.025 / 0.878 | +0.003 | −0.000 | 0.36 (0.32) |
+| 3,000–6,000 m | 0.924 / 0.036 / 0.893 | 0.926 / 0.036 / 0.895 | +0.002 | +0.000 | 0.45 (0.36) |
+| > 6,000 m | 0.922 / 0.250 / 0.706 | 0.923 / 0.250 / 0.706 | +0.001 | +0.001 | 2.54 (0.53) |
+| bay remainder (no line) | 0.854 / 0.162 / 0.733 | 0.843 / 0.161 / 0.726 | −0.011 | −0.001 | 0.02; newly DRY 0.45 |
+
+Against the predictions: 0–400 m ΔPOD +0.074 ≥ +0.05 ✓ but **ΔFAR +0.100 > ΔPOD** — by the rule as written this is the
+"over-flooding" branch; 400–800 ΔPOD +0.028 ✓ (rule +0.01..+0.03) with ΔFAR +0.020 ✗ (rule ≤ +0.01); 800–1,500 ΔPOD
++0.014 ✗ (rule ≤ 0.003); ≥ 1,500 m unchanged ✓; the bay remainder −0.011 is the seiche re-ring (§49). **The pre-registered
+verdict on target A is therefore "over-flooding at the beach", and it CONTRADICTS step 3 and target B (0.46× Stockdon;
+sandline lost on 49 % of transects).** The post-hoc reason, labelled as such: the MOTF sheet is a storm-tide surface
+interpolated from marks and sensors, not a runup map — the beach face and dune toe above that surface read as DRY in the
+sheet however far the swash ran, so 2.0 of the 3.2 km² the crests newly wet in 0–400 m are false alarms BY CONSTRUCTION,
+while the USGS sandline says the water was there. The rule was written on the assumption that the sheet maps the beach as
+wet where water arrived; it does not, so I read target A as "the sheet cannot resolve the strip" and defer to the
+transects — **that is an override of a pre-registered reading, and the user judges it.** What target A does establish
+without caveat: the effect is confined to < 1.5 km from the line, and the sheet-scored CSI is unchanged (0.706 → 0.708).
 
 **Landed overnight, ALL READ 09-18 morning** (`logs/engine_gate_2026-09-17/`: `compare_G5_v233_vs_*.json`,
 `census_*`, `convergence_*`, `shelf_*`, `g5_reads_2026-09-18.log` = setup / basins / shelf band / spikes / gauges,

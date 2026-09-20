@@ -766,7 +766,11 @@ Live campaign state is in [STATUS.md](STATUS.md). This file is for what is settl
     no-line control south of piece 1 that is identical between arms (Δ 0.00). The model sits
     −1.60 m (premier) → −0.64 m (wavemaker) under USGS TWL at the beach. Observed washover
     (sandline ≥ 20 m landward) on 49 % of transects; the model's beach level clears the transect
-    maximum on 6 % → 10 % (POD 0.096 → 0.175, FAR 0.174 → 0.110). So §45's "2–3× Leijnse" is
+    maximum on 6 % → 10 % (POD 0.096 → 0.175, FAR 0.174 → 0.110). The MOTF sheet scored by
+    distance from the line moves only within 1.5 km of it (0–400 m: POD 0.729 → 0.803, FAR
+    0.114 → 0.214; ≥ 1.5 km unchanged) — and ⚠️ a storm-tide sheet interpolated from marks books
+    beach-face swash as a false alarm by construction, so it cannot arbitrate the strip; the
+    sandline can. So §45's "2–3× Leijnse" is
     reversed at the shoreline (an `alphaigfac` arm would be an INCREASE, not a cut), and the
     physically decisive step is still the fixed bed: half of Sandy's transects lost their
     sandline, which no wave setting can reproduce. ⚠️ On the Sandy Hook spit (lat > 40.41) the
