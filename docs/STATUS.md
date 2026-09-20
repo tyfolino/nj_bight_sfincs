@@ -99,6 +99,97 @@ where the post-storm lidar says it failed is the physically honest way to let IG
 matters for a decision.
 `scripts/make_v3_epoch_notebook.py` now lists `wave-wavemaker` (candidate + setup-table row); the notebook is NOT re-rendered.
 
+#### 📝 2026-09-20 14:15 — PRE-REGISTRATION for steps 2 + 3 (user: "I'm good with you doing steps 2 and 3"), written BEFORE anything is computed
+
+**Step 2 — score IG where it acts: the MOTF extent by DISTANCE FROM THE WAVEMAKER LINE.** `scripts/score_beach_strip.py`
+mirrors `validate.metrics.motf_metrics` exactly (same raster, `DEPTH_MIN`, footprint `dep > 0`, `simulated_mask`, the
+exclude boxes) and adds ONE partition: the nearest-vertex distance from `v3_wavemaker_5m_mhw.geojson`, ocean coast only
+(raster cells south of northing 4,481 km and outside the Raritan / Sandy Hook Bay box `y > 4467 km & x < 584.5 km`, i.e.
+where the line exists). Bands: 0–400 m (beach face + dune), 400–800 (first blocks), 800–1,500, 1,500–3,000, 3,000–6,000,
+> 6,000. Per band and per arm (premier, wavemaker): hits / misses / false alarms, POD, FAR, CSI, modelled-wet km², MOTF-wet
+km², and the km² newly wet (wavemaker wet, premier dry). Self-check (void if it fails): the six bands plus the bay
+remainder must reproduce the `metrics.csv` row (premier CSI 0.7060 / POD 0.8807 / FAR 0.2193; wavemaker 0.7076 / 0.8851 /
+0.2208) to 4 places. ⚠️ USGS post-Sandy washover mapping is NOT on disk (checked `data/`, `~/sfincs_data`); a web lookup
+runs beside this — if a downloadable extent exists it becomes a second target, otherwise the MOTF read stands alone and
+the acquisition is listed.
+**Predictions (map §49 says the +1 m crests stop at the dune):** 0–400 m: the premier under-floods the beach face against
+a sheet that should show the beach wet, so **ΔPOD ≥ +0.05 and ΔPOD > ΔFAR** (the strip is "more right"); 400–800 m: ΔPOD
++0.01..+0.03, ΔFAR ≤ +0.01; ≥ 800 m: |ΔPOD|, |ΔFAR| ≤ 0.003 (unchanged — the dune holds). Reading rule, fixed now:
+ΔPOD(0–400) > ΔFAR(0–400) → the injected strip lies inside the mapped extent, IG is "more right" at the beach and a knob arm
+is NOT justified by extent; ΔFAR(0–400) > ΔPOD(0–400) → over-flooding, a `gammaig` / `alphaigfac` reduction arm is
+justified; both within ±0.02 → the MOTF sheet does not resolve the beach and only a washover map can score it.
+
+**Step 3 — is a ~1 m IG crest at the shoreline the right SIZE for Sandy? (desk check, Stockdon et al. 2006).** Inputs,
+fixed now: offshore Hs / Tp from the model's OWN SnapWave boundary at the peak row (t = 49 h = 10-30 01:00: Hs max 10.02 m,
+median 7.85 m, Tp median 15.1 s; the boundary sits at ~−10 m, not deep water, so H0 is reverse-shoaled with linear
+theory) and, as the independent check, NDBC 44065 / 44025 at their Sandy maxima (web lookup; buoy depth stated). Foreshore
+slope βf from the model bed itself: the median slope between zb −1 and +1.5 m within the 0–400 m band, per region
+(Monmouth y > 4,440 km; south of Barnegat y < 4,400 km). Compute ξ0 = βf / √(H0/L0) and, for ξ0 < 0.3 (dissipative),
+R2 = 0.043 √(H0 L0) and the IG swash S_ig = 0.06 √(H0 L0); the 2 % IG excursion above the setup level is ≈ 1.1 · S_ig / 2.
+Model quantities to set beside them: the 0–200 m band Δzsmax p50 (+0.97..+1.04 from §49) as the crest above the
+premier's setup level, and the Sea Bright storm-tide std 0.28 m (Hm0,ig ≈ 4σ ≈ 1.1 m). **Prediction:** with H0 ≈ 9–10 m,
+Tp ≈ 15 s, √(H0L0) ≈ 55–60 m → S_ig ≈ 3.3–3.6 m, 2 % IG excursion ≈ 1.8–2.0 m, R2 ≈ 2.4–2.6 m; the model's ~1 m crest is
+**about HALF of Stockdon's IG swash, not 2–3× too big** — §45's "2–3× Leijnse" was an `hm0ig`-at-the-bar comparison
+against a smaller storm, and this read is expected to reverse its sign at the shoreline. Reading rule: model crest within
+0.5–1.5× the Stockdon 2 % IG excursion → the magnitude is credible for Sandy and no knob arm is needed on size grounds;
+< 0.5× → IG is UNDER-injected (an `alphaigfac` increase is the arm, not a decrease); > 1.5× → over-injected.
+
+**14:35 addendum, written before computing — the USGS transect dataset IS on disk now and becomes step 2's second target
+and step 3's independent check.** `data/validation_v3/usgs_sandline/` = USGS data release doi:10.5066/F71Z42HN (Terrano et
+al., *Estuarine Shoreline and Barrier-Island Sandline Change Assessment Dataset*): 2,348 shore-normal transects at ~20 m
+spacing in five NJ study areas (lat 38.90–40.49), each with lidar `Z_Max` (dune crest), `Sandline_HS_NSM` /
+`Frontshore_HS_NSM` (pre/post-Sandy net movement, DSAS), and for 1,356 of them USGS's OWN Sandy `Surge`, `Setup`, `Runup`
+(Stockdon) and `TWL = Surge + Runup` (medians 1.99 / 0.40 / 2.31 / 4.74 m). Also NDBC 44025 / 44065 / 44009 2012 stdmet
+(`data/validation_v3/ndbc/`, `logs/wavemaker_reads_2026-09-20/ndbc_peaks.txt`): Sandy maxima Hs **9.65 m / DPD 14.8 s at
+10-29 23:50** (44025, 40 m) and **9.86 m / 13.8 s at 10-30 00:50** (44065, 25 m); peak-window medians DPD 14.8 s.
+`scripts/compare_usgs_transects.py` (to write): for every transect with `Runup`, sample each arm's whole-run `zsmax` on the
+active faces within 250 m of the transect's ocean-side 500 m and take the max = the model's beach runup level; then
+(A) model beach level − USGS TWL per transect (median, IQR) for premier and wavemaker; (B) overwash occurrence: observed =
+`Sandline_HS_NSM ≤ −20 m` (sandline moved ≥ 20 m landward; sign convention to be confirmed from the metadata — the foreshore
+NSM median −40 m must read as erosion/landward for the convention to hold), predicted = model beach level > `Z_Max` — a
+hit/miss/false-alarm table per arm. **Predictions:** (A) premier beach level ≈ TWL − 1.9 m (it carries surge + setup and no
+swash), wavemaker ≈ TWL − 0.9 m (the +1 m crest is ~half of Stockdon's swash excursion); (B) premier overwash POD < 0.2,
+wavemaker POD up by ≥ +0.2 with FAR ≤ 0.4; reading rule as step 2: ΔPOD > ΔFAR → IG "more right" at the dune. Void
+conditions: fewer than 500 transects with a model sample; a datum mismatch (USGS Surge should sit within ±0.3 m of the model's
+premier still-water level on the beach — checked first).
+
+#### ✅ 2026-09-20 16:00 — steps 2 + 3 READ (transects + Stockdon final; the MOTF strip table is being re-run after a self-check failure)
+
+**Step 3 — the size of the injection is CREDIBLE and, if anything, LOW: the model's IG crest is ~half of Stockdon's, by two
+independent routes.** (i) Desk check (`logs/wavemaker_reads_2026-09-20/stockdon_desk_check.txt`; buoy records now on disk,
+`data/validation_v3/ndbc/`): NDBC 44025 peaked at **Hs 9.65 m / DPD 14.8 s, 10-29 23:50 UTC** (40 m), 44065 at **9.86 m /
+13.8 s, 10-30 00:50** (25 m); reverse-shoaled H0 10.2–10.5 m, L0 297–342 m, √(H0L0) 56–60 m, ξ0 0.11–0.12 with the model's
+own foreshore slope (0.006–0.02 from the bed, `foreshore_slope.txt`) → dissipative, so Stockdon gives R2 2.4–2.6 m, setup
+0.9–1.0, S_ig 3.3–3.6, **IG 2 % excursion 1.8–2.0 m**; the model's SnapWave boundary at the peak (Hs 10.0 max / 7.85 median at
+−10 m, Tp 15.1) gives 1.6–1.85 m. (ii) The USGS transects (`compare_usgs_transects.py`, `usgs_transects{.csv,.txt,_summary.txt}`;
+every one of the 2,348 lines walked to the model's shoreline, p50 5.05 km along the line): on the 1,007 transects WITH a
+wavemaker piece and outside the Sandy Hook spike zone, USGS's own Stockdon Runup − Setup is **1.85 m** (p50), and the
+wavemaker lifts the model's beach level by **+1.00 m (p50; p10 0.00, p90 +1.94)** — ratio Δ / (Runup − Setup) p25 / p50 / p75
+= 0.02 / **0.46** / 0.78. Against USGS TWL (Surge + Runup, p50 4.69): premier **−1.60 m** (IQR −1.82..−1.17), wavemaker
+**−0.64 m** (−1.09..−0.07) — half the gap closed. Two internal controls: the 110 transects SOUTH of piece 1 (lat < 39.03,
+Cape May, no line) are identical between arms (Δ p50 0.00, level − TWL −0.72 on both), and the 239 Sandy Hook transects
+(lat > 40.41) go the OTHER way (Δ −0.83) because the premier's 4–6 m beach levels there are the §44 limit-cycle spikes at
+the spit, not runup — excluded from the read. Datum: model deep-face max − USGS Surge is +0.54 (premier), i.e. NOAA storm
+tide + setup, no sign of an offset (the pre-registered ±0.3 check was mis-specified — my "still water" carries setup).
+**Reading rule: ratio 0.46 sits ON the 0.5 line** between "credible" and "under-injected"; §45's "2–3× Leijnse" concern is
+REVERSED at the shoreline. If anything the arm is an `alphaigfac` INCREASE, not a reduction — but see the dune.
+
+**Step 2 (target B) — overwash occurrence against the sandline.** Observed washover (`Sandline_HS_NSM ≤ −20 m`, DSAS sign
+negative = landward, consistent with the foreshore's −40 m) on **49 %** of transects with a line (59 % where `Z_Max` < 8 m,
+i.e. a dune rather than a building or hill); the model predicts it (beach level > `Z_Max`) on 6 % (premier) → 10 %
+(wavemaker); POD **0.096 → 0.175**, FAR **0.174 → 0.110**, CSI 0.094 → 0.171 (dune-only: POD 0.119 → 0.216, FAR 0.174 →
+0.110). ΔPOD > ΔFAR ✓ (the rule's "more right" branch), but POD moved +0.08, not the predicted +0.2: even with the crests
+the model reaches the dune crest on one transect in ten where Sandy crossed it on one in two. ⚠️ `Z_Max` is the transect's
+lidar maximum, not a dune-crest pick, so the test is conservative; the USGS TWL comparison above is the cleaner number.
+
+**What this says, in one line:** the wavemaker's crests are the right ORDER and on the LOW side (0.46× Stockdon's swash);
+the model still sits 0.6 m under USGS's total water level at the beach; and the reason IG never reaches the streets in this
+model is the dune — 49 % of transects lost ≥ 20 m of sandline to Sandy, which SFINCS's fixed bed cannot do. The knob arm
+is not the lever; the dune is. Step 2 target A (MOTF by distance band) is re-running: the first pass failed its
+self-check (premier CSI 0.572 vs the published 0.706, and an EMPTY 0–400 m band) because the subgrid dep raster was
+sampled with `x0 + col·res` — the ROTATED-raster trap of CLAUDE.md §5, caught by the pre-registered self-check exactly as
+intended; the scorer now goes through the inverse affine for every raster.
+
 **Landed overnight, ALL READ 09-18 morning** (`logs/engine_gate_2026-09-17/`: `compare_G5_v233_vs_*.json`,
 `census_*`, `convergence_*`, `shelf_*`, `g5_reads_2026-09-18.log` = setup / basins / shelf band / spikes / gauges,
 `g5_reads2_2026-09-18.log` = open-ocean spikes + per-site shelf-ratio summary; the reader is PROMOTED as

@@ -755,7 +755,23 @@ Live campaign state is in [STATUS.md](STATUS.md). This file is for what is settl
     And **the `igk-fix-1` build is not a no-op on the real shelf**: `hm0ig` +0.14..+0.23 m
     seaward of the line, whole-run max 6.2 vs 3.0 m, with `zs` unchanged there — invisible at the
     marks (§45, uncoupled), but the seiche trigger (line vs build) is not separable from this
-    pair. STATUS 2026-09-20, `logs/wavemaker_reads_2026-09-20/`.
+    pair. **Size and consequence, measured the same day (steps 2 + 3, pre-registered):** the
+    crest is the right ORDER and on the LOW side. Stockdon (2006) on NDBC 44025 / 44065's Sandy
+    maxima (Hs 9.65 / 9.86 m, DPD 14.8 / 13.8 s; `data/validation_v3/ndbc/`) gives a dissipative
+    beach (ξ0 0.11–0.12 with the model's 0.006–0.02 foreshore) with an IG 2 % swash excursion of
+    1.8–2.0 m and R2 2.4–2.6 m; the USGS sandline-change transects (doi:10.5066/F71Z42HN,
+    `data/validation_v3/usgs_sandline/`, 2,348 lines, USGS's own Stockdon Runup / TWL on 1,356)
+    put Runup − Setup at 1.85 m (p50), and the wavemaker lifts the model's beach level by
+    +1.00 m (p50) on the 1,007 transects with a line — **0.46× Stockdon's swash**, against a
+    no-line control south of piece 1 that is identical between arms (Δ 0.00). The model sits
+    −1.60 m (premier) → −0.64 m (wavemaker) under USGS TWL at the beach. Observed washover
+    (sandline ≥ 20 m landward) on 49 % of transects; the model's beach level clears the transect
+    maximum on 6 % → 10 % (POD 0.096 → 0.175, FAR 0.174 → 0.110). So §45's "2–3× Leijnse" is
+    reversed at the shoreline (an `alphaigfac` arm would be an INCREASE, not a cut), and the
+    physically decisive step is still the fixed bed: half of Sandy's transects lost their
+    sandline, which no wave setting can reproduce. ⚠️ On the Sandy Hook spit (lat > 40.41) the
+    premier's 4–6 m "beach levels" are the §44 limit-cycle spikes, not runup — exclude them from
+    any beach read. STATUS 2026-09-20, `logs/wavemaker_reads_2026-09-20/`.
 
 ### Closed — do not re-open
 
@@ -769,8 +785,10 @@ Each of these cost a campaign and is settled. The evidence is in the archive's
   under the +0.05 bar, and confined to beachfront marks: ~1 m crests fill the surf zone and
   the dune holds them. What stays closed: the "IG caused blow-ups" verdict (a pre-sealed
   solver bug), and a LINE CLOSER TO SHORE (the line is already 100–400 m from the beach).
-  Open: the injection's magnitude (§45), and dune failure as the route by which IG reached
-  the streets in Sandy — a `bed-` lever, the user's call.
+  The injection's SIZE is settled the same day: 0.46× Stockdon's IG swash against buoy and
+  USGS-transect checks (§49), so the IG knobs are not a reduction lever either. Open: dune
+  failure as the route by which IG reached the streets in Sandy — a `bed-` lever, the
+  user's call.
 - **SnapWave blow-ups (~1e13) are boundary points OUTSIDE the mesh** → depth 0 → runaway.
   Any SnapWave-active cell that is SFINCS-inactive and dry is a candidate.
 - **Surf-zone hm0 spikes are GEBCO integer bathymetry** filling nearshore NoData; offshore
