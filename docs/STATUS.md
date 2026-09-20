@@ -4,7 +4,7 @@
 12 KB "current state" memory file and its 26 reverse-chronological campaign logs; the point
 of the format is that a reader gets the current state without replaying how it was reached.
 
-Last updated: **2026-09-20 13:00** — `wave-wavemaker` (the IG lever) landed clean overnight 09-19 (hal0443, 24 h 37, no restart, validate 54 min) and is READ against its 09-18 pre-registration (section below, `logs/wavemaker_reads_2026-09-20/`): the injected IG signal is REAL and lands only where the −5 m line is close to the beach — open-coast paired median **+0.021 m [+0.006, +0.054]** (CI above 0, but under the +0.05 line; mean +0.084 carried by Monmouth's `south_coast` +0.28 / `atlantic_oceanfront` +0.10, marks 260–500 m from pieces 8–9), the south-NJ shelf basins ≤ +0.03; the NJ back bays untouched (+0.007 [+0.002, +0.014]); the NY seiche bays re-rang (−0.049 [−0.078, −0.021], ΔRMSE +0.031) so the pooled 94-mark ΔRMSE is a null (+0.002 [−0.020, +0.023]); MOTF POD +0.004. **Neither pre-registered branch fires cleanly: the lever is real but too small at this line to join the premier candidates, and the user decides whether a line closer to shore (or the IG knobs) is worth a solve.** 🔴 `usgs_stormtide_sea_bright` sits ON piece 9 (≈170 m) and reads the injection (0.28 m std, peak +0.39): flag its row, do not read it as a beach. Engine-build confound (`igk-fix-1`) is measured: `hm0ig` differs seaward (+0.14..+0.23 m at −12..−5.5) with `zs` unchanged there (p50 0.000, p90 +0.02), as §45 predicts for an uncoupled field.
+Last updated: **2026-09-20 13:00** — `wave-wavemaker` (the IG lever) landed clean overnight 09-19 (hal0443, 24 h 37, no restart, validate 54 min) and is READ against its 09-18 pre-registration (section below, `logs/wavemaker_reads_2026-09-20/`): the injected IG signal is REAL — ~1 m crests (0.28 m std) fill the 100–400 m surf zone between the line and the beach and the DUNE holds them, so only beachfront marks move — open-coast paired median **+0.021 m [+0.006, +0.054]** (CI above 0, but under the +0.05 line; mean +0.084 carried by Monmouth's `south_coast` +0.28 / `atlantic_oceanfront` +0.10, marks 260–500 m from pieces 8–9), the south-NJ shelf basins ≤ +0.03; the NJ back bays untouched (+0.007 [+0.002, +0.014]); the NY seiche bays re-rang (−0.049 [−0.078, −0.021], ΔRMSE +0.031) so the pooled 94-mark ΔRMSE is a null (+0.002 [−0.020, +0.023]); MOTF POD +0.004. **Neither pre-registered branch fires cleanly: the lever is real at the beach and invisible behind an intact dune, so it does not join the premier candidates on the HWM/MOTF scores; a line closer to shore is NOT the next move (13:40 correction) — scoring the beach/dune strip and the dune-failure bed lever are.** 🔴 `usgs_stormtide_sea_bright` sits ON piece 9 (≈170 m) and reads the injection (0.28 m std, peak +0.39): flag its row, do not read it as a beach. Engine-build confound (`igk-fix-1`) is measured: `hm0ig` differs seaward (+0.14..+0.23 m at −12..−5.5) with `zs` unchanged there (p50 0.000, p90 +0.02), as §45 predicts for an uncoupled field.
 
 ## ⏳ PICK UP — next session
 
@@ -50,23 +50,25 @@ Bay mark down — the branch says check the setback, piece 9 and the build befor
 real and modest, as predicted, but it lands only where the line is close to the beach, and at the −5 m line it does not clear
 the pre-registered bar. The wavemaker does NOT join the premier candidates on this read.**
 
-**Why the lift is local — the injection decays across the shelf (the mechanism, from the map).** Face-level Δzsmax over the
-peak block (10-30 00–06) outside the bay system: `−12..−8 m` p50 0.000 / p90 +0.026; `−8..−5.5` p50 +0.004 / p90 +0.044; ON the
-line (−5.5..−4.5) p50 +0.010 / p90 +0.068; `−4.5..−2` p50 +0.007 / **p90 +0.788** (the injection band); `−2..0` p50 +0.007 /
-p90 +0.051; beach 0..1.5 p50 +0.007 / p90 +0.041; land 1.5..4 p50 0.000 / p90 +0.196. Δzs at 10-30 01:00 tells the same story
-(seaward p50 0.000, p90 +0.019 → **diagnostic (5) "nothing seaward" PASSES at the median**, with a 2–3 cm p90 tail). The signal at
-the line is ~3× the toy: `usgs_stormtide_sea_bright`, which sits ≈170 m off the north end of piece 9, carries a 30-min-high-pass
-std of **0.279 m** (max 0.48) over the peak ±1 h against 0.004 in the premier, peak +0.39 m; the toy gave 0.07 m at −2 m. Two
-faces later it is gone: `usgs_tidal_sea_bright` (Shrewsbury side, 800 m) 0.005, `noaa_atlantic_city` 0.015, `shark_river` 0.040,
-every south-NJ back-bay gauge ≤ 0.006, and no bay gauge gains high-frequency energy (Sandy Hook 0.019 → 0.003, Great Kills
-0.025 → 0.004). 🔴 **The storm-tide sensor is source-contaminated exactly as a mark within 500 m of a discharge point is (§40 /
-CLAUDE.md §5): its `peak_err` row reads the injection, not the beach. Flag it wherever the gauge table is quoted.** Where the
-line does reach the beach it reaches it hard: **19,761 land faces (zb > 0) gain > 0.5 m of whole-run zsmax, 9,991 gain > 1 m,
-9,686 land faces are newly wet** — a beach/dune strip at zb 1.4–2.4 m (newly wet at 2.2–3.5 m) along the ENTIRE ocean coast,
-every 10-km band from Cape May to Sandy Hook (Δ p50 +0.8 south of Barnegat, +1.1..+1.4 m on the Monmouth/LBI berms). That
-strip is the +0.004 POD and the +3.5 km² connected false alarm; the streets behind the dune, where the marks sit, get what
-survives — and 15 scored marks lie within 500 m of the line (all Monmouth, pieces 6–9; open-coast marks p50 1,095 m away).
-So the read is: **the IG lever's effect at the marks is set by the line-to-beach distance, not by `hm0ig`.**
+**Why the lift is local — ⚠️ CORRECTED 13:40 (the first read binned by DEPTH, which lumps the ocean surf zone with
+the back bays; binned by DISTANCE FROM THE LINE it reads the other way, `map_delta3_distance.{py,txt}`).** The −5 m
+contour is NOT a kilometre offshore on this coast: landward of the line the bed climbs from −3.9 m (0–50 m band) through
+−1.9 (100–200 m) to **+1.5 m at 200–400 m** — the whole surf zone plus the beach face is 100–400 m wide. In that strip the
+injected signal is a ~1 m crest, not a few centimetres: Δzsmax over the peak block **p50 +0.97 (0–50 m), +0.97 (50–100),
++1.04 (100–200), +0.40 (200–400, p90 +1.10)**, p10 ≥ +0.63 on every wet face out to 200 m, Monmouth and south Jersey alike
+(+1.18 / +0.80 at 0–100 m). That is a random-phase oscillation of std ~0.28 m (the Sea Bright storm-tide sensor, |Δzs|
+p50 0.16 at the 01:00 snapshot) whose 6-h maximum — the quantity HWMs score against — is the ~3.5σ crest. Then the DUNE
+holds it: 400–800 m p50 +0.017 (p90 +0.24, zb p50 +1.3), 800–1,500 m +0.008, beyond +0.007; the 9,686 newly wet faces at
+zb 2.2–3.5 m are dune crests the largest crests overtop. Seaward of the line the first 50 m (the wavemaker faces
+themselves, msk 4) carry the boundary's own p90 +0.92, and from 100 m out it is p50 ≤ +0.02 / p90 ≤ +0.05 — **diagnostic
+(5) holds**. So the marks split by WHERE THEY STAND, not by basin physics: the Monmouth marks that moved (+0.10..+0.53) are
+beachfront marks 260–500 m from the line, i.e. inside the 200–400 m band (Monmouth 100–400 m p50 +0.87); every mark on a
+street behind an intact dune, north or south, gets ≤ +0.03. `usgs_stormtide_sea_bright` (170 m off piece 9) reads the surf
+zone: its modelled peak moves 2.91 → 3.30 against 3.47 observed (`peak_err` −0.55 → −0.16), which is what a surf-zone
+storm-tide sensor physically records — the one gauge where IG is the right comparison, but a single sensor, and its
+placement is on the line, so quote it as such. 🔴 **The magnitude of the injection is therefore the §45 question in
+full: a 0.28 m std / ~1 m crest at the shoreline IS the `hm0ig` we already flagged as 2–3× Leijnse's, and this run does not
+say whether it is right — only that even at this size an intact dune keeps it off the street.**
 
 **Why the NY bays moved — the seiche re-rang (FINDINGS §40), trigger not attributable from this pair.** The bay gauge
 difference around the peak is an oscillation, not a shift: Sandy Hook Δ (10-min) −0.34 → +0.13 → −0.16 → +0.16 with a 1–2 h
@@ -84,13 +86,17 @@ by §45, should match the premier to the millimetre — the cheapest engine gate
 window otherwise identical to the premier (bay_med Δ −0.011, pocket / raritan_s / lower_n Δ 0.000 / −0.003 / −0.009,
 `n_spike` 0 on every peak hour, `field_max` equal to 2 dp).
 
-**What the user decides next (not a gate; options in the order I would take them).** (1) Nothing more at −5 m: record §49 and
-move on — the −0.15 oceanfront bias is not an IG-at-the-−5-m-line problem. (2) A line closer to the beach (MHW − 3 m, or the
-−2 m contour where the toy's signal was largest) with the same 600 m setback: the mechanism says the beach then sees what
-the storm-tide sensor sees now (~0.3 m std) — a +0.1..+0.3 lift on the oceanfront basins is the geometry read, and the
-overwash strip widens with it. `scripts/build_wavemaker_line.py` takes the contour level. (3) The knobs (`gammaig`,
-`alphaigfac`, `fwig`) — they change `hm0ig` at the line, which this run shows is not the limiting quantity; lowest priority.
-(4) The no-line `igk-fix-1` control to pin the seiche trigger — only if the bays' −0.05 matters for a decision.
+**What the user decides next (not a gate; options in the order I would take them, revised 13:40).** (1) A line closer to
+shore is NOT a lever — the line already sits 100–400 m from the beach and the crests reach the dune at full size. (2) Score
+IG where it acts, on the existing outputs (no solve): a beach/dune-strip extent read — MOTF POD/FAR on the barrier islands
+and the oceanfront blocks only, plus the newly-wet strip against the USGS post-Sandy overwash / dune-crossing mapping —
+pre-registered before it is computed. (3) The magnitude question (§45): is a 0.28 m std shoreline IG right for Sandy? A
+Stockdon-style check against the offshore Hs/Tp and beach slope is a desk calculation; a knob arm (`gammaig`,
+`alphaigfac`) only matters if (2) shows the strip is being over- or under-flooded. (4) What Sandy's IG actually did was
+erode and breach dunes (Mantoloking, Holgate), which SFINCS has no morphology for — a `bed-` lever that lowers the dune
+where the post-storm lidar says it failed is the physically honest way to let IG reach the streets, and it is a bed edit
+(subgrid rebuild, §5 traps). (5) The no-line `igk-fix-1` control to pin the seiche trigger — only if the bays' −0.05
+matters for a decision.
 `scripts/make_v3_epoch_notebook.py` now lists `wave-wavemaker` (candidate + setup-table row); the notebook is NOT re-rendered.
 
 **Landed overnight, ALL READ 09-18 morning** (`logs/engine_gate_2026-09-17/`: `compare_G5_v233_vs_*.json`,
