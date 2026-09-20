@@ -233,6 +233,24 @@ restored it with `git checkout`); pass `--date` for anything but a deliberate re
 on the HWM panel for ONE arm** (`plot_hwm_residual_panels`; 151 G for six) — the panel's cost is mostly per-call, not per
 arm: never render a v3 notebook under 120 G. Notebook staged (the GIFs are embedded in its outputs; `reports/figures` is gitignored); the user commits.
 
+**17:30 — the WIND question, measured before anyone builds a wind arm (user: "even NACCS and CORA are lowballing the
+surge… ERA5 winds").** What the model applies is ERA5 10 m wind on a 9 × 12-cell (~25 km) `netamuv` grid: peak 22.4 m/s
+over Raritan Bay, 21.2 at Sandy Hook, 24.0 at Atlantic City, domain max 28.1. Against measurements over the peak window
+(10-29 18:00 → 10-30 03:00 UTC; `logs/wavemaker_reads_2026-09-20/era5_vs_coops_wind.txt`, buoys in `data/validation_v3/ndbc/`,
+CO-OPS hourly wind in `data/validation_v3/coops_wind/`): **offshore ERA5 is NOT low** — 44065 / 44025 obs mean 22.3 / 22.2
+m/s at 5 m vs ERA5 24.8 / 25.1 at 10 m (ratio 1.11–1.13 before the ~1.1 height correction, i.e. ≈ 1.0 after); 44009 1.00.
+At the exposed harbour and coast stations ERA5 is **~10 % low**: Robbins Reef 21.9 m/s (→10 m) vs ERA5 19.6 (0.89), Cape
+May 19.4 vs 17.4 (0.90); the sheltered land stations (Bergen Point 0.59× ERA5, Kings Point 0.43×) and the Sandy Hook met
+(died 23:00, 15.5 vs 19.6) are not over-water winds. CO-OPS returns no wind product for the Battery or Atlantic City.
+So: a 10 % wind shortfall over the bays ≈ 20 % of the stress ≈ **0.1–0.15 m of Raritan wind setup**, a PART of the
+−0.29 (marks) / −0.56 (Great Kills) deficit, not the whole. ⚠️ The forced Narrows already reproduces its observed peak
+(±0.2), NACCS was OWI-driven (not ERA5), and CORA runs HIGH vs the buoy (§21) — the forcing products are not the lowball.
+**Cheapest next step, not yet run: a `BRACKET+wind-x1.10` arm** (ERA5 wind ×1.10, everything else the wavemaker premier)
+to measure dη/dU at Great Kills / Arthur Kill / the Raritan marks; if ×1.10 moves Great Kills < 0.1 m, no wind product
+closes the deficit and the search goes back to the bay's wave/supply side (§46). Only if the bracket says the sensitivity
+is there does a real product (H*Wind 2012 analyses, AOML/EOL archive; or a GAHM best-track vortex blended into ERA5 as a
+SFINCS spiderweb) earn a solve.
+
 **Landed overnight, ALL READ 09-18 morning** (`logs/engine_gate_2026-09-17/`: `compare_G5_v233_vs_*.json`,
 `census_*`, `convergence_*`, `shelf_*`, `g5_reads_2026-09-18.log` = setup / basins / shelf band / spikes / gauges,
 `g5_reads2_2026-09-18.log` = open-ocean spikes + per-site shelf-ratio summary; the reader is PROMOTED as
