@@ -725,17 +725,48 @@ Live campaign state is in [STATUS.md](STATUS.md). This file is for what is settl
     hour ≥ +0.10) while taking ~0.05 of the CORA ratio off the Atlantic City shelf. Only a diffraction
     term can fill the pocket, and §48's ceiling (≤ 0.1 m at the spit) is all it could be worth.
 
+49. ⭐ **The IG lever, measured (v3 `wave-wavemaker`, 2026-09-20): a wavemaker on the MHW − 5 m
+    contour injects a real infragravity signal, but what reaches the marks is set by the
+    LINE-TO-BEACH DISTANCE, not by `hm0ig`, and at −5 m it is too small to be a premier
+    candidate.** Setup: the apex premier + `wvmfile` (10 pieces, 142.8 km, 600 m inlet setback,
+    land on the left; engine `v2.3.3-winddir-igk-fix-1-gf11`), full 73 h window, 0.96× the
+    premier's wall. Paired against the premier (94 marks, median, 50 m, B 200 k): open-coast
+    basins (n 23) paired median **+0.021 m [+0.006, +0.054]**, mean +0.084, 20 of 23 up — the CI
+    excludes zero, the pre-registered +0.05 line is missed; the lift is Monmouth's, where the
+    −5 m contour is 260–500 m from the marks (`south_coast` +0.28, `atlantic_oceanfront` +0.10,
+    `shark_river` +0.16, `manasquan` +0.06), and ≤ +0.03 on every south-NJ basin whose marks sit
+    ≥ 1 km behind a broad shelf. NJ back bays +0.007 [+0.002, +0.014] (the setback holds); the NY
+    seiche basins −0.049 [−0.078, −0.021] (every Raritan / Sandy Hook Bay mark down — the §40
+    re-ring, a 1–2 h oscillation with whole-window mean −0.007 m, not a shift); pooled ΔRMSE
+    +0.002 [−0.020, +0.023]; MOTF POD +0.004. Mechanism from the map: Δzsmax at the peak is
+    +0.79 m (p90) in the −4.5..−2 m injection band and 0.04–0.05 m (p90) at −2..+1.5 m, the
+    signal at the line is ~3× the plane-beach toy (0.28 m std at a sensor 170 m off piece 9,
+    against 0.07 at −2 m on the toy) and is dissipated across the shelf before the beach —
+    except that the swash of the crests lifts a beach/dune strip along the whole coast by
+    0.8–1.4 m (19.8 k land faces > +0.5 m, 9.7 k newly wet at 2.2–3.5 m). Nothing seaward of the
+    line moves (Δzs at −12..−5.5 m p50 0.000, p90 +0.02). ⚠️ Two reading rules follow. **A gauge
+    or mark within a few hundred metres of a wavemaker piece reads the injection** (the Sea
+    Bright storm-tide sensor: peak +0.39 m, 0.28 m std) — the same trap as a mark beside a
+    discharge point. And **the `igk-fix-1` build is not a no-op on the real shelf**: `hm0ig`
+    +0.14..+0.23 m seaward of the line, whole-run max 6.2 vs 3.0 m, with `zs` unchanged there —
+    the field is uncoupled without a line (§45), so the confound is invisible at the marks
+    but the seiche trigger (line vs build) is not separable from this pair. The next lever is
+    geometric — a line at −3..−2 m — not the IG knobs. STATUS 2026-09-20,
+    `logs/wavemaker_reads_2026-09-20/`.
+
 ### Closed — do not re-open
 
 Each of these cost a campaign and is settled. The evidence is in the archive's
 `docs/campaigns/`, indexed in [ARCHIVE.md](../ARCHIVE.md).
 
-- **~~Infragravity waves are a NULL LEVER~~ — RE-OPENED 2026-09-17, see §45.** The "null
-  lever" (every metric ≤ 0.01 m on the sealed domain, and again on v3: paired Δ +0.0005 m)
-  was measured with `snapwave_igwaves = 1` and NO wavemaker, so the IG field never reached
-  the water level; it is a null by construction, not a finding about IG. What stays closed:
-  the "IG caused blow-ups" verdict came from a pre-sealed run whose blow-up traced to a
-  *solver* bug. IG is untested on this coast until a wavemaker arm runs.
+- **Infragravity waves at a −5 m wavemaker line are a SMALL lever, not a null — measured
+  2026-09-20, §49.** The pre-09-17 "null lever" (every metric ≤ 0.01 m; v3 paired Δ +0.0005 m)
+  was `snapwave_igwaves = 1` with NO wavemaker, a null by construction (§45). With the line
+  (v3 `wave-wavemaker`) the open-coast paired median is +0.021 m [+0.006, +0.054] — real,
+  under the +0.05 bar, and confined to where the contour is within ~500 m of the marks.
+  What stays closed: the "IG caused blow-ups" verdict (a pre-sealed solver bug), and the
+  IG KNOBS as a route to the oceanfront bias — the limiting quantity is the line-to-beach
+  distance, not `hm0ig`. Open: a line at −3..−2 m, the user's call.
 - **SnapWave blow-ups (~1e13) are boundary points OUTSIDE the mesh** → depth 0 → runaway.
   Any SnapWave-active cell that is SFINCS-inactive and dry is a candidate.
 - **Surf-zone hm0 spikes are GEBCO integer bathymetry** filling nearshore NoData; offshore

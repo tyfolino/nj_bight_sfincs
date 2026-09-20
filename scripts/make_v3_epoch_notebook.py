@@ -52,6 +52,7 @@ CANDIDATES = {{
     "old band, fw 0.02": "wave-band-sandy-hook+wave-fw02",
     "old band, no buildings": "bed-nobuildings+wave-band-sandy-hook",
     "naccs-nowaves": "naccs-nowaves",
+    "wavemaker (IG at the −5 m line)": "wave-wavemaker",
 }}
 _m = pd.read_csv(EXP / "metrics.csv", index_col=0)
 RUNS = {{k: v for k, v in CANDIDATES.items()
@@ -73,6 +74,7 @@ ARMS_TABLE = """## Arms — every run in this notebook is on the fixed engine (`
 | `bed-nobuildings` | on | 0.01 | on | **no** | shelf-steps | the building-footprint tier |
 | `naccs-nowaves` | – | – | – | yes | – | SnapWave altogether |
 | `wave-apex` | on | 0.01 | on | yes | **extended north to Rockaway** | swell supply into Lower Bay |
+| `wave-wavemaker` | on | 0.01 | on **+ injected at a −5 m wavemaker line** (build `igk-fix-1`) | yes | apex | the IG lever (FINDINGS §45/§49) |
 """
 
 METRICS = """csv = EXP / "metrics.csv"

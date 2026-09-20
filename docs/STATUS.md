@@ -4,13 +4,94 @@
 12 KB "current state" memory file and its 26 reverse-chronological campaign logs; the point
 of the format is that a reader gets the current state without replaying how it was reached.
 
-Last updated: **2026-09-18 14:30** — the G5 Galibier gate and the D4 spread cut landed overnight (all four COMPLETED on `hal038x`, whole 24 h windows) and are READ against their pre-registrations (`logs/engine_gate_2026-09-17/`): 🔴 unclamped Galibier EXPLODES with correctly directed swell (so July was the missing clamp, not §43); clamped Galibier is stable and shelf-faithful but lifts shoreline setup only 1.1–1.4× (rule wanted ≥ 2×) and its speed is a looser convergence stop → **v2.3.3 STAYS, the wavemaker arm goes on it**; D4: a 30° → 60° spread leaves the Sandy Hook pocket unchanged (median Δhm0 −0.005 m) while lowering the Atlantic City shelf ~0.05 → the shadow is **GEOMETRY-limited** (prediction missed), D5 is a real decision, still behind the wavemaker arm; 14:30 the wavemaker build is settled (`v2.3.3-winddir-igk-fix-1-gf11`: the reversed-line toy shows the backport = Galibier's orientation semantics, the unpatched build injects nothing on a mis-oriented line; all 10 v3 pieces have land on the left). History before 09-18 is in the dated sections below and in git.
+Last updated: **2026-09-20 13:00** — `wave-wavemaker` (the IG lever) landed clean overnight 09-19 (hal0443, 24 h 37, no restart, validate 54 min) and is READ against its 09-18 pre-registration (section below, `logs/wavemaker_reads_2026-09-20/`): the injected IG signal is REAL and lands only where the −5 m line is close to the beach — open-coast paired median **+0.021 m [+0.006, +0.054]** (CI above 0, but under the +0.05 line; mean +0.084 carried by Monmouth's `south_coast` +0.28 / `atlantic_oceanfront` +0.10, marks 260–500 m from pieces 8–9), the south-NJ shelf basins ≤ +0.03; the NJ back bays untouched (+0.007 [+0.002, +0.014]); the NY seiche bays re-rang (−0.049 [−0.078, −0.021], ΔRMSE +0.031) so the pooled 94-mark ΔRMSE is a null (+0.002 [−0.020, +0.023]); MOTF POD +0.004. **Neither pre-registered branch fires cleanly: the lever is real but too small at this line to join the premier candidates, and the user decides whether a line closer to shore (or the IG knobs) is worth a solve.** 🔴 `usgs_stormtide_sea_bright` sits ON piece 9 (≈170 m) and reads the injection (0.28 m std, peak +0.39): flag its row, do not read it as a beach. Engine-build confound (`igk-fix-1`) is measured: `hm0ig` differs seaward (+0.14..+0.23 m at −12..−5.5) with `zs` unchanged there (p50 0.000, p90 +0.02), as §45 predicts for an uncoupled field.
 
 ## ⏳ PICK UP — next session
 
 ### ⏳ 2026-09-18 MORNING — PICK UP HERE: G5 gate + D4 landed and are READ (v2.3.3 stays; the shadow is geometry-limited)
 
-**RUNNING (15:15): `wave-wavemaker` solve 61696255 → validate 61696256** — the IG lever, pre-registered in the AFTERNOON block below; ~28–33 h on emeraldrapids, so it lands ~2026-09-19 evening. Read in this order: `sacct --format=NodeList` → `wvmfile` + `engine.txt` in the run dir → the pre-registration's diagnostics (1)–(6).
+### ✅ 2026-09-20 — `wave-wavemaker` LANDED and READ: the IG lever is real, small, and set by the line-to-beach distance; NOT a premier candidate at the −5 m line (user decision on the next move)
+
+**Run facts (checked in the pre-registered order).** `sacct`: solve 61696255 COMPLETED 0:0 on **hal0443** (emeraldrapids,
+no halk), 2012-10-28 → 10-31 in 24 h 37 (88,599 s solver, 96.7 % SnapWave, wave maker 126 s; premier 25 h 33 → **0.96×**,
+prediction 1.0–1.3×), `restart_count 0`, 12 restart files removed at finish, clean `Closing off SFINCS`; validate 61696256
+COMPLETED on hal0247 in 54 min → `metrics.csv` row + `floodmaps/wave-wavemaker_hmax_lev3.tif`. `engine.txt`
+`bin:v2.3.3-winddir-igk-fix-1-gf11@34048c58`; `sfincs.inp` differs from the premier's by ONE line (`wvmfile = sfincs.wvm`);
+the log read 10 polylines / 7,130 u-v points. The map's `msk` carries **5,257 faces at value 4** (the solver tags its
+wavemaker faces, zb p50 −4.9 m) — `simulated_mask` is `msk > 0`, so extent scoring is unchanged (`motf_km2_unsimulated`
+identical). No void condition tripped. Reads: `logs/wavemaker_reads_2026-09-20/` (`paired_bootstrap_all.txt`,
+`basin_split.txt`, `grouped_paired.{py,txt}` = the pre-registered open-coast/bay split, `map_delta{,2}.{py,txt}`,
+`census_{naccs-premier,wave-wavemaker}.{csv,txt}`).
+
+**Headline vs the pre-registration (paired, median, 50 m, 94 common marks, B = 200 k):**
+
+| group | n | paired median Δ [95 % CI] | mean Δ | bias P → W | ΔRMSE [CI] | n(up) |
+|---|---|---|---|---|---|---|
+| OPEN COAST (6 basins) | 23 | **+0.021 [+0.006, +0.054]** | +0.084 | −0.150 → −0.066 | −0.046 [−0.099, +0.023] | 20 |
+| open coast + inlet basins (9) | 37 | +0.033 [+0.008, +0.068] | +0.076 | −0.182 → −0.107 | −0.038 [−0.075, +0.002] | 33 |
+| BAYS (7 basins) | 57 | −0.007 [−0.035, +0.001] | −0.027 | −0.135 → −0.162 | +0.022 [+0.005, +0.041] | 22 |
+| · NY seiche bays (4) | 38 | **−0.049 [−0.078, −0.021]** | −0.052 | −0.149 → −0.201 | +0.031 [+0.008, +0.055] | 7 |
+| · NJ back bays (3) | 19 | +0.007 [+0.002, +0.014] | +0.022 | −0.106 → −0.084 | +0.003 [−0.009, +0.022] | 15 |
+| ALL | 94 | +0.006 [−0.000, +0.011] | +0.013 | −0.154 → −0.140 | +0.002 [−0.020, +0.023] | 55 |
+
+Per basin (median Δres, 50 m): `south_coast` **+0.279** (n 4; marks 6122/6123/6124 +0.27/+0.29/+0.53, 420 m from piece 8),
+`atlantic_oceanfront` **+0.103** (n 3, 290–305 m from piece 9), `shark_river` +0.155 (2), `manasquan` +0.064 (10, 10 of 10 up),
+`lbi_barrier` +0.013, `absecon_atlantic_city` +0.013, `cape_may` +0.004, `barnegat_barrier` +0.004; `sandy_hook_bay` **−0.167**
+(0 of 4 up), `raritan_bay` **−0.060** (0 of 19 up), `shrewsbury_navesink` −0.036, `lower_bay_si_shore` +0.106 (3 of 3 up);
+`great_bay_mullica` +0.007, `barnegat_bay` +0.002, `cape_may_back_bays` +0.012. Unpaired headline: RMSE 0.368 → 0.370, bias
+−0.154 → −0.140, within-0.5 0.862 → 0.851; MOTF CSI 0.706 → 0.708, POD 0.881 → **0.885** (+0.004, rule < 0.01 ✓), FAR 0.219 → 0.221,
+FA-connected +3.5 km².
+
+**Branch by branch.** (a) *Lever is real* needed median ≥ +0.05 with the CI above 0 AND bays within ±0.02: the CI is above 0
+(20 of 23 open-coast marks up) but the median is +0.021 — **the magnitude line is MISSED**; the 7-basin bay median −0.007 is
+inside ±0.02 but the NY seiche basins are not. (b) *Null* needed |Δ| < 0.03 with the CI straddling 0: **not a null** — the
+CI excludes 0. (c) *Bays move* (|Δ| > 0.05): the NY seiche basins sit at −0.049 [−0.078, −0.021], every Raritan / Sandy Hook
+Bay mark down — the branch says check the setback, piece 9 and the build before reading; done below. **Verdict: the lever is
+real and modest, as predicted, but it lands only where the line is close to the beach, and at the −5 m line it does not clear
+the pre-registered bar. The wavemaker does NOT join the premier candidates on this read.**
+
+**Why the lift is local — the injection decays across the shelf (the mechanism, from the map).** Face-level Δzsmax over the
+peak block (10-30 00–06) outside the bay system: `−12..−8 m` p50 0.000 / p90 +0.026; `−8..−5.5` p50 +0.004 / p90 +0.044; ON the
+line (−5.5..−4.5) p50 +0.010 / p90 +0.068; `−4.5..−2` p50 +0.007 / **p90 +0.788** (the injection band); `−2..0` p50 +0.007 /
+p90 +0.051; beach 0..1.5 p50 +0.007 / p90 +0.041; land 1.5..4 p50 0.000 / p90 +0.196. Δzs at 10-30 01:00 tells the same story
+(seaward p50 0.000, p90 +0.019 → **diagnostic (5) "nothing seaward" PASSES at the median**, with a 2–3 cm p90 tail). The signal at
+the line is ~3× the toy: `usgs_stormtide_sea_bright`, which sits ≈170 m off the north end of piece 9, carries a 30-min-high-pass
+std of **0.279 m** (max 0.48) over the peak ±1 h against 0.004 in the premier, peak +0.39 m; the toy gave 0.07 m at −2 m. Two
+faces later it is gone: `usgs_tidal_sea_bright` (Shrewsbury side, 800 m) 0.005, `noaa_atlantic_city` 0.015, `shark_river` 0.040,
+every south-NJ back-bay gauge ≤ 0.006, and no bay gauge gains high-frequency energy (Sandy Hook 0.019 → 0.003, Great Kills
+0.025 → 0.004). 🔴 **The storm-tide sensor is source-contaminated exactly as a mark within 500 m of a discharge point is (§40 /
+CLAUDE.md §5): its `peak_err` row reads the injection, not the beach. Flag it wherever the gauge table is quoted.** Where the
+line does reach the beach it reaches it hard: **19,761 land faces (zb > 0) gain > 0.5 m of whole-run zsmax, 9,991 gain > 1 m,
+9,686 land faces are newly wet** — a beach/dune strip at zb 1.4–2.4 m (newly wet at 2.2–3.5 m) along the ENTIRE ocean coast,
+every 10-km band from Cape May to Sandy Hook (Δ p50 +0.8 south of Barnegat, +1.1..+1.4 m on the Monmouth/LBI berms). That
+strip is the +0.004 POD and the +3.5 km² connected false alarm; the streets behind the dune, where the marks sit, get what
+survives — and 15 scored marks lie within 500 m of the line (all Monmouth, pieces 6–9; open-coast marks p50 1,095 m away).
+So the read is: **the IG lever's effect at the marks is set by the line-to-beach distance, not by `hm0ig`.**
+
+**Why the NY bays moved — the seiche re-rang (FINDINGS §40), trigger not attributable from this pair.** The bay gauge
+difference around the peak is an oscillation, not a shift: Sandy Hook Δ (10-min) −0.34 → +0.13 → −0.16 → +0.16 with a 1–2 h
+period; whole-window mean Δ −0.007 m, every 6-h mean within ±0.06; pre-storm tidal range within 0.03 (Great Kills 2.14 vs 2.26 is
+the seiche on the tide). The 6-h zsmax block at the surge peak caught a crest in the premier and a trough here (Sandy Hook Bay
+box Δzsmax p50 −0.152, Raritan −0.076, channels −0.099), so every mark in those basins drops together — the same mechanism as
+the 08-21 / 09-03 / 09-08 entries. What perturbed it: not the NJ setback (the 3 NJ back-bay basins hold to +0.007), not IG
+leaking round the spit (bay high-frequency energy went DOWN), and piece 10 ends 1 km short of the Sandy Hook tip. The two
+candidates left are the line itself (7,130 u-v points on the ocean side of the spit, 10-28 00:00 onward) and the **engine
+build**: `igk-fix-1` changes the IG wavenumber, and on the real shelf that is NOT the toy's no-op — `hm0ig` is +0.14 m (p50) at
+−12..−8 and +0.23 at −8..−5.5, +0.06 in the bay channels, whole-run `ig_max` 6.17 vs 2.99, `n_ig_gt1` 1.03 M vs 0.98 M — yet `zs`
+seaward is unchanged, as §45's "uncoupled field" predicts; the short-wave `hm0` differs by ±0.1 m at p1/p99 (the §44
+limit-cycle paths diverge). Separating "line" from "build" needs a no-line run on the `igk-fix-1` build (a 25 h solve that,
+by §45, should match the premier to the millimetre — the cheapest engine gate we have not run). Bay census over the peak
+window otherwise identical to the premier (bay_med Δ −0.011, pocket / raritan_s / lower_n Δ 0.000 / −0.003 / −0.009,
+`n_spike` 0 on every peak hour, `field_max` equal to 2 dp).
+
+**What the user decides next (not a gate; options in the order I would take them).** (1) Nothing more at −5 m: record §49 and
+move on — the −0.15 oceanfront bias is not an IG-at-the-−5-m-line problem. (2) A line closer to the beach (MHW − 3 m, or the
+−2 m contour where the toy's signal was largest) with the same 600 m setback: the mechanism says the beach then sees what
+the storm-tide sensor sees now (~0.3 m std) — a +0.1..+0.3 lift on the oceanfront basins is the geometry read, and the
+overwash strip widens with it. `scripts/build_wavemaker_line.py` takes the contour level. (3) The knobs (`gammaig`,
+`alphaigfac`, `fwig`) — they change `hm0ig` at the line, which this run shows is not the limiting quantity; lowest priority.
+(4) The no-line `igk-fix-1` control to pin the seiche trigger — only if the bays' −0.05 matters for a decision.
+`scripts/make_v3_epoch_notebook.py` now lists `wave-wavemaker` (candidate + setup-table row); the notebook is NOT re-rendered.
 
 **Landed overnight, ALL READ 09-18 morning** (`logs/engine_gate_2026-09-17/`: `compare_G5_v233_vs_*.json`,
 `census_*`, `convergence_*`, `shelf_*`, `g5_reads_2026-09-18.log` = setup / basins / shelf band / spikes / gauges,
