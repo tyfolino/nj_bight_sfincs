@@ -33,6 +33,8 @@ def _diff_fields(a, b) -> set[str]:
         out.add("rain")
     if a.waterlevel_geodataset != b.waterlevel_geodataset:
         out.add("waterlevel_geodataset")
+    if a.wind_scale != b.wind_scale:
+        out.add("wind_scale")
     return out
 
 
@@ -65,6 +67,8 @@ class TestPremierConstant(unittest.TestCase):
             "bed-nobuildings": {"subgrid_from"},
             # 2026-09-18: the IG lever is the LINE (two fields: the switch and its path).
             "wave-wavemaker": {"wavemaker", "wavemaker_line"},
+            # 2026-09-20: the wind-sensitivity probe on top of the wavemaker line.
+            "wave-wavemaker+wind-x110": {"wavemaker", "wavemaker_line", "wind_scale"},
         }
         # The old band is one lever, three fields (2026-09-13): the band table, the
         # support-point count, and the open-coast demotion. Every renamed old-band run
@@ -90,6 +94,9 @@ class TestPremierConstant(unittest.TestCase):
         self.assertTrue(V3["wave-wavemaker"].waves.wavemaker)
         self.assertTrue(V3["wave-wavemaker"].waves.wave_igwaves)
         self.assertTrue(V3["wave-wavemaker"].waves.wavemaker_line.exists())
+        self.assertEqual(V3["wave-wavemaker+wind-x110"].wind_scale, 1.10)
+        self.assertEqual(PREMIER.wind_scale, 1.0)
+        self.assertEqual(V3["wave-wavemaker"].wind_scale, 1.0)
 
     def test_nowaves_shares_the_premier_subgrid(self):
         self.assertFalse(V3["naccs-nowaves"].waves.use_waves)

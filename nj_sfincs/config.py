@@ -331,6 +331,15 @@ class Experiment:
     #: refuses a subgrid dir whose own ``sfincs.nc`` is not the sealed mesh.
     subgrid_from: str | None = None
 
+    #: ``wind-*`` ARMS ONLY. Multiplies the 10 m wind field (both components) on the
+    #: STAGED copy before ``sf.write()`` (``model.finalize``), so ``sfincs_netamuv.nc``
+    #: carries the scaled wind and SnapWave's wind growth sees the same field. Pressure
+    #: is untouched. A forcing-sensitivity probe (STATUS 2026-09-20: ERA5 is ~10 % low
+    #: at the exposed harbour stations, spot-on at the buoys), not a candidate config —
+    #: the metrics row carries the MEASURED staged/template ratio
+    #: (``provenance.wind_scale_label``), never this number.
+    wind_scale: float = 1.0
+
 
 def with_window(base: BaseConfig, tstop: datetime) -> BaseConfig:
     """Return a copy of ``base`` with a shorter run window (for smoke tests)."""

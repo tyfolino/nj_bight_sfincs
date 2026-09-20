@@ -263,7 +263,9 @@ def prepare_experiment(name: str, base: BaseConfig) -> Path:
         # Experiment; everything else still gets the domain invariant.
         model.check_waterlevel_support(sf, expect=exp.n_waterlevel_support)
     sw = model.add_waves(exp.waves, base, sf) if exp.waves.use_waves else None
-    model.finalize(exp.waves, base, sf, exp_dir, sw, rain=exp.rain)
+    model.finalize(
+        exp.waves, base, sf, exp_dir, sw, rain=exp.rain, wind_scale=exp.wind_scale
+    )
     # hydromt's writer drops crsfile/storevel; put them back so a staged arm carries the
     # flux cross-sections — which on a relocated-boundary domain are the headline result,
     # not a diagnostic.
@@ -298,6 +300,7 @@ def collect_metrics(names: list[str]) -> pd.DataFrame:
         rows[name]["snapwave_direction"] = provenance.snapwave_direction(exp_dir)
         try:
             rows[name]["subgrid"] = provenance.subgrid_label(exp_dir)
+            rows[name]["wind_scale"] = provenance.wind_scale_label(exp_dir)
         except Exception as e:  # noqa: BLE001
             rows[name]["subgrid"] = f"unavailable ({e})"
         # Stamp the domain onto every row. A metrics table whose numbers do not say which

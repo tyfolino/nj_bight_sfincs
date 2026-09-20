@@ -4,7 +4,7 @@
 12 KB "current state" memory file and its 26 reverse-chronological campaign logs; the point
 of the format is that a reader gets the current state without replaying how it was reached.
 
-Last updated: **2026-09-20 13:00** — `wave-wavemaker` (the IG lever) landed clean overnight 09-19 (hal0443, 24 h 37, no restart, validate 54 min) and is READ against its 09-18 pre-registration (section below, `logs/wavemaker_reads_2026-09-20/`): the injected IG signal is REAL — ~1 m crests (0.28 m std) fill the 100–400 m surf zone between the line and the beach and the DUNE holds them, so only beachfront marks move — open-coast paired median **+0.021 m [+0.006, +0.054]** (CI above 0, but under the +0.05 line; mean +0.084 carried by Monmouth's `south_coast` +0.28 / `atlantic_oceanfront` +0.10, marks 260–500 m from pieces 8–9), the south-NJ shelf basins ≤ +0.03; the NJ back bays untouched (+0.007 [+0.002, +0.014]); the NY seiche bays re-rang (−0.049 [−0.078, −0.021], ΔRMSE +0.031) so the pooled 94-mark ΔRMSE is a null (+0.002 [−0.020, +0.023]); MOTF POD +0.004. **Neither pre-registered branch fires cleanly: the lever is real at the beach and invisible behind an intact dune, so it does not join the premier candidates on the HWM/MOTF scores; a line closer to shore is NOT the next move (13:40 correction) — scoring the beach/dune strip and the dune-failure bed lever are.** 🔴 `usgs_stormtide_sea_bright` sits ON piece 9 (≈170 m) and reads the injection (0.28 m std, peak +0.39): flag its row, do not read it as a beach. Engine-build confound (`igk-fix-1`) is measured: `hm0ig` differs seaward (+0.14..+0.23 m at −12..−5.5) with `zs` unchanged there (p50 0.000, p90 +0.02), as §45 predicts for an uncoupled field.
+Last updated: **2026-09-20 17:10** — `wave-wavemaker` (the IG lever) landed clean overnight 09-19 (hal0443, 24 h 37, no restart, validate 54 min) and is READ against its 09-18 pre-registration (section below, `logs/wavemaker_reads_2026-09-20/`): the injected IG signal is REAL — ~1 m crests (0.28 m std) fill the 100–400 m surf zone between the line and the beach and the DUNE holds them, so only beachfront marks move — open-coast paired median **+0.021 m [+0.006, +0.054]** (CI above 0, but under the +0.05 line; mean +0.084 carried by Monmouth's `south_coast` +0.28 / `atlantic_oceanfront` +0.10, marks 260–500 m from pieces 8–9), the south-NJ shelf basins ≤ +0.03; the NJ back bays untouched (+0.007 [+0.002, +0.014]); the NY seiche bays re-rang (−0.049 [−0.078, −0.021], ΔRMSE +0.031) so the pooled 94-mark ΔRMSE is a null (+0.002 [−0.020, +0.023]); MOTF POD +0.004. **Neither pre-registered branch fires cleanly: the lever is real at the beach and invisible behind an intact dune, so it does not join the premier candidates on the HWM/MOTF scores; a line closer to shore is NOT the next move (13:40 correction) — scoring the beach/dune strip and the dune-failure bed lever are.** 🔴 `usgs_stormtide_sea_bright` sits ON piece 9 (≈170 m) and reads the injection (0.28 m std, peak +0.39): flag its row, do not read it as a beach. Engine-build confound (`igk-fix-1`) is measured: `hm0ig` differs seaward (+0.14..+0.23 m at −12..−5.5) with `zs` unchanged there (p50 0.000, p90 +0.02), as §45 predicts for an uncoupled field.
 
 ## ⏳ PICK UP — next session
 
@@ -245,11 +245,54 @@ May 19.4 vs 17.4 (0.90); the sheltered land stations (Bergen Point 0.59× ERA5, 
 So: a 10 % wind shortfall over the bays ≈ 20 % of the stress ≈ **0.1–0.15 m of Raritan wind setup**, a PART of the
 −0.29 (marks) / −0.56 (Great Kills) deficit, not the whole. ⚠️ The forced Narrows already reproduces its observed peak
 (±0.2), NACCS was OWI-driven (not ERA5), and CORA runs HIGH vs the buoy (§21) — the forcing products are not the lowball.
-**Cheapest next step, not yet run: a `BRACKET+wind-x1.10` arm** (ERA5 wind ×1.10, everything else the wavemaker premier)
+**Cheapest next step: a `wave-wavemaker+wind-x110` arm** (ERA5 wind ×1.10, everything else the wavemaker premier; a plain `wind-` delta, NOT the `BRACKET+` machinery, which is for inadmissible DOMAINS)
 to measure dη/dU at Great Kills / Arthur Kill / the Raritan marks; if ×1.10 moves Great Kills < 0.1 m, no wind product
 closes the deficit and the search goes back to the bay's wave/supply side (§46). Only if the bracket says the sensitivity
 is there does a real product (H*Wind 2012 analyses, AOML/EOL archive; or a GAHM best-track vortex blended into ERA5 as a
 SFINCS spiderweb) earn a solve.
+
+### 📝 2026-09-20 18:30 — `wave-wavemaker+wind-x110` PRE-REGISTERED (user: "let's set up the ERA5 scale run"), written BEFORE staging
+
+**What.** `Experiment.wind_scale = 1.10` (new field, `nj_sfincs/config.py`): `model.finalize` multiplies `wind10_u` /
+`wind10_v` in memory on the STAGED copy before `sf.write()`, so the run's `sfincs_netamuv.nc` carries ERA5 × 1.10 and
+SnapWave's wind growth (`snapwave_wind 1`) sees the same field; pressure, waves at the boundary, water level, rain,
+discharge, buildings, wavemaker line and engine (`v2.3.3-winddir-igk-fix-1-gf11`) are the wavemaker arm's. The metrics
+row gets `wind_scale` = the MEASURED max-speed ratio staged / template (`provenance.wind_scale_label`; `1.000` on every
+existing row), never the registry number. Tests: registry one-field diff + a file-based label test (`tests/test_wind_scale.py`).
+Comparison base: **`wave-wavemaker`, paired** (same seiche-phase caveat as every bay comparison, §40).
+
+**Question.** ERA5 is ~10 % low at the exposed harbour/coast stations and spot-on offshore (17:30 block). Is the
+Raritan / Sandy Hook Bay deficit (marks −0.29 / −0.26, Great Kills gauge −0.56) sensitive to the LOCAL wind at that size?
+This measures dη/dU; it does not claim ×1.10 is the true wind.
+
+**Diagnostics (chosen first).** (1) Gauge peaks vs `wave-wavemaker`: `sss_great_kills`, `sss_arthur_kill_mouth`,
+`sss_narrows_si/bkln`, `usgs_tidal_mantoloking`, `usgs_tidal_barnegat_light`, `noaa_atlantic_city`, `noaa_cape_may` (peak
+and the whole-window mean Δ, to separate a setup shift from seiche phase); (2) paired HWM (median, 50 m) by group as
+09-20: NY seiche bays (38), NJ back bays (19), open coast (23); (3) bay wind-sea: `snapwave_bay_census.py` bay_med /
+pocket / raritan_s / lower_n at the peak (wind growth scales with U², expect +5..+15 % hm0); (4) the Narrows Q(t)
+cross-section unchanged (forced boundary); (5) wall within 1.1×.
+**Predictions.** Wind setup ∝ U², so ×1.10 → +21 % stress: Raritan interior gauges **+0.05..+0.15 m** at the peak
+(Great Kills, Arthur Kill mouth), whole-window mean +0.02..+0.05; the forced Narrows within ±0.05; NY-bay marks paired
+median **+0.03..+0.10**; NJ back bays (Barnegat, Great Bay, Cape May back bays — long shallow fetches) +0.03..+0.10 too;
+open coast within ±0.03 (the ocean level is boundary-set); bay hm0 +5..+15 %. Runtime ≤ 1.1×.
+**Reading rule.** Great Kills Δpeak ≥ +0.10 AND NY-bay paired median ≥ +0.05 with the CI above 0 → the local wind is a
+first-order lever for the bay deficit and a real product (H*Wind / RAP-NAM / GAHM-blend) earns a solve; Great Kills
+Δ < +0.05 → the deficit is not wind-limited at ERA5's shortfall size and the search returns to the bay's wave/supply side
+(§46); anything on the open coast > 0.05 → something other than wind setup moved (check the SnapWave wind-sea and the
+boundary), read nothing until explained. Void: halk node, TIMEOUT without a clean resume, `wind_scale` column ≠ 1.100 ±0.001.
+**SUBMITTED 18:45: staging job 61721722** (`SFINCS_BIN=…igk-fix-1-gf11 SOLVE_TIME=40:00:00 SOLVE_CONSTRAINT=emeraldrapids
+sbatch hpc/stage_and_submit_v3.slurm wave-wavemaker+wind-x110`; `--check` OK, 174 tests OK, scratch 108 G of 1 T). The
+staging job stages, dedupes, submits the solve (40 h, emeraldrapids) and chains the validate; ids land in
+`logs/stage_v3_61721722.jobs` (+ `logs/wave-wavemaker+wind-x110_2026-09-20.jobs`). First checks when it lands: the
+staging log's `[wind] scaled wind10_u/v by 1.100` line, `sacct --format=NodeList` on the solve (hal, not halk), and the
+restart-file mtimes for pace. ⚠️ `ruff check --fix nj_sfincs/` touched four files I had not edited (plots, core,
+metrics, `__init__`); reverted with `git checkout` — lint the files you edit, not the tree (CLAUDE.md §6).
+✅ **Staged 17:04 (61721722, hal0287, 7 min): `[wind] scaled wind10_u/v by 1.100 on the staged copy`; measured
+`wind_scale_label` on the staged dir = 1.100 (wave-wavemaker 1.000); `sfincs.inp` identical to wave-wavemaker's;
+pressure file identical; dedupe reclaimed 2.6 G; scratch 147 G of 1 T. Solve 61721880 (40 h, 64 G, emeraldrapids),
+validate 61721881 (afterok, 128 G, 6 h); ids in `logs/wave-wavemaker+wind-x110_2026-09-20.jobs`.** Expected to land
+~2026-09-22 morning at the wavemaker's pace (24 h 37). Read in the pre-registered order above; first `sacct -j 61721880
+--format=NodeList` (hal, not halk).
 
 **Landed overnight, ALL READ 09-18 morning** (`logs/engine_gate_2026-09-17/`: `compare_G5_v233_vs_*.json`,
 `census_*`, `convergence_*`, `shelf_*`, `g5_reads_2026-09-18.log` = setup / basins / shelf band / spikes / gauges,

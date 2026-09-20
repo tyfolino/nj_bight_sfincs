@@ -484,3 +484,32 @@ def summary(model_dir: Path | str, data_dir: Path = DATA) -> str:
             src = f"   <- {r['source']}" if r["source"] else ""
             out.append(f"  {r['item']:<28} {r['value']}{src}")
     return "\n".join(out)
+
+
+def wind_scale_label(model_dir: Path | str) -> str:
+    """MEASURED wind scaling of this run: max 10 m wind speed in the run's
+    ``sfincs_netamuv.nc`` over the sealed template's, to 3 dp (``"1.000"`` = the
+    template's ERA5). ``none`` without a wind file, ``no-template`` when the template's
+    file is missing. Read from the files the solver was handed, never from the registry."""
+    import numpy as np
+    import xarray as xr
+
+    model_dir = Path(model_dir)
+    f = model_dir / "sfincs_netamuv.nc"
+    if not f.is_file():
+        return "none"
+    try:
+        from nj_sfincs.config import exp_root
+
+        g = exp_root() / "_template_sealed" / "sfincs_netamuv.nc"
+    except Exception:  # noqa: BLE001
+        return "no-template"
+    if not g.is_file():
+        return "no-template"
+
+    def _umax(path):
+        with xr.open_dataset(path) as ds:
+            return float(np.nanmax(np.hypot(ds["eastward_wind"], ds["northward_wind"])))
+
+    a, b = _umax(f), _umax(g)
+    return f"{a / b:.3f}" if b > 0 else "nan"

@@ -280,6 +280,26 @@ _V3: dict[str, Experiment] = {
         **_V3_BUILDINGS,
         **_V3_WL,
     ),
+    "wave-wavemaker+wind-x110": Experiment(
+        "wave-wavemaker+wind-x110",
+        replace(
+            _V3_PREMIER_WAVES,
+            wavemaker=True,
+            wavemaker_line=DATA / "wavemakers_v3" / "v3_wavemaker_5m_mhw.geojson",
+        ),
+        "The wavemaker premier candidate with the ERA5 10 m wind scaled by 1.10 "
+        "(both components; pressure untouched; SnapWave wind growth sees the same "
+        "field). A forcing-SENSITIVITY probe, not a candidate: measured 2026-09-20, "
+        "ERA5 matches the NDBC buoys offshore and runs ~10 % low at the exposed harbour "
+        "and coast stations (Robbins Reef 0.89, Cape May 0.90), so x1.10 is the size of "
+        "the shortfall over the bays. Read: dEta/dU at Great Kills / Arthur Kill mouth / "
+        "the raritan_bay + sandy_hook_bay marks (paired vs wave-wavemaker), the forced "
+        "Narrows unchanged, the open coast within +-0.03. PRE-REGISTRATION in STATUS "
+        "(09-20). Same engine as wave-wavemaker (v2.3.3-winddir-igk-fix-1).",
+        wind_scale=1.10,
+        **_V3_BUILDINGS,
+        **_V3_WL,
+    ),
     "bed-nobuildings": Experiment(
         "bed-nobuildings",
         _V3_PREMIER_WAVES,

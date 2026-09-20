@@ -24,8 +24,9 @@ import pandas as pd
 import shapely
 import xarray as xr
 from hydromt import log
-from hydromt_sfincs import SfincsModel
 from shapely.geometry import Point
+
+from hydromt_sfincs import SfincsModel
 
 from . import domain as _domain
 from . import snapwave_domain
@@ -1591,6 +1592,7 @@ def finalize(
     model_dir: Path,
     sw: dict | None,
     rain: bool = True,
+    wind_scale: float = 1.0,
 ) -> None:
     """Release handles, write, patch sfincs.inp, write the SnapWave ASCII forcing.
 
@@ -1622,6 +1624,27 @@ def finalize(
             pass
     xr.backends.file_manager.FILE_CACHE.clear()
     gc.collect()
+
+    # ``Experiment.wind_scale``: scale the 10 m wind IN MEMORY so the write below emits
+    # the scaled ``sfincs_netamuv.nc`` (SnapWave's wind growth reads the same file).
+    # Done here, on the staged copy, for the same reason rain-off is: the template every
+    # arm copies carries ERA5 at 1.0, and "not scaling" would silently inherit it.
+    if wind_scale != 1.0:
+        wds = sf.wind.data
+        if wds is None:
+            raise SystemExit(
+                "wind_scale set but the staged model carries no wind field"
+            )
+        for v in ("wind10_u", "wind10_v"):
+            if v not in wds:
+                raise SystemExit(
+                    f"wind_scale: no '{v}' in the wind component ({list(wds)})"
+                )
+            wds[v] = wds[v] * float(wind_scale)
+        print(
+            f"[wind] scaled wind10_u/v by {wind_scale:.3f} on the staged copy",
+            flush=True,
+        )
 
     sf.write()
 
