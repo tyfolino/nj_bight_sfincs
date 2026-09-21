@@ -724,6 +724,8 @@ Live campaign state is in [STATUS.md](STATUS.md). This file is for what is settl
     pocket's median hm0 unchanged (−0.005 m at the five swell hours cap-hit-free in both runs, no
     hour ≥ +0.10) while taking ~0.05 of the CORA ratio off the Atlantic City shelf. Only a diffraction
     term can fill the pocket, and §48's ceiling (≤ 0.1 m at the spit) is all it could be worth.
+    Diffraction (Holthuijsen et al. 2003, as in SWAN) is therefore a POTENTIAL later engine fix, not a
+    current need (user, 2026-09-21); SnapWave v2.3.3 has no diffraction term.
 
 49. ⭐ **The IG lever, measured (v3 `wave-wavemaker`, 2026-09-20): a wavemaker on the MHW − 5 m
     contour injects ~1 m infragravity crests into the 100–400 m surf zone between the line and

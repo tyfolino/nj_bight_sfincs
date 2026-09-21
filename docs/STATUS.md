@@ -12,7 +12,7 @@ Last updated: **2026-09-20 17:10** — `wave-wavemaker` (the IG lever) landed cl
 wind-sensitivity probe (ERA5 × 1.10 on the wavemaker premier candidate), pre-registered in the 18:30 block of the 09-20
 section; lands ~09-22 morning. Read in this order: `sacct -j 61721880 --format=NodeList` → `wind_scale` column = 1.100 in
 `metrics.csv` → Great Kills / Arthur Kill Δpeak vs `wave-wavemaker` → paired bay marks → bay census. Held by user decision:
-the dune-failure `bed-` lever (§49) and v4 Delaware Bay.
+the dune-failure `bed-` lever (§49) and v4 Delaware Bay (🔵 resolution note for its design: end of the 09-21 block below).
 
 **✅ 2026-09-21 — second retire batch EXECUTED (user approved each arm in session):** the five old-band
 `wave-band-sandy-hook[+…]` / `bed-nobuildings+wave-band-sandy-hook[+…]` arms and `wave-nowind+wave-shelf-steps` are in
@@ -36,8 +36,18 @@ voided-runs, 09-13 winddir, the undated v1.5 twin); the four G5 / D4 engine-gate
 downloads (provenance of data the model reads), `score_bracket` (named by `premier.py`'s refusal), `score_v2_barnegat`,
 `stamp_metrics_epoch` (loaded by a test); `sweep_cudem_flatfill` + `audit_paved_channels` kept by the user. Comment
 mentions of removed scripts now read `retired 2026-09-21, in git history`. 174 tests OK; scratch 59 G. All STAGED, the
-user commits. Plan items left: the registry follow-up above, and two USER decisions — Track C (`v3_coarse_shelf`, not
-started) and D5 (diffraction patch; both of its conditions were met 09-17/18, local excess ≤ 0.1 m).
+user commits.
+**🏁 The 09-10 plan is CLOSED (user, 2026-09-21)** — `~/.claude/plans/alright-finally-and-this-calm-lollipop.md` is marked
+retired at its top; STATUS is the only live list from here. Its one leftover is the registry follow-up above. The two
+open calls were decided, neither is a to-do: **D5 (diffraction patch) — NOT NOW.** Diffraction stays on record as a
+POTENTIAL later fix for the Sandy Hook shadow (FINDINGS §48: only a diffraction term can fill the pocket, and it is worth
+≤ 0.1 m at the spit); re-open it only if the bay-deficit search points back at local waves. **Track C (`v3_coarse_shelf`)
+— NOT BUILT for v3.** 🔵 **v4 note: when the Delaware Bay domain is designed, RECONSIDER THE NECESSARY RESOLUTION from the
+start** — the shelf seaward of the −10 m boundary does not need 50 m (`low_water` / `shelf_shoaling` refine it ring-wide;
+Track C's recipe pulled both `zmin`s to −10.5 → 200 m offshore, SnapWave nodes ~2.9 M → ~1.9 M with the 1.76 M active
+surf/bay nodes as the floor; ⚠️ those counts predate the 09-17 apex band extension — re-measure with
+`probe_mesh_size.py`). SnapWave is 90–95 % of wall clock, so that choice sets v4's solve time. Recipe and gates:
+`~/.claude/plans/alright-i-think-we-nested-beacon.md`, "Track C".
 
 ### ⏳ 2026-09-18 MORNING — PICK UP HERE: G5 gate + D4 landed and are READ (v2.3.3 stays; the shadow is geometry-limited)
 
