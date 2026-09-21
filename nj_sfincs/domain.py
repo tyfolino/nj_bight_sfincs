@@ -676,7 +676,11 @@ _SSS_GREAT_KILLS = ObsGauge(
     "it scores water the model COMPUTES. Floor 1.97 m NAVD88, 13.7% of the raw record "
     "above it (n=112 six-min points) — peak-worthy, thin for tide. Observed peak "
     "3.99 m. ⚠️ NACCS itself runs 0.35-0.39 m low here; that is a source-product fact "
-    "and does NOT enter this model, which computes this water.",
+    "and does NOT enter this model, which computes this water. ⚠️ 2026-09-21: the 2012 "
+    "record probably reads ~0.2 m HIGH (datum-like: +0.27 vs NOAA Sandy Hook at slack "
+    "pre-storm high water on the upwind shore, +0.10 at the same site in 2016; no waves "
+    "at the sensor). Cause unproven, series NOT altered — read a peak error here with "
+    "that in mind. STATUS 09-21.",
 )
 _SSS_ARTHUR_KILL = ObsGauge(
     "sss_arthur_kill_mouth",

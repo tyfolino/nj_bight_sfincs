@@ -4,7 +4,7 @@
 12 KB "current state" memory file and its 26 reverse-chronological campaign logs; the point
 of the format is that a reader gets the current state without replaying how it was reached.
 
-Last updated: **2026-09-20 17:10** — `wave-wavemaker` (the IG lever) landed clean overnight 09-19 (hal0443, 24 h 37, no restart, validate 54 min) and is READ against its 09-18 pre-registration (section below, `logs/wavemaker_reads_2026-09-20/`): the injected IG signal is REAL — ~1 m crests (0.28 m std) fill the 100–400 m surf zone between the line and the beach and the DUNE holds them, so only beachfront marks move — open-coast paired median **+0.021 m [+0.006, +0.054]** (CI above 0, but under the +0.05 line; mean +0.084 carried by Monmouth's `south_coast` +0.28 / `atlantic_oceanfront` +0.10, marks 260–500 m from pieces 8–9), the south-NJ shelf basins ≤ +0.03; the NJ back bays untouched (+0.007 [+0.002, +0.014]); the NY seiche bays re-rang (−0.049 [−0.078, −0.021], ΔRMSE +0.031) so the pooled 94-mark ΔRMSE is a null (+0.002 [−0.020, +0.023]); MOTF POD +0.004. **Neither pre-registered branch fires cleanly: the lever is real at the beach and invisible behind an intact dune, so it does not join the premier candidates on the HWM/MOTF scores; a line closer to shore is NOT the next move (13:40 correction) — scoring the beach/dune strip and the dune-failure bed lever are.** 🔴 `usgs_stormtide_sea_bright` sits ON piece 9 (≈170 m) and reads the injection (0.28 m std, peak +0.39): flag its row, do not read it as a beach. Engine-build confound (`igk-fix-1`) is measured: `hm0ig` differs seaward (+0.14..+0.23 m at −12..−5.5) with `zs` unchanged there (p50 0.000, p90 +0.02), as §45 predicts for an uncoupled field.
+Last updated: **2026-09-21 18:00** (Great Kills read, outflow-drain mask test, GK sensor check, mask-repair plan for 09-22 in PICK UP); before that **2026-09-20 17:10** — `wave-wavemaker` (the IG lever) landed clean overnight 09-19 (hal0443, 24 h 37, no restart, validate 54 min) and is READ against its 09-18 pre-registration (section below, `logs/wavemaker_reads_2026-09-20/`): the injected IG signal is REAL — ~1 m crests (0.28 m std) fill the 100–400 m surf zone between the line and the beach and the DUNE holds them, so only beachfront marks move — open-coast paired median **+0.021 m [+0.006, +0.054]** (CI above 0, but under the +0.05 line; mean +0.084 carried by Monmouth's `south_coast` +0.28 / `atlantic_oceanfront` +0.10, marks 260–500 m from pieces 8–9), the south-NJ shelf basins ≤ +0.03; the NJ back bays untouched (+0.007 [+0.002, +0.014]); the NY seiche bays re-rang (−0.049 [−0.078, −0.021], ΔRMSE +0.031) so the pooled 94-mark ΔRMSE is a null (+0.002 [−0.020, +0.023]); MOTF POD +0.004. **Neither pre-registered branch fires cleanly: the lever is real at the beach and invisible behind an intact dune, so it does not join the premier candidates on the HWM/MOTF scores; a line closer to shore is NOT the next move (13:40 correction) — scoring the beach/dune strip and the dune-failure bed lever are.** 🔴 `usgs_stormtide_sea_bright` sits ON piece 9 (≈170 m) and reads the injection (0.28 m std, peak +0.39): flag its row, do not read it as a beach. Engine-build confound (`igk-fix-1`) is measured: `hm0ig` differs seaward (+0.14..+0.23 m at −12..−5.5) with `zs` unchanged there (p50 0.000, p90 +0.02), as §45 predicts for an uncoupled field.
 
 ## ⏳ PICK UP — next session
 
@@ -16,7 +16,29 @@ section; lands ~09-22 morning. Read in this order: `sacct -j 61721880 --format=N
 at its 50-iteration cap), no restart, no maintenance overlap → expected finish ~01:00–03:00 on 09-22. 🔴 The 40 h limit
 expires **09-22 ~09:04** and a TIMEOUT is NOT requeued: if it is not done by morning, check `sacct -j 61721880` FIRST — a
 TIMEOUT means resume by hand from the newest `.rst` (`scripts/sfincs_restart.py plan <dir>`), and validate 61721881
-(afterok) will never start on its own. Held by user decision:
+(afterok) will never start on its own. ⚠️ Read its bay Δ as a LOWER bound on dη/dU: both arms of that pair carry the
+edge drain (below), which sits at the downwind end of the bay.
+
+**🔴 TOMORROW (user, 09-21 evening: "wall it, do it tomorrow") — the v3 MASK REPAIR, nothing built or submitted yet.**
+Findings in the 09-21 block below (drain ≈ 40,000 m³/s N of 40.40; walling = +0.25 m AK mouth, +0.16 m Raritan marks,
+NY-bay RMSE −0.11, waves-off; GK sensor probably ~0.2 m high). Decisions taken: the user does NOT care about NY in this
+model; NO QGIS / no inland edge (a wall vs a true inland edge differs by < ~1 cm on the NJ shore — drain 3 × 10⁸ m³ moved
+the central bay only 0.04–0.06 m and real SI storage is ~10× smaller, my estimate). Plan, in order:
+1. `Domain.mask_overrides` on V3 (`frm=3 → to=1`), coordinate BOXES: Staten Island + Brooklyn–Rockaway (≈ the two
+   `motf_exclude_boxes_ll`, converted to UTM) + a small Arthur Kill corner box (one wet drain face is at −74.2624, WEST of the
+   SI box). NJ river heads (Raritan cut ~1,350 m³/s, Delaware Bay shore) stay outflow — separate question.
+2. Bug fix: step 5c seals wet outflow by the cell-MEAN `z < −1`; two faces with subgrid `z_zmin` −2.35 / −1.43 survived 25 m
+   from the AK arm. Test the subgrid minimum where a subgrid exists.
+3. Stage the repaired template WITHOUT submitting; show the user the changed faces (expect ≈ the test's 605 minus the
+   Raritan-cut ones; indices of the test in `logs/great_kills_2026-09-21/walled_face_idx.npy`) + the new fingerprint →
+   user approves → register in `premier.EXPECTED` (08-31 procedure) → re-run `naccs-nowaves` (1 h), `naccs-premier` and
+   `wave-wavemaker` (~25 h each, emeraldrapids). ⚠️ `build_template()` rmtrees; the template is sealed — read CLAUDE.md §4 first.
+4. Same pass, so numbers move ONCE: HWM headline becomes NJ-only — the 5 quality-scored marks on NY land (3 =
+   all of `lower_bay_si_shore`, 2 Tottenville marks filed under `raritan_bay`) are still computed and reported as their own
+   group, flagged, not pooled (the MOTF-exclude pattern). NY GAUGES STAY as diagnostics (they measure the water that floods the
+   NJ bayshore): Narrows ×2 = forcing check, AK mouth = forcing-adjacent, GK = holdout with its ~+0.2 m flag.
+5. Then retire `experiments/v3/mask-wall-outflow+naccs-nowaves` (~3 G, hand-staged diagnostic, `premier` audit prints it BAD by design).
+Held by user decision:
 the dune-failure `bed-` lever (§49) and v4 Delaware Bay (🔵 resolution note for its design: end of the 09-21 block below).
 
 **✅ 2026-09-21 — second retire batch EXECUTED (user approved each arm in session):** the five old-band
@@ -93,6 +115,42 @@ UNRECOGNISED` (checked). It is a diagnostic, not a registered domain; no `metric
 **STAGED + SUBMITTED 13:15: 605 of 1,961 outflow faces walled** (zb −2.35..+4.99, lon −74.300..−73.937, lat 40.429..40.609;
 indices in `logs/great_kills_2026-09-21/walled_face_idx.npy`, `history` attr on the copied `sfincs.nc`; the source
 `sfincs.nc` keeps its 3 links, untouched). **Solve 61736009** (`sf_wall`, 3 h limit, halk excluded; the base ran 57 min).
+
+**✅ 16:10 — LANDED and READ (A = walled, B = `naccs-nowaves`; `read_wall.{py,txt}`, `grouped_paired.txt`, `basin_split.txt`).**
+Solve COMPLETED 0:0 on hal0270 in 56 min, clean close; HWM read 61736028 COMPLETED on hal0322 (56 min, 119.6 G RSS).
+**Control holds exactly:** Δzsmax p1/p50/p99 = 0.000 on every open-water face south of 40.3; Sea Bright / Barnegat Light /
+Atlantic City / Cape May peaks identical to 3 dp; the 56 non-seiche marks ΔRMSE −0.000; NJ back bays Δ 0.000.
+| | B | A | Δ | obs | prediction |
+|---|---|---|---|---|---|
+| `sss_arthur_kill_mouth` peak | 3.332 | 3.581 | **+0.249** | 3.813 | +0.2..+0.5 ✅ |
+| `sss_great_kills` peak | 3.421 | 3.483 | **+0.062** | 3.991 | +0.05..+0.20 (low edge) |
+| `sss_narrows_si` / `bkln` peak | 3.316 / 3.486 | 3.377 / 3.406 | +0.062 / −0.080 | 3.424 / 3.316 | ±0.05 ❌ (just outside, opposite signs) |
+| `sandy_hook` peak | 3.309 | 3.366 | +0.057 | — | — |
+| `raritan_bay` marks (n 19), paired median | | | **+0.164** (16 up) | | +0.05..+0.20 ✅ |
+| `lower_bay_si_shore` marks (n 3) | | | −0.097 (1 up; mean −0.012) | | +0.1..+0.3 ❌ |
+| NY seiche bays (n 38) paired median | bias −0.250 | −0.178 | **+0.045 [+0.039, +0.112]** | | — |
+| NY seiche bays RMSE | 0.445 | 0.338 | **ΔRMSE −0.107 [−0.240, −0.003]**, P(>0) 0.020 | | — |
+Pooled 94 marks: ΔRMSE −0.041 [−0.098, −0.001]. Open-water zsmax by longitude: +0.18..+0.25 west of −74.19, +0.04..+0.06
+from there to the entrance; the zsmax tilt −74.04 → −74.28 goes 0.37 → 0.59 m (gauges: ~0.4–0.6). Off the AK arm the
+4.0 m now holds: 1–2 km out 3.52 → 3.96. The GK Δ is a steady +0.02..+0.06 through 00:00–01:20 (not a seiche swing); 5-h
+crest-mean Δ GK +0.010, AK +0.089, Narrows SI +0.040; both GK and AK read −0.07..−0.13 LOWER on the ebb (02:20–04:00), not explained.
+**Verdict against the rule: NEITHER branch fires** — GK +0.062 sits between the < +0.05 and ≥ +0.10 lines and the NY-bay
+median (+0.045, CI above 0) is a hair under +0.05. Plainly: **the edge drain is REAL and worth ~0.25 m at the west end of
+Raritan Bay (AK-mouth error −0.48 → −0.23, Raritan marks +0.16, NY-bay RMSE −0.11) and only ~0.06 m at Great Kills** — the
+entrance resupplies the central bay. GK's remaining ~−0.5 is not the drain (item 4's GK-only +0.2..+0.45 offset is the
+standing candidate). ⚠️ Waves-off, walled = UPPER bound; the waves-on size is a 25 h solve and is NOT run.
+⬜ **User decision — this is a DOMAIN repair, not an arm** (mask → fingerprint → every v3 arm re-baselines, as on 08-31):
+(a) minimal: seal the outflow faces that are wet by SUBGRID `z_zmin` (5c tests the cell-mean `z < −1`, which is how two
+faces at −2.35 / −1.43 survived 25 m from the AK arm); (b) cap the outflow gate so low ground near tidewater is wall
+(this run), or (c) move the SI / Brooklyn edge inland to high ground so the flood ponds where it really did. The
+⚠️ The MOTF raster CANNOT arbitrate (b) vs (c): Staten Island is inside `motf_exclude_boxes_ll` (NJ-only layer, reads
+fake-dry). Map instead: `reports/figures/si_edge_drain_2026-09-21.png` (`map_si_edge.py`) — the active strip on the SI
+south shore is only ~100–500 m wide, the orange (< 5 m) edge sits where the peak depth is 1–3 m, and **9 of the 17 HWMs
+in that window stand OUTSIDE the model** (8 on an active face). "No NYC land in the model" (CLAUDE.md §1) means (c) is a
+domain-design change, not a repair. Rough size argument for wall-over-drain: the drain integrates to ~3 × 10⁸ m³ over
+18:00–04:00 (from the hourly flux row above) against ~2–3 × 10⁷ m³ of real SI flood storage (≈ 10–15 km² × 1.5–2 m — my
+estimate, not measured), i.e. the drain removes ~10× what the neighbourhoods could hold; a wall errs by 1× the other way.
+The diagnostic dir `experiments/v3/mask-wall-outflow+naccs-nowaves` (~3 G unique) stays until that call is made.
 🔴 `model.py`'s `OUTFLOW_MAX_BED` comment records that the ring-wide outflow edge was a DELIBERATE choice ("inert until
 water reaches it… more physical than ponding it against an artificial wall"). A wall ponds, so this run is the UPPER
 bound on what the edge treatment is worth; the premier is the lower; the truth (edge on high ground) is between.
@@ -107,6 +165,24 @@ lat 40.0 |Δ| < 0.01 (no face changed there — the control).
 part of the bay deficit and the edge design (wall vs moving the edge to high ground) is the next decision, BEFORE any
 wind product. GK Δ < +0.05 → the leak is real but the entrance resupplies it; the deficit is elsewhere. Control
 |Δ| > 0.02 → something other than the mask changed; read nothing. Void: halk node, incomplete output.
+
+**🔎 17:30 — is the Great Kills SENSOR off? Probably yes, by ~+0.2 m (datum-like), NOT by location** (`gk_sensor.{py,txt}`, raw
+USGS files `SSS-NY-RIC-00{3,4}WL.txt` beside them; user: "do you suspect a datum or location issue?").
+- *Location is fine.* STN site 7560: "wooden bulkhead to boat ramp at Great Kills Harbor", INSIDE the harbour; the raw 30 s
+  record's noise is 0.01–0.04 m std at every hour it is wet, so there is no wave action at the sensor — shoreline setup /
+  swash is ruled out. Sensor elevation 6.24 ft (1.902 m, "GPS survey"); dry reading 1.893 m, so no pressure offset either.
+- *The offset is there at slack water on the UPWIND shore.* Pre-storm high water 10-29 11:00–14:30 (wind NNE 14 m/s, blowing
+  OFF the SI shore): GK − NOAA Sandy Hook **+0.25..+0.28 for 3.5 h**, GK − AK +0.30..+0.37, GK − Battery +0.29..+0.50, while
+  AK / Sandy Hook / Battery agree to ~0.1. On the surge the differences move the way real wind tilt should (GK − AK shrinks
+  to +0.17 at the peak as the E wind raises AK; GK − Sandy Hook grows to +0.48).
+- *Independent event, same site, re-surveyed 2015* (Jonas, 2016-01-23, NE gale, USGS peak 1.585 m): GK − Sandy Hook **+0.10**,
+  GK − Battery +0.17. So ~0.1 of GK-above-Sandy-Hook is real and **~+0.17..+0.26 is specific to the 2012 deployment**.
+- *Two more fields point the same way:* NACCS is 0.35–0.39 low at GK and nowhere else in the bay (the `domain.py` note);
+  the one q1 HWM near GK (6413, 1.6 km) is 3.81 where the AK-side marks sit ~0.19 ABOVE their sensor. And uncorrected, GK
+  (3.99) tops AK (3.83) although AK is further downwind; minus 0.2 the peaks read Narrows 3.42 → GK ~3.8 → AK 3.83.
+- **Consequence:** treat the observed GK peak as **~3.75–3.85, not 3.99** (cause unproven — flag, do not rewrite the file).
+  GK peak error then: premier −0.43 → about **−0.2..−0.25**; walled waves-off 3.48 → about −0.3. The bay-wide deficit is
+  real but roughly half what GK made it look; AK-mouth (−0.44 premier) is now the larger and cleaner number.
 
 ### ⏳ 2026-09-18 MORNING — PICK UP HERE: G5 gate + D4 landed and are READ (v2.3.3 stays; the shadow is geometry-limited)
 
