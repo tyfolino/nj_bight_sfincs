@@ -11,7 +11,12 @@ Last updated: **2026-09-20 17:10** — `wave-wavemaker` (the IG lever) landed cl
 **RUNNING (2026-09-20 17:03): `wave-wavemaker+wind-x110` solve 61721880 (hal0391, emeraldrapids, 40 h) → validate 61721881** — the
 wind-sensitivity probe (ERA5 × 1.10 on the wavemaker premier candidate), pre-registered in the 18:30 block of the 09-20
 section; lands ~09-22 morning. Read in this order: `sacct -j 61721880 --format=NodeList` → `wind_scale` column = 1.100 in
-`metrics.csv` → Great Kills / Arthur Kill Δpeak vs `wave-wavemaker` → paired bay marks → bay census. Held by user decision:
+`metrics.csv` → Great Kills / Arthur Kill Δpeak vs `wave-wavemaker` → paired bay marks → bay census. ⏱ Pace checked 09-21
+11:57 from the restart-file mtimes: 42 of 72 sim-h at 18 h 13 wall (2.3 sim-h/h overall, 2.0 through the storm peak, SnapWave
+at its 50-iteration cap), no restart, no maintenance overlap → expected finish ~01:00–03:00 on 09-22. 🔴 The 40 h limit
+expires **09-22 ~09:04** and a TIMEOUT is NOT requeued: if it is not done by morning, check `sacct -j 61721880` FIRST — a
+TIMEOUT means resume by hand from the newest `.rst` (`scripts/sfincs_restart.py plan <dir>`), and validate 61721881
+(afterok) will never start on its own. Held by user decision:
 the dune-failure `bed-` lever (§49) and v4 Delaware Bay (🔵 resolution note for its design: end of the 09-21 block below).
 
 **✅ 2026-09-21 — second retire batch EXECUTED (user approved each arm in session):** the five old-band
