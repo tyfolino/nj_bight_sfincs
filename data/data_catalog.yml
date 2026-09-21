@@ -1047,7 +1047,7 @@ naccs_sandy_v3_stockdon03:
     crs: 4326
     source: "BRACKET (inadmissible, STATUS 2026-09-09): naccs_sandy_v3 PLUS Stockdon
       surf-zone SETUP eta = 0.35*0.03*sqrt(H0*L0) from CORA at each of the 224 points
-      (scripts/build_stockdon_boundary.py). FINDINGS §22/§23 forbid this beside SnapWave
+      (scripts/build_stockdon_boundary.py, retired 2026-09-21, in git history). FINDINGS §22/§23 forbid this beside SnapWave
       and on top of NACCS's own boundary-depth setup; it bounds the mean-level effect from
       above. Only BRACKET+setup-stockdon may point at it."
 naccs_sandy_v3:

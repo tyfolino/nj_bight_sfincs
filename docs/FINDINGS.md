@@ -326,7 +326,7 @@ Live campaign state is in [STATUS.md](STATUS.md). This file is for what is settl
 
 38. **The Keansburg overshoot is MISSING FLOOD PROTECTION, not bad elevation data — and
     MOTF makes the same error, so it cannot arbitrate it.** Diagnosed 2026-08-20,
-    `scripts/diagnose_keansburg.py` → `reports/keansburg/`. Three marks read obs
+    `scripts/diagnose_keansburg.py` → `reports/keansburg/` (both retired 2026-09-21, in git history). Three marks read obs
     ≈1.55 m against a modeled ~3.3 m (residuals +1.67…+1.77, the worst on the domain);
     every neighbour within 2 km (obs 3.6–4.4 m) validates to ±0.5 m.
 
@@ -393,7 +393,7 @@ Live campaign state is in [STATUS.md](STATUS.md). This file is for what is settl
 39. **The FA "disconnected = rain" classifier is VALIDATED against a rain-off run —
     and the rain share was an undercount.** Measured 2026-08-21,
     `scripts/measure_rain_share.py` (pre-registered in its docstring) →
-    `reports/rain/rain_share_v1_5_raritan.csv`; `naccs-premier` vs `diag-premier-norain`
+    `reports/rain/rain_share_v1_5_raritan.csv` (both retired 2026-09-21, in git history); `naccs-premier` vs `diag-premier-norain`
     (byte-identical staging minus `netamprfile`), on the MOTF grid under the
     `motf_metrics` screens ∧ simulated-in-both. Ground truth: wet-in-premier ∧
     dry-in-norain (`DEPTH_MIN` threshold).

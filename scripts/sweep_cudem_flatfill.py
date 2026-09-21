@@ -7,13 +7,13 @@ WHY
 ---
 `cudem_nj` is missing the Ward Point headland — its land stops at lat 40.49982 in every
 column across ~800 m and the missing ~230 m of New York State is backfilled as −3 to −5.5 m
-of bay (see `scripts/plot_ward_point_bed.py`). That was found BY EYE, on one figure, after
+of bay (see `scripts/plot_ward_point_bed.py`, retired 2026-09-21, in git history). That was found BY EYE, on one figure, after
 every domain invariant had come back green.
 
 🔴 That is the part worth generalising. `build_static` asserts no active cell has NoData in
 the merged bed, and this defect sails through it: the bed is not missing, it is PRESENT AND
 WRONG. Any check phrased as "is there data here" is blind to a fill. And a validator that
-reads the same stack the model reads (`validate_region_v1_5.py`) cannot help either, because
+reads the same stack the model reads (`validate_region_v1_5.py`, retired) cannot help either, because
 it inherits the same hole.
 
 So the only thing that can find the next Ward Point is an INDEPENDENT product. This script

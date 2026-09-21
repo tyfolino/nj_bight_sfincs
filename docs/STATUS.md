@@ -23,9 +23,21 @@ every sealed + live dir. ⚠️ `python -m nj_sfincs.premier` CRASHES (`HDF erro
 being written — it died on the live wind-x110 arm before printing the `RET` rows; re-run it after the solve lands.
 🔴 NOT removed, the manifest was wrong about both: `experiments/v1_5_raritan/{naccs-premier,naccs-nowaves}` are the only
 surviving run dirs of the frozen v1.5 domain (true reclaim 0.45 G), and `experiments/v2_barnegat/` holds a `metrics.csv`.
-⬜ Follow-up AFTER validate 61721881 has run (it imports the registry): the six retired arms are still `Experiment`
-entries in `nj_sfincs/experiments.py` and pinned by `tests/test_engine_epoch.py` — remove both in one pass, as on 09-11.
-Manifest sections B–D (scripts, notebooks) still unticked: `reports/cleanup/deletion_manifest_2026-09-20.md`.
+⬜ Follow-up AFTER validate 61721881 has run (it imports the registry): the FIVE `…wave-band-sandy-hook…` arms are still
+`Experiment` entries in `nj_sfincs/experiments.py` and pinned by `tests/test_engine_epoch.py` (`wave-nowind+…` left the
+registry on 09-11) — remove both in one pass, as on 09-11.
+**✅ Same day — manifest sections B–C + the plan's Phase 7 leftovers EXECUTED, each group approved in session** (detail and
+every correction: `reports/cleanup/deletion_manifest_2026-09-20.md`): 13 scripts `git rm`'d (Stockdon / STWAVE builders,
+rain-share, bed-dam pair, the 09-08 buildings + ring reads, `rebuild_subgrid_h`, `diagnose_keansburg`,
+`validate_region_v1_5` + `plot_ward_point_bed`) with `reports/{rain,keansburg}/` + `bed_dams_v3.csv`; three notebooks (08-29
+voided-runs, 09-13 winddir, the undated v1.5 twin); the four G5 / D4 engine-gate dirs; `data/probe_mesh_v1_5_fix4`; the
+`.docx` printout. 🔴 The manifest's "zero code references" was wrong for eight scripts — SEVEN KEPT on inspection:
+`build_refinement_v1_5` (the ONLY refinement-recipe builder, v4 ports from it), `build_coned_sw_raritan` + both ERA5
+downloads (provenance of data the model reads), `score_bracket` (named by `premier.py`'s refusal), `score_v2_barnegat`,
+`stamp_metrics_epoch` (loaded by a test); `sweep_cudem_flatfill` + `audit_paved_channels` kept by the user. Comment
+mentions of removed scripts now read `retired 2026-09-21, in git history`. 174 tests OK; scratch 59 G. All STAGED, the
+user commits. Plan items left: the registry follow-up above, and two USER decisions — Track C (`v3_coarse_shelf`, not
+started) and D5 (diffraction patch; both of its conditions were met 09-17/18, local excess ≤ 0.1 m).
 
 ### ⏳ 2026-09-18 MORNING — PICK UP HERE: G5 gate + D4 landed and are READ (v2.3.3 stays; the shadow is geometry-limited)
 

@@ -809,8 +809,8 @@ _V15_USGS_SHARK = ObsGauge(
 V1_5_RARITAN = Domain(
     name="v1_5_raritan",
     # 🔴 THE HAND-DRAWN ring, not a generated one. Drawn in QGIS over Esri imagery +
-    # CUDEM, 2026-08-13; 40 vertices, 2,281 km². `scripts/validate_region_v1_5.py` is
-    # its gate and has NO write path — the generator that used to own this filename was
+    # CUDEM, 2026-08-13; 40 vertices, 2,281 km². `scripts/validate_region_v1_5.py` (retired 2026-09-21, in git history;
+    # the domain is frozen) was its gate and had NO write path — the generator that used to own this filename was
     # retired precisely because it would have overwritten the only copy of the geometry.
     region=DATA / "region_v1_5_raritan_edited.geojson",
     refinement=DATA / "quadtree" / "refinement_v1_5_raritan.geojson",

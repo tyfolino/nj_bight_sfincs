@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 """Write notebooks/v3/sandy-v3-viz-<date>.ipynb for the fixed-engine (winddir-fix) epoch.
 
-Same layout as sandy-v3-viz-2026-08-29.ipynb (headers-only: a `##` title and the plot),
+Headers-only layout (a `##` title and the plot), first used by the 08-29 notebook of the
+voided runs (removed 2026-09-21, in git history),
 plus ONE table cell naming what each arm changes. The arm list is filtered at run time to
 the arms that have BOTH a map and a metrics row, so the same notebook can be re-executed
 as more arms land (e.g. `wave-apex`) without editing.

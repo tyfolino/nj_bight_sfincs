@@ -79,7 +79,7 @@ LANDMARKS = {
 # snapped to an isobath, and not registered anywhere.
 #
 # The real geometry is `data/region_v1_5_raritan_edited.geojson`, drawn by hand in QGIS
-# and gated by `scripts/validate_region_v1_5.py` (which reads it and never writes).
+# and was gated by `scripts/validate_region_v1_5.py` (retired 2026-09-21, in git history; read-only).
 # ⚠️ There is no generator any more, and crossings are no longer declared as ring-segment
 # tags — a hand-drawn vertex lands where the cursor landed, so the validator finds wet
 # reaches against the bed instead. `nj_sfincs/domain.py` owns all geography.

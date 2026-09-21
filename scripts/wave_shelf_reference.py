@@ -4,7 +4,7 @@
     NJ_DOMAIN=v3 python scripts/wave_shelf_reference.py experiments/v3/<arm> \
         [--ref-mesh experiments/v3/_template_sealed/sfincs.nc] [--premier <old run>] [--times ...]
 
-Written 2026-09-09 (STATUS 09-09). `scripts/wave_boundary_ring.py`'s table 2 divides the
+Written 2026-09-09 (STATUS 09-09). `scripts/wave_boundary_ring.py`'s (retired 2026-09-21, in git history) table 2 divided the
 −9 m shelf hm0 by the IMPOSED hm0 in the same 4 km strip — which is undefined once the
 wave boundary sits 15–40 km offshore. This script uses CORA (SWAN on a shelf-resolving
 mesh) as the reference instead, per site along a shore-normal line:

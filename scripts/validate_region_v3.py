@@ -7,7 +7,7 @@
 
 🔴 **THE DRAWN FILE IS THE AUTHORITY.** `data/region_v3_EDITED_inland.geojson` was edited by
 hand in QGIS. This script READS it. It has no write path and must never grow one — the
-same rule as `validate_region_v1_5.py`, and for the same reason: once a hand-drawn ring
+same rule as `validate_region_v1_5.py` (retired 2026-09-21, in git history), and for the same reason: once a hand-drawn ring
 exists, a generator pointed at it is a loaded gun aimed at the only copy of the geometry.
 (The draft generators that preceded it — build_v3_isobath_seed.py, build_region_v3_draft.py —
 were retired 2026-08-24 once the ring was drawn; git history has them.)
