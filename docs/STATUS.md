@@ -54,6 +54,60 @@ surf/bay nodes as the floor; ⚠️ those counts predate the 09-17 apex band ext
 `probe_mesh_size.py`). SnapWave is 90–95 % of wall clock, so that choice sets v4's solve time. Recipe and gates:
 `~/.claude/plans/alright-i-think-we-nested-beacon.md`, "Track C".
 
+### 🔴 2026-09-21 13:00 — Great Kills read: the NY-bay deficit has a MASK candidate — outflow faces below the surge peak drain ~40,000 m³/s out of the model (NOT yet tested by a run)
+
+Read-only, `naccs-premier` map + his, scripts and extracts in `logs/great_kills_2026-09-21/` (`gk2` series, `gk3` forcing,
+`gk5` profiles, `gk7`/`gk9`/`gk10`/`gk11` outflow census). Flux estimator is crude — wet active faces touching an `msk == 3`
+face, depth × cell-centre velocity toward it × face size — trust the order of magnitude, not the digits.
+1. **The forcing is not low.** Narrows arm forced peak 3.42 = `sss_narrows_si` observed 3.42. Arthur Kill arm forced
+   **4.04–4.11** vs the AK-mouth gauge's observed 3.81 (1.5 km away) — yet the MODEL reads 3.38 there: zsmax falls 4.05 →
+   3.4 within 250–500 m of the arm. At the peak the model's bay is nearly flat (open water 3.49 at −74.04 → 3.61 at
+   −74.20) where the gauges tilt 3.42 (Narrows) → 3.81 (AK) / 3.99 (GK). Peak errors: GK −0.43, AK −0.44, Narrows −0.02 / +0.08.
+2. 🔴 **1,961 outflow faces domain-wide, 683 with zb < 3.5 m, 32 below 0.** Along the Staten Island south shore (the
+   "declared land boundary") 349 of 438 sit below 3.4 m (p50 ≈ +1 m): at 10-30 01:00 the surface falls 3.45 m (600 m
+   out) → 1.6 m at the edge, 2.5–4.5 m/s toward it (supercritical overfall), **≈ 17,000 m³/s** (1,600 at 18:00, 12,500 at
+   00:00). Two outflow faces ON WATER (zb −2.35 / −1.43) sit **25 m from the Arthur Kill forced arm** — ≈ 12,000 m³/s
+   through 21 faces, the forced 4.05 m pouring straight into a drain (that is item 1's collapse). Brooklyn / Coney Island
+   edge ≈ 10,000. **North of 40.40 ≈ 40,000 m³/s at the peak**, the size of a second Narrows; south of 39.9 < 700, none 39.9–40.4.
+   Real Sandy ponded in those neighbourhoods against high ground; the model edge cuts them at +0.2..+2.5 m and spills.
+3. **Size at the gauge is UNKNOWN until a run.** The local drawdown does not reach the GK face (3.58, flat to 600 m); the
+   effect there is via bay volume and the dead AK arm. `lower_bay_si_shore` marks (bias −0.26, worst basin) stand IN the
+   drawdown strip. Cheapest test: a `mask-` delta demoting `msk 3 → 1` (closed wall) where zb < ~5 m, on **`naccs-nowaves`
+   (~2 h solve)**, paired against `naccs-nowaves`: GK / AK peaks, the 4 NY basins, zsmax profile off the AK arm. ⚠️ mask is
+   half the fingerprint — this is a new registered domain or a declared `mask-` arm, user's call; v1.5 shares the boxes, not checked.
+4. Separate, GK-only: observed GK sits 0.2–0.45 m ABOVE observed AK at every overlap sample whatever the wind (NNE at
+   10-29 12:00, E at the peak, SE after); the model has them equal. At 12:00 GK is −0.61 when AK / Narrows are −0.25 / −0.1,
+   the sensor standing in 0.26 m of water (floor 1.97). Datum or shoreline setup at the sensor — ~0.3 m of the GK number
+   off-peak is not a bay signal. At the peak itself the model reproduces GK − AK (+0.19 vs +0.18).
+5. Wind context for the ×1.10 read: ERA5 over mid-bay is 20–21 m/s from 081–111° at 23:00–01:00 (along the bay axis), Cd
+   0.0021 → τ ≈ 1.2 Pa → ~0.3 m steady tilt Sandy Hook → Perth Amboy at 8 m depth; the model shows 0.12. A drain at the
+   downwind end is a reason the tilt cannot build — read the ×1.10 Δ with that in mind (it may under-state dη/dU).
+
+**📝 13:30 — `mask-wall-outflow+naccs-nowaves` PRE-REGISTERED (user: "let's do that cheap test"), written before staging.**
+*What.* `naccs-nowaves` with ONE change: in a COPY of `sfincs.nc`, `mask 3 → 1` (closed wall) on every outflow face north
+of lat 40.40 whose subgrid `z_zmin` < 5.0 m (count in the staging line below; the Raritan cut included — this is the
+"all of it" read, a split is another 1 h solve). Every other input hard-linked from `naccs-nowaves`; same engine
+(`bin:v2.3.3-winddir-fix-1-gf11@673ee3bf`), same window. ⚠️ Hand-staged, NOT through the sweep driver: the mask is half
+the fingerprint, so `assert_sealed_domain` refuses it BY DESIGN and `python -m nj_sfincs.premier` prints it as `BAD …
+UNRECOGNISED` (checked). It is a diagnostic, not a registered domain; no `metrics.csv` row.
+**STAGED + SUBMITTED 13:15: 605 of 1,961 outflow faces walled** (zb −2.35..+4.99, lon −74.300..−73.937, lat 40.429..40.609;
+indices in `logs/great_kills_2026-09-21/walled_face_idx.npy`, `history` attr on the copied `sfincs.nc`; the source
+`sfincs.nc` keeps its 3 links, untouched). **Solve 61736009** (`sf_wall`, 3 h limit, halk excluded; the base ran 57 min).
+🔴 `model.py`'s `OUTFLOW_MAX_BED` comment records that the ring-wide outflow edge was a DELIBERATE choice ("inert until
+water reaches it… more physical than ponding it against an artificial wall"). A wall ponds, so this run is the UPPER
+bound on what the edge treatment is worth; the premier is the lower; the truth (edge on high ground) is between.
+*Diagnostics (chosen first), all paired against `naccs-nowaves`.* (1) gauge peak AND whole-window mean Δ (seiche-proof,
+§40) at `sss_great_kills`, `sss_arthur_kill_mouth`, `sss_narrows_si/bkln`, `sandy_hook`; control: `noaa_atlantic_city`,
+`usgs_tidal_barnegat_light`; (2) zsmax by distance from the AK arm + the open-water tilt by longitude (`gk5.py`);
+(3) paired HWM (median, 50 m) by group: NY seiche bays (38), NJ back bays (19), open coast (23); (4) residual flux (`gk10.py`).
+*Predictions.* AK-mouth peak **+0.2..+0.5** (the arm's 4.05 finally reaches the gauge); Great Kills peak **+0.05..+0.20**;
+Narrows within ±0.05 (forced); `lower_bay_si_shore` marks +0.1..+0.3, `raritan_bay` +0.05..+0.20; everything south of
+lat 40.0 |Δ| < 0.01 (no face changed there — the control).
+*Reading rule.* GK Δpeak ≥ +0.10 AND NY-bay paired median ≥ +0.05 with the CI above 0 → the edge drain is a first-order
+part of the bay deficit and the edge design (wall vs moving the edge to high ground) is the next decision, BEFORE any
+wind product. GK Δ < +0.05 → the leak is real but the entrance resupplies it; the deficit is elsewhere. Control
+|Δ| > 0.02 → something other than the mask changed; read nothing. Void: halk node, incomplete output.
+
 ### ⏳ 2026-09-18 MORNING — PICK UP HERE: G5 gate + D4 landed and are READ (v2.3.3 stays; the shadow is geometry-limited)
 
 ### ✅ 2026-09-20 — `wave-wavemaker` LANDED and READ: the IG lever is real, small, and set by the line-to-beach distance; NOT a premier candidate at the −5 m line (user decision on the next move)
