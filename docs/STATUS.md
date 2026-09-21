@@ -14,6 +14,19 @@ section; lands ~09-22 morning. Read in this order: `sacct -j 61721880 --format=N
 `metrics.csv` → Great Kills / Arthur Kill Δpeak vs `wave-wavemaker` → paired bay marks → bay census. Held by user decision:
 the dune-failure `bed-` lever (§49) and v4 Delaware Bay.
 
+**✅ 2026-09-21 — second retire batch EXECUTED (user approved each arm in session):** the five old-band
+`wave-band-sandy-hook[+…]` / `bed-nobuildings+wave-band-sandy-hook[+…]` arms and `wave-nowind+wave-shelf-steps` are in
+`experiments/v3/_retired/` (record kept, `metrics.csv` rows kept, maps + gallery tifs gone — they can no longer be
+re-scored or re-paired without a ~24 h solve). TRUE reclaim 76.8 G (tool) / scratch 154.3 → 81.5 G, not the manifest's
+140 G: the 09-20 staging dedupe had hard-linked ~10.5 G of inputs per arm. Sealed inodes unchanged, `premier` audit OK on
+every sealed + live dir. ⚠️ `python -m nj_sfincs.premier` CRASHES (`HDF error`) on a run dir whose `sfincs_map.nc` is
+being written — it died on the live wind-x110 arm before printing the `RET` rows; re-run it after the solve lands.
+🔴 NOT removed, the manifest was wrong about both: `experiments/v1_5_raritan/{naccs-premier,naccs-nowaves}` are the only
+surviving run dirs of the frozen v1.5 domain (true reclaim 0.45 G), and `experiments/v2_barnegat/` holds a `metrics.csv`.
+⬜ Follow-up AFTER validate 61721881 has run (it imports the registry): the six retired arms are still `Experiment`
+entries in `nj_sfincs/experiments.py` and pinned by `tests/test_engine_epoch.py` — remove both in one pass, as on 09-11.
+Manifest sections B–D (scripts, notebooks) still unticked: `reports/cleanup/deletion_manifest_2026-09-20.md`.
+
 ### ⏳ 2026-09-18 MORNING — PICK UP HERE: G5 gate + D4 landed and are READ (v2.3.3 stays; the shadow is geometry-limited)
 
 ### ✅ 2026-09-20 — `wave-wavemaker` LANDED and READ: the IG lever is real, small, and set by the line-to-beach distance; NOT a premier candidate at the −5 m line (user decision on the next move)

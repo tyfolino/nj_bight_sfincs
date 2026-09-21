@@ -1,6 +1,7 @@
 # Deletion manifest — 2026-09-20 (end of the wavemaker / wind-arm day)
 
-⏳ **NOT EXECUTED. The user ticks; nothing here is deleted until then.** Precedent:
+✅ **SECTION A (the six v3 arms) EXECUTED 2026-09-21, approved item by item by the user in
+session; sections B–D NOT executed.** ⏳ The user ticks; nothing else here is deleted until then. Precedent:
 `deletion_manifest_2026-08.md`. Inventory: every script with last-commit date and reference
 counts, every run dir with TRUE reclaim (`logs/retire_manifest_2026-09-20.txt`, the retire
 tool's own read-only manifest), notebooks / reports / data by git tracking. Scratch is at
@@ -20,21 +21,21 @@ superseded by the apex premier (paired ΔRMSE +0.0145 m [+0.0053, +0.0249], FIND
 their `metrics.csv` rows stay. `wave-nowind+wave-shelf-steps` is the wind-off half of the
 §43 direction diagnosis (misdirected-engine era). TRUE reclaim from the tool:
 
-- [ ] `wave-band-sandy-hook` — 23.74 G
-- [ ] `wave-band-sandy-hook+wave-fw02` — 23.73 G
-- [ ] `wave-band-sandy-hook+wave-noig` — 23.19 G
-- [ ] `bed-nobuildings+wave-band-sandy-hook` — 23.73 G
-- [ ] `bed-nobuildings+wave-band-sandy-hook+wave-fw02+wave-noig` — 23.17 G
-- [ ] `wave-nowind+wave-shelf-steps` — 22.42 G
-- [ ] their five/six `experiments/v3/floodmaps/<arm>_hmax_lev3.tif` (the gallery; the retire tool refuses `floodmaps`, so `rm` by hand AFTER the arms are retired) — ~2.4 G each
+- [x] `wave-band-sandy-hook` — 23.74 G
+- [x] `wave-band-sandy-hook+wave-fw02` — 23.73 G
+- [x] `wave-band-sandy-hook+wave-noig` — 23.19 G
+- [x] `bed-nobuildings+wave-band-sandy-hook` — 23.73 G
+- [x] `bed-nobuildings+wave-band-sandy-hook+wave-fw02+wave-noig` — 23.17 G
+- [x] `wave-nowind+wave-shelf-steps` — 22.42 G
+- [x] their six `experiments/v3/floodmaps/<arm>_hmax_lev3.tif` — ⚠️ CORRECTED 09-21: no hand `rm` needed. The retire tool refuses `floodmaps` as an ARM NAME but deletes each arm's gallery tif as one of its 8 DELETEs; all six went with their arms.
 
-  Total ≈ **140 G**. ⚠️ Retiring them removes them from the 09-14 six-arm notebook's
+  Total ≈ **140 G** apparent. ⚠️ CORRECTED 09-21: TRUE reclaim was **76.8 G** (tool) / 72.8 G (`mmlsquota` 154.3 → 81.5 G, with the wind-x110 solve writing meanwhile) — the 09-20 17:04 staging's dedupe hard-linked ~10.5 G of inputs per arm AFTER this manifest was computed, so those bytes are shared with the live arms and stay. Sealed inodes unchanged (`_template_sealed/sfincs_subgrid.nc` links 4 → 1, `_subgrid_buildings` 12 → 9 = the six arms' links); `premier` audit OK on every sealed + live dir. ⚠️ Retiring them removes them from the 09-14 six-arm notebook's
   candidate list at next render (it filters on `sfincs_map.nc`); the rendered 09-14 file
   is unaffected. Command (one line, after ticking):
   `NJ_DOMAIN=v3 PYTHONPATH=$PWD python scripts/retire_arm.py <arms…> --reason "old-band epoch superseded by the apex premier (FINDINGS §46); wind-off half of §43" --apply`
 
-- [ ] `experiments/v1_5_raritan/{naccs-premier,naccs-nowaves}` — 1.9 G each, Sep 2 re-stages of the frozen v1.5 domain (its scored record is `experiments/v1_5_raritan/metrics.csv` + the archive). `rm -r` by hand; the retire tool is v3-rooted.
-- [ ] `experiments/v2_barnegat/` — 0 G (empty shell of the archive's domain). `rmdir`.
+- [ ] `experiments/v1_5_raritan/{naccs-premier,naccs-nowaves}` — 🔴 CORRECTED 09-21, NOT removed: these are not re-stages, they are the ONLY surviving run dirs of the frozen v1.5 domain (already trimmed of `sfincs_map.nc`; `floodmap_hmax_lev3.tif` + `sfincs_his.nc` + log + inp; `premier` audit 3/3 OK, output WHOLE), the archive predates v1.5 so nothing else holds them, and the bulk is hard-linked to `_template_sealed` — true reclaim ≈ 0.45 G, not 3.8 G. Recommendation: KEEP.
+- [ ] `experiments/v2_barnegat/` — ⚠️ CORRECTED 09-21, NOT removed: not empty, it holds a 17 K `metrics.csv` (2026-08-20) with no copy under `data/v2_barnegat_runs/`. Nothing to gain; KEEP unless the archive is shown to carry the same table.
 - KEEP: `naccs-premier`, `wave-wavemaker`, `wave-wavemaker+wind-x110` (running), `naccs-nowaves`, `_template_sealed`, `_subgrid_buildings`, `_retired/` (already trimmed to 0.03 G each), `v1_monmouth` (the port fixture, 582 M), the five `metrics_*_rebaseline.csv` snapshots (tiny, referenced by STATUS).
 
 ## B. Scripts — `git rm` (history keeps them)
