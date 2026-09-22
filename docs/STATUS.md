@@ -66,6 +66,20 @@ and the lower Raritan) and the bay gain is the NY shore's. Void: halk node, inco
 staged fingerprint = `8cf131b2cba9ddf8` ✓ — provably the NY-edge-only mask). **Solve 61762161** (`sf_nyedge`, 3 h,
 halk excluded) → paired HWM read chained (`read_cutsplit_hwm.slurm`); gauge/map read is `read_cut_split.py`
 (A = repaired full wall, B = NY-edge-only, so A − B = the cut). Lands ~23:00.
+**✅ 23:20 — LANDED (solve 61762161, hal0375, 47 min, clean) and the gauge/map half is READ (`read_cut_split.txt`) — the
+cut's own contribution, A − B, lands inside every prediction:** AK mouth Δpeak **+0.047** (pred +0.03..+0.10 ✅), GK
+**+0.027** (pred +0.00..+0.03 ✅), Narrows +0.014 / −0.010 (✅), Sandy Hook +0.028, controls and every face south of lat 40.3
+**0.000** ✅. Bay tilt: the cut is worth +0.05..+0.07 west of −74.19 and +0.02 mid-bay (the NY shore is the rest of the
++0.20..+0.25). The lower Raritan within 1.5 km of the cut: **+0.5 m through the storm — essentially ALL of the local gain
+is the cut**, +0.3 m still ponded at 08:00. **Verdict: between the two branches** — the cut is ~19 % of the AK-mouth gain
+(0.047 of 0.249), in line with its quarter share of the flux; it is not a local-only fix (GK and Sandy Hook move
++0.03) and not more than its share either. v4's Raritan reach matters at the gauges at the few-cm level and at the
+lower-Raritan marks at the half-metre level. ⚠️ **Flagged, not explained:** with the cut walled the AK-mouth and GK
+means sit **2–4 cm LOWER through the whole window, ordinary tides included** (6-hourly A−B −0.01..−0.04 on 10-28, before
+any surge; GK −0.01..−0.03) — a one-way tidal leak through the open cut would give the OPPOSITE sign, so the mechanism
+is not a leak; candidates are a rectified tide against the closed end or a source/outflow interaction at the cut. Small
+against the +0.25 peak, but systematic; read the tide-range / phase columns of the premier pair with it in mind.
+Paired HWM half (61762164) pending.
 
 **📝 PRE-REGISTERED 17:40, before any repaired run exists — the mask-repair read, three pairs (A = repaired, B =
 `mask-drain-edge+` twin), same diagnostics as the 09-21 wall test:** (1) gauge peak + whole-window mean Δ at
