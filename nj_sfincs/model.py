@@ -78,7 +78,7 @@ def _grid_attrs(sf: SfincsModel) -> dict:
     attrs = dict(getattr(sf.quadtree_grid.data, "attrs", {}) or {})
     if all(k in attrs for k in keys):
         return {k: attrs[k] for k in keys}
-    with xr.open_dataset(Path(sf.root) / "sfincs.nc") as ds:
+    with xr.open_dataset(_model_dir(sf) / "sfincs.nc") as ds:
         return {k: ds.attrs[k] for k in keys}
 
 
@@ -102,6 +102,29 @@ def _open_coast_max_y(wcfg=None) -> float:
 
 def _face_xy(sf):
     return sf.quadtree_grid.data.grid.face_coordinates.T
+
+
+def _model_dir(sf) -> Path:
+    """The model directory. hydromt's ``sf.root`` is a ``ModelRoot``, not a path."""
+    root = sf.root
+    return Path(getattr(root, "path", root))
+
+
+def _subgrid_floor(sf, zb: "np.ndarray") -> "np.ndarray":
+    """Per-face bed floor: ``min(cell-mean z, subgrid z_zmin)`` when the model dir holds a
+    subgrid table on this mesh, else the cell mean. A fresh build has no table yet."""
+    path = _model_dir(sf) / "sfincs_subgrid.nc"
+    if not path.exists():
+        return zb
+    with xr.open_dataset(path) as ds:
+        if "z_zmin" not in ds or ds["z_zmin"].shape != zb.shape:
+            print(
+                f"[mask] {path.name} carries no z_zmin on this mesh — wet-outflow seal "
+                "uses the cell mean only"
+            )
+            return zb
+        zmin = ds["z_zmin"].values.astype(float)
+    return np.where(np.isfinite(zmin), np.minimum(zb, zmin), zb)
 
 
 def _outside_region(sf, region=None) -> "np.ndarray":
@@ -873,6 +896,31 @@ def apply_mask_and_boundary(
             f"water is a drain, not a boundary"
         )
         mask[wet_outflow] = 1
+
+    # ⚠️ WARN, DON'T SEAL, on the SUB-CELL FLOOR (2026-09-22). The cell mean is what a
+    # 200 m face averages over; a face whose mean is +0.7 m can hold a channel at −2 m,
+    # and SFINCS runs the subgrid, not the mean. Two such faces (z_zmin −2.35 / −1.43)
+    # 25 m from the v3 Arthur Kill arm drained the forced 4 m straight out of the model
+    # (STATUS 09-21) — they are walled by a declared `MaskOverride`, not by this rule,
+    # because measured on v3 the floor rule's ONLY other catches were the Raritan River
+    # cut (2 faces) and the Delaware Bay shore leg (1), both left open on purpose. So
+    # the census is printed for the next domain to read, and the decision stays declared.
+    # On a fresh build the subgrid is computed after this step and the census is empty.
+    z_floor = _subgrid_floor(sf, zb)
+    floor_wet = (mask == 3) & (z_floor < OUTFLOW_MAX_DEPTH)
+    if floor_wet.any():
+        fx_, fy_ = _face_xy(sf)
+        print(
+            f"⚠️  [mask] {int(floor_wet.sum())} free-outflow cells are DRY by cell mean "
+            f"but WET by subgrid floor (< {OUTFLOW_MAX_DEPTH:+.0f} m) — NOT sealed; each "
+            "is a drain the moment water reaches it. Wall it with a MaskOverride if it "
+            "is not a declared river head:"
+        )
+        for i in np.where(floor_wet)[0]:
+            print(
+                f"      face {i:8d}  x {fx_[i]:.0f} y {fy_[i]:.0f}  z_mean {zb[i]:+.2f}  "
+                f"z_floor {z_floor[i]:+.2f}"
+            )
     sf.quadtree_grid.data["mask"] = sf.quadtree_grid.data["mask"].copy(data=mask)
 
     # Display the whole BC set BEFORE the invariants run, so it is on the log even when
@@ -1815,3 +1863,46 @@ def finalize(
         (model_dir / "provenance.txt").write_text(provenance.summary(model_dir))
     except Exception as e:  # noqa: BLE001 — a manifest must never fail a build
         print(f"[warn] provenance manifest not written: {e}")
+
+
+def restage_from_frozen_mesh(
+    base: BaseConfig, wcfg: WaveConfig, dst: Path, frozen: Path | None = None
+) -> tuple[int, int]:
+    """Re-derive mask + boundaries + forcing on a COPY of the frozen mesh. No rebuild.
+
+    The one path for every MASK-ONLY change to a frozen mesh — a different
+    ``mask_zmin`` (``scripts/setup_boundary_depth.py``) or a changed
+    ``Domain.mask_overrides`` (``scripts/restage_mask_repair.py``). The subgrid is
+    computed per face from elevation + roughness and is INDEPENDENT of the mask, so every
+    face already carries its table and the copy is enough. Runs THE SAME
+    ``apply_mask_and_boundary`` the ordinary build uses; ``add_forcing`` and
+    ``add_waves`` follow because the ``mask==2`` line they interpolate onto may have moved.
+
+    ``dst`` must not exist — the caller decides what may be removed. Returns the active
+    cell count before and after the re-derivation.
+    """
+    dst = Path(dst)
+    frozen = Path(frozen) if frozen is not None else _domain.active().frozen_mesh_dir()
+    if dst.exists():
+        raise FileExistsError(f"{dst} exists — remove it deliberately first")
+    if not (frozen / "sfincs_subgrid.nc").exists():
+        raise FileNotFoundError(f"no subgrid in {frozen} — build the shared mesh first")
+    print(f"[stage] copying {frozen} -> {dst}  (subgrid REUSED, not rebuilt)")
+    shutil.copytree(frozen, dst)
+
+    sf = SfincsModel(str(dst), data_libs=base.data_libs, mode="r+")
+    n_before = int((sf.quadtree_grid.data["mask"].values > 0).sum())
+    apply_mask_and_boundary(base, sf)
+    n_after = int((sf.quadtree_grid.data["mask"].values > 0).sum())
+    print(f"[stage] active cells {n_before:,} -> {n_after:,} ({n_after - n_before:+,})")
+
+    print("[stage] forcing + waves")
+    add_forcing(base, sf)
+    sw = add_waves(wcfg, base, sf)
+    finalize(wcfg, base, sf, dst, sw)
+    restore_diagnostics(dst)
+    del sf
+    gc.collect()
+    for stale in ("sfincs_his.nc", "sfincs_map.nc", "snapwave.upw", "sfincs.log"):
+        (dst / stale).unlink(missing_ok=True)
+    return n_before, n_after

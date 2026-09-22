@@ -795,6 +795,19 @@ Each of these cost a campaign and is settled. The evidence is in the archive's
   USGS-transect checks (§49), so the IG knobs are not a reduction lever either. Open: dune
   failure as the route by which IG reached the streets in Sandy — a `bed-` lever, the
   user's call.
+- **The Raritan / Lower Bay deficit is NOT wind-limited at ERA5's shortfall size — measured
+  2026-09-22, `wave-wavemaker+wind-x110` paired against `wave-wavemaker` (v3, native
+  igk-fix-1 engine, drain edge still open on both).** ERA5 × 1.10 (+21 % stress; bay
+  wind-sea hm0 +8..+10 %, boundary hm0 unchanged) moves the Great Kills / Arthur Kill mouth
+  peaks by **+0.017 / +0.021 m**, the NY-bay paired median by +0.012 [−0.003, +0.021] (n 38,
+  50 m), the open coast by −0.002 (control): dη/dU in the bay is ~0.02 m per 10 % of wind,
+  an order of magnitude short of the −0.44 / ~−0.25 m deficit. The E wind steepens the
+  along-bay tilt by ~0.04 m end to end (west +0.024, Sandy Hook pocket −0.019) and that is
+  all of it. So a better wind product (H*Wind / RAP / GAHM) is NOT a bay lever; the deficit
+  is supply-side (the edge drain, then the bay's wave/setup side). ⚠️ Read as a LOWER bound
+  on dη/dU: both arms carried the NY edge drain at the downwind end. ⚠️ NOT a null on the NJ
+  back bays: Barnegat Bay is wind-TILTED — Mantoloking (north end) sits −0.25 m for hours
+  under the N/NE wind — so a mark's Δ there is set by which end of the bay it is on.
 - **SnapWave blow-ups (~1e13) are boundary points OUTSIDE the mesh** → depth 0 → runaway.
   Any SnapWave-active cell that is SFINCS-inactive and dry is a candidate.
 - **Surf-zone hm0 spikes are GEBCO integer bathymetry** filling nearshore NoData; offshore

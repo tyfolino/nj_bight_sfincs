@@ -186,9 +186,9 @@ _V3_SHELF_STEPS_WAVES = WaveConfig(
 #   wave-noig            IG OFF — ⚠️ a null by construction without a wavemaker (§45)
 #   bed-nobuildings      the sealed template's subgrid (no footprints)
 #   naccs-nowaves        SnapWave OFF, buildings subgrid (so waves-on/off is one flag)
-#   wave-band-sandy-hook[+…]   the runs made on the OLD band (09-13/14), renamed 09-17
 # ⚠️ wave-fw02 / wave-noig / bed-nobuildings have NOT been run on the apex band yet
-# (09-17); their scored twins are the wave-band-sandy-hook+… rows.
+# (09-17); their scored twins were the old-band `wave-band-sandy-hook+…` rows, retired
+# 2026-09-21 (rows kept in metrics.csv, arms out of the registry 09-22).
 # ── THE APEX BAND — 2026-09-17 ──────────────────────────────────────────────────
 # The premier's SnapWave band now runs its east leg north past Sandy Hook to the Long
 # Island shore (`v3_shelf_steps_apex`, +3 support points, the open-coast demotion
@@ -197,9 +197,8 @@ _V3_SHELF_STEPS_WAVES = WaveConfig(
 # Raritan Bay marks; 0.1–0.3 m more hm0 at the Lower Bay entrance on most hours; the
 # coast south of Sandy Hook unchanged on cap-hit-free hours (STATUS 09-17). User
 # decision 09-17: every future run shares this boundary. The runs made with the OLD
-# band are renamed on disk and in metrics.csv to `wave-band-sandy-hook[+…]` and are
-# registered below so they still audit and re-score; they are NOT one-flag arms of the
-# premier any more (they differ by the band too) and are kept as the record.
+# band were renamed on disk and in metrics.csv to `wave-band-sandy-hook[+…]`, retired
+# 2026-09-21 and dropped from the registry 2026-09-22 (git has the entries).
 # metrics_2026-09-17_pre_apex_rebaseline.csv is the table as it stood before the rename.
 _V3_PREMIER_WAVES = replace(
     _V3_SHELF_STEPS_WAVES,
@@ -208,11 +207,6 @@ _V3_PREMIER_WAVES = replace(
     snapwave_domain="v3_shelf_steps_apex",
     wave_n_support=63,  # +3 for the 11.8 km leg, keeps ~4.6 km spacing
     open_coast_max_y=float("inf"),
-)
-#: The band every arm ran to 2026-09-14: east leg cut at Sandy Hook (row 883), 60 support
-#: points, boundary cells north of Domain.open_coast_max_y demoted.
-_V3_OLD_BAND = dict(
-    snapwave_domain="v3_shelf_steps", wave_n_support=60, open_coast_max_y=None
 )
 _V3_BUILDINGS = dict(subgrid_from="_subgrid_buildings")
 
@@ -308,52 +302,9 @@ _V3: dict[str, Experiment] = {
         "on the old engine; expected within +-0.02 m again.",
         **_V3_WL,
     ),
-    # ── the Sandy-Hook-cut band, as run 2026-09-13/14 (renamed on disk 09-17) ──
-    "wave-band-sandy-hook": Experiment(
-        "wave-band-sandy-hook",
-        replace(_V3_PREMIER_WAVES, **_V3_OLD_BAND),
-        "The premier as it stood 09-11..09-17: the SnapWave band's east leg cut at "
-        "Sandy Hook, 60 support points, open-coast demotion on. Was experiments/v3/"
-        "naccs-premier until the apex re-baseline (STATUS 09-17); its numbers stand in "
-        "metrics.csv under this name. Paired vs the apex premier: dRMSE +0.0145 m "
-        "[+0.0053, +0.0249].",
-        **_V3_BUILDINGS,
-        **_V3_WL,
-    ),
-    "wave-band-sandy-hook+wave-fw02": Experiment(
-        "wave-band-sandy-hook+wave-fw02",
-        replace(_V3_PREMIER_WAVES, snapwave_fw=0.02, **_V3_OLD_BAND),
-        "Was wave-fw02 (old band). Friction lever vs wave-band-sandy-hook: paired "
-        "dRMSE +0.0095 m [+0.0020, +0.0184] (09-17) — fw 0.02 is worse.",
-        **_V3_BUILDINGS,
-        **_V3_WL,
-    ),
-    "wave-band-sandy-hook+wave-noig": Experiment(
-        "wave-band-sandy-hook+wave-noig",
-        replace(_V3_PREMIER_WAVES, wave_igwaves=False, **_V3_OLD_BAND),
-        "Was wave-noig (old band). IG lever vs wave-band-sandy-hook: paired dRMSE "
-        "+0.0005 m [-0.0024, +0.0036] — a null BY CONSTRUCTION, snapwave_igwaves "
-        "reaches SFINCS only through a wavemaker (FINDINGS S45).",
-        **_V3_BUILDINGS,
-        **_V3_WL,
-    ),
-    "bed-nobuildings+wave-band-sandy-hook": Experiment(
-        "bed-nobuildings+wave-band-sandy-hook",
-        replace(_V3_PREMIER_WAVES, **_V3_OLD_BAND),
-        "Was bed-nobuildings (old band). Buildings lever vs wave-band-sandy-hook: "
-        "paired dRMSE -0.0211 m [-0.0478, +0.0078]; masked CSI 0.723 vs 0.721.",
-        **_V3_WL,
-    ),
-    "bed-nobuildings+wave-band-sandy-hook+wave-fw02+wave-noig": Experiment(
-        "bed-nobuildings+wave-band-sandy-hook+wave-fw02+wave-noig",
-        replace(
-            _V3_PREMIER_WAVES, snapwave_fw=0.02, wave_igwaves=False, **_V3_OLD_BAND
-        ),
-        "Was bed-nobuildings+wave-fw02+wave-noig (F.4, old band): the OLD "
-        "wave-shelf-steps configuration on the FIXED engine, the before/after of the "
-        "wind-direction fix alone (STATUS 09-13).",
-        **_V3_WL,
-    ),
+    # The five Sandy-Hook-cut-band runs (`wave-band-sandy-hook[+…]`, renamed 09-17)
+    # were RETIRED 2026-09-21 (`experiments/v3/_retired/`, maps gone, metrics rows kept)
+    # and left the registry 2026-09-22 with `_V3_OLD_BAND`; both are in git history.
     "naccs-nowaves": Experiment(
         "naccs-nowaves",
         WaveConfig(use_waves=False),

@@ -172,6 +172,40 @@ class TestBoxesAreFullyBounded(_DomainEnv):
                         overlap, f"{name}: arms {a.name!r} and {b.name!r} overlap"
                     )
 
+    def test_mask_overrides_are_walls_off_the_river_cuts(self):
+        """A live `MaskOverride` walls an edge (3 -> 1) and never reaches a declared
+        river cut.
+
+        2026-09-22: the first draft of v3's Arthur Kill corner box started at easting
+        558,800 and swallowed the Raritan River cut (`no_waterlevel_boxes`, x 558.7–560.5
+        km) without meaning to. Walling a river head is a decision (the cut was later
+        walled on purpose, ~10,700 m³/s measured through it), never a side effect.
+        """
+
+        def overlap(a, b):
+            ax0, ay0, ax1, ay1 = a
+            bx0, by0, bx1, by1 = b
+            return (ax0 < bx1 and bx0 < ax1) and (ay0 < by1 and by0 < ay1)
+
+        for name, dom in domain.DOMAINS.items():
+            for ov in dom.mask_overrides:
+                self.assertEqual(
+                    (ov.frm, ov.to), (3, 1), f"{name}/{ov.name}: not a wall"
+                )
+                self.assertTrue(ov.why, f"{name}/{ov.name}: no reason recorded")
+                # A 3 -> 1 box may overlap an ARM box freely (it never touches a
+                # mask==2 cell). One that reaches a river cut WALLS a river head, so
+                # it must say so by naming the cut in its `why` (v3's
+                # `wall_raritan_cut`, user decision 2026-09-22) — never by accident.
+                for cut in dom.no_waterlevel_boxes:
+                    if overlap(ov.box, cut.box):
+                        self.assertIn(
+                            cut.name,
+                            ov.why,
+                            f"{name}: override {ov.name!r} reaches river cut "
+                            f"{cut.name!r} without declaring it",
+                        )
+
     def test_boundary_arm_cell_bounds_are_sane(self):
         for name, dom in domain.DOMAINS.items():
             for arm in dom.boundary_arms:

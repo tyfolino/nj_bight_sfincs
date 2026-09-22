@@ -143,10 +143,8 @@ def browse(run="{ANIM_RUN}", var="depth", window="absecon"):
 
 DEFAULT_CANDIDATES = {
     "naccs-premier (apex band)": "naccs-premier",
-    "old band": "wave-band-sandy-hook",
-    "old band, no IG": "wave-band-sandy-hook+wave-noig",
-    "old band, fw 0.02": "wave-band-sandy-hook+wave-fw02",
-    "old band, no buildings": "bed-nobuildings+wave-band-sandy-hook",
+    # the four old-band arms were retired 2026-09-21 (maps gone) — the 09-17 render
+    # that carried them is pushed; pass --arm to add any live arm
     "naccs-nowaves": "naccs-nowaves",
     "wavemaker (IG at the −5 m line)": "wave-wavemaker",
 }

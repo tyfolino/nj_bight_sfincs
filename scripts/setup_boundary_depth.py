@@ -50,12 +50,9 @@ WHAT TO EXPECT, written before looking
 
 from __future__ import annotations
 
-import gc
 import shutil
 import sys
 from pathlib import Path
-
-from hydromt_sfincs import SfincsModel
 
 import nj_sfincs  # noqa: F401  (PROJ primer — must precede hydromt_sfincs)
 from nj_sfincs import domain as _domain
@@ -113,30 +110,12 @@ def main(argv: list[str] | None = None) -> int:
     if dst.exists():
         print(f"[stage] removing {dst}")
         shutil.rmtree(dst)
-    print(f"[stage] copying {frozen} -> {dst}  (subgrid REUSED, not rebuilt)")
-    shutil.copytree(frozen, dst)
-
-    sf = SfincsModel(str(dst), data_libs=base.data_libs, mode="r+")
-    n_before = int((sf.quadtree_grid.data["mask"].values > 0).sum())
     sibling_zmin = ", ".join(f"{s.name}={s.mask_zmin:+.0f}" for s in siblings)
     print(
         f"[stage] re-deriving mask/boundary at mask_zmin={dom.mask_zmin:+.1f} m "
         f"(siblings: {sibling_zmin})"
     )
-    model.apply_mask_and_boundary(base, sf)
-    n_after = int((sf.quadtree_grid.data["mask"].values > 0).sum())
-    print(f"[stage] active cells {n_before:,} -> {n_after:,} ({n_after - n_before:+,})")
-
-    print("[stage] forcing + waves")
-    model.add_forcing(base, sf)
-    sw = model.add_waves(wcfg, base, sf)
-    model.finalize(wcfg, base, sf, dst, sw)
-    model.restore_diagnostics(dst)
-    del sf
-    gc.collect()
-
-    for stale in ("sfincs_his.nc", "sfincs_map.nc", "snapwave.upw", "sfincs.log"):
-        (dst / stale).unlink(missing_ok=True)
+    model.restage_from_frozen_mesh(base, wcfg, dst, frozen)
 
     fp = premier.domain_fingerprint(dst)
     print(f"\n[stage] staged domain fingerprint: {fp}")

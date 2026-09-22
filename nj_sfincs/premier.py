@@ -143,7 +143,13 @@ V2_BARNEGAT_PREMASK = DomainFingerprint(1143357, 2164, "9ccbab0bc7a9fc0d")
 #: there (STATUS 08-31). Bands restored VERBATIM (user). Runs on the 08-26 mesh
 #: (fingerprint 3312567/4010/ae28ac5ef3aeb599) are void by that decision.
 #: faces 3,412,470 · active 1,764,488 · mask==2 6,836 · outflow 1,961.
-V3 = DomainFingerprint(3412470, 4108, "5ad01a84978a87f8")
+#: 🔴 MASK REPAIR 2026-09-22 (same mesh, same counts, the sha is the only tell): 629
+#: edge faces outflow → wall — the Staten Island / Brooklyn–Rockaway shore, the Arthur
+#: Kill corner and the Raritan River cut (`Domain.mask_overrides`). Open, they drained
+#: ~40,000 m³/s at the peak (STATUS 09-21/22). outflow 1,961 → 1,332; active unchanged.
+#: Runs on the 08-31 mask are the `mask-drain-edge+…` dirs — the "before" record.
+V3_PRE_MASKWALL = DomainFingerprint(3412470, 4108, "5ad01a84978a87f8")
+V3 = DomainFingerprint(3412470, 4108, "1596ce1ecc71b374")
 
 EXPECTED: dict[str, DomainFingerprint] = {
     "v1_monmouth": V1_MONMOUTH,
@@ -162,8 +168,12 @@ KNOWN = {
         "v2_barnegat FROZEN (post inlet-mask repair 2026-07-30) — archive fixture, "
         "score-only"
     ),
-    V3: "v3 FROZEN 2026-08-26 — full Jersey shore, NACCS 224-point boundary (sha16 "
-    "19f53cfd4cb804fb), 4 arms (v1.5's three + ocean_south)",
+    V3: "v3 FROZEN 2026-08-26, NY edge + Raritan cut WALLED 2026-09-22 — full Jersey "
+    "shore, NACCS 224-point boundary (sha16 19f53cfd4cb804fb), 4 arms",
+    V3_PRE_MASKWALL: (
+        "v3 BEFORE the 2026-09-22 mask repair (NY edge + Raritan cut drained ~40,000 "
+        "m³/s) — the mask-drain-edge+… before-runs; superseded, not comparable"
+    ),
     V2_BARNEGAT_PREMASK: (
         "v2_barnegat PRE-repair mask — the 2026-07-26..29 campaign arms; not "
         "comparable to post-repair runs"

@@ -1499,6 +1499,72 @@ V3 = Domain(
     always_active_boxes_ll=V1_5_RARITAN.always_active_boxes_ll,
     dry_land_boxes_ll=V1_5_RARITAN.dry_land_boxes_ll,
     no_waterlevel_boxes=V1_5_RARITAN.no_waterlevel_boxes,  # the Raritan River cut
+    # ── 🔴 THE NY EDGE IS A WALL, NOT A DRAIN (mask repair, 2026-09-22; STATUS 09-21).
+    # `OUTFLOW_MAX_BED` makes every dry edge face a free-outflow BC on the argument that
+    # it is "inert until water reaches it". On the Staten Island / Brooklyn shore the
+    # water DID reach it: 349 of the 438 SI-shore edge faces sit below the 3.4 m surge
+    # peak (p50 ≈ +1 m), and the `naccs-premier` map shows a supercritical overfall
+    # into them — ≈ 40,000 m³/s north of lat 40.40 at the peak, the size of a second
+    # Narrows, integrating to ~3 × 10⁸ m³ against ~2–3 × 10⁷ m³ of real SI flood
+    # storage. Two faces ON WATER (subgrid z_zmin −2.35 / −1.43) 25 m from the Arthur
+    # Kill arm poured the forced 4.05 m straight out (the AK-mouth gauge read 3.38).
+    # Measured (waves-off, `mask-wall-outflow+naccs-nowaves`): walling = +0.25 m at the
+    # AK mouth, +0.16 m on the Raritan Bay marks, NY-bay RMSE −0.11, Great Kills +0.06;
+    # every face south of lat 40.3 identical to 3 dp. A wall ponds where the real flood
+    # ponded against high ground; the drain erred ~10× the other way.
+    # `frm=3 → to=1`: the edge face becomes ordinary active and the inactive ground
+    # beyond it is SFINCS's default closed wall. Boxes are UTM 18N envelopes of
+    # `motf_exclude_boxes_ll` (the same two NY windows), a corner at the Arthur Kill arm,
+    # and — user decision 2026-09-22 — the Raritan River cut itself (see its entry).
+    # Every face inside is 3 → 1 whatever its height (a +10 m wall is a no-op, and one
+    # rule beats a threshold). The Delaware Bay shore leg and the Cheesequake marsh edge
+    # (lon −74.282, lat 40.43–40.45, ~75 m³/s at the peak) are in no box and stay outflow.
+    mask_overrides=(
+        MaskOverride(
+            "wall_staten_island",
+            frm=3,
+            to=1,
+            box=(563_100, 4_482_000, 582_300, 4_500_400),
+            why="Staten Island south shore (lon -74.2525..-74.030, lat 40.487..40.65): "
+            "435 outflow faces, 351 below +5 m, drained ~17,000 m³/s at the peak.",
+        ),
+        MaskOverride(
+            "wall_brooklyn_rockaway",
+            frm=3,
+            to=1,
+            box=(582_000, 4_487_000, 597_500, 4_500_600),
+            why="Brooklyn / Coney Island / Rockaway edge (lon -74.030..-73.850, "
+            "lat 40.53..40.65): 135 outflow faces, 113 below +5 m, ~10,000 m³/s.",
+        ),
+        MaskOverride(
+            "wall_arthur_kill_corner",
+            frm=3,
+            to=1,
+            box=(561_000, 4_482_900, 563_400, 4_485_200),
+            why="The corner between the Raritan River cut and the Arthur Kill arm, both "
+            "banks (lon -74.28..-74.2518, lat 40.500..40.509; 14 faces at apply time, 8 "
+            "below +5 m): the two wet faces 25 m from the arm (subgrid z_zmin -2.35 / "
+            "-1.43, cell mean above the -1 m seal) that poured the forced 4 m out, plus "
+            "the Perth Amboy / Tottenville edge faces beside them. Starts at easting "
+            "561,000, EAST of the Raritan River cut, which has its own box below.",
+        ),
+        MaskOverride(
+            "wall_raritan_cut",
+            frm=3,
+            to=1,
+            box=(558_700, 4_482_600, 560_500, 4_485_200),
+            why="The Raritan River crossing at the ring's west limit (x ~559.35 km, "
+            "y 4483.0-4485.0 km, plus its two high corners; 35 outflow faces, the two "
+            "channel faces at -0.92 / -0.12 m mean, banks +3..+6 m). Overlaps the "
+            "`raritan_cut` NoWaterLevelBox ON PURPOSE. Open, it drained ~10,700 m3/s "
+            "at the peak (a quarter of everything north of lat 40.40): the forced 4 m "
+            "poured over the +3 m banks with no back-pressure. The real river reach to "
+            "New Brunswick absorbed ~1,000 m3/s (tidal-prism estimate), so open erred "
+            "~10x one way and a wall errs ~1x the other — the Tuckahoe head-of-tide "
+            "rule applied here (user, 2026-09-22). A wall reflects: read the Perth "
+            "Amboy series for sloshing. The right fix is v4 reaching New Brunswick.",
+        ),
+    ),
     elevation_list=V3_ELEVATION_LIST,
     coarse_elevation_list=({"elevation": "bed_v3_coarse_25m"},),
     # v1.5's value verbatim: the Raritan / Narrows / Arthur Kill limb is not open coast,
@@ -1526,7 +1592,9 @@ V3 = Domain(
         "cape_may": (498_000, 524_000, 4_303_000, 4_328_000),
     },
     # FROZEN 2026-08-26: data/frozen_mesh_v3 (no mesh_key — one boundary depth so far),
-    # fingerprint premier.V3. `building` cleared the same pass.
+    # fingerprint premier.V3 — moved 2026-09-22 by the mask repair above (same mesh,
+    # `mask_overrides` re-derived by scripts/restage_mask_repair.py; the frozen mesh's
+    # sfincs.nc carries the repaired mask). `building` cleared the same pass.
     # The BASE (NOAA) water-level selection on the template: noaa_sandy_nj holds the
     # Battery, Atlantic City and Cape May, all within the 100 km buffer of the line →
     # 3. Asserted at the template build. The arms override with the NACCS 224.

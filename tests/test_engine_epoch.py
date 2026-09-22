@@ -70,23 +70,6 @@ class TestPremierConstant(unittest.TestCase):
             # 2026-09-20: the wind-sensitivity probe on top of the wavemaker line.
             "wave-wavemaker+wind-x110": {"wavemaker", "wavemaker_line", "wind_scale"},
         }
-        # The old band is one lever, three fields (2026-09-13): the band table, the
-        # support-point count, and the open-coast demotion. Every renamed old-band run
-        # differs from the premier by those three plus what its name says.
-        band = {"snapwave_domain", "wave_n_support", "open_coast_max_y"}
-        expect.update(
-            {
-                "wave-band-sandy-hook": band,
-                "wave-band-sandy-hook+wave-fw02": band | {"snapwave_fw"},
-                "wave-band-sandy-hook+wave-noig": band | {"wave_igwaves"},
-                "bed-nobuildings+wave-band-sandy-hook": band | {"subgrid_from"},
-                "bed-nobuildings+wave-band-sandy-hook+wave-fw02+wave-noig": band
-                | {"snapwave_fw", "wave_igwaves", "subgrid_from"},
-            }
-        )
-        self.assertEqual(
-            V3["wave-band-sandy-hook"].waves.snapwave_domain, "v3_shelf_steps"
-        )
         for name, fields in expect.items():
             self.assertEqual(_diff_fields(V3[name], PREMIER), fields, name)
         self.assertEqual(V3["wave-fw02"].waves.snapwave_fw, 0.02)
@@ -118,6 +101,12 @@ class TestPremierConstant(unittest.TestCase):
             "BRACKET+setup-stockdon",
             "wave-apex",  # promoted INTO the premier 2026-09-17
             "bed-nobuildings+wave-fw02+wave-noig",  # renamed …+wave-band-sandy-hook+…
+            # the five old-band runs, retired 2026-09-21, out of the registry 09-22
+            "wave-band-sandy-hook",
+            "wave-band-sandy-hook+wave-fw02",
+            "wave-band-sandy-hook+wave-noig",
+            "bed-nobuildings+wave-band-sandy-hook",
+            "bed-nobuildings+wave-band-sandy-hook+wave-fw02+wave-noig",
         ):
             self.assertNotIn(old, V3, old)
 
