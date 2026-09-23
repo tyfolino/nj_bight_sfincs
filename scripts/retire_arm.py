@@ -65,6 +65,7 @@ KEEP_FILES = {
     ".subgrid_sha256",
     "subgrid_provenance.txt",
     "metrics.json",
+    "cut_faces_reopened_idx.npy",  # hand-staged nyedge-only test: the 35 cut faces put back to outflow (stage_nyedge_only.py)
     "report.html",
 }
 KEEP_GLOBS = (
