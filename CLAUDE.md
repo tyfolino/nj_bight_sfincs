@@ -42,6 +42,8 @@ Every geographic fact lives in **`nj_sfincs/domain.py`**, keyed by the `NJ_DOMAI
 |---|---|---|
 | `v1_monmouth` | Sandy Hook → Sea Girt, 547,408 faces | **FROZEN** — port-verification fixture only |
 | `v1_5_raritan` | boundary relocated to the Narrows + Arthur Kill | **FROZEN 2026-08-14** — `faces=696230 boundary_edges=1652 sha=2a23667dd16e449c`, three arms run + scored (see STATUS) |
+| `v3` | full NJ ocean coast, Cape May → the Narrows, NACCS boundary | **DONE 2026-09-24** — `faces=3412470 boundary_edges=4108 sha=1596ce1ecc71b374` (mask repaired 09-22); reference = `naccs-premier` (FINDINGS §50) |
+| `v4` | v3 + Delaware Bay to Trenton (forced at the mouth) + Raritan to New Brunswick + the Arthur Kill shore; **far banks (DE/PA/Staten Island) COMPUTED to +10 m, not walled**; Track C coarse shelf | **IN DESIGN** (acquisition-only, 2026-09-24) — rules and cost budget in STATUS PICK UP; the design's own gate is a waves-off Sandy +0/+2/+3 m overflow test |
 
 **The same experiment name exists on every domain and means a different model each time.**
 That is why runs live at `experiments/<domain>/<arm>`, why `EXPERIMENTS` is keyed by domain

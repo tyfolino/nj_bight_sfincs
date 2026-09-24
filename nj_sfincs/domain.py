@@ -1680,8 +1680,31 @@ SNAPWAVE_STEPS: dict[str, SnapWaveSteps] = {
 }
 
 
+V4 = Domain(
+    name="v4",
+    # ACQUISITION-ONLY (2026-09-24): v3 + the Delaware (forced at the bay mouth, computed
+    # to the head of tide at Trenton) + the Raritan to New Brunswick + the Arthur Kill NJ
+    # shore (forced at Elizabeth). Far banks (DE / PA / Staten Island) are COMPUTED to
+    # +10 m, not walled — the 09-24 evening design review reversed the morning's "walled"
+    # call (STATUS PICK UP, rule (2)); Brooklyn keeps a walled cut short of Jamaica Bay.
+    # The rectangle resolves download extents and nothing else; swap in the drawn ring
+    # and clear the flag once it is drawn under the plan's rules.
+    region=DATA / "region_v4_PROVISIONAL_bbox.geojson",
+    epsg=32618,
+    latitude=39.68,  # (38.74 + 40.62) / 2, the rectangle's mid-latitude
+    acquisition_only=True,
+    precip_dataset="aorc_sandy_v4",
+    discharge_geodataset="usgs_sandy_discharge_v4",
+    hwm_geojson=DATA / "validation_v4" / "sandy_hwms_v4.geojson",
+    # Rendered on the rectangle on purpose, as on v3: the sheet is a DESIGN input here.
+    motf_tif=DATA / "validation_v4" / "sandy_motf_extent_v4.tif",
+    # v3's NY-validity boxes carry over (same northern geometry). The source layer is
+    # NJ-only, so DE / PA land will also read dry — moot while the far bank is walled.
+    motf_exclude_boxes_ll=V3.motf_exclude_boxes_ll,
+)
+
 DOMAINS: dict[str, Domain] = {
-    d.name: d for d in (V1_MONMOUTH, V1_5_RARITAN, V2_BARNEGAT, V3)
+    d.name: d for d in (V1_MONMOUTH, V1_5_RARITAN, V2_BARNEGAT, V3, V4)
 }
 
 

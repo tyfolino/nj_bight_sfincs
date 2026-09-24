@@ -329,6 +329,8 @@ EXPERIMENTS_BY_DOMAIN: dict[str, dict[str, Experiment]] = {
     # not frozen. Arms (`naccs-premier`, `naccs-nowaves`) are registered at the freeze,
     # once there is a fingerprint for premier.py to check them against.
     "v3": _V3,
+    # ACQUISITION-ONLY (2026-09-24): a rectangle for the downloaders, no mesh, no arms.
+    "v4": {},
 }
 
 

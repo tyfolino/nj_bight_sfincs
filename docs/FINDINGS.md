@@ -145,6 +145,8 @@ Live campaign state is in [STATUS.md](STATUS.md). This file is for what is settl
     and **92.5% of everything entering the estuary vanished**. The estuary was a pipe, not a
     bathtub, and every "null result" in that campaign was a bucket with a hole in it. Wet
     outflow cells are now sealed to ordinary interior and the invariant refuses to ship one.
+    ⚠️ That seal only sees cells wet AT BUILD; high-ground outflow faces the surge tops later
+    drain just as well (§50).
 
 11. **No geometric predicate catches "the boundary is inside an inlet".** Every candidate
     was tried and recorded in `model._report_waterlevel_boundary`: a latitude cut misses a
@@ -779,6 +781,36 @@ Live campaign state is in [STATUS.md](STATUS.md). This file is for what is settl
     premier's 4–6 m "beach levels" are the §44 limit-cycle spikes, not runup — exclude them from
     any beach read. STATUS 2026-09-20, `logs/wavemaker_reads_2026-09-20/`.
 
+50. ⭐ **An outflow edge on HIGH GROUND is a drain too, once the surge tops it — v3's NY edge
+    was leaking the Raritan / Lower Bay surge, and walling it closes about half of the
+    west-bay deficit.** v3 left 629 `mask==3` faces along the Staten Island and
+    Brooklyn/Rockaway shores, the Arthur Kill corner and the Raritan River cut. Dry at build
+    (p50 +2.4..+2.9 m), so §10's wet-cell seal never saw them; at the surge peak they carried
+    **~40,000 m³/s** out of the model (gk11 edge-flux estimator, order of magnitude; the Raritan
+    cut ~10,700 of it). The repair (`V3.mask_overrides`, four `3 → 1` boxes;
+    `premier.V3 = 1596ce1ecc71b374`) makes them ordinary active cells; nothing else changes.
+    Paired against the same arms on the old mask (`mask-drain-edge+…`; inputs byte-identical
+    but `mask`, same engine), **three configurations agree** — waves-off / premier /
+    wavemaker: Arthur Kill mouth Δpeak **+0.25 / +0.22 / +0.24 m**; open-water zsmax +0.2..+0.26
+    at the west end of Raritan Bay; `raritan_bay` marks up in 16 of 19, scored bias −0.32 →
+    −0.20 / −0.23 → −0.13 / −0.29 → −0.15 (median, 50 m); NY seiche-basin ΔRMSE **−0.11 / −0.09 /
+    −0.11** (CI < 0 in all three); every basin south of Sandy Hook ≈ 0; lower Raritan
+    +0.4..+0.7 m through the storm; HWM 6102 (1.07 km from the cut) +0.57..+0.66. The Raritan
+    cut alone is ~1/5 of the Arthur Kill gain and all of the lower-Raritan gain (cut-split
+    test, 09-22). **What it leaves:** the repaired premier's Arthur Kill mouth peak is −0.22 m
+    against the gauge, Great Kills ~−0.25 (sensor-corrected; the raw −0.45 carries a ~+0.2 m
+    datum-like sensor offset), and the EAST bay sits ~0.2 m low in all three repaired runs
+    (`sandy_hook_bay` −0.21..−0.27). ⚠️ **The old premier's good east-bay score was not
+    robust**: on the drained mask its Sandy Hook Bay sat ~0.15 m above every other run
+    (Sandy Hook gauge 3.48 vs 3.31–3.37; `sandy_hook_bay` −0.11 vs −0.21..−0.31), so its pair
+    reads as an east-bay DROP and a flat NY-bay median (−0.015) — a mix of 19 marks rising and
+    16 falling, not a null. The §40 seiche phase is the candidate. ⚠️ Waves-on pairs are not
+    bit-quiet far from a change (open water south of 40.0: p50 0.000, p1/p99 ±0.02..0.03 premier,
+    wider with the wavemaker; Atlantic City +0.03) — that is SnapWave's iterative solve, not a
+    second change. Unexplained, small, in every pair: the whole-window mean at Great Kills /
+    Arthur Kill / Sandy Hook drops 1–3 cm with the wall, through ordinary tides too.
+    STATUS 2026-09-22 → 09-24, `logs/mask_repair_2026-09-22/`.
+
 ### Closed — do not re-open
 
 Each of these cost a campaign and is settled. The evidence is in the archive's
@@ -804,7 +836,7 @@ Each of these cost a campaign and is settled. The evidence is in the archive's
   an order of magnitude short of the −0.44 / ~−0.25 m deficit. The E wind steepens the
   along-bay tilt by ~0.04 m end to end (west +0.024, Sandy Hook pocket −0.019) and that is
   all of it. So a better wind product (H*Wind / RAP / GAHM) is NOT a bay lever; the deficit
-  is supply-side (the edge drain, then the bay's wave/setup side). ⚠️ Read as a LOWER bound
+  is supply-side (the edge drain — walled 2026-09-22, §50 — then the bay's wave/setup side). ⚠️ Read as a LOWER bound
   on dη/dU: both arms carried the NY edge drain at the downwind end. ⚠️ NOT a null on the NJ
   back bays: Barnegat Bay is wind-TILTED — Mantoloking (north end) sits −0.25 m for hours
   under the N/NE wind — so a mark's Δ there is set by which end of the bay it is on.
