@@ -23,6 +23,35 @@ NY-bay paired median, expect +0.03..+0.10; AK mouth ≥ +0.15 fires the "first-o
 `scripts/dedupe_experiment_inputs.py --apply`. Open, flagged: the walled cut lowers the AK/GK mean 2–4 cm through
 ordinary tides (mechanism unknown, 23:20 note). Everything is `git add`ed; the user commits.
 
+**✅ 2026-09-24 — the two WAVES-ON mask-repair pairs LANDED (all on hal, no restarts) and are READ, holistically (user:
+"look at the numbers holistically … loosen these test hurdles" — the 17:40 reading rules were NOT applied as pass/fail).**
+Outputs `logs/mask_repair_2026-09-22/{read_pair,grouped_paired,basin_split}_{premier,wavemaker}.txt`. Premier pair checked
+like-for-like first: same engine (`winddir-fix-1-gf11@673ee3bf`), same `inp`, forcing / SnapWave / roughness / subgrid
+byte-identical, `sfincs.nc` differs in `mask` only (629 faces) — so everything in it is a real model response.
+*What all three pairs agree on (waves-off, premier, wavemaker):* the repair raises the WEST end of Raritan Bay by
++0.2..+0.26 m (AK mouth Δpeak +0.249 / +0.217 / +0.241), `raritan_bay` marks +0.11..+0.16 (16 of 19 up), HWM 6102 +0.57..+0.66,
+the lower Raritan +0.4..+0.7 through the storm, NY-bay ΔRMSE −0.09..−0.11 (CI < 0 in all three), non-seiche basins ≈ 0.
+`raritan_bay` scored bias now −0.13 (premier) / −0.15 (wavemaker) / −0.20 (nowaves), was −0.23 / −0.29 / −0.32.
+*Where the premier pair looks different, and why:* its EAST bay drops (Sandy Hook gauge −0.10, `sandy_hook_bay` −0.10,
+`shrewsbury_navesink` −0.08; open-water tilt +0.26 west → −0.13 east), so its NY-bay paired MEDIAN is −0.015 while the
+other two are +0.045 / +0.048. Run by run, the odd one is the OLD premier, not the new: its east bay sat ~0.15 m above every
+other run (Sandy Hook gauge 3.48 vs 3.31–3.37 in the other five; `sandy_hook_bay` bias −0.11 vs −0.21..−0.31;
+`shrewsbury_navesink` −0.00 vs −0.02..−0.14). The three repaired runs now AGREE in the east bay (Sandy Hook 3.366–3.378;
+`sandy_hook_bay` −0.21..−0.27). **Reading: the old premier's good east-bay score was not robust — it was particular to that
+one run on the draining mask (the seiche-phase sensitivity of §40 is the candidate); with the leak closed the east-bay deficit
+of ~0.2 m is common to every configuration and is the next honest question.** The NY-bay median is a poor summary here:
+it mixes 19 Raritan marks that rise with 16 east-bay marks that fall.
+*Far field:* Atlantic City Δpeak +0.029 in the premier pair (+0.004 wavemaker, 0.000 waves-off); open water south of 40.0 has
+p50 0.000 with p1/p99 ±0.02–0.03 (premier) and up to ±0.08–0.25 (wavemaker, the IG line). Waves-on runs are not
+bit-reproducible far from a change the way the waves-off pair was (SnapWave's iterative solve responds to any change) —
+AC's +0.03 sits inside that spread; read it as jitter, not as a second change.
+Also seen again: `sss_narrows_bkln` −0.125 in the wavemaker pair (the cross-Narrows tilt of the wind-x110 read); the whole-window
+tide mean 1–3 cm LOWER at GK / AK / Sandy Hook with the repair (the 23:20 cut-split flag, now in every pair).
+**✅ Intern tif READY:** `share/sandy_hmax_v3_naccs-premier_EPSG32618.tif` (export 61783371, repaired premier, HWM −0.143 /
+RMSE 0.329 median/50 m, CSI 0.706); caveat 3 in the README AND in `export_share_floodmap.py` rewritten (the "revised version
+finishing now" text was hard-coded) to say the NY bays still read 0.1–0.2 m low. ⬜ The user hands it over; the superseded
+`mask-drain-edge` tif + README in `share/` can go once the intern has the new one. **⬜ Still open:** `python -m nj_sfincs.premier`; `dedupe_experiment_inputs.py --apply` as a short Slurm job; FINDINGS entry for the repair.
+
 **✅ 2026-09-23 13:05 — DUNE-FAILURE LEVER, STEP 0 READ (user: "the dune failure is an interesting question … a simple test";
 "Step 0 would be cool"). Desk read, no solve: did the dunes behind the first-blocks MISSES actually lower in Sandy?**
 `logs/dune_lever_2026-09-23/{dune_change_step0.py,step0.txt,transects.csv,reaches_2km.csv}`.

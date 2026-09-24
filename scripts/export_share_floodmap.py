@@ -225,11 +225,11 @@ values are left in rather than silently deleted, so the choice stays yours.
    non-linearly so, because damage curves are steep near the low end.
 2. **Hindcast, not a design event.** This is one storm reconstructed after the fact.
    It is not a return-period product and must not be read as one.
-3. **Model still in development.** A revised version of this run (a fix to how the
-   model's northern edge on Staten Island drains) is finishing now and will raise
-   depths around Raritan Bay and the Arthur Kill by roughly 0.1–0.3 m; the New Jersey
-   ocean coast and back bays south of Sandy Hook are unaffected. Ask for the refreshed
-   file if you are working north of Sandy Hook.
+3. **Model still in development, and lowest in the NY bays.** Raritan Bay, Sandy Hook
+   Bay and the Arthur Kill still read about 0.1–0.2 m low against surveyed marks —
+   more than the coast-wide figure above. Treat depths north of Sandy Hook as a floor.
+   South of Sandy Hook the ocean coast and back bays are the better-scored part of the
+   map.
 4. **New York land is out of scope.** The Staten Island and Brooklyn shorelines are
    in the grid only as the model's northern edge; do not read flooding there as a
    result. Jamaica Bay and Manhattan are not modelled at all.
