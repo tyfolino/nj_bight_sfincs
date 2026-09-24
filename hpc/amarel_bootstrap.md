@@ -196,6 +196,36 @@ is shipped as a tracked patch — **`hpc/patches/quadtree_mixin_pad2.patch`** �
 automatically by step 2a above (`git apply`). To re-apply by hand after a re-clone:
 `cd $PROJ/hydromt_sfincs && git apply $PROJ/hpc/patches/quadtree_mixin_pad2.patch`.
 
+### Updating the env (last done 2026-09-24)
+The ONLY hand edit in the whole env is the sliver patch above, and it lives in the
+`hydromt_sfincs` git checkout, which conda never touches — an update cannot undo it.
+(Checked 2026-09-24: every conda and pip package's `.py` files hashed against their own
+install records; nothing else is modified.) After an update, confirm the patch is still
+there: `cd $PROJ/hydromt_sfincs && git status --short` shows `quadtree_mixin.py` modified.
+
+```bash
+$MM update -n sfincs --all -c conda-forge      # respects conda-meta/pinned, see below
+python -m pip check                            # must say "No broken requirements"
+python -m unittest discover -s tests && python scripts/verify_port.py   # bit-for-bit gate
+cd $PROJ && ./hpc/pack-env.sh                  # rebuild the VSCode-node tarball
+```
+
+- ⚠️ **`update --all` silently IGNORES specs on the command line** (`"hdf5>=2"` etc.).
+  Constraints go in `envs/sfincs/conda-meta/pinned`, which holds `python 3.14.*`,
+  `hydromt >=1.3,<2` (the range the pinned `hydromt_sfincs` checkout declares) and
+  `hdf5 >=2` (without it the 09-24 solve DOWNGRADED hdf5 2.1 → 1.14, which this env
+  writes netCDF with — `restart.py` stitching).
+- ⚠️ **boto stack:** `cht_tide` → `cht_utils` → `boto3` came in via pip, so conda could
+  not upgrade `botocore` when `s3fs`/`aiobotocore` moved, and `import s3fs` broke
+  (`MaxAttemptsSeeder`). Fixed 09-24 by `pip uninstall` of boto3/botocore/jmespath/
+  s3transfer and installing them from conda-forge, `botocore` held to aiobotocore's range
+  (conda-forge's aiobotocore recipe is looser than its own wheel metadata; `pip check`
+  catches it). If `pip check` flags botocore again, repeat with the range it prints.
+- Rollback: `/scratch/tpj8/env_backup_2026-09-24/` has the before/after explicit specs,
+  pip freezes and both pre-update tarballs.
+- 09-24 result: python 3.14.7 · hydromt 1.4.1 · numpy 2.5.3 · xarray 2026.7.0 · GDAL
+  3.13.3 · hdf5 2.1.0. 175 tests OK, `verify_port.py` identical to the pre-update run.
+
 ### Phase 3 outcome (verified 2026-06-15)
 Batch path works: `sbatch hpc/sfincs_run.slurm model_manning_test` ran the container solve
 on compute node `hal0324`, 24 threads, state `COMPLETED` (~1:44), `sfincs_map.nc` rewritten,
