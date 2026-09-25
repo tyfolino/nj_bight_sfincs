@@ -3,7 +3,13 @@
 
 Read-only on every input. Usage:
 
-    python scripts/audit_region_v4.py --ring <ring.geojson> [--maps]
+    python scripts/audit_region_v4.py --ring <ring.geojson | vertices.csv> [--maps]
+
+The v4 ring RULE (user, 2026-09-25): contain the TARGET — the NACCS Sandy peak + 3 m, connected
+from the ocean, rivers open until that water ends, the neighbour basins with their own inlets
+(NEIGHBOUR_BASINS below) shut off — with the edge on ground at least MARGIN above that level
+or on a declared line. The source of truth for the ring is the named-vertex list
+`data/v4_design/region_v4_vertices.csv`.
 
 It walks the whole ring PERIMETER every 50 m and asks what `nj_sfincs/model.py` makes of
 each metre, because today
@@ -19,14 +25,17 @@ Checks: A geometry · B perimeter walk (class per 50 m; anything within 200 m of
 declared crossing SPAN in `data/v4_design/v4_crossings.geojson` counts as declared) ·
 C in-ring bathtub rim contact at the NACCS Sandy peak +0/+2/+3 m · D every declared
 crossing vs the ring · E deep water below mask_zmin · F forcing / validation coverage ·
-G (--maps) zoom maps of six hotspot windows + bed profiles along every span.
+G (--maps) zoom maps of six hotspot windows + bed profiles along every span · H the TARGET
+outside the ring, MOTF land inside it · I every valley the edge crosses (ground below the level
++ MARGIN), with the USGS discharge gauges upstream of it.
 
 Writes data/v4_design/v4_audit.{txt,gpkg} (layers rim_segments, rim_flags,
-declared_lines, deeper_than_zmin) and, with --maps, reports/figures/v4_audit_*.png.
+declared_lines, deeper_than_zmin, target_outside, valley_crossings) and, with --maps, reports/figures/v4_audit_*.png.
 
 History: born 2026-09-25 as the independent check of the generated v4 draft ring; the
 two generators it checked (`scripts/draft_region_v4.py`, a HUC-12 watershed walker)
-were retired the same day in favour of a hand-written straight-line ring (STATUS).
+were retired the same day. The +3 m target rule replaced the flat +10 m edge rule that
+evening; the ring was traced once around it and is edited by hand since (STATUS).
 """
 
 from __future__ import annotations
@@ -50,7 +59,7 @@ from rasterio.transform import from_origin
 from rasterio.vrt import WarpedVRT
 from scipy import ndimage
 from scipy.spatial import cKDTree
-from shapely.geometry import LineString, Point, box
+from shapely.geometry import LineString, Point, Polygon, box
 
 ROOT = Path(__file__).resolve().parents[1]
 DATA = ROOT / "data"
@@ -64,6 +73,27 @@ CRS = 32618
 RES = 50.0  # audit grid
 STEP = 50.0  # perimeter sample spacing
 RES_MAP = 25.0  # zoom-map grid
+SLR = 3.0  # the target: NACCS Sandy peak + SLR, connected from the ocean
+MARGIN = 2.0  # an undeclared edge wants ground >= that level + MARGIN
+
+# Basins that have their own inlets, so the v4 boundary never forces them: shut off (lon/lat).
+# Edges follow the declared lines in v4_crossings.geojson (upper_bay_hudson_route, narrows,
+# brooklyn_wall, rockaway_inlet; cape_henlopen / ocean_south_de; cd_canal).
+_ROUTE = [(-74.0586, 40.6021), (-74.068, 40.61), (-74.077, 40.619), (-74.081, 40.629),
+          (-74.08, 40.639), (-74.09, 40.644), (-74.09, 40.6545), (-74.1, 40.66),
+          (-74.114, 40.668), (-74.106, 40.679), (-74.1, 40.69), (-74.096, 40.7),
+          (-74.086, 40.708), (-74.076, 40.724), (-74.056, 40.748), (-74.018, 40.772),
+          (-74.012, 40.804), (-73.995, 40.828), (-73.975, 40.852), (-73.968, 40.876),
+          (-73.962, 40.9), (-73.955, 40.93), (-73.95, 41.05)]  # fmt: skip
+NEIGHBOUR_BASINS = {
+    "ny_upper_bay_hudson_jamaica_bay": _ROUTE
+    + [(-73.0, 41.05), (-73.0, 40.45), (-73.94, 40.45), (-73.94, 40.53),
+       (-73.93, 40.546), (-73.902, 40.58), (-73.95, 40.602), (-74.0294, 40.6109)],
+    "rehoboth_bay_and_the_sea_south": [(-76.0, 38.40), (-76.0, 38.725), (-74.985, 38.725),
+                                       (-74.97, 38.76), (-73.0, 38.855), (-73.0, 38.40)],
+    "chesapeake_via_cd_canal": [(-76.0, 39.46), (-75.699, 39.46), (-75.699, 39.62),
+                                (-76.0, 39.62)],
+}  # fmt: skip
 
 # Elevation stack, first valid wins, m NAVD88 (checked 2026-09-25).
 # kind: None = as is; "land" = land-only DEM whose values <= 0 are water it does not
@@ -103,7 +133,7 @@ ELEV = [
 WINDOWS = {
     "ny_corner": (-74.30, 40.49, -73.87, 40.68),
     "newark_bay": (-74.30, 40.58, -73.93, 40.97),
-    "trenton": (-74.86, 40.18, -74.72, 40.27),
+    "trenton": (-74.90, 40.18, -74.72, 40.30),
     "wilmington": (-75.78, 39.50, -75.47, 39.83),
     "delaware_mouth": (-75.36, 38.68, -74.88, 38.97),
     "raritan": (-74.58, 40.46, -74.42, 40.58),
@@ -179,6 +209,16 @@ def load_z25(x0, y0, x1, y1):
     return np.where(np.isnan(z) & landwater, 0.0, z), T, W, H
 
 
+def read_ring(path: Path) -> gpd.GeoDataFrame:
+    """A ring file: GeoJSON / any OGR polygon, or the named-vertex CSV (name, lon, lat)."""
+    if path.suffix == ".csv":
+        v = pd.read_csv(path, comment="#")
+        return gpd.GeoDataFrame(
+            {"name": [path.stem]}, geometry=[Polygon(zip(v.lon, v.lat))], crs=4326
+        )
+    return gpd.read_file(path).to_crs(4326)
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument(
@@ -189,7 +229,7 @@ def main() -> int:
     )
     args = ap.parse_args()
     say(f"ring audited: {args.ring}")
-    ring_ll = gpd.read_file(args.ring).to_crs(4326)
+    ring_ll = read_ring(args.ring)
     ring = ring_ll.to_crs(CRS).geometry.iloc[0]
 
     # ── A. geometry ─────────────────────────────────────────────────────────────
@@ -257,8 +297,27 @@ def main() -> int:
     WL = wl[ok][idx].reshape(H, W).astype("float32")
     del cc, rr, idx
 
-    # ── C. in-ring bathtub (connected from the ocean INSIDE THE RING ONLY) ───────
+    # ── the TARGET (section H reports it; B uses it) ─────────────────────────────
     S8 = np.ones((3, 3), bool)
+    zt = np.where(np.isnan(z), np.where(landwater, 0.0, 99.0), z)  # missing = never wet
+    shut = rasterize(
+        [(utm(Polygon(p)), 1) for p in NEIGHBOUR_BASINS.values()],
+        out_shape=(H, W),
+        transform=T,
+        fill=0,
+        dtype="uint8",
+    ).astype(bool)
+    lab, n = ndimage.label((zt < -5) & ~shut, structure=S8)
+    sea = (
+        lab == int(np.argmax(ndimage.sum(np.ones_like(lab), lab, range(1, n + 1)))) + 1
+    )
+    m = (zt < WL + SLR) & ~shut
+    lab, _ = ndimage.label(m, structure=S8)
+    ids = np.unique(lab[sea & m])
+    target = np.isin(lab, ids[ids > 0])
+    del lab, m, zt
+
+    # ── C. in-ring bathtub (connected from the ocean INSIDE THE RING ONLY) ───────
     deep = inring & (zf < -5)
     lab, n = ndimage.label(deep, structure=S8)
     sizes = ndimage.sum(np.ones_like(lab), lab, range(1, n + 1))
@@ -301,6 +360,8 @@ def main() -> int:
         hit = (dd < 200) & (near_name == "")
         near_name[hit] = name
         near_kind[hit] = kind
+    lvl = WL[r, cidx] + SLR
+    tgt_touch = ndimage.binary_dilation(target, iterations=2)[r, cidx]
     cls = np.where(
         near_name != "",
         "declared",
@@ -313,7 +374,7 @@ def main() -> int:
                 np.where(
                     zp < 0,
                     "shallow_undeclared",
-                    np.where(zp < 10, "land_lt10", "land_ok"),
+                    np.where(zmin_in < lvl + MARGIN, "land_low", "land_ok"),
                 ),
             ),
         ),
@@ -354,6 +415,8 @@ def main() -> int:
                 wet0_km=round(touch[0.0][sg].sum() * STEP / 1e3, 2),
                 wet2_km=round(touch[2.0][sg].sum() * STEP / 1e3, 2),
                 wet3_km=round(touch[3.0][sg].sum() * STEP / 1e3, 2),
+                target_km=round(tgt_touch[sg].sum() * STEP / 1e3, 2),
+                level=round(float(lvl[sg].max()), 1),
                 lon=to_ll(px[mid], py[mid])[0],
                 lat=to_ll(px[mid], py[mid])[1],
             )
@@ -367,22 +430,21 @@ def main() -> int:
         say(f"  {k:20s} {v:7.1f} km")
     say(
         "  classes: declared = within 200 m of a cut / forced / wall line; land_ok = "
-        "ground >= +10 m; land_lt10 = dry ground below +10 m (→ FREE OUTFLOW by default); "
+        f"ground >= the local Sandy peak + {SLR:.0f} m + {MARGIN:.0f} m; land_low = dry ground "
+        "below that (→ FREE OUTFLOW by default; harmless unless the target reaches it); "
         "shallow/water_undeclared = bed < 0 not on any declared line (→ wall if < -1, "
         "else outflow); deep_water = < -10 m (inactive under mask_zmin)"
     )
 
     say(
-        "\n  every NON-declared stretch below +10 m, ≥ 0.2 km or touched by the bathtub:"
+        "\n  every NON-declared WATER stretch, and every land_low stretch the target or the "
+        "in-ring bathtub reaches (target_km > 0 is the failure):"
     )
-    bad = rim[
-        (
-            rim.cls.isin(
-                ["land_lt10", "shallow_undeclared", "water_undeclared", "deep_water"]
-            )
-        )
-        & ((rim.length_km >= 0.2) | (rim.wet3_km > 0))
-    ].sort_values(["lat"], ascending=False)
+    water = rim.cls.isin(["shallow_undeclared", "water_undeclared", "deep_water"])
+    wet_land = (rim.cls == "land_low") & ((rim.wet3_km > 0) | (rim.target_km > 0))
+    bad = rim[(water & (rim.length_km >= 0.2)) | wet_land].sort_values(
+        ["lat"], ascending=False
+    )
     with pd.option_context("display.width", 250, "display.max_rows", 500):
         say(bad.drop(columns="geometry").to_string(index=False))
 
@@ -451,7 +513,8 @@ def main() -> int:
         [
             gpd.GeoSeries.from_xy([b[0], b[2]], [b[1], b[3]], crs=4326)
             .to_crs(CRS)
-            .unary_union.envelope
+            .union_all()
+            .envelope
             for b in V3.always_active_boxes_ll
         ],
         crs=CRS,
@@ -474,7 +537,8 @@ def main() -> int:
         bx = (
             gpd.GeoSeries.from_xy([w, e], [s_, nn], crs=4326)
             .to_crs(CRS)
-            .unary_union.envelope
+            .union_all()
+            .envelope
         )
         bm = rasterize(
             [(bx, 1)], out_shape=(H, W), transform=T, fill=0, dtype="uint8"
@@ -550,6 +614,95 @@ def main() -> int:
             f"{'inside' if ring.contains(g.geometry) else 'OUTSIDE'}, {dd / 1e3:.1f} km from edge"
         )
 
+    # ── H. the TARGET vs the ring ─────────────────────────────────────────────────
+    say(
+        f"\nH. TARGET = NACCS Sandy peak + {SLR:.0f} m, connected from the ocean, rivers open, "
+        f"neighbour basins shut ({', '.join(NEIGHBOUR_BASINS)})"
+    )
+    land = zf > 0
+    out = target & ~inring
+    say(
+        f"  target {target.sum() * RES * RES / 1e6:,.0f} km2 (land "
+        f"{np.sum(target & land) * RES * RES / 1e6:,.0f}); OUTSIDE the ring "
+        f"{out.sum() * RES * RES / 1e6:.2f} km2 (land {np.sum(out & land) * RES * RES / 1e6:.2f})"
+    )
+    lab, n = ndimage.label(
+        out & land, structure=S8
+    )  # land pieces (open sea is the isobath's job)
+    sizes = ndimage.sum(np.ones_like(lab), lab, range(1, n + 1)) * RES * RES / 1e6
+    trows, tgeo = [], []
+    for i in np.argsort(sizes)[::-1]:
+        if sizes[i] < 0.05:
+            break
+        rr_, cc_ = np.where(lab == i + 1)
+        x, y = x0 + (cc_.mean() + 0.5) * RES, y1 - (rr_.mean() + 0.5) * RES
+        trows.append(
+            dict(km2=round(float(sizes[i]), 2), lon=to_ll(x, y)[0], lat=to_ll(x, y)[1])
+        )
+        tgeo.append(Point(x, y))
+        say(
+            f"   {sizes[i]:6.2f} km2 of target LAND outside at {to_ll(x, y)}, ground p50 "
+            f"{np.median(zf[lab == i + 1]):.1f} m, level {np.median(WL[lab == i + 1]) + SLR:.1f} m"
+        )
+    tout = gpd.GeoDataFrame(trows, geometry=tgeo, crs=CRS) if trows else None
+    with rasterio.open(DATA / "validation_v4" / "sandy_motf_extent_v4.tif") as src:
+        with WarpedVRT(
+            src, crs=f"EPSG:{CRS}", transform=T, width=W, height=H,
+            resampling=Resampling.max, nodata=255,
+        ) as v:  # fmt: skip
+            motf = v.read(1) == 1
+    mw = motf & land
+    say(
+        f"  FEMA MOTF flooded land (NJ only) inside the ring: {np.mean(inring[mw]):.3f} of "
+        f"{mw.sum() * RES * RES / 1e6:,.0f} km2; inside the target (±100 m): "
+        f"{np.mean(ndimage.binary_dilation(target, iterations=2)[mw]):.3f}"
+    )
+
+    # ── I. valley crossings: where the edge dips below the level + MARGIN ─────────
+    say(
+        f"\nI. VALLEYS THE EDGE CROSSES (ground < level + {MARGIN:.0f} m for ≥ 100 m, not sea), "
+        "with USGS discharge gauges (Sandy record) OUTSIDE the ring within 6 km"
+    )
+    usgs = gpd.read_file(CONTEXT, layer="usgs_q_sandy").to_crs(CRS)
+    usgs = usgs[~usgs.within(ring)]
+    low = (zmin_in < lvl + MARGIN) & (zmin_in > -1)
+    lab1, n1 = ndimage.label(low)
+    if low[0] and low[-1]:
+        lab1[lab1 == lab1[-1]] = lab1[0]
+    vrows, vgeo = [], []
+    for i in np.unique(lab1[lab1 > 0]):
+        idx = np.where(lab1 == i)[0]
+        if len(idx) < 2:
+            continue
+        k = idx[np.argmin(zmin_in[idx])]
+        pk = Point(px[k], py[k])
+        dg = usgs.distance(pk)
+        near = usgs[dg < 6000].assign(km=dg[dg < 6000] / 1e3)
+        near = near.sort_values("da", ascending=False).head(2)
+        vrows.append(
+            dict(
+                lon=to_ll(px[k], py[k])[0],
+                lat=to_ll(px[k], py[k])[1],
+                length_km=round(len(idx) * STEP / 1e3, 2),
+                z_min=round(float(zmin_in[k]), 1),
+                level=round(float(lvl[k]), 1),
+                declared=near_name[k],
+                touched_by_target=bool(tgt_touch[idx].any()),
+                gauges=
+                "; ".join(f"{str(q.site)[5:]} {str(q['name'])[:30]} {q.da:.0f} mi2 {q.km:.1f} km"
+                          for _, q in near.iterrows()),
+            )
+        )  # fmt: skip
+        vgeo.append(LineString(np.c_[px[idx], py[idx]]))
+    val = gpd.GeoDataFrame(vrows, geometry=vgeo, crs=CRS)
+    say(
+        f"  {len(val)} valleys, {val.length_km.sum():.1f} km; touched by the target: "
+        f"{int(val.touched_by_target.sum())}; declared: {int((val.declared != '').sum())}"
+    )
+    with pd.option_context("display.width", 250, "display.max_colwidth", 90):
+        show = val[(val.gauges != "") | (val.declared != "") | val.touched_by_target]
+        say(show.drop(columns="geometry").to_string(index=False))
+
     # ── write ─────────────────────────────────────────────────────────────────────
     rim.to_file(OUT_GPKG, layer="rim_segments", driver="GPKG")
     bad.to_file(OUT_GPKG, layer="rim_flags", driver="GPKG")
@@ -566,6 +719,9 @@ def main() -> int:
     gpd.GeoDataFrame(geometry=dp, crs=CRS).to_file(
         OUT_GPKG, layer="deeper_than_zmin", driver="GPKG"
     )
+    if tout is not None:
+        tout.to_file(OUT_GPKG, layer="target_outside", driver="GPKG")
+    val.to_file(OUT_GPKG, layer="valley_crossings", driver="GPKG")
     if args.maps:
         maps(ring, args.ring.name)
     OUT_TXT.write_text("\n".join(_lines) + "\n")
@@ -624,7 +780,8 @@ def maps(ring, ring_name: str) -> None:
         ax.set_ylim(bb[1], bb[3])
         ax.set_title(
             f"v4 audit — {ring_name} — {name}: ring (magenta), cut (orange) / forced (cyan) / wall (red); "
-            "yellow = undeclared rim below +10 m;\nblack = +10 m contour, navy dashed/hatched = "
+            "yellow = flagged rim (undeclared water, or low ground the target reaches);\n"
+            "black = +10 m contour, navy dashed/hatched = "
             "-10 m (inactive under mask_zmin); ▲ HWM",
             fontsize=9,
         )

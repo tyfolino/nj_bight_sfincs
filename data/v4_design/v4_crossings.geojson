@@ -1,26 +1,1324 @@
 {
-"type": "FeatureCollection",
-"name": "v4_crossings",
-"crs": { "type": "name", "properties": { "name": "urn:ogc:def:crs:OGC:1.3:CRS84" } },
-"features": [
-{"type":"Feature","properties":{"name":"delaware_trenton","kind":"cut","role":"river head of tide","excluded_side":"N","span_km":2.47,"status":"checked 2026-09-25 on the corrected elevation stack","note":"Falls of the Delaware, 1.8 km above the Calhoun St gauge 01463500 (MOTF reached 40.232); west end moved -74.800 -> -74.835 (09-25 audit: the river at 40.238 runs at -74.806..-74.816)","drawn_line":"LINESTRING (-74.835 40.238, -74.752 40.238)"},"geometry":{"type":"LineString","coordinates":[[-74.831179294688894,40.238001306923657],[-74.802083165807517,40.238007122049993]]}},
-{"type":"Feature","properties":{"name":"raritan_bound_brook","kind":"cut","role":"river head of tide","excluded_side":"W","span_km":1.78,"status":"checked 2026-09-25 on the corrected elevation stack","note":"09-25: moved up from -74.505 (N end sat on 3.8 m, HWM 6208 at 4.21 m lay 800 m upstream OUTSIDE); water surface 3.3 m, ends 17.6 / 12.1 m; source = Bound Brook 01403060 (2.4 km upstream) + Lawrence + Middle Brook","drawn_line":"LINESTRING (-74.52 40.54, -74.52 40.56)"},"geometry":{"type":"LineString","coordinates":[[-74.52000000386812,40.543153070832822],[-74.520000001194006,40.559143617858865]]}},
-{"type":"Feature","properties":{"name":"rahway_dam","kind":"cut","role":"river head of tide","excluded_side":"W","span_km":3.95,"status":"checked 2026-09-25 on the corrected elevation stack","note":"Rahway River head of tide at Rahway (09-25: the Elizabeth leg to the old Goethals line dropped — Newark Bay IN; S end moved 40.596 -> 40.585, past a 2.8 m dip onto +10 m ground)","drawn_line":"LINESTRING (-74.29 40.585, -74.29 40.622, -74.262 40.64)"},"geometry":{"type":"LineString","coordinates":[[-74.290000013678352,40.588828606426873],[-74.29,40.622],[-74.287580966220077,40.623555749195724]]}},
-{"type":"Feature","properties":{"name":"kvk_east","kind":"forced","role":"other water body (Upper Bay)","excluded_side":"E","span_km":1.09,"status":"NACCS nodes needed (user fetching)","note":"Kill van Kull east mouth, St George hill (34 m) -> Constable Hook (~3 m), 16 m channel; Newark Bay IN (user 09-25). ⚠️ NO NACCS points here yet — the user fetches them","drawn_line":"LINESTRING (-74.09 40.644, -74.09 40.6545)"},"geometry":{"type":"LineString","coordinates":[[-74.090000000916348,40.64467561047168],[-74.09,40.6545]]}},
-{"type":"Feature","properties":{"name":"narrows","kind":"forced","role":"other water body (Upper Bay)","excluded_side":"N","span_km":2.36,"status":"checked 2026-09-25 on the corrected elevation stack","note":"v1.5's Narrows segment verbatim (same NACCS support and Q audit as v1.5 / v3), Fort Wadsworth -> Brooklyn shore","drawn_line":"LINESTRING (-74.0586 40.6021, -74.0294 40.6109)"},"geometry":{"type":"LineString","coordinates":[[-74.055302982023818,40.603094110429346],[-74.0294,40.6109]]}},
-{"type":"Feature","properties":{"name":"rockaway_inlet","kind":"forced","role":"other water body (Jamaica Bay)","excluded_side":"E","span_km":6.42,"status":"2.4 km of dry Breezy Point sand on the line — wall those cells at the build","note":"Jamaica Bay stays OUT but its mouth is a forced water-level line, not a wall (23 NACCS pts, 3.0-3.4 m); crosses 2.4 km of dry Breezy Point (1.3-3.3 m) — wall those cells at the build","drawn_line":"LINESTRING (-73.94 40.53, -73.93 40.546, -73.902 40.58)"},"geometry":{"type":"LineString","coordinates":[[-73.94,40.53],[-73.93,40.546],[-73.902,40.58]]}},
-{"type":"Feature","properties":{"name":"brooklyn_wall","kind":"wall","role":"other water body (Jamaica Bay) — land wall","excluded_side":"N","span_km":11.48,"status":"UNDER REVIEW: east ~1.4 km crosses water (Plumb Beach / Sheepshead Bay channels); all of it on 2-9.6 m ground","note":"Floyd Bennett -> the Narrows' Brooklyn end across Gravesend: the one +10 m exception (09-25: no longer runs 1.2 km into the Narrows channel)","drawn_line":"LINESTRING (-73.902 40.58, -73.95 40.602, -74.0294 40.6109)"},"geometry":{"type":"LineString","coordinates":[[-73.902,40.58],[-73.95,40.602],[-74.028758027585383,40.610828268781752]]}},
-{"type":"Feature","properties":{"name":"cape_henlopen","kind":"cut","role":"other water body (Rehoboth Bay)","excluded_side":"S","span_km":15.39,"status":"checked 2026-09-25 on the corrected elevation stack","note":"09-25: moved 38.765 -> 38.725 where the Lewes-Rehoboth lowland pinches (0.5 km < +2 m vs 4.9); 5-9 m ground, low only at the canal (0.4 m) and two creeks; the mouth line ends on the Henlopen dune","drawn_line":"LINESTRING (-75.26 38.725, -75.083 38.725)"},"geometry":{"type":"LineString","coordinates":[[-75.26,38.725],[-75.083,38.725]]}},
-{"type":"Feature","properties":{"name":"schuylkill_fairmount","kind":"cut","role":"river head of tide","excluded_side":"N","span_km":0.63,"status":"checked 2026-09-25 on the corrected elevation stack","note":"Fairmount Dam = USGS 01474500 (25,700 cfs on the peak day)","drawn_line":"LINESTRING (-75.205 39.972, -75.168 39.972)"},"geometry":{"type":"LineString","coordinates":[[-75.195338997165251,39.972001139244547],[-75.188020053284674,39.972001466269106]]}},
-{"type":"Feature","properties":{"name":"brandywine_wilmington","kind":"cut","role":"river head of tide","excluded_side":"N","span_km":0.3,"status":"checked 2026-09-25 on the corrected elevation stack","note":"Brandywine gorge above the Wilmington riverfront (39.762 was on 2 m ground, wet at +2 m); USGS 01481500 just below","drawn_line":"LINESTRING (-75.585 39.772, -75.548 39.772)"},"geometry":{"type":"LineString","coordinates":[[-75.580621488704097,39.772000615356305],[-75.577118678169114,39.772000988705777]]}},
-{"type":"Feature","properties":{"name":"christina_white_clay","kind":"cut","role":"river head of tide","excluded_side":"W","span_km":9.76,"status":"checked 2026-09-25 on the corrected elevation stack","note":"09-25: the old -75.618 line sat on TIDAL water and the ring then ran ALONG the Christina for 4 km. Now one bent line across the heads of tide: Red Clay / White Clay (~-75.66) and the Christina main stem (~-75.68, 39.645)","drawn_line":"LINESTRING (-75.662 39.728, -75.662 39.688, -75.69 39.655, -75.672 39.638)"},"geometry":{"type":"LineString","coordinates":[[-75.661999964050764,39.714485179936098],[-75.662,39.688],[-75.69,39.655],[-75.672,39.638]]}},
-{"type":"Feature","properties":{"name":"cd_canal","kind":"forced","role":"other water body (Chesapeake)","excluded_side":"W","span_km":1.03,"status":"NACCS nodes needed (user fetching); wall it if ADCIRC has none in the canal","note":"C&D Canal (09-25 audit: an UNDECLARED crossing): 250 m of -13 m canal between 20 m banks; 9 NACCS pts 1.76-1.82 m; forced, not walled (a short channel with the level uniform across it)","drawn_line":"LINESTRING (-75.699 39.535, -75.699 39.552)"},"geometry":{"type":"LineString","coordinates":[[-75.698999993507201,39.540180820475499],[-75.698999996050006,39.549416184704477]]}},
-{"type":"Feature","properties":{"name":"neshaminy","kind":"cut","role":"river head of tide","excluded_side":"N","span_km":2.41,"status":"checked 2026-09-25 on the corrected elevation stack","note":"Neshaminy head of tide below Langhorne 01465500","drawn_line":"LINESTRING (-74.945 40.112, -74.88 40.112)"},"geometry":{"type":"LineString","coordinates":[[-74.908330254046234,40.11200448468967],[-74.88,40.112]]}},
-{"type":"Feature","properties":{"name":"cohansey_bridgeton","kind":"cut","role":"river head of tide","excluded_side":"N","span_km":0.98,"status":"checked 2026-09-25 on the corrected elevation stack","note":"Cohansey head of tide at Bridgeton; 01412800 upstream","drawn_line":"LINESTRING (-75.255 39.44, -75.205 39.44)"},"geometry":{"type":"LineString","coordinates":[[-75.241636201072581,39.440002104616923],[-75.230306017114003,39.440002686256975]]}},
-{"type":"Feature","properties":{"name":"maurice_millville","kind":"cut","role":"river head of tide","excluded_side":"N","span_km":1.93,"status":"checked 2026-09-25 on the corrected elevation stack","note":"Union Lake dam, Millville (39.412 crossed the lake); 01411500 upstream","drawn_line":"LINESTRING (-75.075 39.403, -75.025 39.403)"},"geometry":{"type":"LineString","coordinates":[[-75.064837214250645,39.403001739889085],[-75.042479080606157,39.403002442874737]]}},
-{"type":"Feature","properties":{"name":"passaic_dundee","kind":"cut","role":"river head of tide","excluded_side":"N","span_km":0.45,"status":"checked 2026-09-25 on the corrected elevation stack","note":"Passaic at Dundee Dam: the 7.4 m pool turns into 0-5 m tidal water at (-74.128, 40.884); line across the pool just above the dam, both ends > +10 m","drawn_line":"LINESTRING (-74.134 40.8805, -74.121 40.8885)"},"geometry":{"type":"LineString","coordinates":[[-74.130312681984179,40.882769467218296],[-74.126164148911741,40.885322472806862]]}},
-{"type":"Feature","properties":{"name":"hackensack_new_milford","kind":"cut","role":"river head of tide","excluded_side":"N","span_km":2.07,"status":"checked 2026-09-25 on the corrected elevation stack","note":"Hackensack head of tide below Oradell Dam (1.0 m tidal water at 40.945, 3.3 m at 40.950); 01378500 at New Milford; runs east over the Palisades plateau to the Hudson exclusion polygon","drawn_line":"LINESTRING (-74.05 40.949, -73.957 40.949)"},"geometry":{"type":"LineString","coordinates":[[-74.031585562049955,40.949005956836814],[-74.006934062011169,40.949009326826371]]}},
-{"type":"Feature","properties":{"name":"delaware_mouth","kind":"forced","role":"ocean (bay mouth)","excluded_side":"","span_km":19.09,"status":"7 NACCS pts within 1.5 km; lies INSIDE a ring that keeps the shelf (Track C) — forcing comes from mask declarations","note":"Cape May Point -> Cape Henlopen; DE end on 0.8-5.5 m spit, not the Great Dune","drawn_line":""},"geometry":{"type":"LineString","coordinates":[[-75.093,38.795],[-74.96,38.932]]}},
-{"type":"Feature","properties":{"name":"upper_bay_hudson_route","kind":"edge_route","role":"land edge keeping the Upper Bay / Hudson out (Newark Bay IN)","excluded_side":"E","span_km":55.73,"status":"checked 2026-09-25: SI east ridge >= +10 m; Bayonne 1.7-2.9 m for ~3 km south of 40.68 (Sandy wets it — wall at build); Palisades crest","note":"Fort Wadsworth -> SI ridge -> St George -> KvK east line -> Bayonne spine -> Jersey City Heights -> Palisades crest to lat 41","drawn_line":""},"geometry":{"type":"LineString","coordinates":[[-74.0586,40.6021],[-74.068,40.61],[-74.077,40.619],[-74.081,40.629],[-74.08,40.639],[-74.09,40.644],[-74.09,40.6545],[-74.1,40.66],[-74.114,40.668],[-74.106,40.679],[-74.1,40.69],[-74.096,40.7],[-74.086,40.708],[-74.076,40.724],[-74.056,40.748],[-74.018,40.772],[-74.012,40.804],[-73.995,40.828],[-73.975,40.852],[-73.968,40.876],[-73.962,40.9],[-73.955,40.93],[-73.95,41.05]]}}
-]
+ "type": "FeatureCollection",
+ "name": "v4_crossings",
+ "crs": {
+  "type": "name",
+  "properties": {
+   "name": "urn:ogc:def:crs:OGC:1.3:CRS84"
+  }
+ },
+ "features": [
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "kvk_east",
+    "kind": "forced",
+    "role": "other water body (Upper Bay)",
+    "excluded_side": "E",
+    "span_km": 1.09,
+    "status": "NACCS nodes needed (user fetching)",
+    "note": "Kill van Kull east mouth, St George hill (34 m) -> Constable Hook (~3 m), 16 m channel; Newark Bay IN (user 09-25). \u26a0\ufe0f NO NACCS points here yet \u2014 the user fetches them",
+    "drawn_line": "LINESTRING (-74.09 40.644, -74.09 40.6545)"
+   },
+   "geometry": {
+    "type": "LineString",
+    "coordinates": [
+     [
+      -74.09000000091635,
+      40.64467561047168
+     ],
+     [
+      -74.09,
+      40.6545
+     ]
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "narrows",
+    "kind": "forced",
+    "role": "other water body (Upper Bay)",
+    "excluded_side": "N",
+    "span_km": 2.36,
+    "status": "checked 2026-09-25 on the corrected elevation stack",
+    "note": "v1.5's Narrows segment verbatim (same NACCS support and Q audit as v1.5 / v3), Fort Wadsworth -> Brooklyn shore",
+    "drawn_line": "LINESTRING (-74.0586 40.6021, -74.0294 40.6109)"
+   },
+   "geometry": {
+    "type": "LineString",
+    "coordinates": [
+     [
+      -74.05530298202382,
+      40.603094110429346
+     ],
+     [
+      -74.0294,
+      40.6109
+     ]
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "rockaway_inlet",
+    "kind": "forced",
+    "role": "other water body (Jamaica Bay)",
+    "excluded_side": "E",
+    "span_km": 6.42,
+    "status": "2.4 km of dry Breezy Point sand on the line \u2014 wall those cells at the build",
+    "note": "Jamaica Bay stays OUT but its mouth is a forced water-level line, not a wall (23 NACCS pts, 3.0-3.4 m); crosses 2.4 km of dry Breezy Point (1.3-3.3 m) \u2014 wall those cells at the build",
+    "drawn_line": "LINESTRING (-73.94 40.53, -73.93 40.546, -73.902 40.58)"
+   },
+   "geometry": {
+    "type": "LineString",
+    "coordinates": [
+     [
+      -73.94,
+      40.53
+     ],
+     [
+      -73.93,
+      40.546
+     ],
+     [
+      -73.902,
+      40.58
+     ]
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "brooklyn_wall",
+    "kind": "wall",
+    "role": "other water body (Jamaica Bay) \u2014 land wall",
+    "excluded_side": "N",
+    "span_km": 11.48,
+    "status": "UNDER REVIEW: east ~1.4 km crosses water (Plumb Beach / Sheepshead Bay channels); all of it on 2-9.6 m ground",
+    "note": "Floyd Bennett -> the Narrows' Brooklyn end across Gravesend: the one +10 m exception (09-25: no longer runs 1.2 km into the Narrows channel)",
+    "drawn_line": "LINESTRING (-73.902 40.58, -73.95 40.602, -74.0294 40.6109)"
+   },
+   "geometry": {
+    "type": "LineString",
+    "coordinates": [
+     [
+      -73.902,
+      40.58
+     ],
+     [
+      -73.95,
+      40.602
+     ],
+     [
+      -74.02875802758538,
+      40.61082826878175
+     ]
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "cape_henlopen",
+    "kind": "cut",
+    "role": "other water body (Rehoboth Bay)",
+    "excluded_side": "S",
+    "span_km": 4.9,
+    "status": "on ring 2026-09-25",
+    "note": "09-25: moved 38.765 -> 38.725 where the Lewes-Rehoboth lowland pinches (0.5 km < +2 m vs 4.9); 5-9 m ground, low only at the canal (0.4 m) and two creeks; the mouth line ends on the Henlopen dune | 09-25 ring: only -75.14..-75.083 of 38.725 is on the ring; west of it the ring runs on ground above the +3 m level",
+    "drawn_line": "LINESTRING (-75.26 38.725, -75.083 38.725)"
+   },
+   "geometry": {
+    "type": "LineString",
+    "coordinates": [
+     [
+      -75.1396,
+      38.7256
+     ],
+     [
+      -75.083,
+      38.725
+     ]
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "cd_canal",
+    "kind": "forced",
+    "role": "other water body (Chesapeake)",
+    "excluded_side": "W",
+    "span_km": 1.03,
+    "status": "NACCS nodes needed (user fetching); wall it if ADCIRC has none in the canal",
+    "note": "C&D Canal (09-25 audit: an UNDECLARED crossing): 250 m of -13 m canal between 20 m banks; 9 NACCS pts 1.76-1.82 m; forced, not walled (a short channel with the level uniform across it)",
+    "drawn_line": "LINESTRING (-75.699 39.535, -75.699 39.552)"
+   },
+   "geometry": {
+    "type": "LineString",
+    "coordinates": [
+     [
+      -75.6989999935072,
+      39.5401808204755
+     ],
+     [
+      -75.69899999605,
+      39.54941618470448
+     ]
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "delaware_mouth",
+    "kind": "forced",
+    "role": "ocean (bay mouth)",
+    "excluded_side": "",
+    "span_km": 19.09,
+    "status": "7 NACCS pts within 1.5 km; lies INSIDE a ring that keeps the shelf (Track C) \u2014 forcing comes from mask declarations",
+    "note": "Cape May Point -> Cape Henlopen; DE end on 0.8-5.5 m spit, not the Great Dune",
+    "drawn_line": ""
+   },
+   "geometry": {
+    "type": "LineString",
+    "coordinates": [
+     [
+      -75.093,
+      38.795
+     ],
+     [
+      -74.96,
+      38.932
+     ]
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "upper_bay_hudson_route",
+    "kind": "edge_route",
+    "role": "land edge keeping the Upper Bay / Hudson out (Newark Bay IN)",
+    "excluded_side": "E",
+    "span_km": 55.73,
+    "status": "checked 2026-09-25: SI east ridge >= +10 m; Bayonne 1.7-2.9 m for ~3 km south of 40.68 (Sandy wets it \u2014 wall at build); Palisades crest",
+    "note": "Fort Wadsworth -> SI ridge -> St George -> KvK east line -> Bayonne spine -> Jersey City Heights -> Palisades crest to lat 41",
+    "drawn_line": ""
+   },
+   "geometry": {
+    "type": "LineString",
+    "coordinates": [
+     [
+      -74.0586,
+      40.6021
+     ],
+     [
+      -74.068,
+      40.61
+     ],
+     [
+      -74.077,
+      40.619
+     ],
+     [
+      -74.081,
+      40.629
+     ],
+     [
+      -74.08,
+      40.639
+     ],
+     [
+      -74.09,
+      40.644
+     ],
+     [
+      -74.09,
+      40.6545
+     ],
+     [
+      -74.1,
+      40.66
+     ],
+     [
+      -74.114,
+      40.668
+     ],
+     [
+      -74.106,
+      40.679
+     ],
+     [
+      -74.1,
+      40.69
+     ],
+     [
+      -74.096,
+      40.7
+     ],
+     [
+      -74.086,
+      40.708
+     ],
+     [
+      -74.076,
+      40.724
+     ],
+     [
+      -74.056,
+      40.748
+     ],
+     [
+      -74.018,
+      40.772
+     ],
+     [
+      -74.012,
+      40.804
+     ],
+     [
+      -73.995,
+      40.828
+     ],
+     [
+      -73.975,
+      40.852
+     ],
+     [
+      -73.968,
+      40.876
+     ],
+     [
+      -73.962,
+      40.9
+     ],
+     [
+      -73.955,
+      40.93
+     ],
+     [
+      -73.95,
+      41.05
+     ]
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "delaware_washington_crossing",
+    "kind": "cut",
+    "role": "river head of tide",
+    "excluded_side": "N",
+    "span_km": 0.8,
+    "status": "on ring 2026-09-25 (+3 m rule)",
+    "note": "Delaware where the +3 m water ends (above the Trenton falls, which +3 m drowns); Q = Trenton gauge 01463500, 3.9 km BELOW the cut (no tributary between). Was 'delaware_trenton' (head of tide today): LINESTRING (-74.835 40.238, -74.752 40.238)",
+    "drawn_line": null
+   },
+   "geometry": {
+    "type": "LineString",
+    "coordinates": [
+     [
+      -74.8603769027449,
+      40.274172723631494
+     ],
+     [
+      -74.85981749440502,
+      40.274311742472925
+     ],
+     [
+      -74.85925808378106,
+      40.27445075860271
+     ],
+     [
+      -74.85869867087305,
+      40.27458977202084
+     ],
+     [
+      -74.85813925568105,
+      40.27472878272722
+     ],
+     [
+      -74.85757983820511,
+      40.27486779072184
+     ],
+     [
+      -74.8570204184453,
+      40.27500679600467
+     ],
+     [
+      -74.85646099640165,
+      40.27514579857565
+     ],
+     [
+      -74.8559015720742,
+      40.27528479843473
+     ],
+     [
+      -74.85534214546304,
+      40.27542379558191
+     ],
+     [
+      -74.8547827165682,
+      40.27556279001712
+     ],
+     [
+      -74.85422328538972,
+      40.27570178174033
+     ],
+     [
+      -74.85366385192768,
+      40.2758407707515
+     ],
+     [
+      -74.85310441618212,
+      40.27597975705059
+     ],
+     [
+      -74.85254497815308,
+      40.276118740637564
+     ],
+     [
+      -74.85198553784062,
+      40.27625772151237
+     ],
+     [
+      -74.8514260952448,
+      40.27639669967498
+     ]
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "raritan_manville",
+    "kind": "cut",
+    "role": "river head of tide",
+    "excluded_side": "W",
+    "span_km": 0.8,
+    "status": "on ring 2026-09-25 (+3 m rule)",
+    "note": "Raritan + Millstone confluence, above Calco Dam (+3 m passes Bound Brook); Q = Manville 01400500 (Raritan) + Blackwells Mills 01402000 (Millstone), or Bound Brook 01403060 below. Was 'raritan_bound_brook' (head of tide today): LINESTRING (-74.52 40.54, -74.52 40.56)",
+    "drawn_line": null
+   },
+   "geometry": {
+    "type": "LineString",
+    "coordinates": [
+     [
+      -74.57825447337059,
+      40.535393441908816
+     ],
+     [
+      -74.5785166147953,
+      40.53579704550454
+     ],
+     [
+      -74.57877875935043,
+      40.53620064849306
+     ],
+     [
+      -74.57904090703605,
+      40.536604250874355
+     ],
+     [
+      -74.57930305785223,
+      40.53700785264841
+     ],
+     [
+      -74.57956521179906,
+      40.53741145381518
+     ],
+     [
+      -74.57982736887666,
+      40.537815054374654
+     ],
+     [
+      -74.5800895290851,
+      40.538218654326805
+     ],
+     [
+      -74.58035169242447,
+      40.538622253671605
+     ],
+     [
+      -74.58061385889485,
+      40.53902585240905
+     ],
+     [
+      -74.58087602849633,
+      40.53942945053907
+     ],
+     [
+      -74.581138201229,
+      40.53983304806168
+     ],
+     [
+      -74.58140037709295,
+      40.54023664497683
+     ],
+     [
+      -74.58166255608826,
+      40.540640241284486
+     ],
+     [
+      -74.58192473821502,
+      40.54104383698467
+     ],
+     [
+      -74.58218692347333,
+      40.541447432077305
+     ],
+     [
+      -74.58244911186326,
+      40.541851026562405
+     ]
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "rahway",
+    "kind": "cut",
+    "role": "river head of tide",
+    "excluded_side": "W",
+    "span_km": 0.3,
+    "status": "on ring 2026-09-25 (+3 m rule)",
+    "note": "Rahway above the +3 m end; Q = Rahway 01395000. Was 'rahway_dam' (head of tide today): LINESTRING (-74.29 40.585, -74.29 40.622, -74.262 40.64)",
+    "drawn_line": null
+   },
+   "geometry": {
+    "type": "LineString",
+    "coordinates": [
+     [
+      -74.30069341110233,
+      40.62811177269994
+     ],
+     [
+      -74.30055425118809,
+      40.62854347807137
+     ],
+     [
+      -74.30018446355886,
+      40.62889490853492
+     ],
+     [
+      -74.29981467204294,
+      40.629246337760996
+     ],
+     [
+      -74.29944487664025,
+      40.62959776574958
+     ],
+     [
+      -74.29907507735071,
+      40.62994919250059
+     ],
+     [
+      -74.29870527417422,
+      40.63030061801401
+     ]
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "schuylkill_manayunk",
+    "kind": "cut",
+    "role": "river head of tide",
+    "excluded_side": "N",
+    "span_km": 0.3,
+    "status": "on ring 2026-09-25 (+3 m rule)",
+    "note": "Schuylkill at Manayunk (Flat Rock Dam pool, surface 11.4 m) (+3 m overtops the Fairmount Dam pool); Q = Philadelphia 01474500 (below; Wissahickon joins between). Was 'schuylkill_fairmount' (head of tide today): LINESTRING (-75.205 39.972, -75.168 39.972)",
+    "drawn_line": null
+   },
+   "geometry": {
+    "type": "LineString",
+    "coordinates": [
+     [
+      -75.2558665001522,
+      40.042994187786185
+     ],
+     [
+      -75.25568271517324,
+      40.04342195319317
+     ],
+     [
+      -75.25549892790971,
+      40.04384971828421
+     ],
+     [
+      -75.25531513836157,
+      40.04427748305927
+     ],
+     [
+      -75.25513134652871,
+      40.04470524751835
+     ],
+     [
+      -75.25494755241108,
+      40.04513301166144
+     ],
+     [
+      -75.2547637560086,
+      40.04556077548853
+     ]
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "brandywine_wilmington",
+    "kind": "cut",
+    "role": "river head of tide",
+    "excluded_side": "N",
+    "span_km": 0.3,
+    "status": "on ring 2026-09-25 (+3 m rule)",
+    "note": "Brandywine (surface 9.5 m) at the +3 m end; Q = Wilmington 01481500. Was 'brandywine_wilmington' (head of tide today): LINESTRING (-75.585 39.772, -75.548 39.772)",
+    "drawn_line": null
+   },
+   "geometry": {
+    "type": "LineString",
+    "coordinates": [
+     [
+      -75.56005217894118,
+      39.76589359586805
+     ],
+     [
+      -75.55958464347931,
+      39.76611432120523
+     ],
+     [
+      -75.55900304518552,
+      39.766152995457496
+     ],
+     [
+      -75.55842144620699,
+      39.7661916667996
+     ],
+     [
+      -75.55783984654386,
+      39.76623033523153
+     ],
+     [
+      -75.55725824619617,
+      39.76626900075328
+     ],
+     [
+      -75.556676645164,
+      39.76630766336485
+     ]
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "white_clay",
+    "kind": "cut",
+    "role": "river head of tide",
+    "excluded_side": "W",
+    "span_km": 0.7,
+    "status": "on ring 2026-09-25 (+3 m rule)",
+    "note": "White Clay Creek (the Christina / White Clay / Red Clay heads are now three crossings); Q = White Clay near Newark 01479000. Was 'christina_white_clay' (head of tide today): LINESTRING (-75.662 39.728, -75.662 39.688, -75.69 39.655, -75.672 39.638)",
+    "drawn_line": null
+   },
+   "geometry": {
+    "type": "LineString",
+    "coordinates": [
+     [
+      -75.68189742458499,
+      39.69585128723501
+     ],
+     [
+      -75.6817162401671,
+      39.69627948665491
+     ],
+     [
+      -75.68153505354375,
+      39.696707685779764
+     ],
+     [
+      -75.68135386471491,
+      39.69713588460959
+     ],
+     [
+      -75.68117267368044,
+      39.697564083144364
+     ],
+     [
+      -75.68099148044031,
+      39.69799228138407
+     ],
+     [
+      -75.68081028499445,
+      39.69842047932869
+     ],
+     [
+      -75.6806290873428,
+      39.69884867697822
+     ],
+     [
+      -75.68044788748527,
+      39.69927687433266
+     ],
+     [
+      -75.68026668542181,
+      39.69970507139198
+     ],
+     [
+      -75.68008548115232,
+      39.70013326815616
+     ],
+     [
+      -75.67990427467677,
+      39.70056146462521
+     ],
+     [
+      -75.67972306599508,
+      39.70098966079909
+     ],
+     [
+      -75.67954185510716,
+      39.70141785667782
+     ],
+     [
+      -75.67936064201297,
+      39.70184605226135
+     ]
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "neshaminy",
+    "kind": "cut",
+    "role": "river head of tide",
+    "excluded_side": "N",
+    "span_km": 0.55,
+    "status": "on ring 2026-09-25 (+3 m rule)",
+    "note": "Neshaminy above the +3 m end; Q = Langhorne 01465500. Was 'neshaminy' (head of tide today): LINESTRING (-74.945 40.112, -74.88 40.112)",
+    "drawn_line": null
+   },
+   "geometry": {
+    "type": "LineString",
+    "coordinates": [
+     [
+      -74.92312718780707,
+      40.145594493101
+     ],
+     [
+      -74.92299580504294,
+      40.14603354340976
+     ],
+     [
+      -74.92286442058288,
+      40.14647259353446
+     ],
+     [
+      -74.92273303442684,
+      40.14691164347511
+     ],
+     [
+      -74.92260164657473,
+      40.14735069323172
+     ],
+     [
+      -74.92247025702652,
+      40.14778974280426
+     ],
+     [
+      -74.92233886578214,
+      40.14822879219273
+     ],
+     [
+      -74.92220747284156,
+      40.14866784139713
+     ],
+     [
+      -74.9220760782047,
+      40.149106890417436
+     ],
+     [
+      -74.92194468187152,
+      40.14954593925365
+     ],
+     [
+      -74.92181328384197,
+      40.14998498790578
+     ],
+     [
+      -74.92168188411596,
+      40.150424036373806
+     ]
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "cohansey_above_sunset_lake",
+    "kind": "cut",
+    "role": "river head of tide",
+    "excluded_side": "N",
+    "span_km": 0.75,
+    "status": "on ring 2026-09-25 (+3 m rule)",
+    "note": "Cohansey above Sunset Lake (+3 m fills it); Q = Seeley 01412800. Was 'cohansey_bridgeton' (head of tide today): LINESTRING (-75.255 39.44, -75.205 39.44)",
+    "drawn_line": null
+   },
+   "geometry": {
+    "type": "LineString",
+    "coordinates": [
+     [
+      -75.25206834682922,
+      39.46321426237843
+     ],
+     [
+      -75.2515120224478,
+      39.46334472764417
+     ],
+     [
+      -75.25095569597602,
+      39.46347519025238
+     ],
+     [
+      -75.25039936741399,
+      39.46360565020298
+     ],
+     [
+      -75.24984303676172,
+      39.46373610749598
+     ],
+     [
+      -75.24928670401927,
+      39.463866562131315
+     ],
+     [
+      -75.2487303691867,
+      39.463997014108934
+     ],
+     [
+      -75.24817403226407,
+      39.46412746342884
+     ],
+     [
+      -75.24761769325143,
+      39.46425791009095
+     ],
+     [
+      -75.24706135214882,
+      39.46438835409528
+     ],
+     [
+      -75.24650500895632,
+      39.46451879544174
+     ],
+     [
+      -75.24594866367396,
+      39.46464923413032
+     ],
+     [
+      -75.24539231630179,
+      39.46477967016098
+     ],
+     [
+      -75.24483596683987,
+      39.464910103533704
+     ],
+     [
+      -75.24427961528826,
+      39.46504053424841
+     ],
+     [
+      -75.24372326164702,
+      39.4651709623051
+     ]
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "maurice_above_union_lake",
+    "kind": "cut",
+    "role": "river head of tide",
+    "excluded_side": "N",
+    "span_km": 0.7,
+    "status": "on ring 2026-09-25 (+3 m rule)",
+    "note": "Maurice above Union Lake (+3 m overtops the Union Lake dam at 50 m; check the crest); Q = Norma 01411500. Was 'maurice_millville' (head of tide today): LINESTRING (-75.075 39.403, -75.025 39.403)",
+    "drawn_line": null
+   },
+   "geometry": {
+    "type": "LineString",
+    "coordinates": [
+     [
+      -75.07121614215467,
+      39.44859461210306
+     ],
+     [
+      -75.07087640193363,
+      39.44822909881986
+     ],
+     [
+      -75.07053666526636,
+      39.44786358451805
+     ],
+     [
+      -75.07019693215278,
+      39.44749806919767
+     ],
+     [
+      -75.06985720259277,
+      39.447132552858754
+     ],
+     [
+      -75.06951747658631,
+      39.44676703550134
+     ],
+     [
+      -75.06917775413328,
+      39.44640151712546
+     ],
+     [
+      -75.0688380352336,
+      39.44603599773116
+     ],
+     [
+      -75.0684983198872,
+      39.44567047731848
+     ],
+     [
+      -75.06815860809401,
+      39.44530495588746
+     ],
+     [
+      -75.06781889985393,
+      39.44493943343812
+     ],
+     [
+      -75.06747919516688,
+      39.44457390997052
+     ],
+     [
+      -75.0671394940328,
+      39.44420838548469
+     ],
+     [
+      -75.06679979645159,
+      39.44384285998067
+     ],
+     [
+      -75.06646010242316,
+      39.443477333458496
+     ]
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "passaic_dundee",
+    "kind": "cut",
+    "role": "river head of tide",
+    "excluded_side": "N",
+    "span_km": 0.3,
+    "status": "on ring 2026-09-25 (+3 m rule)",
+    "note": "Passaic at Dundee Dam (pool 7.4 m > the +3 m level 6.4: the dam holds); Q = Dundee Dam 01389890. Was 'passaic_dundee' (head of tide today): LINESTRING (-74.134 40.8805, -74.121 40.8885)",
+    "drawn_line": null
+   },
+   "geometry": {
+    "type": "LineString",
+    "coordinates": [
+     [
+      -74.1347117196755,
+      40.88823724110827
+     ],
+     [
+      -74.13413529857752,
+      40.88834444988229
+     ],
+     [
+      -74.13355887566593,
+      40.88845165575447
+     ],
+     [
+      -74.13298245094082,
+      40.88855885872478
+     ],
+     [
+      -74.13240602440224,
+      40.8886660587932
+     ],
+     [
+      -74.13182959605027,
+      40.88877325595968
+     ],
+     [
+      -74.13125316588497,
+      40.88888045022419
+     ]
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "hackensack_rivervale",
+    "kind": "cut",
+    "role": "river head of tide",
+    "excluded_side": "N",
+    "span_km": 0.55,
+    "status": "on ring 2026-09-25 (+3 m rule)",
+    "note": "Hackensack above Oradell Reservoir (pool 5.3 m < the +3 m level 6.4: the surge overtops the spillway); Q = Rivervale 01377000. Was 'hackensack_new_milford' (head of tide today): LINESTRING (-74.05 40.949, -73.957 40.949)",
+    "drawn_line": null
+   },
+   "geometry": {
+    "type": "LineString",
+    "coordinates": [
+     [
+      -73.99088222587055,
+      40.993085636874994
+     ],
+     [
+      -73.99043677419387,
+      40.99278744232973
+     ],
+     [
+      -73.9899913265397,
+      40.99248924609438
+     ],
+     [
+      -73.98954588290802,
+      40.992191048169005
+     ],
+     [
+      -73.9891004432988,
+      40.99189284855366
+     ],
+     [
+      -73.98865500771193,
+      40.99159464724838
+     ],
+     [
+      -73.98820957614741,
+      40.99129644425325
+     ],
+     [
+      -73.98776414860518,
+      40.9909982395683
+     ],
+     [
+      -73.98731872508516,
+      40.9907000331936
+     ],
+     [
+      -73.98687330558732,
+      40.9904018251292
+     ],
+     [
+      -73.98642789011159,
+      40.99010361537516
+     ],
+     [
+      -73.98598247865793,
+      40.98980540393152
+     ]
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "christina_coochs",
+    "kind": "cut",
+    "role": "river above the +3 m end",
+    "excluded_side": "N",
+    "span_km": 0.7,
+    "status": "on ring 2026-09-25 (+3 m rule)",
+    "note": "Christina River near Cooch's Bridge; Q = 01478000",
+    "drawn_line": null
+   },
+   "geometry": {
+    "type": "LineString",
+    "coordinates": [
+     [
+      -75.70850758022404,
+      39.63290277018789
+     ],
+     [
+      -75.70832671926017,
+      39.63333101283627
+     ],
+     [
+      -75.70814585610097,
+      39.63375925519153
+     ],
+     [
+      -75.70796499074632,
+      39.634187497253635
+     ],
+     [
+      -75.7077841231962,
+      39.63461573902259
+     ],
+     [
+      -75.70760325345051,
+      39.635043980498374
+     ],
+     [
+      -75.70742238150919,
+      39.63547222168098
+     ],
+     [
+      -75.70724150737219,
+      39.63590046257038
+     ],
+     [
+      -75.70706063103941,
+      39.63632870316658
+     ],
+     [
+      -75.7068797525108,
+      39.636756943469564
+     ],
+     [
+      -75.70669887178629,
+      39.63718518347932
+     ],
+     [
+      -75.7065179888658,
+      39.637613423195816
+     ],
+     [
+      -75.70633710374928,
+      39.63804166261907
+     ],
+     [
+      -75.70615621643664,
+      39.63846990174903
+     ],
+     [
+      -75.70597532692784,
+      39.63889814058573
+     ]
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "red_clay",
+    "kind": "cut",
+    "role": "river above the +3 m end",
+    "excluded_side": "N",
+    "span_km": 0.5,
+    "status": "on ring 2026-09-25 (+3 m rule)",
+    "note": "Red Clay Creek; Q = Wooddale 01480000 / Stanton 01480015",
+    "drawn_line": null
+   },
+   "geometry": {
+    "type": "LineString",
+    "coordinates": [
+     [
+      -75.63905157018546,
+      39.72561863449297
+     ],
+     [
+      -75.63850080746116,
+      39.72576721498029
+     ],
+     [
+      -75.63795004234169,
+      39.72591579286974
+     ],
+     [
+      -75.63739927482709,
+      39.72606436816128
+     ],
+     [
+      -75.63684850491738,
+      39.72621294085487
+     ],
+     [
+      -75.63629773261266,
+      39.72636151095049
+     ],
+     [
+      -75.63574695791293,
+      39.726510078448044
+     ],
+     [
+      -75.63519618081826,
+      39.72665864334754
+     ],
+     [
+      -75.63464540132867,
+      39.72680720564892
+     ],
+     [
+      -75.63409461944421,
+      39.726955765352145
+     ],
+     [
+      -75.63354383516496,
+      39.727104322457166
+     ]
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "pascack",
+    "kind": "cut",
+    "role": "river above the +3 m end",
+    "excluded_side": "N",
+    "span_km": 0.75,
+    "status": "on ring 2026-09-25 (+3 m rule)",
+    "note": "Pascack Brook into Oradell Reservoir; Q = Westwood 01377500",
+    "drawn_line": null
+   },
+   "geometry": {
+    "type": "LineString",
+    "coordinates": [
+     [
+      -74.00716051253332,
+      40.98450151452616
+     ],
+     [
+      -74.0066942530614,
+      40.984780797793306
+     ],
+     [
+      -74.00622798966882,
+      40.9850600791159
+     ],
+     [
+      -74.00576172235554,
+      40.985339358493874
+     ],
+     [
+      -74.00529545112151,
+      40.985618635927196
+     ],
+     [
+      -74.00482917596672,
+      40.985897911415776
+     ],
+     [
+      -74.0043628968911,
+      40.9861771849596
+     ],
+     [
+      -74.00389661389463,
+      40.98645645655858
+     ],
+     [
+      -74.00343032697725,
+      40.986735726212686
+     ],
+     [
+      -74.00296403613896,
+      40.98701499392183
+     ],
+     [
+      -74.00249774137968,
+      40.98729425968599
+     ],
+     [
+      -74.00203144269943,
+      40.9875735235051
+     ],
+     [
+      -74.0015651400981,
+      40.9878527853791
+     ],
+     [
+      -74.00109883357571,
+      40.98813204530794
+     ],
+     [
+      -74.00063252313218,
+      40.988411303291564
+     ],
+     [
+      -74.0001662087675,
+      40.98869055932993
+     ]
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "bayonne_wall",
+    "kind": "wall",
+    "role": "Newark Bay side of the Bayonne spine",
+    "excluded_side": "E",
+    "span_km": 3.2,
+    "status": "on ring 2026-09-25",
+    "note": "~3 km of 1.6-2.9 m ground that Sandy already wets between the KvK east mouth and the spine; Upper Bay side excluded. Wall at the build (STATUS hard spot).",
+    "drawn_line": null
+   },
+   "geometry": {
+    "type": "LineString",
+    "coordinates": [
+     [
+      -74.09,
+      40.6545
+     ],
+     [
+      -74.1,
+      40.66
+     ],
+     [
+      -74.114,
+      40.668
+     ],
+     [
+      -74.106,
+      40.679
+     ]
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "ocean_south_de",
+    "kind": "forced",
+    "role": "ocean edge south of Cape Henlopen (continues the shelf's water-level boundary to the beach)",
+    "excluded_side": "S",
+    "span_km": null,
+    "status": "on ring 2026-09-25",
+    "note": "Shallow ocean from the Henlopen beach (-75.083) east along 38.725, then to 38.76 where the ocean DEM ends. NACCS nodes reach lat 38.723.",
+    "drawn_line": null
+   },
+   "geometry": {
+    "type": "LineString",
+    "coordinates": [
+     [
+      -75.083,
+      38.725
+     ],
+     [
+      -74.985,
+      38.725
+     ],
+     [
+      -74.97,
+      38.76
+     ]
+    ]
+   }
+  }
+ ]
 }
