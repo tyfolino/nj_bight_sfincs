@@ -4,7 +4,7 @@
 12 KB "current state" memory file and its 26 reverse-chronological campaign logs; the point
 of the format is that a reader gets the current state without replaying how it was reached.
 
-Last updated: **2026-09-24 night** (v4 ring DRAFTED by rule from the user's sketch, every cut on the ring edge and checked, Goethals NACCS merged; then v4 DESIGN RULES decided after a literature review + ring probe — far banks COMPUTED to +10 m, Arthur Kill in, Track C default, four cost tests pre-registered; see PICK UP and `reports/v4_design_literature_review_2026-09-24.md`); before that **2026-09-24** (🏁 **v3 DECLARED DONE** by the user after the mask-repair reads; v4 design STARTED — see PICK UP); before that **2026-09-23 13:05** (DUNE-FAILURE LEVER STEP 0 READ — pre/post-Sandy lidar differenced on 5,905 transects: 28 % of NJ ocean-coast dune crests dropped ≥ 1 m, but the first-blocks MISS sits mostly behind INTACT crests (Ocean City / Sea Isle / Long Branch); a `bed-postsandy` arm can reach ~a fifth of it, concentrated on the Barnegat peninsula — 13:05 block); before that **2026-09-23 12:30** (between-solves housekeeping: both wave-arm paired reads AND the intern's refreshed tif are CHAINED afterok on their validates, land on their own tonight; the two nowaves test arms retired, 6.0 G true reclaim; 12:30 block); before that **2026-09-23 11:30** (cut-split paired HWM half READ — lands inside every prediction, the cut is worth +0.025 on the NY-bay paired median and +0.51 at HWM 6102; both wave-arm solves healthy on hal, premier at sim 10-30 00:00 pacing 2.25 sim-h/wall-h → lands ~22:00 tonight, wavemaker at 10-29 18:00 pacing 1.9 → ~01:00 09-24; share-ready v3 max-depth tif for the intern exported from `mask-drain-edge+naccs-premier` by `scripts/export_share_floodmap.py`, see 11:30 block); before that **2026-09-22 23:45** (wind-x110 read — not wind-limited; mask repair ADOPTED with the Raritan cut walled, `premier.V3` moved; the waves-off pair READ — every prediction lands, AK mouth +0.25, NY-bay median +0.045 CI > 0; the cut-split READ — the cut is ~1/5 of the bay gain and all of the lower-Raritan gain; two wave arms solving, land 09-24; v4 reaches New Brunswick); before that **2026-09-21 18:00** (Great Kills read, outflow-drain mask test, GK sensor check); before that **2026-09-20 17:10** — `wave-wavemaker` (the IG lever) landed clean overnight 09-19 (hal0443, 24 h 37, no restart, validate 54 min) and is READ against its 09-18 pre-registration (section below, `logs/wavemaker_reads_2026-09-20/`): the injected IG signal is REAL — ~1 m crests (0.28 m std) fill the 100–400 m surf zone between the line and the beach and the DUNE holds them, so only beachfront marks move — open-coast paired median **+0.021 m [+0.006, +0.054]** (CI above 0, but under the +0.05 line; mean +0.084 carried by Monmouth's `south_coast` +0.28 / `atlantic_oceanfront` +0.10, marks 260–500 m from pieces 8–9), the south-NJ shelf basins ≤ +0.03; the NJ back bays untouched (+0.007 [+0.002, +0.014]); the NY seiche bays re-rang (−0.049 [−0.078, −0.021], ΔRMSE +0.031) so the pooled 94-mark ΔRMSE is a null (+0.002 [−0.020, +0.023]); MOTF POD +0.004. **Neither pre-registered branch fires cleanly: the lever is real at the beach and invisible behind an intact dune, so it does not join the premier candidates on the HWM/MOTF scores; a line closer to shore is NOT the next move (13:40 correction) — scoring the beach/dune strip and the dune-failure bed lever are.** 🔴 `usgs_stormtide_sea_bright` sits ON piece 9 (≈170 m) and reads the injection (0.28 m std, peak +0.39): flag its row, do not read it as a beach. Engine-build confound (`igk-fix-1`) is measured: `hm0ig` differs seaward (+0.14..+0.23 m at −12..−5.5) with `zs` unchanged there (p50 0.000, p90 +0.02), as §45 predicts for an uncoupled field.
+Last updated: **2026-09-25 evening** (v4 CLEANED UP: the audit's facts kept — checked crossings in `data/v4_design/v4_crossings.geojson`, the audit as `scripts/audit_region_v4.py`, the corrupt v4 NJ DEM clip deleted — and both ring generators retired; the ring is redrawn fresh as straight lines, approach to agree with the user; see the v4 block in PICK UP); before that **2026-09-24 night** (v4 ring DRAFTED by rule from the user's sketch, every cut on the ring edge and checked, Goethals NACCS merged; then v4 DESIGN RULES decided after a literature review + ring probe — far banks COMPUTED to +10 m, Arthur Kill in, Track C default, four cost tests pre-registered; see PICK UP and `reports/v4_design_literature_review_2026-09-24.md`); before that **2026-09-24** (🏁 **v3 DECLARED DONE** by the user after the mask-repair reads; v4 design STARTED — see PICK UP); before that **2026-09-23 13:05** (DUNE-FAILURE LEVER STEP 0 READ — pre/post-Sandy lidar differenced on 5,905 transects: 28 % of NJ ocean-coast dune crests dropped ≥ 1 m, but the first-blocks MISS sits mostly behind INTACT crests (Ocean City / Sea Isle / Long Branch); a `bed-postsandy` arm can reach ~a fifth of it, concentrated on the Barnegat peninsula — 13:05 block); before that **2026-09-23 12:30** (between-solves housekeeping: both wave-arm paired reads AND the intern's refreshed tif are CHAINED afterok on their validates, land on their own tonight; the two nowaves test arms retired, 6.0 G true reclaim; 12:30 block); before that **2026-09-23 11:30** (cut-split paired HWM half READ — lands inside every prediction, the cut is worth +0.025 on the NY-bay paired median and +0.51 at HWM 6102; both wave-arm solves healthy on hal, premier at sim 10-30 00:00 pacing 2.25 sim-h/wall-h → lands ~22:00 tonight, wavemaker at 10-29 18:00 pacing 1.9 → ~01:00 09-24; share-ready v3 max-depth tif for the intern exported from `mask-drain-edge+naccs-premier` by `scripts/export_share_floodmap.py`, see 11:30 block); before that **2026-09-22 23:45** (wind-x110 read — not wind-limited; mask repair ADOPTED with the Raritan cut walled, `premier.V3` moved; the waves-off pair READ — every prediction lands, AK mouth +0.25, NY-bay median +0.045 CI > 0; the cut-split READ — the cut is ~1/5 of the bay gain and all of the lower-Raritan gain; two wave arms solving, land 09-24; v4 reaches New Brunswick); before that **2026-09-21 18:00** (Great Kills read, outflow-drain mask test, GK sensor check); before that **2026-09-20 17:10** — `wave-wavemaker` (the IG lever) landed clean overnight 09-19 (hal0443, 24 h 37, no restart, validate 54 min) and is READ against its 09-18 pre-registration (section below, `logs/wavemaker_reads_2026-09-20/`): the injected IG signal is REAL — ~1 m crests (0.28 m std) fill the 100–400 m surf zone between the line and the beach and the DUNE holds them, so only beachfront marks move — open-coast paired median **+0.021 m [+0.006, +0.054]** (CI above 0, but under the +0.05 line; mean +0.084 carried by Monmouth's `south_coast` +0.28 / `atlantic_oceanfront` +0.10, marks 260–500 m from pieces 8–9), the south-NJ shelf basins ≤ +0.03; the NJ back bays untouched (+0.007 [+0.002, +0.014]); the NY seiche bays re-rang (−0.049 [−0.078, −0.021], ΔRMSE +0.031) so the pooled 94-mark ΔRMSE is a null (+0.002 [−0.020, +0.023]); MOTF POD +0.004. **Neither pre-registered branch fires cleanly: the lever is real at the beach and invisible behind an intact dune, so it does not join the premier candidates on the HWM/MOTF scores; a line closer to shore is NOT the next move (13:40 correction) — scoring the beach/dune strip and the dune-failure bed lever are.** 🔴 `usgs_stormtide_sea_bright` sits ON piece 9 (≈170 m) and reads the injection (0.28 m std, peak +0.39): flag its row, do not read it as a beach. Engine-build confound (`igk-fix-1`) is measured: `hm0ig` differs seaward (+0.14..+0.23 m at −12..−5.5) with `zs` unchanged there (p50 0.000, p90 +0.02), as §45 predicts for an uncoupled field.
 
 ## ⏳ PICK UP — next session
 
@@ -15,150 +15,103 @@ the bias is now a minority of the error (zeroing it takes RMSE 0.33 → ~0.30; t
 several levers were each worth a few cm (wind +0.02, IG +0.02, cut +0.025), and what remains is localised and written
 down (FINDINGS §50: NY bays ~0.2 m low, east bay included). Parked, not active: the east-bay deficit (if v4 does not
 move it), the dune-failure `bed-postsandy` lever (reaches ~1/5 of the coastal miss), the 1–3 cm tide-mean offset.
-**v4 SCOPE — decided 2026-09-24 (user), REVISED the same evening after the design review (plan
-`~/.claude/plans/hey-claude-we-are-goofy-reddy.md`, approved):** (1) **Delaware: force water level at the bay MOUTH (Cape
-May – Cape Henlopen, a straight line ending on the Henlopen dune) and COMPUTE the whole bay and the tidal river to the head
-of tide at Trenton** (the tidal limit is 2.7 km below the Trenton gauge — PNNL FVCOM) — the v1.5 structural argument again.
-(2) 🔴 **Far banks are COMPUTED to +10 m, not walled — DE/PA AND, for consistency, Staten Island's south + west shore
-(user)**: a shoreline wall reflects surge and the reflection grows with SLR, which is what v4 is for. 100/200 m only, no
-25 m bands, no MOTF scoring (`motf_exclude_boxes_ll` stays), no NJ buildings. Brooklyn is the one exception: its low ground
-runs into Jamaica Bay, so its edge is a straight walled cut on the highest ground short of the bay. Pre-registered sign:
-added far-bank storage can only LOWER the Raritan / Lower Bay peak by a few cm — the consistent model, not a fix for §50.
-(3) Raritan to New Brunswick (09-22), replacing `wall_raritan_cut`. (4) **Arthur Kill NJ shore (Carteret / Linden /
-Rahway) IN** — the only 30 km² of MOTF outside the sketch; forced cross-section moved from the AK mouth to its north end at
-Elizabeth / Goethals. 🔵 OPEN: force at the Kill van Kull and compute Newark Bay + the Meadowlands instead (adds Passaic /
-Hackensack heads of tide and a MOTF re-render north of lat 40.62) — settle before the ring is frozen. (5) **Track C coarse
-shelf IS the default** (200 m seaward of the −10.5 m refinement gate; `mask_zmin` stays −10). (6) Inland NJ edge on ground
-≥ +10 m NAVD88; river cuts dry, walled, discharge source just inside. (7) Four cost tests PRE-REGISTERED, none default:
-surf-band 2.5 → 1 km (a domain variant), `snapwave_dtheta` 5 → 10°, `snapwave_wind` off (arms), GPU build timing.
+**v4 — STATE AT 2026-09-25: the RING is redrawn FRESH (straight lines, v3-style); everything else stands.** Plan:
+`~/.claude/plans/hey-claude-we-are-goofy-reddy.md` (updated 09-25). The audit tool is `scripts/audit_region_v4.py --ring <file>
+[--maps]`; the checked crossings are `data/v4_design/v4_crossings.geojson` (tracked).
+**SCOPE (user 09-24, revised 09-24 evening and 09-25):** (1) **Delaware:** force at the bay MOUTH (Cape May – Cape Henlopen),
+compute the bay and the tidal river to the head of tide at Trenton (the tidal limit is 2.7 km below the Trenton gauge — PNNL
+FVCOM) — the v1.5 structural argument again. (2) 🔴 **Far banks COMPUTED to +10 m, not walled** — DE/PA and, for consistency,
+Staten Island's south + west shore: a wall reflects surge and the reflection grows with SLR, which is what v4 is for. 100/200 m
+only, no 25 m bands, no MOTF scoring (`motf_exclude_boxes_ll` stays), no NJ buildings. Brooklyn is the exception: its low ground
+runs into Jamaica Bay, so its edge is a walled line short of the bay. Pre-registered sign: added far-bank storage can only LOWER
+the Raritan / Lower Bay peak by a few cm — the consistent model, not a fix for §50. (3) **Raritan** to its head of tide above New
+Brunswick. (4) **Arthur Kill NJ shore AND Newark Bay + the Meadowlands IN (user 09-25):** forced at the Kill van Kull east mouth
+and the Narrows, cut at the Passaic (Dundee Dam) and Hackensack (New Milford) heads of tide; the Upper Bay / Hudson stay out.
+(5) **Track C coarse shelf is the default** (200 m seaward of the −10.5 m refinement gate; `mask_zmin` stays −10). (6) **Inland
+edge on ground ≥ +10 m NAVD88**; river crossings at the head of tide, dry, walled, discharge just inside. (7) Four cost tests
+PRE-REGISTERED, none default: surf-band 2.5 → 1 km (a domain variant), `snapwave_dtheta` 5 → 10°, `snapwave_wind` off (arms),
+GPU build timing.
 **Why (the two numbers that decide it, `logs/v4_design_2026-09-24/ring_probe{.py,_pass1.txt}`):** v3 premier is 25.5 h,
 96.9 % SnapWave, 2.89 M SnapWave nodes of which ~1.1 M are shelf cells SFINCS never computes; the Delaware expansion under
 "50 m water/margin −10.5..+5, 100 m land 0..+10, no 25 m" is ≈ 1.1 M SFINCS-only faces (0.78 M at 50 m, zero SnapWave) →
 +~30 min. **The bay costs minutes, the shelf costs hours**; projection ≈ 18 h waves-on / ≈ 1.3 h waves-off (target ≤ 20 /
-≤ 2). MOTF-wet land: p95 4.3 m, p99 7.6 m → the 100 m land band's zmax goes 6 → 10 m (+0.06 M faces). MOTF + 300 m at 50 m
-is +0.05 M (the depth gates already refine flooded land — a guarantee, not a saving); Sandy + 2 m envelope +0.11 M. Bathtub
-proxy (NACCS Sandy peak + SLR, connected): **no NJ inland-edge land cell wet at +0..+3 m**; contacts only at declared edges
-(NY shore, AK, Trenton z 2.7 m, Cape Henlopen z 1.2–2.4 m). Literature: Nederhoff 2024 / USGS CoSMoS Atlantic (Florida) =
-SFINCS 200 m + 1 m subgrid, inland ≈ +10 m NAVD88, offshore −10 m, SLR 0–3 m, 41 min per 7-day event; van Ormondt 2025 GMD
-= 100 m subgrid ≈ 25 m regular, "grid ≤ channel width"; Roelvink 2025 GMD = SnapWave cost ∝ nodes × bins × iterations.
-**The inherited v3 edge may move too (user, 09-24 evening).** `logs/v4_design_2026-09-24/v3_edge_below_10m.{py,txt}`:
-37 % of the v3 land edge (2,690 of 7,224 rim cells at 100 m) sits below +10 m, but almost all of it is either removed by
-the v4 expansion (the Cape May peninsula crossing, 763 cells at −74.845/39.075; the Tuckahoe lowland; the Raritan / Arthur
-Kill corner and the South River valley at −74.28/40.44, z 2.2 m), or becomes computed far bank under rule (2) (Staten
-Island 364 cells, Brooklyn 164 + 31), or is a dry head-of-tide river cut allowed by rule (6) (Toms, Metedeconk, Mullica,
-Wading, Bass at 7–9 m). **Three cuts have low ground beside them and are the real candidates to move upstream to where
-the valley pinches at +10 m:** Great Egg at Mays Landing (186 cells, mean 7.1 / min 3.1 m, −74.752/39.464), Tuckahoe at
-Head of River (232 cells, 6.8 / 1.2 m, −74.822/39.305) and the Mullica–Wading cut (304 cells, 7.7 / 4.8 m,
-−74.676/39.674); the Manasquan cut (13 cells, 5.6 m) is small. The bathtub proxy put none of them wet at +3 m, so this is
-the +10 m rule, not an observed leak.
-**✅ v4 ring DRAFTED (09-24 evening, `scripts/draft_region_v4.py`; the user reviewed it in QGIS and called it good — the
-Newark Bay decision is the only open item).** Products: `data/region_v4_DRAFT.geojson` (tracked; **174 vertices,
-25,383 km²** vs the sketch's 86 / 21,964), `data/v4_design/v4_draft.gpkg` (layers `draft_ring`, `sketch`, `cuts` with the
-check columns, `naccs_forced_lines`, `v3_inflows`, `lowland10`, `wet0/2/3`, `motf`, `nodata_in_draft`),
-`data/v4_design/v4_draft_checks.txt`, `reports/figures/v4_draft_ring{,_ny}.png`. **How:** on a 50 m UTM grid, keep =
-sketch ∪ (land < +10 m hydraulically connected to the bays ∩ within 3 km of the Sandy + 3 m bathtub sheet); every cut is a
-barrier AND carries an UPSTREAM EXCLUSION ZONE (`UPSTREAM`: the line extended L km, swept D km to its upstream compass side,
-per segment) removed from the raster and subtracted from the polygon, so **the ring edge lies ON every cut** (the user
-caught the first draft's cuts sitting 4–10 km inside the ring: a line only blocks paths that cross it, and the sketch /
-lowland walked around its ends); then polygonise → buffer 2,000 m → simplify 1,600 m (tol < buffer, so the ring still
-contains the lowland; 900/700 was too jagged in Delaware). Connectivity may leave the sketch only over land or water
-shallower than −0.5 m (`carrier`; open ocean outside the sketch had carried the sheet into **Jamaica Bay** and along Long
-Island), with one deliberate exception, `CARRIER_BOXES`: the deep Arthur Kill north of v3's AK-mouth line, so the Goethals
-crossing is reached. Jamaica Bay water inside the draft: 0.8 km² (the inlet-line end); Newark Bay: out. Composition: water
-15.9 k km², land 0–10 m 4.9 k, land ≥ 10 m 5.1 k (buffer bulge + interior high ground; dry, 200 m, cheap), NoData 0. **Land
-the sketch left out that Sandy + 3 m wets: 421 km²; MOTF outside the draft: 1 km².**
-**Crossing check (13 lines; `channel_km` says which actually cross water):** the ring now crosses river water only at the
-Delaware falls (dry line at 40.238 above the Calhoun St gauge; MOTF reached 40.232 so the 40.228 line was moved), the
-Schuylkill at Fairmount (0.1 km), the Christina at Newport (0.1 km), the Maurice at the Union Lake dam (0.85 km; the 39.412
-try crossed the lake) and Cape Henlopen; the Raritan (moved west to −74.505 — MOTF reached −74.497), Rahway, Brandywine
-(moved up into the gorge at 39.772 — the riverfront line sat on 2 m ground), Neshaminy and Cohansey lines are DRY at their
-dams. ⚠️ Under +2/+3 m SLR the sheet still reaches the Rahway (0.45 / 0.68 km), Brandywine (1.4 / 1.8) and Maurice (1.2)
-walls — reflection there, or move them upstream; the check table is the tool. **No cut on the Rancocas** (MOTF shows Sandy
-flooding 7 km² above the forks — the tidal reach runs to Mount Holly / Lumberton) **nor the Salem** (a line there ran along
-2.7 km of marsh); the +10 m rule closes both. FORCED lines — Narrows (21 NACCS pts), **Rockaway Inlet (23 pts, 3.0–3.4 m;
-Jamaica Bay out but its mouth forced, not walled)**, Delaware mouth (7 pts within 1.5 km of the context `mouth_line`),
-**Goethals (34 pts, 3.4–3.7 m — the user's 16:10 CHS pull, merged by `repack_naccs_zips.py --apply`: 1,714 → 1,815
-ADCIRC points, v3 support sha `19f53cfd4cb804fb` unchanged, 66 pts in the upper AK box and 57 in Kill van Kull / Newark
-Bay so that option stays open; `_originals_pending_delete/` grew by one zip, 2.3 G, the user's call)**; ends: Goethals
-6.1 / 21.5 m, Rahway 5.5 / 6.1 (below the +10 m ideal). WALLS — Brooklyn (Floyd Bennett → Fort Hamilton → into the
-Narrows, 3.6 km wet at +3 m: the one +10 m exception), Cape Henlopen (E–W at 38.765, 8.7 km wet at +3 m: holds the Lewes
-lowland against the Lewes–Rehoboth canal — an approximation, state it). v3's 19 inflow points all sit inside the draft →
-v4 injects at the gauges (≥ 500 m from any station, into channel cells — §40).
-**What makes a good cut (answered 09-24, keep):** a FORCED line needs NACCS nodes ON it, a short crossing where the level
-is uniform (a channel or mouth, never an amplifying basin — v1.5), and both ends above the forced level + SLR (or it spills
-like the v3 Raritan cut); a RIVER cut sits at the head of tide (falls / dam / weir, one-directional flow), walled never
-outflow (§50), with the discharge gauge at or upstream and the injection ≥ 500 m from any station; a LAND cut is ground ≥
-+10 m, walled. A gauge sets the value, the head of tide sets the place; a NACCS node matters only for forced lines.
-**Elevation pulled for it (09-24):** the 5 missing CUDEM 1/9″ `chesapeake_bay` tiles (`data/elevation_v4/cudem/raw/`, 1.0 G,
-home), `cudem_delaware_v4.vrt` over the 17 western tiles + its 1.8 G `.ovr` (scratch, symlinked), USGS 3DEP 1/3″ n39w076 /
-n40w076 / n41w076 / n41w075 (`data/elevation_v4/3dep/` → scratch, 1.8 G; PA/DE land beyond the CUDEM footprint), and the NJ
-statewide 10-ft re-clip `nj_10ft_dem_v4.tif` (scratch, symlinked; `NJ_DOMAIN=v4 scripts/download_3dep.py`). Home quota
-85.7 → ~87 G; the big derived rasters live in `/scratch/tpj8/nj_bight_sfincs_data/elevation_v4/`.
-**⬜ Next:** decide Newark Bay (in: drop the `goethals` barrier, add Passaic / Hackensack cuts, re-render MOTF north of 40.62;
-out: as drawn) → `V4` entry (`region=region_v4_DRAFT.geojson`, cuts → `boundary_arms` / `mask_overrides`) + `build_refinement_v4.py` (MOTF /
-SLR-envelope polygons are generators for the existing zmin/zmax gates, `quadtree_builder.py:287-309`) → `bed_v4_coarse_25m`
-→ `probe_mesh_size.py` (SnapWave nodes ≤ 2.0 M) → build → the waves-off OVERFLOW test at +0/+2/+3 m (no wet rim face
-outside the cuts, zero `mask==3` flux) before any wave run. 🔴 **No DEM on disk west of lon −75.12** (1,810 km² of DE/PA
-inside the sketch): CUDEM 1/9″ tiles exist — `northeast_sandy/`: ncei19 n39x00 w075x00/25/50, n39x25 w075x00/25/50, n39x50
-w075x25/50/75, n39x75 w075x50/75, n40x00 w075x25/50, n40x25 w075x00/25; `chesapeake_bay/`: n38x75 w075x25/50/75, n39x00
-w075x75, n39x25 w075x75 (NCEI_ninth_Topobathy_2014_8483 on the NOAA S3 index) — extend `download_cudem.py`, + 3DEP 1/3″
-for PA/DE land, + the NJ Delaware bank re-clip from the kept statewide DEM.
-**Delaware coverage inventory (09-24, box −75.65..−74.70, 38.75..40.25):** ✅ ERA5 (to −76.0). 🔴 **NACCS** (1,321 parsed pts,
-lat ≥ 38.83): the NJ half of the mouth is dense (sp5480–5501, sp15255–15261), the DE half is EMPTY — nothing south of 38.83
-or near Cape Henlopen (−75.09, 38.78); 9 pts in the lower bay only → **user fetches** lon −75.15..−74.95, lat 38.74..38.90
-(the mouth line + its deep channel), optionally a sparse set up the bay/river as interior checks. 🔴 AORC precip stops at
-−75.09 (re-clip, ours). 🔴 CORA waves stop at −74.98 (NACCS STWAVE reaches −75.28, 56 pts in the box — candidate for the DE
-half of the mouth). 🔴 Water-level validation: only NOAA Cape May so far — fetch Lewes 8557380, Brandywine Shoal 8555889,
-Ship John Shoal 8537121, Reedy Point 8551910, Marcus Hook 8540433, Philadelphia 8545240, Burlington 8539094, Newbold
-8548989 (ours, CO-OPS API). 🔴 Discharge: 2 of 19 v3 gauges in the box — add Delaware at Trenton 01463500 + the NJ
-tributaries (ours). DEM/buildings/MOTF: NJ-only layers — the walled far bank needs only bathymetry (CUDEM) + a shoreline.
-**✅ Source probe DONE (09-24, `logs/v4_design_2026-09-24/probe_sources.{py,txt}`, read-only).** User fetching the NACCS mouth box
-(map: `reports/figures/v4_naccs_nodes_delaware.png`). 🔴 **The legacy USGS service `waterservices.usgs.gov/nwis` returns 503 on every
-call** — `download_usgs_sandy_discharge.py` and `download_usgs_sandy_tidal.py` will fail until ported to
-`api.waterdata.usgs.gov/ogcapi/v0` (`daily`, `continuous`, `monitoring-locations`; works, bbox + time queries).
-*NOAA CO-OPS, Delaware:* **10 stations run THROUGH the peak** — Lewes 1.85 (NAVD), Cape May 1.80, Reedy Point 1.87, Marcus Hook
-2.18, Philadelphia 2.29 (NAVD); Ship John Shoal, Delaware City, Burlington, Newbold MLLW-only (**no NAVD88 tie in CO-OPS datums —
-needs VDatum MLLW→NAVD88**, as `data/NACCS/vdatum_lmsl_navd88.csv` was built); Brandywine Shoal ends 10-29 12:00 (pre-peak);
-Bridesburg none. Peaks arrive later upriver (Lewes 10-29 13:00 → Newbold 10-30 09:18) — the amplification the domain must compute.
-*USGS daily flow (Sandy peak day):* the two giants are **Delaware at Trenton 01463500 (6,780 mi², 25,800 cfs ≈ 730 m³/s — the
-upstream inflow)** and **Schuylkill at Philadelphia 01474500 (1,893 mi², 25,700 cfs)**; then Brandywine at Wilmington 01481500
-(7,220), Red Clay 01480015 (1,610), Neshaminy 01465500 (1,830), Chester 01477000 (1,560), Ridley, Crum, Pennypack 01467048,
-Frankford; NJ side small: Rancocas S Br 01465850 (668), Cohansey 01412800 (698), Maurice at Norma 01411500 (480), Assunpink
-01464000 (385), Cooper, Raccoon, Salem, Mantua, Pennsauken; DE: St Jones 01483700 (880). Use the MOST DOWNSTREAM gauge per river
-(Norristown / Perkiomen / Wissahickon / French / Valley are nested in the Schuylkill; Chadds Ford in Brandywine). Upper Raritan:
-Bound Brook 01403060 (3,900), Lawrence Brook, **Deep Run at Old Bridge 01406050 (16 mi², 303 cfs) — a South River tributary, the
-first partial proxy for the "ungauged" South River**; **Raritan at South Amboy 01406710** carries gage height only (interior stage
-check if its datum resolves). *USGS STN HWMs:* only **17 in the Delaware box, 5 in the upper Raritan** (of 910) — the Delaware is
-validated by the 10 NOAA gauges, not by marks. Still to do: AORC re-clip west (script is region-driven → after the V4 draft).
-**✅ v4 ACQUISITION started (09-24):** `V4` registered **acquisition_only** on `data/region_v4_PROVISIONAL_bbox.geojson`
-(lon −75.65..−73.55, lat 38.74..40.62; `EXPERIMENTS_BY_DOMAIN["v4"] = {}`; 175 tests OK). Pulled under `NJ_DOMAIN=v4`: HWMs
-`validation_v4/sandy_hwms_v4.geojson` (193, q1 50 / q2 82 / q3 35 / q4 26); AORC `precip_v4/aorc_sandy_v4.nc` (264 × 238 × 96 h);
-**MOTF `validation_v4/sandy_motf_extent_v4.tif` — 1,848 km² flooded on the rectangle** (v3's: 1,443). Design figure
-`reports/figures/v4_design_motf_extent.png`. Read off it: the NJ Delaware Bay shore floods in a km-wide marsh band from Cape
-May to Salem (Maurice / Dennis / Cohansey); above Salem a narrow river strip + tributary creeks to Trenton; on the Raritan a
-LARGE sheet in the South River valley (Sayreville / Old Bridge, lon −74.38..−74.28) and a thin strip to New Brunswick.
-🔵 **Open for the user: the Arthur Kill NJ shore (Carteret / Linden / Rahway R., lat 40.55–40.62) flooded and is outside v3**
-— v3 forces the AK at its mouth; computing it means forcing further up (Newark Bay / Kill van Kull). Not in today's scope.
-**✅ NACCS Delaware pull MERGED:** the user's 8 CHS zips were **H5-ONLY**, which the repack drops as duplicates; new
-`scripts/naccs_h5_to_csv.py` converts H5 points with no CSV twin into the webtool CSV layout, self-checked first against the
-overlap (14 ADCIRC points: identical Sandy timestamps, WL within 1e-9 m; 16 STWAVE: headers/codes identical, Δ 0), wrote
-`CHSFileDownload_2026-09-24_13-02-07_fromH5.zip` (660 members: 393 ADCIRC + 267 STWAVE), merged by `repack_naccs_zips.py`.
-**1,321 → 1,714 ADCIRC points** (29 on the mouth line, 92 lower bay, 192 upper bay/river, 69 Philadelphia → Trenton). Unchanged:
-v1_monmouth support sha `21f967f9798a6945`, v3 support `19f53cfd4cb804fb` (224 kept). `_originals_pending_delete/` 1.5 G (8 CHS
-H5 zips + the previous canonical set + the fromH5 zip) — deleting it is the user's call.
-**⬜ Next:** port `download_usgs_sandy_discharge.py` + `download_usgs_sandy_tidal.py` to `api.waterdata.usgs.gov` (legacy 503) with a
-V4 site list; make `download_noaa_sandy_wl.py` per-domain (it writes FIXED `data/gtsm/noaa_sandy_nj.nc` — running it under v4 would
-overwrite v3's forcing) + VDatum MLLW→NAVD88 for the four MLLW-only gauges; then the user draws the ring on the MOTF figure.
-**v4 ring — the user draws it from v3's (09-24):** an auto-traced draft (v3 ∪ Delaware water ∪ MOTF +300 m, 1,728 vertices)
-was built and REJECTED by the user as too complicated ("V3 is full of nice straight lines") — deleted, its generator stays in
-`logs/v4_design_2026-09-24/draft_ring.py`. `data/region_v4_EDITED.geojson` is a byte copy of `region_v3_EDITED_inland.geojson`
-(54 vertices) for the user to expand in QGIS. Context: `data/v4_design/v4_design_context.gpkg` (v3_ring, hwms_v4, naccs_points
-with Sandy max, noaa_gauges, mouth_line) + `validation_v4/sandy_motf_extent_v4.tif`. The user's second sketch is
-`data/v4_region_first_edit.geojson` (105 vertices, 21,964 km²; the ring probe above ran on it). ~~At build: every DE/PA
-edge face must be a WALL~~ — superseded the same evening: far banks are computed to +10 m (rule (2) above); the only walls
-are the dry river cuts and the Brooklyn cut, and §50 still says why a cut face is `mask_overrides` 3→1, never outflow.
-
-
+≤ 2). MOTF-wet land: p95 4.3 m, p99 7.6 m → the 100 m land band's zmax goes 6 → 10 m. Dry inland land at 200 m is cheap
+(~25 k faces per 1,000 km²). Literature: Nederhoff 2024 / USGS CoSMoS Atlantic = SFINCS 200 m + 1 m subgrid, inland ≈ +10 m,
+offshore −10 m, SLR 0–3 m; van Ormondt 2025 GMD = 100 m subgrid ≈ 25 m regular, "grid ≤ channel width"; Roelvink 2025 GMD
+= SnapWave cost ∝ nodes × bins × iterations (`reports/v4_design_literature_review_2026-09-24.md`). These probes read the v3
+clip / raw statewide DEM directly — NOT the corrupt v4 clip below — and stand.
+**What makes a good crossing (keep):** a FORCED line needs NACCS nodes ON it, a short crossing where the level is uniform (a
+channel or mouth, never an amplifying basin — v1.5), and both ends above the forced level + SLR (or it spills like the v3
+Raritan cut); a RIVER cut sits at the head of tide (falls / dam / weir, one-directional flow), walled never outflow (§50), with
+the discharge gauge at or upstream and the injection ≥ 500 m from any station; a LAND edge is ground ≥ +10 m. A gauge sets the
+value, the head of tide sets the place; a NACCS node matters only for forced lines. Only the SPAN of a line (water / ground
+< +10 m, + 150 m onto high ground each end) is the crossing; the rest is ordinary land edge and is audited as such.
+**What the 09-25 audit established (facts, independent of how the ring is drawn):**
+- **Mask mechanics a ring must survive** (`model.py` today): every DRY edge cell becomes free outflow (`OUTFLOW_MAX_BED =
+  1e4`) unless a `mask_overrides` box walls it — an undeclared low rim is a drain; an edge cell with bed < −1 becomes a
+  water-level BC and is demoted to a wall outside an arm box; bed < −10 is inactive unless boxed, and an inactive channel
+  connected to the ocean is not an interior hole.
+- **The checked crossings** (`v4_crossings.geojson`: kind, role, excluded side, span, status). River heads of tide: Delaware
+  at Trenton (40.238, span −74.831..−74.802 — the river runs W of the old line's end), Raritan at −74.520 (surface 3.3 m; HWM
+  6208, 4.21 m, must be inside; Bound Brook gauge 2.4 km up), Rahway, Passaic at Dundee Dam (the 7.4 m pool turns tidal at
+  (−74.128, 40.884)), Hackensack at 40.949, Schuylkill at Fairmount, the Brandywine gorge (dry), one bent line across the
+  Christina / White Clay / Red Clay heads (~−75.66..−75.69; the 09-24 line sat on TIDAL water and the ring ran ALONG the
+  Christina for 4 km), Neshaminy, Cohansey, Maurice. Other water bodies: Kill van Kull east (−74.090, St George hill →
+  Constable Hook, −16 m channel), the Narrows (v1.5's segment verbatim), Rockaway Inlet (2.4 km of dry Breezy Point on it),
+  Brooklyn wall (⚠️ UNDER REVIEW: its east ~1.4 km crosses water, the rest runs on 2–9.6 m), Cape Henlopen at 38.725 (the
+  Lewes–Rehoboth lowland pinches: 0.5 km < +2 m vs 4.9 km at 38.765), the C&D Canal (250 m of −13 m between 20 m banks; the
+  09-24 ring crossed it UNDECLARED), and the Upper Bay / Hudson edge route (SI east ridge ≥ +10 m, Bayonne spine, Jersey City
+  Heights, the Palisades crest). Rancocas and Salem need no cut.
+- **Hard spots no method avoids:** Bayonne south of 40.68 (~3 km of 1.7–2.9 m ground that Sandy wets between the KvK mouth
+  and the spine — wall it at the build), Brooklyn, Cape Henlopen. Neshaminy / Bristol (4.4–7.8 m) and Kensington (5.6–8.3 m)
+  rims are low but dry at +3 m.
+- 🔴 **Elevation:** `nj_10ft_dem_v4.tif` (the 09-24 statewide re-clip) was CORRUPT — > 5 m off 3DEP on 81 % of land cells
+  where the v3 clip of the same source agrees to 0.1 % — and outranked 3DEP, so the 09-24 draft ring's v4-only land heights
+  were wrong. **DELETED 09-25**; regenerate it from the kept raw 16 G DEM (`download_3dep.py clip_and_reproject` is the
+  suspect) and diff it against 3DEP before any use. `bed_v3_coarse_25m` is EXACT 0 over 5.7 km² of the upper Delaware
+  (40.0–40.25; 3DEP water surface 2.6–3.7 m) and 2.2 km² of the upper Raritan — no river bed on disk there. 3DEP blanks tidal
+  rivers (≤ 0 → NoData): water, not land. + 3DEP `n41w074` (the Palisades / Overpeck side).
+- **Why the ring is redrawn fresh (09-25, user: "I'm worrying that we lost the plot"):** two generators — the 09-24 draft
+  (lowland + 3 km reach + 2 km buffer + cut zones) and a HUC-12 watershed walker — each needed rule upon rule and still
+  misplaced rivers (the walker put the upper Neshaminy and the Millstone IN and the Assunpink and the Saddle OUT, because HUC-12
+  boundaries never fall at heads of tide). Both RETIRED with their outputs (git has `scripts/draft_region_v4.py`). Watershed
+  divides stay useful as a guide to WHERE an inland line can run (`data/v4_design/wbd_hu12_v4box.gpkg`), not as an algorithm.
+  Guide, not candidate: `data/v4_design/reference_ring_2026-09-25_generated.geojson` (26,048 km², 218 vertices — the last
+  generated ring, corrected DEM, Newark Bay in; `v4_audit.txt`: 15.8 km of rim < +10 m, the Bayonne strip the only Sandy-wet one).
+**⬜ BUILD items (domain.py, not the ring):** (1) 🔴 **491 km² of the Delaware is below −10 m, 472 of it connected to the shelf,
+reaching lat 40.07** — `mask_zmin` would deactivate the ship channel to Bristol. With the shelf inside the ring (Track C) the
+mouth forcing exists only as mask declarations still to write: an always-active estuary polygon + a closure corridor on the
+mouth line (v1.5 Ambrose pattern) + an inactive-seaward box + arm boxes. Also uncovered: Rockaway Inlet (−13.8), the upper AK,
+KvK / Newark Bay (−16.3), the C&D (−13). (2) Every river-cut SPAN a wall override, every forced line an arm box — line-buffer
+overrides rather than 20 boxes. (3) Bayonne and Breezy Point low rims → walls.
+**⬜ DATA GAPS (acquisition; none blocks drawing the ring):** (a) widen `V4`'s provisional bbox north to lat 41.0 for Newark Bay
+and re-pull AORC (0.28° short N, 0.05° W), HWMs, and a MOTF render north of 40.62; Passaic / Hackensack / Saddle gauges.
+(b) **NACCS nodes — the user is fetching:** `kvk_east` lon −74.100..−74.080, lat 40.640..40.658 (0 now); `cd_canal` lon
+−75.72..−75.68, lat 39.53..39.56 (nearest 9 km E at Reedy Point; wall it if ADCIRC has none in the canal); optional interior
+Newark Bay / lower Passaic / Hackensack (−74.17..−74.04, 40.64..40.80). (c) 🔴 The legacy USGS service
+`waterservices.usgs.gov/nwis` returns 503 on every call — port `download_usgs_sandy_discharge.py` + `download_usgs_sandy_tidal.py`
+to `api.waterdata.usgs.gov/ogcapi/v0` with a V4 site list (most-downstream gauge per river); make `download_noaa_sandy_wl.py`
+per-domain (it writes FIXED `data/gtsm/noaa_sandy_nj.nc` — running it under v4 would overwrite v3's forcing) + VDatum
+MLLW→NAVD88 for Ship John Shoal, Delaware City, Burlington, Newbold. (d) Waves: CORA (W limit −74.985) and NACCS STWAVE (S
+limit 38.832) leave the SW ocean edge without a source. (e) The NJ 10-ft re-clip (above) and a river bed for the upper
+Delaware / Raritan (eHydro Philadelphia district ships POSITIVE depths).
+**On disk for v4 (09-24/25):** `V4` registered **acquisition_only** on `data/region_v4_PROVISIONAL_bbox.geojson` (lon
+−75.65..−73.55, lat 38.74..40.62; `EXPERIMENTS_BY_DOMAIN["v4"] = {}`). HWMs `validation_v4/sandy_hwms_v4.geojson` (193; only 17
+in the Delaware box, 5 upper Raritan — the Delaware is validated by gauges, not marks); AORC `precip_v4/aorc_sandy_v4.nc`; MOTF
+`validation_v4/sandy_motf_extent_v4.tif` (1,848 km² on the rectangle; NJ-only source); NACCS **1,815 ADCIRC points** (Delaware
+mouth + bay + river to Trenton via `scripts/naccs_h5_to_csv.py` — the CHS zips were H5-only; upper AK 66, KvK / Newark Bay 57;
+v3 support sha `19f53cfd4cb804fb` unchanged; `_originals_pending_delete/` 2.3 G, the user's call); CUDEM 1/9″ Delaware tiles
+(`data/elevation_v4/cudem/raw/`) + `cudem_delaware_v4.vrt` (+ 1.8 G `.ovr` on scratch); 3DEP 1/3″ n39w076 / n40w076 / n41w076 /
+n41w075 / n41w074 (scratch); `data/v4_design/v4_design_context.gpkg` (v3_ring, hwms_v4, naccs_points with Sandy max,
+noaa_gauges, mouth_line); the user's sketch `data/v4_region_first_edit.geojson` (105 vertices, 21,964 km²). Sources
+(`logs/v4_design_2026-09-24/probe_sources.txt`): 10 NOAA CO-OPS Delaware gauges run through the peak (Lewes 1.85 NAVD, Cape May
+1.80, Reedy Point 1.87, Marcus Hook 2.18, Philadelphia 2.29; peaks arrive later upriver, Lewes 10-29 13:00 → Newbold 10-30
+09:18); USGS peak-day flow: Delaware at Trenton 01463500 ≈ 730 m³/s (the upstream inflow), Schuylkill 01474500 ≈ 728 m³/s,
+then Brandywine, Red Clay, Neshaminy, Chester…; Deep Run 01406050 is the first partial proxy for the ungauged South River.
+**⬜ Next:** agree the fresh-ring approach with the user (proposal: a hand-written list of NAMED vertices joined by straight
+lines, v3-style — crossings at the checked spans, inland stretches on ≥ +10 m ground near the HUC-12 divides — audited with
+`scripts/audit_region_v4.py`, reviewed by the user on one map) → `V4` entry → `build_refinement_v4.py` → `bed_v4_coarse_25m` →
+`probe_mesh_size.py` (SnapWave nodes ≤ 2.0 M) → build → the waves-off OVERFLOW test at +0/+2/+3 m before any wave run.
 **RUNNING at close of 2026-09-22 (~23:45):** on the REPAIRED domain (`premier.V3 = 1596ce1ecc71b374`), `naccs-premier`
 solve **61759163** (hal0383, emeraldrapids, 40 h, started 18:05) → validate 61759164, and `wave-wavemaker` solve
 **61759343** (hal0385, emeraldrapids, 40 h, started 18:15) → validate 61759344 — both land ~09-24 morning; pace from the
