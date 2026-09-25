@@ -17,6 +17,7 @@ data/*/*
 !data/region_*.geojson
 # v4: the checked crossing spans (2026-09-25) are design SOURCE, not bulk
 !data/v4_design/v4_crossings.geojson
+!data/v4_design/region_v4_vertices.csv
 !data/quadtree/*.geojson
 !data/wavemakers_v3/*.geojson
 !data/wavemakers_v3/*.csv

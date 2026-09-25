@@ -1294,12 +1294,12 @@
    "type": "Feature",
    "properties": {
     "name": "ocean_south_de",
-    "kind": "forced",
-    "role": "ocean edge south of Cape Henlopen (continues the shelf's water-level boundary to the beach)",
+    "kind": "sea_inactive",
+    "role": "sea seaward of the Delaware mouth line: SnapWave (Track C shelf) only, SFINCS-INACTIVE",
     "excluded_side": "S",
     "span_km": null,
     "status": "on ring 2026-09-25",
-    "note": "Shallow ocean from the Henlopen beach (-75.083) east along 38.725, then to 38.76 where the ocean DEM ends. NACCS nodes reach lat 38.723.",
+    "note": "Corrected 09-25 night: NOT forced. The design forces the Delaware at the MOUTH line; the sea seaward of it is inactive (STATUS build item 1: inactive-seaward box), so this edge needs no NACCS nodes. The Henlopen ocean beach (38.725-38.795) faces inactive water, i.e. is walled in effect. Ocean DEM ends at lat 38.755 east of -74.98.",
     "drawn_line": null
    },
    "geometry": {

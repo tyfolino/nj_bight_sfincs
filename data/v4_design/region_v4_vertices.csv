@@ -1,0 +1,193 @@
+# v4 region ring: NAMED vertices joined by straight lines (the polygon closes itself). SOURCE OF TRUTH.
+# Rule (user, 2026-09-25): contain the NACCS Sandy peak +3 m water, connected from the ocean, with a margin;
+# rivers are crossed where that water ends; neighbour basins with their own inlets (NY Upper Bay / Hudson,
+# Jamaica Bay, Rehoboth Bay, the Chesapeake) are shut off at the declared lines in v4_crossings.geojson.
+# Traced ONCE (logs/v4_design_2026-09-25/trace_ring_guide.py: 500 m net margin, gaps < ~10 km closed,
+# 1 km straight-line tolerance); from here on it is EDITED BY HAND, and checked, never regenerated.
+# Sections run: ocean south -> Delaware west shore -> C&D -> Wilmington -> PA -> Trenton -> NJ Delaware shore
+# -> Cumberland -> NJ Atlantic inland -> Raritan -> Newark -> Hackensack -> Hudson route -> NY corner -> ocean.
+name,lon,lat,note
+ocean_se,-73.55,38.855,
+ocean_s_bend,-74.97,38.76,
+ocean_sw,-74.985,38.725,
+de_south_01,-75.1396,38.7256,
+de_south_02,-75.1772,38.7396,
+de_south_03,-75.2686,38.7305,
+de_south_04,-75.3308,38.7465,
+de_bay_w_01,-75.3629,38.8248,
+de_bay_w_02,-75.4126,38.8517,
+de_bay_w_03,-75.4312,38.8854,
+de_bay_w_04,-75.4728,38.8992,
+de_bay_w_05,-75.4909,38.9352,
+de_bay_w_06,-75.5297,38.949,
+de_bay_w_07,-75.5421,38.9836,
+de_bay_w_08,-75.5213,39.0635,
+de_bay_w_09,-75.5412,39.0985,
+de_bay_w_10,-75.5365,39.1571,
+de_bay_w_11,-75.5682,39.2133,
+de_bay_w_12,-75.6274,39.2351,
+de_bay_w_13,-75.6243,39.2725,
+de_bay_w_14,-75.65,39.3007,
+de_bay_w_15,-75.644,39.3399,
+de_bay_w_16,-75.6884,39.3703,
+de_bay_w_17,-75.7239,39.4345,
+de_bay_w_18,-75.7143,39.46,
+de_cd_01,-75.699,39.46,
+de_cd_02,-75.699,39.5002,
+cd_s,-75.699,39.535,cd_canal forced span south end
+cd_n,-75.699,39.552,cd_canal forced span north end
+de_cd_04,-75.699,39.561,
+de_cd_05,-75.6789,39.5884,
+de_cd_06,-75.699,39.6171,
+de_cd_07,-75.699,39.62,
+de_cd_08,-75.701,39.62,
+de_cd_09,-75.7091,39.6315,
+wilmington_01,-75.6732,39.7164,
+wilmington_02,-75.5946,39.7376,
+wilmington_03,-75.5598,39.7661,
+wilmington_04,-75.5085,39.7695,
+pa_delco_01,-75.4213,39.8293,
+pa_delco_02,-75.4028,39.8641,
+pa_delco_crum,-75.357,39.884,added by hand: clear the Crum / Ridley Creek head
+pa_delco_03,-75.3099,39.8869,
+pa_delco_04,-75.2721,39.9262,
+pa_delco_05,-75.2241,39.9394,
+schuylkill_01,-75.2179,39.9975,
+schuylkill_02,-75.259,40.0357,
+schuylkill_03,-75.2532,40.0492,
+schuylkill_04,-75.1687,40.0021,
+schuylkill_05,-75.1312,39.9981,
+pa_bucks_01,-74.9419,40.0828,
+pa_bucks_02,-74.9213,40.1517,
+pa_bucks_03,-74.8691,40.1346,
+pa_bucks_04,-74.8298,40.1435,
+pa_bucks_05,-74.7961,40.2011,
+pa_bucks_06,-74.8607,40.2539,
+pa_bucks_07,-74.8659,40.2728,
+pa_bucks_08,-74.8494,40.2769,
+nj_crosswicks,-74.668,40.192,added by hand: clear the Crosswicks Creek branch
+nj_burlington_01,-74.6448,40.1638,
+nj_burlington_02,-74.6948,40.1401,
+nj_burlington_03,-74.7779,40.0434,
+nj_burlington_04,-74.7744,40.0105,
+nj_burlington_05,-74.7406,39.9884,
+nj_burlington_06,-74.7501,39.937,
+nj_burlington_07,-74.8087,39.9142,
+nj_burlington_08,-74.8466,39.9593,
+nj_burlington_09,-74.9192,39.9679,
+nj_gloucester_salem_01,-75.0251,39.876,
+nj_gloucester_salem_02,-75.0222,39.8157,
+nj_gloucester_salem_03,-75.1074,39.7882,
+nj_gloucester_salem_04,-75.1313,39.7665,
+nj_gloucester_salem_05,-75.2008,39.7655,
+nj_gloucester_salem_06,-75.2357,39.7285,
+nj_gloucester_salem_07,-75.2934,39.7185,
+nj_gloucester_salem_08,-75.353,39.6259,
+nj_gloucester_salem_09,-75.3306,39.5625,
+nj_gloucester_salem_10,-75.3648,39.5308,
+nj_gloucester_salem_11,-75.3699,39.5015,
+nj_cumberland_01,-75.3126,39.449,
+nj_cumberland_02,-75.2372,39.4667,
+nj_cumberland_03,-75.1829,39.3997,
+nj_cumberland_04,-75.1892,39.3668,
+nj_cumberland_05,-75.1688,39.333,
+nj_cumberland_06,-75.1137,39.3106,
+nj_cumberland_07,-75.0742,39.3196,
+nj_cumberland_08,-75.0528,39.3548,
+nj_cumberland_09,-75.0807,39.4088,
+nj_cumberland_10,-75.0715,39.4489,
+nj_cumberland_11,-75.0285,39.4026,
+nj_cumberland_12,-74.9425,39.3701,
+nj_cumberland_13,-74.9385,39.3368,
+nj_cumberland_14,-74.913,39.3169,
+nj_atlantic_s_01,-74.7894,39.342,
+nj_atlantic_s_02,-74.7672,39.3757,
+nj_atlantic_s_03,-74.792,39.528,moved by hand: clear the Tuckahoe head by ~1 km
+nj_atlantic_s_04,-74.6896,39.4697,
+nj_atlantic_s_05,-74.6574,39.3966,
+nj_atlantic_s_06,-74.6226,39.392,
+nj_atlantic_s_07,-74.5708,39.4126,
+nj_atlantic_s_08,-74.5272,39.503,
+nj_atlantic_s_09,-74.556,39.5423,
+nj_atlantic_s_10,-74.6252,39.547,
+nj_atlantic_s_11,-74.6395,39.5962,
+nj_atlantic_s_12,-74.6866,39.6265,
+nj_atlantic_s_13,-74.7004,39.6572,
+nj_atlantic_s_14,-74.6886,39.7008,
+nj_atlantic_s_15,-74.6605,39.7152,
+nj_atlantic_s_16,-74.6327,39.6727,
+nj_atlantic_s_17,-74.5984,39.6609,
+nj_atlantic_s_18,-74.5434,39.6936,
+nj_atlantic_s_19,-74.5108,39.6908,
+nj_atlantic_s_20,-74.4795,39.6555,
+nj_atlantic_s_21,-74.3806,39.637,
+nj_atlantic_n_01,-74.2651,39.7039,
+nj_atlantic_n_02,-74.2289,39.7568,
+nj_atlantic_n_03,-74.2413,39.8042,
+nj_atlantic_n_04,-74.215,39.9063,
+nj_atlantic_n_05,-74.2541,39.9678,
+nj_atlantic_n_06,-74.1708,40.0285,
+nj_atlantic_n_07,-74.171,40.0591,
+nj_atlantic_n_08,-74.1965,40.0859,
+nj_atlantic_n_09,-74.1579,40.128,
+nj_atlantic_n_10,-74.158,40.1649,
+nj_atlantic_n_11,-74.1055,40.1807,
+nj_atlantic_n_12,-74.0363,40.2608,
+nj_atlantic_n_13,-74.0547,40.2898,
+nj_atlantic_n_14,-74.1064,40.2965,
+nj_atlantic_n_15,-74.1297,40.3156,
+nj_atlantic_n_16,-74.1124,40.3727,
+nj_atlantic_n_17,-74.135,40.4039,
+nj_atlantic_n_18,-74.1861,40.4151,
+nj_atlantic_n_19,-74.2506,40.3921,
+nj_atlantic_n_20,-74.3065,40.3974,
+nj_atlantic_n_21,-74.364,40.3626,
+nj_atlantic_n_22,-74.3993,40.3673,
+nj_atlantic_n_23,-74.4186,40.3814,
+nj_atlantic_n_24,-74.3906,40.4137,
+nj_atlantic_n_25,-74.3986,40.4434,
+raritan_01,-74.5159,40.5291,
+raritan_02,-74.5767,40.533,
+raritan_03,-74.5843,40.5447,
+raritan_04,-74.5209,40.5697,
+raritan_05,-74.4728,40.5276,
+raritan_06,-74.4016,40.5038,
+raritan_07,-74.3234,40.5336,
+newark_01,-74.3006,40.6285,
+newark_02,-74.1846,40.7385,
+newark_03,-74.1345,40.8548,
+newark_04,-74.1376,40.8877,
+newark_05,-74.0746,40.8994,
+hackensack_01,-74.0392,40.9653,
+hackensack_02,-73.9918,40.9937,
+hackensack_03,-73.9694,40.9787,
+hackensack_04,-73.9951,40.9325,
+hudson_route_01,-73.9641,40.8916,upper_bay_hudson_route (declared edge)
+hudson_route_02,-73.9661,40.8834,upper_bay_hudson_route (declared edge)
+hudson_route_03,-73.9856,40.8393,upper_bay_hudson_route (declared edge)
+hudson_route_04,-73.995,40.828,upper_bay_hudson_route (declared edge)
+hudson_route_05,-74.012,40.804,upper_bay_hudson_route (declared edge)
+hudson_route_06,-74.0146,40.79,upper_bay_hudson_route (declared edge)
+hudson_route_07,-74.0382,40.7592,upper_bay_hudson_route (declared edge)
+hudson_route_08,-74.056,40.748,upper_bay_hudson_route (declared edge)
+hudson_route_09,-74.076,40.724,upper_bay_hudson_route (declared edge)
+hudson_route_10,-74.086,40.708,upper_bay_hudson_route (declared edge)
+hudson_route_11,-74.096,40.7,upper_bay_hudson_route (declared edge)
+hudson_route_12,-74.1,40.69,upper_bay_hudson_route (declared edge)
+hudson_route_13,-74.106,40.679,upper_bay_hudson_route (declared edge)
+hudson_route_14,-74.114,40.668,upper_bay_hudson_route (declared edge)
+hudson_route_15,-74.1,40.66,upper_bay_hudson_route (declared edge)
+hudson_route_16,-74.09,40.6545,upper_bay_hudson_route (declared edge)
+hudson_route_17,-74.09,40.644,upper_bay_hudson_route (declared edge)
+hudson_route_18,-74.08,40.639,upper_bay_hudson_route (declared edge)
+hudson_route_19,-74.081,40.629,upper_bay_hudson_route (declared edge)
+hudson_route_20,-74.077,40.619,upper_bay_hudson_route (declared edge)
+hudson_route_21,-74.068,40.61,upper_bay_hudson_route (declared edge)
+narrows_w,-74.0586,40.6021,narrows (forced)
+narrows_e,-74.0294,40.6109,narrows (forced)
+brooklyn_mid,-73.95,40.602,brooklyn_wall
+brooklyn_e,-73.902,40.58,brooklyn_wall
+rockaway_2,-73.93,40.546,rockaway_inlet (forced)
+rockaway_1,-73.94,40.53,rockaway_inlet (forced)
+ocean_rockaway_s,-73.94,40.45,
+ocean_ne,-73.55,40.45,

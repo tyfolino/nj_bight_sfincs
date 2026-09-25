@@ -30,7 +30,7 @@ outside the ring, MOTF land inside it · I every valley the edge crosses (ground
 + MARGIN), with the USGS discharge gauges upstream of it.
 
 Writes data/v4_design/v4_audit.{txt,gpkg} (layers rim_segments, rim_flags,
-declared_lines, deeper_than_zmin, target_outside, valley_crossings) and, with --maps, reports/figures/v4_audit_*.png.
+declared_lines, deeper_than_zmin, target, target_outside, valley_crossings) and, with --maps, reports/figures/v4_audit_*.png.
 
 History: born 2026-09-25 as the independent check of the generated v4 draft ring; the
 two generators it checked (`scripts/draft_region_v4.py`, a HUC-12 watershed walker)
@@ -334,7 +334,7 @@ def main() -> int:
     # ── declared lines: the SPANS in the crossings file (the part of each line that is
     # the crossing) — an overlong line must not hide a low rim ─────────────────────
     cx = gpd.read_file(CROSSINGS).to_crs(CRS)
-    cx = cx[cx.kind.isin(["cut", "forced", "wall"])]
+    cx = cx[cx.kind.isin(["cut", "forced", "wall", "sea_inactive"])]
     decl = [(r["name"], r["kind"], r.geometry) for _, r in cx.iterrows()]
     dgdf = gpd.GeoDataFrame(
         {"name": [d[0] for d in decl], "kind": [d[1] for d in decl]},
@@ -704,6 +704,7 @@ def main() -> int:
         say(show.drop(columns="geometry").to_string(index=False))
 
     # ── write ─────────────────────────────────────────────────────────────────────
+    OUT_GPKG.unlink(missing_ok=True)  # no stale layer survives a re-run
     rim.to_file(OUT_GPKG, layer="rim_segments", driver="GPKG")
     bad.to_file(OUT_GPKG, layer="rim_flags", driver="GPKG")
     dgdf.merge(dtab, on=["name", "kind"]).to_file(
@@ -722,6 +723,15 @@ def main() -> int:
     if tout is not None:
         tout.to_file(OUT_GPKG, layer="target_outside", driver="GPKG")
     val.to_file(OUT_GPKG, layer="valley_crossings", driver="GPKG")
+    tp = [
+        shape(g)
+        for g, v in shapes(target.astype("uint8"), mask=target, transform=T)
+        if v == 1
+    ]
+    tp = gpd.GeoDataFrame(geometry=tp, crs=CRS)
+    tp = tp[tp.area > 2 * RES * RES]
+    tp.geometry = tp.simplify(RES / 2)
+    tp.to_file(OUT_GPKG, layer="target", driver="GPKG")
     if args.maps:
         maps(ring, args.ring.name)
     OUT_TXT.write_text("\n".join(_lines) + "\n")
@@ -735,7 +745,7 @@ def maps(ring, ring_name: str) -> None:
     decl = gpd.read_file(OUT_GPKG, layer="declared_lines")
     deep = gpd.read_file(OUT_GPKG, layer="deeper_than_zmin")
     hwm = gpd.read_file(DATA / "validation_v4" / "sandy_hwms_v4.geojson").to_crs(CRS)
-    colors = {"cut": "orange", "forced": "cyan", "wall": "red"}
+    colors = {"cut": "orange", "forced": "cyan", "wall": "red", "sea_inactive": "grey"}
     say("\nG. ZOOM MAPS")
 
     for name, (w, s, e, n) in WINDOWS.items():
