@@ -397,13 +397,13 @@
   {
    "type": "Feature",
    "properties": {
-    "name": "raritan_manville",
+    "name": "millstone_blackwells_mills",
     "kind": "cut",
     "role": "river head of tide",
     "excluded_side": "W",
     "span_km": 0.8,
-    "status": "on ring 2026-09-25 (+3 m rule)",
-    "note": "Raritan + Millstone confluence, above Calco Dam (+3 m passes Bound Brook); Q = Manville 01400500 (Raritan) + Blackwells Mills 01402000 (Millstone), or Bound Brook 01403060 below. Was 'raritan_bound_brook' (head of tide today): LINESTRING (-74.52 40.54, -74.52 40.56)",
+    "status": "on ring 2026-09-26 (renamed: it was always the Millstone crossing)",
+    "note": "Millstone River where the ring crosses it just above the Raritan confluence (09-26: the USGS port's NLDI trace showed the cut named raritan_manville sits on the MILLSTONE; the Raritan main stem crosses 1.46 km NE, now its own cut). Q = Blackwells Mills 01402000 (258 mi2, 8.6 km above along the river). Raritan + Millstone confluence, above Calco Dam (+3 m passes Bound Brook); Q = Manville 01400500 (Raritan) + Blackwells Mills 01402000 (Millstone), or Bound Brook 01403060 below. Was 'raritan_bound_brook' (head of tide today): LINESTRING (-74.52 40.54, -74.52 40.56)",
     "drawn_line": null
    },
    "geometry": {
@@ -483,45 +483,171 @@
   {
    "type": "Feature",
    "properties": {
-    "name": "rahway",
+    "name": "raritan_manville",
     "kind": "cut",
     "role": "river head of tide",
     "excluded_side": "W",
-    "span_km": 0.3,
-    "status": "on ring 2026-09-25 (+3 m rule)",
-    "note": "Rahway above the +3 m end; Q = Rahway 01395000. Was 'rahway_dam' (head of tide today): LINESTRING (-74.29 40.585, -74.29 40.622, -74.262 40.64)",
+    "span_km": 1.55,
+    "status": "on ring 2026-09-26 (new: the main stem had NO declared crossing)",
+    "note": "Raritan main stem where the ring crosses it (NLDI crossing -74.5695 40.5505): the audit's 1.6 km valley, floor 6.8 m below the +3 m level 7.1 \u2014 undeclared it was a free-outflow drain with no inflow. Q = Manville 01400500 (490 mi2, 1.3 km above). With the Millstone: 748 of 785 mi2 at Bound Brook 01403060.",
     "drawn_line": null
    },
    "geometry": {
     "type": "LineString",
     "coordinates": [
      [
-      -74.30069341110233,
-      40.62811177269994
+      -74.574744,
+      40.548472
      ],
      [
-      -74.30055425118809,
-      40.62854347807137
+      -74.574219,
+      40.548679
      ],
      [
-      -74.30018446355886,
-      40.62889490853492
+      -74.573695,
+      40.548886
      ],
      [
-      -74.29981467204294,
-      40.629246337760996
+      -74.57317,
+      40.549093
      ],
      [
-      -74.29944487664025,
-      40.62959776574958
+      -74.572646,
+      40.5493
      ],
      [
-      -74.29907507735071,
-      40.62994919250059
+      -74.572121,
+      40.549507
      ],
      [
-      -74.29870527417422,
-      40.63030061801401
+      -74.571597,
+      40.549713
+     ],
+     [
+      -74.571072,
+      40.54992
+     ],
+     [
+      -74.570548,
+      40.550127
+     ],
+     [
+      -74.570023,
+      40.550334
+     ],
+     [
+      -74.569499,
+      40.550541
+     ],
+     [
+      -74.568974,
+      40.550748
+     ],
+     [
+      -74.56845,
+      40.550955
+     ],
+     [
+      -74.567925,
+      40.551162
+     ],
+     [
+      -74.567401,
+      40.551369
+     ],
+     [
+      -74.566876,
+      40.551576
+     ],
+     [
+      -74.566352,
+      40.551783
+     ],
+     [
+      -74.565827,
+      40.55199
+     ],
+     [
+      -74.565303,
+      40.552197
+     ],
+     [
+      -74.564778,
+      40.552404
+     ],
+     [
+      -74.564254,
+      40.552611
+     ],
+     [
+      -74.563729,
+      40.552817
+     ],
+     [
+      -74.563204,
+      40.553024
+     ],
+     [
+      -74.56268,
+      40.553231
+     ],
+     [
+      -74.562155,
+      40.553438
+     ],
+     [
+      -74.561631,
+      40.553645
+     ],
+     [
+      -74.561106,
+      40.553852
+     ],
+     [
+      -74.560582,
+      40.554059
+     ],
+     [
+      -74.560057,
+      40.554266
+     ],
+     [
+      -74.559533,
+      40.554473
+     ],
+     [
+      -74.559008,
+      40.55468
+     ],
+     [
+      -74.558483,
+      40.554887
+     ]
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "rahway",
+    "kind": "cut",
+    "role": "river head of tide",
+    "excluded_side": "W",
+    "span_km": 0.3,
+    "status": "on ring 2026-09-26 (moved N: one crossing)",
+    "note": "Rahway: ring corner newark_01 moved N 09-26 so the meander below it is IN and the river crosses ONCE at (-74.3029, 40.6464) \u2014 the old cut (-74.300 40.628..-74.299 40.630) sat where the river crossed 3 times in 800 m. Ground here is 10+ m, above the +3 m level + margin (no audit valley): a 300 m span centred on the crossing. Q = Rahway 01395000. Was 'rahway_dam' (head of tide today): LINESTRING (-74.29 40.585, -74.29 40.622, -74.262 40.64)",
+    "drawn_line": null
+   },
+   "geometry": {
+    "type": "LineString",
+    "coordinates": [
+     [
+      -74.304151,
+      40.645442
+     ],
+     [
+      -74.301672,
+      40.647376
      ]
     ]
    }
@@ -851,73 +977,37 @@
     "kind": "cut",
     "role": "river head of tide",
     "excluded_side": "N",
-    "span_km": 0.7,
-    "status": "on ring 2026-09-25 (+3 m rule)",
-    "note": "Maurice above Union Lake (+3 m overtops the Union Lake dam at 50 m; check the crest); Q = Norma 01411500. Was 'maurice_millville' (head of tide today): LINESTRING (-75.075 39.403, -75.025 39.403)",
+    "span_km": 0.25,
+    "status": "on ring 2026-09-26 (apex moved: one crossing)",
+    "note": "Maurice above Union Lake: apex nj_cumberland_10 moved W+N and a shoulder nj_cumberland_10b added 09-26 so the river's eastward bend is IN and it crosses ONCE (the audit's 0.3 km valley at -75.0831 39.4553, floor 5.6 vs level 4.9); the old apex sat on the bend (3 crossings in 300 m). Q = Norma 01411500. (+3 m overtops the Union Lake dam at 50 m; \u2b1c check the crest.)",
     "drawn_line": null
    },
    "geometry": {
     "type": "LineString",
     "coordinates": [
      [
-      -75.07121614215467,
-      39.44859461210306
+      -75.083097,
+      39.455257
      ],
      [
-      -75.07087640193363,
-      39.44822909881986
+      -75.082533,
+      39.45515
      ],
      [
-      -75.07053666526636,
-      39.44786358451805
+      -75.081969,
+      39.455042
      ],
      [
-      -75.07019693215278,
-      39.44749806919767
+      -75.081404,
+      39.454935
      ],
      [
-      -75.06985720259277,
-      39.447132552858754
+      -75.08084,
+      39.454827
      ],
      [
-      -75.06951747658631,
-      39.44676703550134
-     ],
-     [
-      -75.06917775413328,
-      39.44640151712546
-     ],
-     [
-      -75.0688380352336,
-      39.44603599773116
-     ],
-     [
-      -75.0684983198872,
-      39.44567047731848
-     ],
-     [
-      -75.06815860809401,
-      39.44530495588746
-     ],
-     [
-      -75.06781889985393,
-      39.44493943343812
-     ],
-     [
-      -75.06747919516688,
-      39.44457390997052
-     ],
-     [
-      -75.0671394940328,
-      39.44420838548469
-     ],
-     [
-      -75.06679979645159,
-      39.44384285998067
-     ],
-     [
-      -75.06646010242316,
-      39.443477333458496
+      -75.080276,
+      39.45472
      ]
     ]
    }
