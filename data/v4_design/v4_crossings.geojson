@@ -16,8 +16,8 @@
     "role": "other water body (Upper Bay)",
     "excluded_side": "E",
     "span_km": 1.09,
-    "status": "NACCS nodes needed (user fetching)",
-    "note": "Kill van Kull east mouth, St George hill (34 m) -> Constable Hook (~3 m), 16 m channel; Newark Bay IN (user 09-25). \u26a0\ufe0f NO NACCS points here yet \u2014 the user fetches them",
+    "status": "NACCS covered 2026-09-26: 11 wet-all-window nodes within 1.5 km, worst gap 0.34 km, peaks 3.45-3.56 m",
+    "note": "Kill van Kull east mouth, St George hill (34 m) -> Constable Hook (~3 m), 16 m channel; Newark Bay IN (user 09-25). NACCS nodes pulled by the user 09-26 (13 within 1.5 km, 2 dry-screened)",
     "drawn_line": "LINESTRING (-74.09 40.644, -74.09 40.6545)"
    },
    "geometry": {
@@ -93,14 +93,14 @@
   {
    "type": "Feature",
    "properties": {
-    "name": "brooklyn_wall",
+    "name": "jamaica_bay_wall",
     "kind": "wall",
-    "role": "other water body (Jamaica Bay) \u2014 land wall",
-    "excluded_side": "N",
-    "span_km": 11.48,
-    "status": "UNDER REVIEW: east ~1.4 km crosses water (Plumb Beach / Sheepshead Bay channels); all of it on 2-9.6 m ground",
-    "note": "Floyd Bennett -> the Narrows' Brooklyn end across Gravesend: the one +10 m exception (09-25: no longer runs 1.2 km into the Narrows channel)",
-    "drawn_line": "LINESTRING (-73.902 40.58, -73.95 40.602, -74.0294 40.6109)"
+    "role": "other water body (Jamaica Bay) \u2014 wall with water on BOTH sides",
+    "excluded_side": "E",
+    "span_km": 7.93,
+    "status": "on ring 2026-09-26 (Brooklyn option B, user)",
+    "note": "Replaces brooklyn_wall (09-25), which ran across ground Sandy itself flooded (4.3 km2 behind it at +0, 18.5 at +3). Option B (user 09-26, 'the most defensible'): the south Brooklyn plain is IN to 500 m clear of the +3 m target; this wall shuts Jamaica Bay, which has its own inlet (the forced rockaway_inlet line). No natural divide exists (Marine Park / Mill Basin 0-6 m), so water stands on both sides at +3 m \u2014 wall it at the build.",
+    "drawn_line": null
    },
    "geometry": {
     "type": "LineString",
@@ -110,12 +110,12 @@
       40.58
      ],
      [
-      -73.95,
-      40.602
+      -73.912,
+      40.6
      ],
      [
-      -74.02875802758538,
-      40.61082826878175
+      -73.915,
+      40.65
      ]
     ]
    }
@@ -154,8 +154,8 @@
     "role": "other water body (Chesapeake)",
     "excluded_side": "W",
     "span_km": 1.03,
-    "status": "NACCS nodes needed (user fetching); wall it if ADCIRC has none in the canal",
-    "note": "C&D Canal (09-25 audit: an UNDECLARED crossing): 250 m of -13 m canal between 20 m banks; 9 NACCS pts 1.76-1.82 m; forced, not walled (a short channel with the level uniform across it)",
+    "status": "NACCS covered 2026-09-26: forced (not walled); the canal has a 0.6 m Sandy-peak GRADIENT, so the line's value comes from the along-canal nodes, not Reedy Point",
+    "note": "C&D Canal: 250 m of -13 m canal between 20 m banks. The user's 09-26 pull put ADCIRC nodes down the whole canal (SP10807-10812, 10-11 m deep): Sandy peak 1.76-1.83 m at Reedy Point (Delaware end) falling to 1.15 m at Chesapeake City; at this line ~1.5 m (SP10810 at 773 m E, 1.51; SP10809 2.7 km W, 1.38). The 09-25 note's '9 pts 1.76-1.82 m' were the Reedy Point nodes 9 km east and would have over-forced the line by ~0.3 m. Consider moving the line ~770 m E onto SP10810 (lon -75.690).",
     "drawn_line": "LINESTRING (-75.699 39.535, -75.699 39.552)"
    },
    "geometry": {
@@ -180,7 +180,7 @@
     "role": "ocean (bay mouth)",
     "excluded_side": "",
     "span_km": 19.09,
-    "status": "7 NACCS pts within 1.5 km; lies INSIDE a ring that keeps the shelf (Track C) \u2014 forcing comes from mask declarations",
+    "status": "support adequate (2026-09-26): 7 pts within 1.5 km in 3 clusters, two ~8 km gaps; leave-one-out peak error <= 0.006 m",
     "note": "Cape May Point -> Cape Henlopen; DE end on 0.8-5.5 m spit, not the Great Dune",
     "drawn_line": ""
    },

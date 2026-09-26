@@ -45,6 +45,8 @@ zips go to _originals_pending_delete/ with the CHS zip, never overwritten in pla
 from __future__ import annotations
 
 import argparse
+import csv
+import io
 import json
 import re
 import sys
@@ -63,6 +65,36 @@ SOURCE_GLOB = "CHSFileDownload_*.zip"
 PRODUCT_RE = re.compile(r"_([A-Z]+\d+)_[A-Za-z]+\.csv$")
 
 
+def converted_members() -> set[str]:
+    """Member names that `naccs_h5_to_csv.py` wrote (every *_fromH5.zip we hold)."""
+    names: set[str] = set()
+    for z in [*NACCS.glob("*_fromH5.zip"), *PENDING.glob("*_fromH5.zip")]:
+        names.update(zipfile.ZipFile(z).namelist())
+    return names
+
+
+def _values_agree(a: bytes, b: bytes, rtol: float = 1e-9) -> bool:
+    """Same CSV content up to float formatting: headers and text fields identical,
+    same row count, every numeric field within `rtol` (NUL padding stripped)."""
+    ra = list(csv.reader(io.StringIO(a.rstrip(b"\x00").decode())))
+    rb = list(csv.reader(io.StringIO(b.rstrip(b"\x00").decode())))
+    if ra[:3] != rb[:3] or len(ra) != len(rb):
+        return False
+    for row_a, row_b in zip(ra[3:], rb[3:]):
+        if len(row_a) != len(row_b):
+            return False
+        for x, y in zip(row_a, row_b):
+            try:
+                fx, fy = float(x), float(y)
+            except ValueError:
+                if x != y:
+                    return False
+                continue
+            if abs(fx - fy) > rtol * max(1.0, abs(fy)):
+                return False
+    return True
+
+
 def inventory(zips: list[Path]) -> tuple[dict, list, dict]:
     """Scan source zips. Return (members, provenance, per_zip_counts).
 
@@ -71,10 +103,26 @@ def inventory(zips: list[Path]) -> tuple[dict, list, dict]:
     provenance: [(zip name, member name, crc, size)] for everything else —
     README/ and PATHLOOKUP.txt legitimately differ per request, so they are
     kept per-source rather than asserted identical.
+
+    ONE EXCEPTION to the abort (2026-09-26): a member we hold only as a CSV that
+    `naccs_h5_to_csv.py` converted from H5 is never byte-identical to the webtool's
+    own CSV of the same point (float formatting, NUL padding). When a webtool copy
+    arrives, it REPLACES the converted one — provided `_values_agree` passes; any
+    real disagreement still aborts. The first 09-26 pull re-requested 125 such
+    points (worst relative difference 5e-15).
     """
+    converted = converted_members()
+    superseded = 0
     members: dict[str, dict] = {}
     provenance: list[tuple[str, str, int, int, bool]] = []
     per_zip = {}
+    by_name = {z.name: z for z in zips}
+
+    def _is_converted_copy(zip_name: str, member: str) -> bool:
+        return member in converted and (
+            zip_name.startswith("naccs_repack_") or zip_name.endswith("_fromH5.zip")
+        )
+
     for z in zips:
         zf = zipfile.ZipFile(z)
         infos = zf.infolist()
@@ -85,8 +133,9 @@ def inventory(zips: list[Path]) -> tuple[dict, list, dict]:
             if not i.filename.startswith(("CSV/", "H5/")):
                 # a canonical zip's PROVENANCE/ tree is already in its final layout
                 key = None if z.name.startswith("naccs_repack_") else z.name
-                provenance.append((key or z.name, i.filename, i.CRC, i.file_size,
-                                   key is None))
+                provenance.append(
+                    (key or z.name, i.filename, i.CRC, i.file_size, key is None)
+                )
                 continue
             rec = members.get(i.filename)
             if rec is None:
@@ -95,6 +144,18 @@ def inventory(zips: list[Path]) -> tuple[dict, list, dict]:
                 )
             else:
                 if rec["crc"] != i.CRC or rec["size"] != i.file_size:
+                    held = rec["sources"][0]
+                    old_conv = _is_converted_copy(held, i.filename)
+                    new_conv = _is_converted_copy(z.name, i.filename)
+                    if old_conv != new_conv:
+                        a = zipfile.ZipFile(by_name[held]).read(i.filename)
+                        if _values_agree(zf.read(i.filename), a):
+                            superseded += 1
+                            if old_conv:  # the webtool copy just arrived: it wins
+                                members[i.filename] = dict(
+                                    crc=i.CRC, size=i.file_size, sources=[z.name]
+                                )
+                            continue
                     sys.exit(
                         f"ABORT: {i.filename} differs between {rec['sources'][0]} "
                         f"(crc {rec['crc']:08x}, {rec['size']} B) and {z.name} "
@@ -103,6 +164,11 @@ def inventory(zips: list[Path]) -> tuple[dict, list, dict]:
                         "hand before repacking."
                     )
                 rec["sources"].append(z.name)
+    if superseded:
+        print(
+            f"[scan] {superseded} H5-converted member(s) replaced by the webtool's "
+            "own CSV (values agree to 1e-9)"
+        )
     return members, provenance, per_zip
 
 
@@ -176,28 +242,32 @@ def verify_output(out: Path, mapping: dict, members: dict, prov_crc: dict) -> bo
     except zipfile.BadZipFile:
         return False
     got = {i.filename: i.CRC for i in zf.infolist() if not i.is_dir()}
-    want = {
-        o: _expected_crc(src, members, prov_crc) for o, src in mapping.items()
-    }
+    want = {o: _expected_crc(src, members, prov_crc) for o, src in mapping.items()}
     return got == want
 
 
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    ap.add_argument("--apply", action="store_true", help="write + swap (default: report)")
+    ap.add_argument(
+        "--apply", action="store_true", help="write + swap (default: report)"
+    )
     args = ap.parse_args()
 
     new = sorted(NACCS.glob(SOURCE_GLOB))
     canon = sorted(NACCS.glob("naccs_repack_*.zip")) if new else []
     zips = new + canon
     if canon:
-        print(f"[merge] {len(new)} new CHS zip(s) + {len(canon)} canonical zips as sources")
+        print(
+            f"[merge] {len(new)} new CHS zip(s) + {len(canon)} canonical zips as sources"
+        )
     if not new:
         # after a completed swap the originals live in PENDING; report that state
         done = sorted(NACCS.glob("naccs_repack_*.zip"))
         if done:
-            print(f"[state] no {SOURCE_GLOB} in {NACCS}; {len(done)} repacked zips "
-                  f"present — repack already applied.")
+            print(
+                f"[state] no {SOURCE_GLOB} in {NACCS}; {len(done)} repacked zips "
+                f"present — repack already applied."
+            )
             if PENDING.exists():
                 n = len(list(PENDING.glob("*.zip")))
                 print(f"[state] {n} originals await deletion in {PENDING}")
@@ -208,12 +278,12 @@ def main() -> None:
     members, provenance, per_zip = inventory(zips)
     prov_crc = {(z, n): crc for z, n, crc, _s, _v in provenance}
     n_dup = sum(len(r["sources"]) - 1 for r in members.values())
-    dup_bytes = sum(
-        r["size"] * (len(r["sources"]) - 1) for r in members.values()
+    dup_bytes = sum(r["size"] * (len(r["sources"]) - 1) for r in members.values())
+    print(
+        f"[scan] {len(members)} unique data members; {n_dup} redundant copies "
+        f"({dup_bytes / 1e9:.2f} GB uncompressed) — all CRC-verified identical; "
+        f"{len(provenance)} provenance members kept per-source"
     )
-    print(f"[scan] {len(members)} unique data members; {n_dup} redundant copies "
-          f"({dup_bytes / 1e9:.2f} GB uncompressed) — all CRC-verified identical; "
-          f"{len(provenance)} provenance members kept per-source")
 
     outputs = plan_outputs(members, provenance)
     prov_size = {(z, n): s for z, n, _c, s, _v in provenance}
@@ -223,8 +293,10 @@ def main() -> None:
             members[s]["size"] if z is None else prov_size[(z, s)]
             for z, s in mapping.values()
         )
-        print(f"[plan] {out_name}: {len(mapping)} members, "
-              f"{size / 1e9:.2f} GB uncompressed")
+        print(
+            f"[plan] {out_name}: {len(mapping)} members, "
+            f"{size / 1e9:.2f} GB uncompressed"
+        )
 
     if not args.apply:
         print("\nreport only — rerun with --apply to write, verify and swap.")
@@ -243,16 +315,18 @@ def main() -> None:
             sys.exit(f"ABORT: {out_name} failed post-write verification")
         print(f"[write] {out_name} verified ({out.stat().st_size / 1e6:.0f} MB)")
 
-    MANIFEST.write_text(json.dumps(
-        dict(
-            sources={z.name: per_zip[z.name] for z in zips},
-            members={
-                n: dict(crc=f"{r['crc']:08x}", size=r["size"], sources=r["sources"])
-                for n, r in sorted(members.items())
-            },
-        ),
-        indent=1,
-    ))
+    MANIFEST.write_text(
+        json.dumps(
+            dict(
+                sources={z.name: per_zip[z.name] for z in zips},
+                members={
+                    n: dict(crc=f"{r['crc']:08x}", size=r["size"], sources=r["sources"])
+                    for n, r in sorted(members.items())
+                },
+            ),
+            indent=1,
+        )
+    )
     print(f"[write] manifest -> {MANIFEST}")
 
     # swap: repacked zips into data/NACCS/, originals out of the reader's glob

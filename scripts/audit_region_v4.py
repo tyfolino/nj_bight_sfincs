@@ -78,7 +78,7 @@ MARGIN = 2.0  # an undeclared edge wants ground >= that level + MARGIN
 
 # Basins that have their own inlets, so the v4 boundary never forces them: shut off (lon/lat).
 # Edges follow the declared lines in v4_crossings.geojson (upper_bay_hudson_route, narrows,
-# brooklyn_wall, rockaway_inlet; cape_henlopen / ocean_south_de; cd_canal).
+# jamaica_bay_wall, rockaway_inlet; cape_henlopen / ocean_south_de; cd_canal).
 _ROUTE = [(-74.0586, 40.6021), (-74.068, 40.61), (-74.077, 40.619), (-74.081, 40.629),
           (-74.08, 40.639), (-74.09, 40.644), (-74.09, 40.6545), (-74.1, 40.66),
           (-74.114, 40.668), (-74.106, 40.679), (-74.1, 40.69), (-74.096, 40.7),
@@ -88,7 +88,12 @@ _ROUTE = [(-74.0586, 40.6021), (-74.068, 40.61), (-74.077, 40.619), (-74.081, 40
 NEIGHBOUR_BASINS = {
     "ny_upper_bay_hudson_jamaica_bay": _ROUTE
     + [(-73.0, 41.05), (-73.0, 40.45), (-73.94, 40.45), (-73.94, 40.53),
-       (-73.93, 40.546), (-73.902, 40.58), (-73.95, 40.602), (-74.0294, 40.6109)],
+       (-73.93, 40.546), (-73.902, 40.58),
+       # jamaica_bay_wall, then the Harbor Hill moraine crest (Brooklyn option B, 09-26):
+       # drawn well NORTH of the ring's Brooklyn edge so the audit, not this polygon,
+       # decides whether the +3 m water stops short of it
+       (-73.912, 40.60), (-73.915, 40.65), (-73.915, 40.675), (-73.94, 40.67),
+       (-73.97, 40.66), (-74.00, 40.645), (-74.025, 40.625), (-74.0294, 40.6109)],
     "rehoboth_bay_and_the_sea_south": [(-76.0, 38.40), (-76.0, 38.725), (-74.985, 38.725),
                                        (-74.97, 38.76), (-73.0, 38.855), (-73.0, 38.40)],
     "chesapeake_via_cd_canal": [(-76.0, 39.46), (-75.699, 39.46), (-75.699, 39.62),

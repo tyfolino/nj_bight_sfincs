@@ -185,8 +185,14 @@ hudson_route_20,-74.077,40.619,upper_bay_hudson_route (declared edge)
 hudson_route_21,-74.068,40.61,upper_bay_hudson_route (declared edge)
 narrows_w,-74.0586,40.6021,narrows (forced)
 narrows_e,-74.0294,40.6109,narrows (forced)
-brooklyn_mid,-73.95,40.602,brooklyn_wall
-brooklyn_e,-73.902,40.58,brooklyn_wall
+bk_bensonhurst,-74.018,40.617,Brooklyn option B (user 09-26): 500 m clear of the +3 m target
+bk_gravesend,-73.982,40.614,
+bk_midwood,-73.953,40.619,
+bk_flatlands,-73.94,40.641,
+bk_east_flatbush,-73.922,40.652,
+jamaica_wall_n,-73.915,40.65,jamaica_bay_wall
+jamaica_wall_mid,-73.912,40.6,jamaica_bay_wall
+jamaica_wall_s,-73.902,40.58,jamaica_bay_wall + rockaway_inlet (forced) NE end
 rockaway_2,-73.93,40.546,rockaway_inlet (forced)
 rockaway_1,-73.94,40.53,rockaway_inlet (forced)
 ocean_rockaway_s,-73.94,40.45,
