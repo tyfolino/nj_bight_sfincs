@@ -43,7 +43,7 @@ Every geographic fact lives in **`nj_sfincs/domain.py`**, keyed by the `NJ_DOMAI
 | `v1_monmouth` | Sandy Hook → Sea Girt, 547,408 faces | **FROZEN** — port-verification fixture only |
 | `v1_5_raritan` | boundary relocated to the Narrows + Arthur Kill | **FROZEN 2026-08-14** — `faces=696230 boundary_edges=1652 sha=2a23667dd16e449c`, three arms run + scored (see STATUS) |
 | `v3` | full NJ ocean coast, Cape May → the Narrows, NACCS boundary | **DONE 2026-09-24** — `faces=3412470 boundary_edges=4108 sha=1596ce1ecc71b374` (mask repaired 09-22); reference = `naccs-premier` (FINDINGS §50) |
-| `v4` | v3 + Delaware Bay and river to where Sandy +3 m ends (Washington Crossing; forced at the mouth) + the Raritan to Manville + the Arthur Kill shore **and Newark Bay**; **far banks (DE/PA/Staten Island) COMPUTED, not walled**; Track C coarse shelf | **IN DESIGN** (acquisition-only) — the RING is DRAWN (09-25 night) by one rule: contain the NACCS Sandy peak **+3 m** (connected from the ocean; rivers cut where that water ends; NY / Rehoboth / Chesapeake shut off): `data/v4_design/region_v4_vertices.csv` (191 named vertices, source of truth, edited by hand), crossings in `data/v4_design/v4_crossings.geojson`, check any edit with `scripts/audit_region_v4.py --ring <csv>`; rules, build items and data gaps in STATUS PICK UP; the design's own gate is a waves-off Sandy +0/+2/+3 m overflow test |
+| `v4` | v3 + Delaware Bay and river to where Sandy +3 m ends (Washington Crossing; forced at the mouth) + the Raritan to Manville + the Arthur Kill shore **and Newark Bay**; **far banks (DE/PA/Staten Island) COMPUTED, not walled**; Track C coarse shelf | **BUILDING** since 09-27 (`V4` entry written; mouth + deep-channel masks declared; not buildable until the bed stack and refinement land — STATUS) — the RING is DRAWN (09-25 night) by one rule: contain the NACCS Sandy peak **+3 m** (connected from the ocean; rivers cut where that water ends; NY / Rehoboth / Chesapeake shut off): `data/v4_design/region_v4_vertices.csv` (191 named vertices, source of truth, edited by hand), crossings in `data/v4_design/v4_crossings.geojson`, check any edit with `scripts/audit_region_v4.py --ring <csv>`; rules, build items and data gaps in STATUS PICK UP; the design's own gate is a waves-off Sandy +0/+2/+3 m overflow test |
 
 **The same experiment name exists on every domain and means a different model each time.**
 That is why runs live at `experiments/<domain>/<arm>`, why `EXPERIMENTS` is keyed by domain
@@ -201,6 +201,13 @@ not trip that guard. Do not run the sweep driver to "just rebuild" a template.
   `stat -c '%y %z'` (mtime, ctime) against `mmlsattr -L <f> | grep creation`. Creation
   matches the job that legitimately made the file, mtime belongs to the halk job that died
   before it, and ctime marks when the clobber landed.
+  🔴 **The same lag runs the OTHER way from the VS Code session, which itself runs on a halk
+  node** (`hpc/vscode_node.sh`; `squeue` shows `vscode` on `halk00xx`). A file edited there
+  can read STALE — or EMPTY — on a compute node for a minute or more: on 2026-09-27 a job
+  started 15 s after a script was created ran it as an empty file and **exited 0 in 0.4 s**,
+  and the job before it ran the pre-edit version. Submit with a checksum:
+  `md5sum <files> > logs/<job>_expected.md5; EXPECT_MD5=logs/<job>_expected.md5 sbatch …`
+  (`hpc/build_coarse_bed.slurm`, `hpc/clip_nj_dem.slurm` honour it), or wait a few minutes.
 - **Disk quota exhaustion never says "quota".** It SIGSEGVs jobs or silently truncates
   output maps while `sacct` reports COMPLETED. Home is **GPFS, 100 G soft / 110 G hard**, and
   `quota -s` prints nothing — ask `mmlsquota -u $USER --block-size auto cache`

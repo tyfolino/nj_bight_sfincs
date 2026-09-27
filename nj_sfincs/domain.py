@@ -253,6 +253,13 @@ class Domain:
     #: v3 the moment ``region_v3_EDITED_inland`` landed; cleared at freeze.
     building: bool = False
 
+    #: The named-vertex CSV that ``region`` is DERIVED from (v4 on; ``None`` = the GeoJSON
+    #: is itself the source, as on v1–v3). The CSV is what gets hand-edited; the GeoJSON is
+    #: written by ``scripts/ring_to_geojson.py`` and records the CSV's sha256, and
+    #: ``assert_buildable`` refuses a build when the two disagree — an edited ring whose
+    #: GeoJSON was never regenerated would otherwise build the OLD ring, silently.
+    region_source: Path | None = None
+
     #: Quadtree refinement polygons for THIS domain. A refinement recipe is not portable:
     #: a level gate written for one basin will happily refine a different basin's open
     #: water to its finest level, and a shelf polygon written for one coast lands in open
@@ -261,6 +268,18 @@ class Domain:
 
     obs_gauges: tuple[ObsGauge, ...] = ()
     mask_overrides: tuple[MaskOverride, ...] = ()
+
+    #: 🔴 WALL THE EDGE AROUND EVERY RIVER INFLOW: free-outflow edge cells (mask 3) within
+    #: this many metres of a discharge source become ordinary active (1), so the inactive
+    #: ground beyond them is SFINCS's closed wall. ``0`` = off (v1–v3, whose sources sit at
+    #: gauges well inside the ring; v3's nearest outflow cell to a source was above +7 m
+    #: except the Tuckahoe, which got a land box). On v4 every inflow is placed 150 m inside
+    #: the ring where its river crosses it — measured 51–248 m from the edge, median 157 —
+    #: so the valley floor beside it is a free-outflow edge at 100–200 m cells, and the
+    #: injected river would drain straight back out (the Tuckahoe / Navesink failure). One
+    #: radius rule instead of ~47 hand boxes; applied after ``mask_overrides``, and every
+    #: source's walled count is printed.
+    wall_outflow_near_sources_m: float = 0.0
 
     #: THE WHITELIST. When non-empty, every ``mask==2`` cell must sit inside exactly one
     #: of these and satisfy its ``max_bed_m``; see ``BoundaryArm``.
@@ -272,6 +291,14 @@ class Domain:
     #: Declared rather than DEM-dependent on purpose: a depth threshold is a statement
     #: about elevation, and the mask it produces is a statement about topology.
     land_boxes: tuple[tuple[str, Box, str], ...] = ()
+
+    #: (name, ((lon, lat), ...), why) — POLYGONS forced inactive, for a cut a rectangle
+    #: cannot follow (v4's Delaware mouth runs SW–NE for 19 km). Applied with
+    #: ``land_boxes``, asserted by the same invariant. A readable vertex list, like a
+    #: ring; the polygon closes itself.
+    inactive_polygons_ll: tuple[
+        tuple[str, tuple[tuple[float, float], ...], str], ...
+    ] = ()
 
     #: Force these lon/lat boxes active at any depth, so dredged channels and scoured
     #: inlet gorges don't punch inactive holes through an interior.
@@ -1680,27 +1707,342 @@ SNAPWAVE_STEPS: dict[str, SnapWaveSteps] = {
 }
 
 
+# ═══════════════════════════════════════════════════════════════════════════════
+# v4 — v3 + Delaware Bay and river, the Raritan to Manville, the Arthur Kill NJ shore,
+# Newark Bay + the Meadowlands. BUILDING (ring drawn 2026-09-25/26, no mesh yet).
+# ═══════════════════════════════════════════════════════════════════════════════
+# The ring: `data/v4_design/region_v4_vertices.csv` (191 named vertices, hand-edited,
+# SOURCE OF TRUTH) → `data/region_v4.geojson` by `scripts/ring_to_geojson.py`. Its rule
+# (user, 2026-09-25): contain the NACCS Sandy peak + 3 m, connected from the ocean; rivers
+# cut where that water ends; the neighbour basins with their own inlets (NY Upper Bay /
+# Hudson, Jamaica Bay, Rehoboth Bay, the Chesapeake) shut off at declared lines. Audit:
+# `scripts/audit_region_v4.py --ring <csv>`. Far banks (DE / PA / Staten Island) are
+# COMPUTED, not walled. Track C: the shelf out to lon -73.55 is inside the ring for
+# SnapWave only — `mask_zmin` stays -10, so SFINCS stops at the isobath as on v3.
+#
+# Every box below is the UTM 18N envelope of its line in
+# `data/v4_design/v4_crossings.geojson` + 300 m, rounded out to 100 m;
+# tests/test_domain_and_staging.py (TestV4Crossings) asserts each line still lies inside
+# its box, so a moved line without a moved box fails the suite.
+#
+# ⚠️ NOT BUILDABLE YET, BY DESIGN: no `refinement` (step 4) — `build_static` refuses —
+# and `bed_v4_coarse_25m` is not built yet (step 3, job B).
+#
+# THE MOUTH (step 2, 09-27): 472 km² of the Delaware below -10 m is connected to the
+# shelf, so `create_active` would switch off the ship channel to Bristol, and the KvK /
+# Newark Bay (-16 m), upper Arthur Kill, Rockaway Inlet (-14 m) and C&D (-13 m) channels
+# likewise. Declared as always-active boxes + the `delaware_sea` inactive polygon, whose
+# edge IS the mouth line (see those fields).
+#
+# Arm cell counts are UNBRACKETED (the type's default 1..10,000) until the first clean
+# mesh probe, then tightened as on v3 (08-24 probe → 08-26 freeze).
+
+#: v4 bed, top tier first (hydromt: earlier wins). v3's order with v4's additions (step 3,
+#: 2026-09-27):
+#:  * the Passaic / Hackensack eHydro surveys on TOP: above lat ~40.72 CUDEM holds the
+#:    WATER SURFACE there, not the bed (+3.7 / +8.5 m high).
+#:  * `riverbeds_v4` BELOW every survey tier (the 2012 Raritan eHydro must beat the 1934
+#:    H05647 soundings where they overlap, -74.331..-74.305) and ABOVE CUDEM (the surface).
+#:  * CUDEM above `nj_10ft` (land-only, zmin 0.001) as on v3 — the 09-26 bridge probe found
+#:    no deck in CUDEM at any of 21 v4 bridges, so under water CUDEM wins.
+#:  * 3DEP 1/3" for the land outside NJ (PA / DE / NY), then GMRT for the shelf and the sea
+#:    south of the Delaware mouth.
+#: ⚠️ The first tier sets the merge lattice (CLAUDE.md §5) — a 5 m UTM carving tier, as on
+#: v3 (ehydro_south_v3).
+V4_ELEVATION_LIST: tuple[dict, ...] = (
+    {"elevation": "ehydro_passaic_v4"},
+    {"elevation": "ehydro_hackensack_v4"},
+    {"elevation": "ehydro_south_v3"},
+    {"elevation": "ehydro_raritan_ak"},
+    {"elevation": "ehydro_nj"},
+    {"elevation": "ehydro_south"},
+    {"elevation": "shrewsbury_ehydro_2015"},
+    {"elevation": "riverbeds_v4"},
+    {"elevation": "usace_nj_2010_v3"},
+    {"elevation": "coned_sw_raritan"},
+    {"elevation": "cudem_nj_v3"},
+    {"elevation": "cudem_delaware_v4"},
+    {"elevation": "nj_10ft_dem_v4", "zmin": 0.001},
+    {"elevation": "cudem13_v3"},
+    {"elevation": "dep3_v4"},
+    {"elevation": "gmrt_v4"},
+)
+
+#: The river heads the ring cuts (`kind: cut` in v4_crossings.geojson). Each is a head of
+#: tide or the place the Sandy +3 m water ends: WALLED, never free outflow (FINDINGS §50;
+#: v3's Tuckahoe and Raritan-cut rule), with a discharge source just inside it. Each box
+#: yields a `MaskOverride` 3 → 1 (the dry banks) AND a `NoWaterLevelBox` (a river takes a
+#: discharge, never an imposed level — an arm-less mask==2 there is demoted to a wall by
+#: the whitelist; the box is the alarm that says so).
+_V4_RIVER_CUTS: tuple[tuple[str, Box, str], ...] = (
+    (
+        "delaware_washington_crossing",
+        (511_500, 4_457_800, 513_000, 4_458_800),
+        "Delaware 4.7 km above the Trenton falls, where Sandy +3 m ends; Q = Trenton "
+        "01463500 (inside the ring, 9.7 km below).",
+    ),
+    (
+        "millstone_blackwells_mills",
+        (535_000, 4_486_900, 536_100, 4_488_300),
+        "Millstone above its Raritan confluence; Q = Blackwells Mills 01402000.",
+    ),
+    (
+        "raritan_manville",
+        (535_700, 4_488_400, 537_700, 4_489_800),
+        "Raritan main stem at Manville; Q = Manville 01400500 (+ Blackwells Mills).",
+    ),
+    (
+        "rahway",
+        (558_500, 4_499_300, 559_400, 4_500_200),
+        "Rahway, crossed once since the 09-26 vertex move (10+ m ground, 300 m span).",
+    ),
+    (
+        "schuylkill_manayunk",
+        (477_800, 4_432_200, 478_600, 4_433_200),
+        "Schuylkill at the Flat Rock pool (surface 11.4 m); Fairmount is overtopped.",
+    ),
+    (
+        "brandywine_wilmington",
+        (451_700, 4_401_600, 452_700, 4_402_300),
+        "Brandywine at Wilmington (surface 9.5 m).",
+    ),
+    (
+        "white_clay",
+        (441_200, 4_393_900, 442_100, 4_395_200),
+        "White Clay Creek above the +3 m end.",
+    ),
+    (
+        "christina_coochs",
+        (438_800, 4_386_900, 439_800, 4_388_300),
+        "Christina River at Cooch's Bridge, above the +3 m end.",
+    ),
+    (
+        "red_clay",
+        (444_900, 4_397_100, 446_100, 4_398_000),
+        "Red Clay Creek above the +3 m end.",
+    ),
+    (
+        "neshaminy",
+        (506_200, 4_443_600, 507_000, 4_444_800),
+        "Neshaminy Creek above the +3 m end.",
+    ),
+    (
+        "cohansey_above_sunset_lake",
+        (478_000, 4_367_900, 479_400, 4_368_800),
+        "Cohansey above Sunset Lake (dam crest unchecked; the lake is inside).",
+    ),
+    (
+        "maurice_above_union_lake",
+        (492_500, 4_366_900, 493_400, 4_367_700),
+        "Maurice above Union Lake, crossed once since the 09-26 apex move.",
+    ),
+    (
+        "passaic_dundee",
+        (572_500, 4_526_400, 573_500, 4_527_100),
+        "Passaic at Dundee Dam: the 7.4 m pool holds against the 6.4 m level.",
+    ),
+    (
+        "hackensack_rivervale",
+        (584_500, 4_537_800, 585_600, 4_538_800),
+        "Hackensack at Rivervale above Oradell Reservoir (the +3 m level overtops "
+        "the 5.3 m spillway, so the reservoir is inside).",
+    ),
+    (
+        "pascack",
+        (583_200, 4_537_200, 584_500, 4_538_300),
+        "Pascack Brook, the Oradell Reservoir's other inflow.",
+    ),
+)
+
 V4 = Domain(
     name="v4",
-    # ACQUISITION-ONLY (2026-09-24): v3 + the Delaware (forced at the bay mouth, computed
-    # to the head of tide at Trenton) + the Raritan to New Brunswick + the Arthur Kill NJ
-    # shore (forced at Elizabeth). Far banks (DE / PA / Staten Island) are COMPUTED to
-    # +10 m, not walled — the 09-24 evening design review reversed the morning's "walled"
-    # call (STATUS PICK UP, rule (2)); Brooklyn keeps a walled cut short of Jamaica Bay.
-    # The rectangle resolves download extents and nothing else; swap in the drawn ring
-    # and clear the flag once it is drawn under the plan's rules.
-    region=DATA / "region_v4_PROVISIONAL_bbox.geojson",
+    region=DATA / "region_v4.geojson",
+    region_source=DATA / "v4_design" / "region_v4_vertices.csv",
     epsg=32618,
-    latitude=39.68,  # (38.74 + 40.62) / 2, the rectangle's mid-latitude
-    acquisition_only=True,
-    precip_dataset="aorc_sandy_v4",
+    latitude=39.86,  # (38.725 + 40.994) / 2, the drawn ring's mid-latitude
+    building=True,
+    # ── The forced lines. Every mask==2 cell must sit in exactly one of these. ───────
+    boundary_arms=(
+        BoundaryArm(
+            "ocean",
+            (503_800, 4_280_000, 626_000, 4_487_100),
+            why="The -10 m isobath from off Cape May to the Lower Bay closure along lon "
+            "-73.94 (ring vertices ocean_rockaway_s → rockaway_1, 40.45–40.53, -8..-27 m "
+            "— v1.5 / v3's own ocean arm; needs v1.5's closure corridor, inherited "
+            "below). West edge = the delaware_mouth box's east edge; north edge = "
+            "rockaway_1, where the rockaway_inlet arm starts. South of Cape May Point "
+            "the isobath meets the `delaware_sea` polygon at x ≈ 503.5 km; cells west "
+            "of 503.8 km are the mouth arm's.",
+        ),
+        BoundaryArm(
+            "delaware_mouth",
+            # South edge = the ring's: also claims the forced sea cells along the
+            # delaware_sea polygon's Cape May meridian (x ≈ 503.5 km).
+            (491_600, 4_280_000, 503_800, 4_309_600),
+            why="Cape Henlopen (-75.093, 38.795) → Cape May Point (-74.960, 38.932), "
+            "19.1 km, INSIDE the ring. The bay and tidal river are COMPUTED from here "
+            "(scope rule 1, the v1.5 structural argument). NACCS: 7 nodes within 1.5 km "
+            "in three clusters; leave-one-out misses the peak by ≤ 0.04 m (STATUS "
+            "09-26). Forms where the always-active bay meets the `delaware_sea` "
+            "inactive polygon.",
+        ),
+        BoundaryArm(
+            "rockaway_inlet",
+            (589_400, 4_487_100, 593_300, 4_493_100),
+            why="Rockaway Inlet, rockaway_1 → jamaica_wall_s: shuts Jamaica Bay out "
+            "(its own inlet). 16 NACCS nodes within 1.5 km, worst gap 1.37 km. 2.4 km "
+            "of the line is dry Breezy Point sand, which carries no BC.",
+        ),
+        BoundaryArm(
+            "narrows",
+            (579_600, 4_494_800, 582_500, 4_496_400),
+            why="The Verrazzano Narrows, v1.5's segment verbatim (narrows_w → "
+            "narrows_e); a tighter box than v1.5's, which reached 1.7 km west onto "
+            "Staten Island. 12 NACCS nodes, worst gap 0.71 km. Must stay a WATER-LEVEL "
+            "boundary (see V1_5_RARITAN's narrows arm).",
+        ),
+        BoundaryArm(
+            "kvk_east",
+            (576_600, 4_499_400, 577_300, 4_501_200),
+            why="Kill van Kull east mouth, St George hill → Constable Hook (-16 m "
+            "channel): Newark Bay, the Kills and the Arthur Kill are COMPUTED behind "
+            "it. 11 NACCS nodes since the 09-26 pull, worst gap 0.34 km, peaks "
+            "3.45–3.56 m.",
+        ),
+        BoundaryArm(
+            "cd_canal",
+            (439_600, 4_376_600, 440_300, 4_378_300),
+            why="C&D Canal at lon -75.699 (250 m of -13 m between 20 m banks): shuts the "
+            "Chesapeake out. ⚠️ ONE NACCS node within 1.5 km, and the canal carries a "
+            "0.6 m Sandy-peak gradient (Reedy Point 1.8 → Chesapeake City 1.15); the "
+            "line sits ~1.5 m. Open question: move it ~770 m E onto SP10810.",
+        ),
+    ),
+    # ── Walls: river cuts, then the three declared land lines. frm=3 → to=1 makes the
+    # edge face ordinary active, so the inactive ground beyond is SFINCS's closed wall.
+    mask_overrides=(
+        *(
+            MaskOverride(
+                f"wall_{name}",
+                frm=3,
+                to=1,
+                box=box,
+                why=f"Walls river cut {name}: {why}",
+            )
+            for name, box, why in _V4_RIVER_CUTS
+        ),
+        MaskOverride(
+            "wall_cape_henlopen",
+            frm=3,
+            to=1,
+            box=(487_500, 4_285_900, 493_100, 4_286_700),
+            why="Lat 38.725, lon -75.14..-75.083: the Lewes–Rehoboth lowland pinch "
+            "(0.5 km below +2 m). Shuts Rehoboth Bay (its own inlet) out; Sandy +3 m "
+            "reaches this line, so open it would drain into a basin the model omits.",
+        ),
+        MaskOverride(
+            "wall_jamaica_bay",
+            frm=3,
+            to=1,
+            box=(591_400, 4_492_400, 593_300, 4_500_800),
+            why="Brooklyn option B (user 09-26): 7.9 km, jamaica_wall_n → mid → s, "
+            "Marine Park / Mill Basin at 0–6 m with water on BOTH sides at +3 m — no "
+            "natural divide, so a declared wall. Its wet faces are demoted by the arm "
+            "whitelist; this box walls the dry ones. Touches the rockaway_inlet arm "
+            "box at its south end — harmless: walls act on mask 3, arms on mask 2.",
+        ),
+        MaskOverride(
+            "wall_bayonne",
+            frm=3,
+            to=1,
+            box=(574_500, 4_500_500, 577_300, 4_503_900),
+            why="The Newark Bay side of the Bayonne spine, kvk_east's north end → lat "
+            "40.679: ~3 km of 1.7–2.9 m ground Sandy wets between the KvK mouth and "
+            "the spine. Open, it drains Newark Bay into the Upper Bay the model omits. "
+            "Touches the kvk_east arm box — harmless, as above.",
+        ),
+    ),
+    wall_outflow_near_sources_m=500.0,
+    no_waterlevel_boxes=tuple(
+        NoWaterLevelBox(name, box, why="River head of tide: " + why)
+        for name, box, why in _V4_RIVER_CUTS
+    ),
+    # ── STEP 2 (user 09-27): the deep channels are water, however deep. ─────────────
+    # `create_active(zmin=-10)` would switch off every channel below -10 m, and one that
+    # stays CONNECTED to inactive water is not an interior hole, so nothing refills it —
+    # `create_boundary` then rings it with imposed level inside the water v4 exists to
+    # COMPUTE (v1.5's Ambrose finding, exactly). Generous on purpose and safe to be so:
+    # these only ADD active cells, the region clip runs after them, and the Delaware sea
+    # they over-reach is switched off again by `inactive_polygons_ll`. ⚠️ An always-active
+    # EDGE must never cross deep water INSIDE the ring (v1.5: a 40.60 north edge made the
+    # Narrows arm trace the box edge); every edge below lies on land, outside the ring,
+    # or on the inactive sea polygon.
+    always_active_boxes_ll=(
+        # v1.5's Lower Bay box + the lon -73.94 closure corridor (the ring runs the same
+        # line 40.45–40.53).
+        *V1_5_RARITAN.always_active_boxes_ll,
+        # Delaware Bay + river to Burlington + the C&D (-13 m) + the Schuylkill: 472 km²
+        # below -10 m connected to the shelf, to lat 40.07. East edge -74.96 = Cape May
+        # Point, so the NJ ocean side stays on the isobath; the sea south of the mouth
+        # that this box covers is the polygon's.
+        (-75.75, 38.70, -74.96, 40.30),
+        # The river above Burlington to Trenton / Washington Crossing (lon -74.96..-74.74).
+        (-74.96, 39.95, -74.70, 40.30),
+        # KvK (-16 m) + Newark Bay + the upper Arthur Kill + the lower Passaic /
+        # Hackensack. East edge -74.07 is outside the ring (the Upper Bay, clipped).
+        (-74.30, 40.49, -74.07, 40.80),
+        # Rockaway Inlet (-13.8 m) and the water inside the forced line; Jamaica Bay and
+        # the Bight east of -73.94 are outside the ring (clipped).
+        (-73.96, 40.53, -73.89, 40.60),
+    ),
+    # 🔴 THE MOUTH. The sea between the Henlopen → Cape May line and the ring's south edge
+    # is inside the ring for SnapWave only (Track C, `ocean_south_de`), so SFINCS must
+    # not compute it: with it inactive, the always-active bay meets inactive sea exactly
+    # ON the mouth line and `create_boundary` puts the forced line there — no separate
+    # closure corridor needed (v1.5 needed one only because its cut was the ring edge).
+    # East edge = Cape May Point's meridian, so the NJ ocean side south of the Point
+    # keeps its isobath; the sea cells along that meridian become forced water-level
+    # cells and belong to the delaware_mouth arm (its box reaches south for them).
+    # West side = the Atlantic shore of Cape Henlopen, Point → Rehoboth (the ring's
+    # `ocean_south_de` west end, -75.083): ~8 km of Delaware ocean beach is therefore
+    # walled on its sea side — Sandy's water reached it from the ocean, which v4 does not
+    # compute south of the mouth; the bay side (Lewes) is computed.
+    inactive_polygons_ll=(
+        (
+            "delaware_sea",
+            (
+                (-75.093, 38.795),  # Cape Henlopen, the mouth line's SW end
+                (-74.960, 38.932),  # Cape May Point, its NE end
+                (-74.960, 38.700),  # south, past the ring's edge (38.725)
+                (-75.083, 38.700),  # west, to the ocean_south_de line's west end
+            ),
+            "Seaward of the Delaware mouth line: SnapWave only (scope rule 1 — the bay "
+            "is forced at the mouth and computed inside it).",
+        ),
+    ),
+    # The Tottenville ground is still inside v4 and still New York (no nj_10ft_dem): the
+    # positive check on whatever step 3's stack puts there.
+    dry_land_boxes_ll=V1_5_RARITAN.dry_land_boxes_ll,
+    # NACCS depth-screen exemption north of the Sandy Hook tip, as v1.5 / v3. ⚠️ A
+    # northing cannot exempt the Delaware mouth or the C&D — the boundary builder's call.
+    open_coast_max_y=V3.open_coast_max_y,
+    elevation_list=V4_ELEVATION_LIST,
+    # Refinement gating + face z from one pre-merged 25 m raster, as on v3 (a merge of
+    # every native tier over this bbox would not fit in memory). Built from the list above
+    # by step 3's job B; missing until then, which fails the build loudly.
+    coarse_elevation_list=({"elevation": "bed_v4_coarse_25m"},),
+    precip_dataset="aorc_sandy_v4",  # ⚠️ pulled on the old rectangle, 0.33° short N
+    cn_dataset="cn_v4",  # not built yet — a missing key fails the build loudly
+    cora_waves=DATA / "waves_v4" / "cora_waves_v4.nc",  # not built (CORA + STWAVE03)
     discharge_geodataset="usgs_sandy_discharge_v4",
     hwm_geojson=DATA / "validation_v4" / "sandy_hwms_v4.geojson",
-    # Rendered on the rectangle on purpose, as on v3: the sheet is a DESIGN input here.
+    # Rendered on the rectangle, as on v3: the sheet was a DESIGN input. ⚠️ It stops at
+    # lat 40.62 (the ring reaches 40.994) and its source layer is NJ-only, so DE / PA land
+    # reads confidently dry now that the far banks are computed — both need exclusion
+    # boxes before any v4 CSI is quoted.
     motf_tif=DATA / "validation_v4" / "sandy_motf_extent_v4.tif",
-    # v3's NY-validity boxes carry over (same northern geometry). The source layer is
-    # NJ-only, so DE / PA land will also read dry — moot while the far bank is walled.
     motf_exclude_boxes_ll=V3.motf_exclude_boxes_ll,
+    plot_window=(437_000, 626_000, 4_286_000, 4_539_000),
 )
 
 DOMAINS: dict[str, Domain] = {
@@ -1808,7 +2150,42 @@ def assert_buildable(dom: "Domain | None" = None) -> "Domain":
             "resolve a download extent and nothing else. Draw the polygon, point "
             "`region` at it and clear `acquisition_only` first."
         )
+    stale = region_source_mismatch(dom)
+    if stale:
+        raise RuntimeError(stale)
     return dom
+
+
+def region_source_mismatch(dom: "Domain") -> str | None:
+    """Why ``dom.region`` is not a faithful copy of ``dom.region_source``, or ``None``.
+
+    The GeoJSON records the sha256 of the CSV it was written from
+    (``scripts/ring_to_geojson.py``); a hand edit to the CSV without a re-run leaves the
+    old ring on disk, which every reader would then use without complaint.
+    """
+    if dom.region_source is None:
+        return None
+    import hashlib
+    import json
+
+    def _rel(p: Path) -> Path:
+        return p.relative_to(ROOT) if p.is_relative_to(ROOT) else p
+
+    fix = (
+        f"re-run `python scripts/ring_to_geojson.py {_rel(dom.region_source)} "
+        f"{_rel(dom.region)}`"
+    )
+    if not dom.region.exists():
+        return f"domain {dom.name!r}: {dom.region} does not exist — {fix}"
+    props = json.loads(dom.region.read_text())["features"][0]["properties"]
+    have = hashlib.sha256(dom.region_source.read_bytes()).hexdigest()
+    if props.get("source_sha256") != have:
+        return (
+            f"domain {dom.name!r}: {dom.region.name} was written from a different "
+            f"{dom.region_source.name} (recorded {str(props.get('source_sha256'))[:16]}, "
+            f"on disk {have[:16]}) — {fix}"
+        )
+    return None
 
 
 #: Until v1_5_raritan is registered the only domain is the frozen port-verification

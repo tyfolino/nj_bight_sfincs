@@ -1160,10 +1160,11 @@ class TestBuilding(_DomainEnv):
     def _bld(self):
         return {n: d for n, d in domain.DOMAINS.items() if d.building}
 
-    def test_no_domain_is_building(self):
-        """v3 was the building domain 2026-08-24..26; it froze 2026-08-26. A domain that
-        appears here again must be a NEW one, added deliberately."""
-        self.assertEqual(set(self._bld()), set())
+    def test_only_v4_is_building(self):
+        """v3 was the building domain 2026-08-24..26; it froze 2026-08-26. v4 entered this
+        state 2026-09-27 when its drawn ring replaced the rectangle. Any other domain that
+        appears here must be added deliberately."""
+        self.assertEqual(set(self._bld()), {"v4"})
 
     def test_one_state_at_a_time(self):
         for name, dom in domain.DOMAINS.items():
@@ -1210,3 +1211,164 @@ class TestBuilding(_DomainEnv):
             self.assertNotEqual(dom.hwm_geojson.parent.name, "validation", name)
             self.assertNotEqual(dom.motf_tif.parent.name, "validation", name)
             self.assertNotEqual(dom.discharge_geodataset, "usgs_sandy_discharge", name)
+
+
+class TestV4Crossings(unittest.TestCase):
+    """v4's boxes are ENVELOPES of the lines in `data/v4_design/v4_crossings.geojson`.
+
+    The lines are the design (checked by `scripts/audit_region_v4.py`); the boxes are what
+    the mask builder reads. These assert the two still agree, so moving a line in the
+    geojson without moving its box — or dropping a crossing from the registry — fails here
+    instead of in a 30 h run.
+    """
+
+    #: Declared in the geojson with no box: the edge route is ordinary high land edge;
+    #: the sea south of the mouth is the `delaware_sea` polygon (tested below).
+    NO_BOX = {"upper_bay_hudson_route", "ocean_south_de"}
+    #: crossing name → override name where they differ (the rest are wall_<name>)
+    WALL_NAME = {"jamaica_bay_wall": "wall_jamaica_bay", "bayonne_wall": "wall_bayonne"}
+
+    @classmethod
+    def setUpClass(cls):
+        import json
+
+        from pyproj import Transformer
+
+        t = Transformer.from_crs(4326, 32618, always_xy=True)
+        gj = json.loads(
+            (domain.DATA / "v4_design" / "v4_crossings.geojson").read_text()
+        )
+        cls.lines = {
+            f["properties"]["name"]: (
+                f["properties"]["kind"],
+                [t.transform(*xy) for xy in f["geometry"]["coordinates"]],
+            )
+            for f in gj["features"]
+        }
+        cls.v4 = domain.DOMAINS["v4"]
+
+    @staticmethod
+    def _inside(pts, box):
+        xmin, ymin, xmax, ymax = box
+        return all(xmin < x < xmax and ymin < y < ymax for x, y in pts)
+
+    def test_region_is_the_csv(self):
+        self.assertIsNone(domain.region_source_mismatch(self.v4))
+
+    def test_stale_region_is_refused(self):
+        import dataclasses
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as d:
+            csv = Path(d) / "ring.csv"
+            csv.write_bytes(self.v4.region_source.read_bytes() + b"# edited\n")
+            stale = dataclasses.replace(self.v4, region_source=csv)
+            self.assertIn("different", domain.region_source_mismatch(stale))
+            with self.assertRaises(RuntimeError):
+                domain.assert_buildable(stale)
+
+    def test_every_forced_line_is_inside_its_arm(self):
+        arms = {a.name: a.box for a in self.v4.boundary_arms}
+        for name, (kind, pts) in self.lines.items():
+            if kind == "forced":
+                self.assertIn(name, arms, f"forced line {name} has no arm")
+                self.assertTrue(self._inside(pts, arms[name]), name)
+
+    def test_every_cut_and_wall_is_walled(self):
+        walls = {o.name: o for o in self.v4.mask_overrides}
+        for name, (kind, pts) in self.lines.items():
+            if kind not in ("cut", "wall"):
+                continue
+            key = self.WALL_NAME.get(name, f"wall_{name}")
+            self.assertIn(key, walls, f"{kind} {name} has no wall override")
+            ov = walls[key]
+            self.assertEqual((ov.frm, ov.to), (3, 1), name)
+            self.assertTrue(self._inside(pts, ov.box), name)
+
+    def test_river_cuts_forbid_a_water_level(self):
+        zones = {z.name: z.box for z in self.v4.no_waterlevel_boxes}
+        for name, (kind, pts) in self.lines.items():
+            if kind == "cut" and name != "cape_henlopen":
+                self.assertIn(name, zones, name)
+                self.assertTrue(self._inside(pts, zones[name]), name)
+
+    def test_every_crossing_is_accounted_for(self):
+        arms = {a.name for a in self.v4.boundary_arms}
+        walls = {o.name for o in self.v4.mask_overrides}
+        missing = {
+            n
+            for n in set(self.lines) - self.NO_BOX
+            if n not in arms and self.WALL_NAME.get(n, f"wall_{n}") not in walls
+        }
+        self.assertEqual(missing, set())
+
+    def test_arm_boxes_are_disjoint(self):
+        arms = self.v4.boundary_arms
+        for i, a in enumerate(arms):
+            for b in arms[i + 1 :]:
+                ax0, ay0, ax1, ay1 = a.box
+                bx0, by0, bx1, by1 = b.box
+                overlap = ax0 < bx1 and bx0 < ax1 and ay0 < by1 and by0 < ay1
+                self.assertFalse(overlap, f"{a.name} / {b.name}")
+
+    def test_sea_polygon_edge_is_the_mouth_line(self):
+        """The forced line forms where the always-active bay meets `delaware_sea`, so
+        the polygon's first edge must BE the mouth line, and the polygon must cover the
+        `ocean_south_de` sea it stands for."""
+        import json
+
+        import shapely
+
+        ((name, verts, _why),) = self.v4.inactive_polygons_ll
+        self.assertEqual(name, "delaware_sea")
+        gj = json.loads(
+            (domain.DATA / "v4_design" / "v4_crossings.geojson").read_text()
+        )
+        geo = {
+            f["properties"]["name"]: f["geometry"]["coordinates"]
+            for f in gj["features"]
+        }
+        mouth = geo["delaware_mouth"]
+        for a, b in ((verts[0], mouth[0]), (verts[1], mouth[-1])):
+            self.assertAlmostEqual(a[0], b[0], places=3)
+            self.assertAlmostEqual(a[1], b[1], places=3)
+        poly = shapely.Polygon(verts).buffer(1e-6)
+        self.assertTrue(poly.covers(shapely.LineString(geo["ocean_south_de"][1:])))
+
+    def test_mouth_arm_claims_the_sea_polygon_edge(self):
+        """The polygon's Cape May meridian becomes forced sea cells; the mouth arm's box
+        must reach the ring's south edge to claim them (else they are orphans)."""
+        from pyproj import Transformer
+
+        t = Transformer.from_crs(4326, 32618, always_xy=True)
+        ((_n, verts, _w),) = self.v4.inactive_polygons_ll
+        x0, y0 = t.transform(*verts[1])
+        _x1, y1 = t.transform(verts[2][0], 38.725)
+        box = {a.name: a.box for a in self.v4.boundary_arms}["delaware_mouth"]
+        self.assertLess(box[0], x0 - 150)
+        self.assertLess(x0 + 150, box[2])  # a 200 m face east of the meridian
+        self.assertLessEqual(box[1], y1)
+        self.assertGreaterEqual(box[3], y0)
+
+    def test_inflow_walls_are_on(self):
+        self.assertGreater(self.v4.wall_outflow_near_sources_m, 248)  # max edge_m 09-26
+
+
+class TestWallOutflowNearPoints(unittest.TestCase):
+    """The v4 inflow-wall rule, on a toy mask (no mesh, no hydromt)."""
+
+    def test_only_outflow_faces_within_radius_move(self):
+        import numpy as np
+
+        from nj_sfincs.model import wall_outflow_near_points
+
+        fx = np.array([0.0, 100, 200, 600, 100, 50])
+        fy = np.zeros(6)
+        mask = np.array([3, 3, 2, 3, 1, 0])
+        new, n = wall_outflow_near_points(
+            mask, fx, fy, np.array([0.0]), np.array([0.0]), 500.0
+        )
+        # outflow at 0 and 100 → 1; mask 2 at 200, active, inactive untouched; 600 is out
+        self.assertEqual(new.tolist(), [1, 1, 2, 3, 1, 0])
+        self.assertEqual(n.tolist(), [2])
+        self.assertEqual(mask.tolist(), [3, 3, 2, 3, 1, 0])  # input not mutated

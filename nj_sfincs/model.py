@@ -127,6 +127,18 @@ def _subgrid_floor(sf, zb: "np.ndarray") -> "np.ndarray":
     return np.where(np.isfinite(zmin), np.minimum(zb, zmin), zb)
 
 
+def inactive_polygon_faces(dom, crs, fx, fy) -> dict[str, "np.ndarray"]:
+    """``{name: face-centre-inside mask}`` for each of ``dom.inactive_polygons_ll``."""
+    import geopandas as gpd
+    import shapely
+
+    out = {}
+    for name, verts, _why in dom.inactive_polygons_ll:
+        poly = gpd.GeoSeries([shapely.Polygon(verts)], crs=4326).to_crs(crs).iloc[0]
+        out[name] = shapely.contains_xy(poly, fx, fy)
+    return out
+
+
 def _outside_region(sf, region=None) -> "np.ndarray":
     """Boolean over faces: True where the face centre is OUTSIDE the domain's region.
 
@@ -595,6 +607,14 @@ def _check_domain_invariants(
                 f"'{name}'. {why}"
             )
 
+    for name, inside in inactive_polygon_faces(dom, sf.crs, fx, fy).items():
+        sel = inside & active_cells
+        if sel.any():
+            fail.append(
+                f"{int(sel.sum())} cells are ACTIVE inside the declared inactive "
+                f"polygon '{name}'."
+            )
+
     # --- 8. dry-land boxes: a POSITIVE check on the bed -----------------------
     fail.extend(check_dry_land_boxes(dom.dry_land_boxes_ll, sf.crs, fx, fy, zb))
 
@@ -731,6 +751,50 @@ def _check_domain_invariants(
     )
 
 
+def wall_outflow_near_points(
+    mask: np.ndarray,
+    fx: np.ndarray,
+    fy: np.ndarray,
+    px: np.ndarray,
+    py: np.ndarray,
+    radius_m: float,
+) -> tuple[np.ndarray, np.ndarray]:
+    """Free-outflow faces (mask 3) within ``radius_m`` of any point → active (1).
+
+    Returns ``(new_mask, n_walled_per_point)``; a face near two points counts for both.
+    Pure numpy so it is testable without a mesh; ``Domain.wall_outflow_near_sources_m``
+    says why it exists.
+    """
+    from scipy.spatial import cKDTree
+
+    out = mask.copy()
+    n = np.zeros(len(px), dtype=int)
+    edge = np.flatnonzero(mask == 3)
+    if len(edge) == 0 or len(px) == 0:
+        return out, n
+    hits = cKDTree(np.c_[fx[edge], fy[edge]]).query_ball_point(
+        np.c_[px, py], r=radius_m
+    )
+    for k, h in enumerate(hits):
+        n[k] = len(h)
+        out[edge[h]] = 1
+    return out, n
+
+
+def _wall_outflow_near_sources(sf, mask, fx, fy, key: str, radius_m: float):
+    """Read the domain's discharge points and wall the outflow edge around each one."""
+    gdf = sf.data_catalog.get_geodataset(key).vector.to_gdf().to_crs(sf.crs)
+    px, py = gdf.geometry.x.values, gdf.geometry.y.values
+    new, n = wall_outflow_near_points(mask, fx, fy, px, py, radius_m)
+    print(
+        f"[mask] inflow walls ({radius_m:.0f} m): {int((new != mask).sum())} free-outflow "
+        f"faces → active around {int((n > 0).sum())} of {len(n)} discharge sources"
+    )
+    for k in np.flatnonzero(n):
+        print(f"      source {gdf.index[k]}: {n[k]} faces walled")
+    return new
+
+
 def apply_mask_and_boundary(
     base: BaseConfig,
     sf: SfincsModel,
@@ -747,8 +811,9 @@ def apply_mask_and_boundary(
 
     THE ORDER BELOW IS THE DESIGN, not an implementation detail:
 
-        create_active  →  region clip  →  land_boxes → 0  →  fill inactive holes
-        →  create_boundary  →  demote every mask==2 outside an arm  →  seal wet outflow
+        create_active  →  region clip  →  land_boxes / inactive polygons → 0  →  fill holes
+        →  create_boundary  →  demote every mask==2 outside an arm  →  mask_overrides
+        →  wall the outflow edge around each inflow (v4 on)  →  seal wet outflow
 
     ``land_boxes`` come before the hole fill because they CREATE inactive ground, and the
     fill must see it. The arm demotion comes after ``create_boundary`` because that is
@@ -788,6 +853,11 @@ def apply_mask_and_boundary(
         n = int(sel.sum())
         if n:
             print(f"[mask] land box {name}: {n} cells -> inactive  ({why})")
+        mask[sel] = 0
+    for name, sel in inactive_polygon_faces(dom, sf.crs, fx, fy).items():
+        n = int((sel & (mask > 0)).sum())
+        if n:
+            print(f"[mask] inactive polygon {name}: {n} cells -> inactive")
         mask[sel] = 0
 
     # 4b. Fill inactive islands ----------------------------------------------
@@ -875,6 +945,14 @@ def apply_mask_and_boundary(
             )
         mask[sel] = ov.to
 
+    # 5b'. WALL THE EDGE AROUND EVERY RIVER INFLOW ------------------------------
+    # A source placed next to a free-outflow edge feeds a drain, not the model — see
+    # `Domain.wall_outflow_near_sources_m`. Off (0) on every domain before v4.
+    if dom.wall_outflow_near_sources_m > 0:
+        mask = _wall_outflow_near_sources(
+            sf, mask, fx, fy, base.discharge_geodataset, dom.wall_outflow_near_sources_m
+        )
+
     # 5c. SEAL ANY FREE-OUTFLOW BC THAT LANDS ON OPEN WATER -------------------
     # A free-outflow (Neumann) boundary is the condition you use where water may leave and
     # never return. On a DEEP CROSS-SECTION OF A TIDAL RIVER it is not a boundary, it is a
@@ -950,6 +1028,9 @@ def build_static(
             "build-time geography is deliberately not carried in the registry (see "
             "domain.py and ARCHIVE.md)."
         )
+    # Acquisition-only rectangle / a region GeoJSON stale against its vertex CSV.
+    # (Its docstring always said build_static calls it; until 2026-09-27 nothing did.)
+    _domain.assert_buildable(dom)
 
     template_dir.mkdir(parents=True, exist_ok=True)
 
@@ -979,6 +1060,14 @@ def build_static(
             "refinement recipe is not portable between domains — a level gate written for "
             "one basin will refine another basin's open water to its finest level. Write "
             "one for this domain and size it with scripts/probe_mesh_size.py FIRST."
+        )
+    if dom.building and dom.elevation_list is None:
+        # `None` falls back to config.DEFAULT_ELEVATION_LIST — the ARCHIVED v1 NJ stack,
+        # which serves a new domain NoData or the wrong tiers. v3 declared its own
+        # before it built; so must every new domain.
+        raise ValueError(
+            f"domain '{dom.name}' is building but declares no `elevation_list`; the "
+            "fallback is the archived v1 stack. Declare the domain's own bed tiers."
         )
 
     log.initialize_logging()

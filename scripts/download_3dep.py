@@ -19,7 +19,6 @@ Output:
     data/elevation/nj_10ft_dem.tif   (clipped, WGS-84, deflate-compressed)
 """
 
-import sys
 from pathlib import Path
 
 import boto3
@@ -27,7 +26,6 @@ import rasterio
 import rasterio.warp
 from botocore import UNSIGNED
 from botocore.config import Config
-from pyproj import Transformer
 
 # ── clip bbox (WGS-84) ────────────────────────────────────────────────────────
 # From the ACTIVE DOMAIN's region polygon. The statewide source mosaic covers all
@@ -48,6 +46,7 @@ RAW_DIR = ROOT / "data" / "elevation" / "raw"
 # 🔴 PER-DOMAIN OUTPUT. The archived `nj_10ft_dem.tif` clip stops at lat 39.645 and is
 # what the frozen domains were built against; a new domain gets its own, bigger clip.
 from nj_sfincs import domain as _domain  # noqa: E402
+
 OUTPUT = _domain.acquisition_dir("elevation") / f"nj_10ft_dem_{_domain.active().name}.tif"
 
 # ── S3 source ─────────────────────────────────────────────────────────────────
@@ -93,62 +92,69 @@ def _progress(total_mb: float):
     return cb
 
 
+#: v3's output pixel (nj_10ft_dem_v3.tif), kept so the two clips are comparable.
+RES_DEG = 0.000035050576912
+#: US survey feet → m. v3's clip used 0.3048 (international foot; 2 ppm low, 0.06 mm per
+#: 100 ft) — kept identical so a v3/v4 diff is zero where the clips overlap.
+FT_TO_M = 0.3048
+
+
 def clip_and_reproject(src_path: Path, dst_path: Path, bbox_wgs84: tuple) -> None:
-    west, south, east, north = bbox_wgs84
-    t = Transformer.from_crs(DST_CRS, SRC_CRS, always_xy=True)
-    xmin, ymin = t.transform(west, south)
-    xmax, ymax = t.transform(east, north)
+    """Warp the statewide mosaic to WGS-84 over bbox ∩ the mosaic's own extent.
 
-    print(f"Clipping to bbox and reprojecting {SRC_CRS} → {DST_CRS} ...")
+    🔴 REWRITTEN 2026-09-27. The old version read ``src.window(bbox)`` and georeferenced
+    the result with ``src.window_transform(window)``. When the bbox starts WEST of (or
+    north of) the raster, rasterio TRUNCATES the read to the raster but the window
+    transform still starts at the requested edge — measured: 1,000 px asked from col −500
+    returned 500 px labelled 5,000 ft too far west. v3's bbox started inside NJ and was
+    fine; v4's starts at −75.77 against the mosaic's −75.60 and shifted the state ~14 km
+    west ("> 5 m off 3DEP on 81 % of land", STATUS 09-25). Now: a WarpedVRT on an explicit
+    output grid (every pixel georeferenced by construction), nodata honoured in the
+    bilinear kernel, streamed in row blocks, written atomically.
+    """
+    import os
+    import tempfile
+    from math import ceil
+
+    from rasterio.enums import Resampling
+    from rasterio.transform import from_origin
+    from rasterio.vrt import WarpedVRT
+    from rasterio.windows import Window
+
+    dst_path = Path(dst_path).resolve()  # write THROUGH a symlink to scratch
     with rasterio.open(src_path) as src:
-        window = src.window(xmin, ymin, xmax, ymax)
-        data = src.read(window=window)
-        src_transform = src.window_transform(window)
-        src_crs = src.crs
-        nodata = src.nodata
-
-        dst_transform, dst_width, dst_height = rasterio.warp.calculate_default_transform(
-            src_crs, DST_CRS, data.shape[2], data.shape[1],
-            left=xmin, bottom=ymin, right=xmax, top=ymax,
+        nodata = src.nodata if src.nodata is not None else -9999.0
+        sw, ss, se, sn = rasterio.warp.transform_bounds(src.crs, DST_CRS, *src.bounds)
+        west, south, east, north = bbox_wgs84
+        west, south, east, north = max(west, sw), max(south, ss), min(east, se), min(north, sn)
+        width = ceil((east - west) / RES_DEG)
+        height = ceil((north - south) / RES_DEG)
+        transform = from_origin(west, north, RES_DEG, RES_DEG)
+        print(
+            f"clip {SRC_CRS} → {DST_CRS}: lon {west:.4f}..{east:.4f} lat {south:.4f}..{north:.4f}"
+            f" (bbox ∩ mosaic {sw:.3f}..{se:.3f} / {ss:.3f}..{sn:.3f}), {width} x {height} px"
         )
-
-        import numpy as np
-        dst_arr = np.full((1, dst_height, dst_width), nodata if nodata is not None else -9999.0, dtype=data.dtype)
-
-        rasterio.warp.reproject(
-            source=data,
-            destination=dst_arr,
-            src_transform=src_transform,
-            src_crs=src_crs,
-            dst_transform=dst_transform,
-            dst_crs=DST_CRS,
-            resampling=rasterio.warp.Resampling.bilinear,
+        profile = dict(
+            driver="GTiff", height=height, width=width, count=1, dtype="float32",
+            crs=DST_CRS, transform=transform, nodata=nodata, compress="deflate",
+            tiled=True, blockxsize=512, blockysize=512, BIGTIFF="YES",
         )
-
-    # Source pixel values are in US survey feet (EPSG:6527 linear unit); convert to meters.
-    nodata_val = nodata if nodata is not None else -9999.0
-    dst_arr = dst_arr.astype("float32")
-    valid = dst_arr != nodata_val
-    dst_arr[valid] *= 0.3048
-
-    dst_path.parent.mkdir(parents=True, exist_ok=True)
-    with rasterio.open(
-        dst_path, "w",
-        driver="GTiff",
-        height=dst_height,
-        width=dst_width,
-        count=1,
-        dtype="float32",
-        crs=DST_CRS,
-        transform=dst_transform,
-        nodata=nodata if nodata is not None else -9999.0,
-        compress="deflate",
-        tiled=True,
-        blockxsize=512,
-        blockysize=512,
-    ) as dst:
-        dst.write(dst_arr)
-
+        dst_path.parent.mkdir(parents=True, exist_ok=True)
+        fd, tmp = tempfile.mkstemp(dir=dst_path.parent, suffix=".tmp.tif")
+        os.close(fd)
+        with WarpedVRT(
+            src, crs=DST_CRS, transform=transform, width=width, height=height,
+            resampling=Resampling.bilinear, src_nodata=nodata, nodata=nodata,
+        ) as vrt, rasterio.open(tmp, "w", **profile) as dst:
+            step = 4096
+            for r0 in range(0, height, step):
+                w = Window(0, r0, width, min(step, height - r0))
+                a = vrt.read(1, window=w).astype("float32")
+                valid = a != nodata
+                a[valid] *= FT_TO_M
+                dst.write(a, 1, window=w)
+                print(f"  rows {r0 + w.height}/{height}", flush=True)
+        os.replace(tmp, dst_path)
     print(f"Done: {dst_path}")
 
 

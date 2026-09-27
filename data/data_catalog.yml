@@ -1065,3 +1065,196 @@ naccs_sandy_v3:
       MSL(1992)->NAVD88 from NOAA VDatum's 2019 separation grids sampled offline
       (data/NACCS/vdatum_grids). Built 2026-08-26 by scripts/build_naccs_boundary.py
       on the v3 mesh (mask==2 line identical between the probe and the freeze).
+
+# ── v4 (building, 2026-09-27) ─────────────────────────────────────────────────
+# NOT here yet, on purpose: bed_v4_coarse_25m (built from V4_ELEVATION_LIST, step 3 job
+# B), cn_v4, cora_waves_v4 and naccs_sandy_v4 (needs the mesh).
+# `ehydro_delaware_v4.tif` stays keyless: it was a CHECK that CUDEM is right Philadelphia →
+# Trenton (median −0.09 m), not a tier.
+usgs_sandy_discharge_v4:
+  data_type: GeoDataset
+  uri: discharge_v4/usgs_sandy_discharge_v4.nc
+  driver:
+    name: geodataset_xarray
+    options: {}
+  metadata:
+    category: hydro
+    crs: 4326
+    unit: m3/s
+    source: >-
+      USGS daily-mean discharge (Water Data OGC API, 00060/00003), 61 inflow points, 10-26..11-02,
+      all Approved. Each river traced along its NLDI flowline to where it crosses the v4 ring;
+      the point is 150 m inside that crossing, snapped to the lowest bed within 100 m
+      (PROVISIONAL — re-check on the merged bed). scripts/download_usgs_sandy_discharge.py
+
+aorc_sandy_v4:
+  data_type: RasterDataset
+  uri: precip_v4/aorc_sandy_v4.nc
+  driver:
+    name: raster_xarray
+    options: {}
+  metadata:
+    category: meteo
+    crs: 4326
+    source: >-
+      NOAA AORC v1.1 hourly precipitation, Oct 28-31 2012, on the PROVISIONAL v4 rectangle
+      (lat 38.74-40.62). ⚠️ The drawn ring reaches lat 40.994 / lon -75.724: re-pull before a
+      run. scripts/download_aorc_sandy_precip.py
+
+noaa_sandy_v4:
+  data_type: GeoDataset
+  uri: gtsm/noaa_sandy_v4.nc
+  driver:
+    name: geodataset_xarray
+    options: {}
+  metadata:
+    category: ocean
+    crs: 4326
+    unit: m+NAVD88
+    source: NOAA CO-OPS hourly_height, the v4 base forcing set (the Battery, Atlantic City,
+      Cape May), Oct 2012. scripts/download_noaa_sandy_wl.py under NJ_DOMAIN=v4
+
+usgs_sandy_tidal_v4:
+  data_type: GeoDataset
+  uri: gtsm/usgs_sandy_tidal_v4.nc
+  driver:
+    name: geodataset_xarray
+    options: {}
+  metadata:
+    category: ocean
+    crs: 4326
+    unit: m+NAVD88
+    source: USGS continuous gage height (Water Data OGC API), 29 stations — v3's 15 + the
+      Delaware Bay, Raritan / Newark Bay and Rockaway gauges (docs/STATUS.md DATA GAPS c).
+      scripts/download_usgs_sandy_tidal.py under NJ_DOMAIN=v4
+
+ehydro_passaic_v4:
+  data_type: RasterDataset
+  uri: elevation_v4/ehydro/ehydro_passaic_v4.tif
+  driver:
+    name: rasterio
+    options: {}
+  metadata:
+    category: topography
+    crs: 32618
+    nodata: -9999.0
+    unit: m+NAVD88
+    source: >-
+      USACE eHydro New York district PR_01_PAR_20151216 (the EARLIEST Passaic survey, 3.1 yr
+      post-Sandy — user 09-26: fine), to lat 40.779. 5 m carving tier, survey-footprint masked,
+      water < -1 m only. Above the survey end CUDEM holds the WATER SURFACE, not the bed (+3.7 m
+      high). scripts/download_ehydro_v4.py --set passaic
+
+ehydro_hackensack_v4:
+  data_type: RasterDataset
+  uri: elevation_v4/ehydro/ehydro_hackensack_v4.tif
+  driver:
+    name: rasterio
+    options: {}
+  metadata:
+    category: topography
+    crs: 32618
+    nodata: -9999.0
+    unit: m+NAVD88
+    source: >-
+      USACE eHydro New York district NJ_17_HAC_20181022, to lat 40.751. 5 m carving tier,
+      survey-footprint masked, water < -1 m only. CUDEM reads +8.5 m high here (the surface).
+      scripts/download_ehydro_v4.py --set hackensack
+
+cudem_delaware_v4:
+  data_type: RasterDataset
+  uri: elevation_v4/cudem_delaware_v4.vrt
+  driver:
+    name: rasterio
+    options: {}
+  metadata:
+    category: topography
+    unit: m+NAVD88
+    source: >-
+      NOAA NCEI 1/9" CUDEM topobathy, Delaware tiles (lon -75.75..-75.00, lat 38.50-40.25) over
+      data/elevation_v4/cudem/raw/, overviews on scratch. Matches eHydro Philadelphia → Trenton
+      to a median -0.09 m. ⚠️ 40.21-40.25 is a FLAT -0.6..-0.9 m placeholder, not a bed.
+
+nj_10ft_dem_v4:
+  data_type: RasterDataset
+  uri: elevation_v4/nj_10ft_dem_v4.tif
+  driver:
+    name: rasterio
+    options: {}
+  metadata:
+    category: topography
+    crs: 4326
+    unit: m+NAVD88
+    source: >-
+      NJ OGIS statewide 10-ft lidar DEM (2021), re-clipped 2026-09-27 from the archived .img/.ige
+      to the mosaic's own extent ∩ the v4 ring bbox (lon -75.602..-73.897, lat 38.923..41.044),
+      v3's pixel (3.505e-5°) and ft→m factor. NJ land only; reads 0 over water (use zmin 0.001).
+      🔴 The 09-24 clip was georeferenced ~14 km west (window truncation bug, fixed in
+      scripts/download_3dep.py) and deleted. Built by hpc/clip_nj_dem.slurm, checked by
+      scripts/check_dem_clip.py against nj_10ft_dem_v3 and 3DEP.
+
+riverbeds_v4:
+  data_type: RasterDataset
+  uri: elevation_v4/riverbeds/riverbeds_v4.vrt
+  driver:
+    name: rasterio
+    options: {}
+  metadata:
+    category: topography
+    crs: 32618
+    nodata: -9999.0
+    unit: m+NAVD88
+    source: >-
+      v4 river beds where no survey reaches (scripts/build_riverbeds_v4.py): Delaware falls →
+      Washington Crossing and Raritan New Brunswick → Manville = 3DEP water surface minus a
+      uniform depth (1.20 / 0.55 m, USGS gauge channel measurements); Raritan -74.305 → New
+      Brunswick = NOS H05647 (1934, reads ~1.2 m shallow in the channel); Passaic → Dundee and
+      Hackensack → Oradell = NOAA ENC soundings (MLLW, VDatum) + 1.2 m below MLLW above the last
+      one. Along-centreline profiles painted across NHD channel polygons, 5 m. User decision
+      2026-09-27; rebuild when the DRBC bathymetry arrives.
+
+dep3_v4:
+  data_type: RasterDataset
+  uri: elevation_v4/dep3_v4.vrt
+  driver:
+    name: rasterio
+    options: {}
+  metadata:
+    category: topography
+    crs: 4269
+    nodata: -999999.0
+    unit: m+NAVD88
+    source: >-
+      USGS 3DEP 1/3 arc-second, tiles n39w076 n40w076 n41w076 n41w075 n41w074 (VRT) — the land
+      outside New Jersey (PA, DE, Staten Island / Brooklyn). Blanks tidal water (≤ 0 → NoData).
+
+gmrt_v4:
+  data_type: RasterDataset
+  uri: elevation_v4/gmrt_v4.tif
+  driver:
+    name: rasterio
+    options: {}
+  metadata:
+    category: topography
+    crs: 4326
+    unit: m+MSL
+    source: GMRT GridServer ~100 m, the v4 ring bbox + 0.1° (lon -75.83..-73.45, lat 38.62-41.09) —
+      the bottom tier; the only one on the outer shelf and south of the Delaware mouth (38.725).
+      scripts/download_gmrt.py under NJ_DOMAIN=v4
+
+bed_v4_coarse_25m:
+  data_type: RasterDataset
+  uri: elevation_v4/bed_v4_coarse_25m.tif
+  driver:
+    name: rasterio
+    options: {}
+  metadata:
+    category: topography
+    crs: 32618
+    unit: m+NAVD88
+    source: >-
+      V4_ELEVATION_LIST warped to 25 m / EPSG:32618 and stacked in list order (base tiers
+      bilinear, carving tiers ehydro*/shrewsbury*/riverbeds* MIN, nj_10ft ≤ 0.001 → NoData), with
+      50/100/200 m overviews. 🔴 FOR QUADTREE REFINEMENT GATING AND FACE z ONLY, never the subgrid.
+      scripts/build_coarse_bed.py (reads the tier order FROM domain.py — v3's hand-typed shell list
+      had drifted), hpc/build_coarse_bed.slurm.
