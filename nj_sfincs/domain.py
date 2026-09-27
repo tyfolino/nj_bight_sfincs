@@ -120,6 +120,14 @@ class BoundaryArm:
     different experiment wearing the same name.
 
     ``btype`` is SFINCS's own vocabulary: ``waterlevel`` (mask 2) or ``outflow`` (mask 3).
+
+    An arm is a BOX, or a SECTION of a drawn forced line (``Domain.waterlevel_line``,
+    built by ``waterlevel_line_arms``). A box round a diagonal line overlaps its
+    neighbour's; a section claims a cell only when the cell lies within ``corridor_m`` of
+    the WHOLE line and its nearest point on the line falls inside the section's span, so
+    the sections of one line are disjoint by construction and the two ends are flat (a
+    cell beyond the line's last vertex — along the wall it comes ashore on — is nobody's).
+    Every consumer asks ``contains``; ``box`` is then only the section's envelope.
     """
 
     name: str
@@ -131,6 +139,34 @@ class BoundaryArm:
     #: it is a source term with no physical meaning.
     max_bed_m: float = -0.5
     why: str = ""
+    #: The WHOLE forced line (domain CRS vertices) and this section's [start, end) along
+    #: it, in metres — empty for a box arm.
+    line: tuple[tuple[float, float], ...] = ()
+    span_m: tuple[float, float] = (0.0, 0.0)
+    corridor_m: float = 0.0
+
+    def contains(self, x, y):
+        """Boolean over points (domain CRS): does this arm claim them?"""
+        import numpy as np
+
+        xmin, ymin, xmax, ymax = self.box
+        x, y = np.asarray(x, float), np.asarray(y, float)
+        inbox = (x > xmin) & (x < xmax) & (y > ymin) & (y < ymax)
+        if not self.line:
+            return inbox
+        import shapely
+
+        ln = shapely.LineString(self.line)
+        idx = np.flatnonzero(inbox)
+        pts = shapely.points(x[idx], y[idx])
+        s = shapely.line_locate_point(ln, pts)
+        s0, s1 = self.span_m
+        # flat ends: a point whose nearest line point is a TERMINAL vertex is past the end
+        on = (s >= s0) & (s < s1) & (s > 0) & (s < ln.length)
+        on &= shapely.distance(ln, pts) <= self.corridor_m
+        out = np.zeros(inbox.shape, bool)
+        out[idx[on]] = True
+        return out
 
 
 @dataclass(frozen=True)
@@ -214,7 +250,21 @@ class Domain:
     #:
     #: ``add_waves`` also reads this for the SnapWave seaward band, so it follows
     #: automatically — a boundary-depth domain does not need a second knob set.
+    #:
+    #: ⚠️ A domain with a ``waterlevel_line`` (v4 on) is NOT cut by depth: the whole ring
+    #: is the ``create_active`` include polygon, which overrules ``zmin``. There this value
+    #: reaches only the SnapWave paths above.
     mask_zmin: float = -10.0
+
+    #: Subgrid pixels per cell EDGE, at every quadtree level: a 25 m face at 8 samples the
+    #: bed at 3.1 m, a 50 m face at 6.25 m. 8 on v1–v3 (their sealed templates). v4 = 16
+    #: (user, 2026-09-27): the best tiers are ~3 m lidar, so 16 buys nothing at 25 m but
+    #: brings the 50 m faces — v3's second-largest class, ~650 k — to native resolution.
+    #: Solver cost is unchanged (the tables are per face × ``nr_levels``, whatever the
+    #: pixel count); the build's RAM and time and the ``subgrid/dep_subgrid_lev*.tif``
+    #: downscale rasters grow ~4×. A domain property because it is part of what the
+    #: template IS, and a rebuilt v3 must not silently change it.
+    nr_subgrid_pixels: int = 8
 
     #: Which frozen mesh directory this domain is built from: ``data/frozen_mesh_<key>``.
     #: Defaults to the domain's own name. Two domains SHARE a key when they differ only
@@ -303,6 +353,28 @@ class Domain:
     #: Force these lon/lat boxes active at any depth, so dredged channels and scoured
     #: inlet gorges don't punch inactive holes through an interior.
     always_active_boxes_ll: tuple[tuple[float, float, float, float], ...] = ()
+
+    #: 🔴 THE DRAWN WATER-LEVEL BOUNDARY — a named-vertex CSV (hand-edited, SOURCE OF
+    #: TRUTH; ``scripts/audit_ocean_line_v4.py`` checks it). When set it REPLACES the
+    #: isobath (user, 2026-09-27: "if it's on the west side of our water level boundary,
+    #: it should be active — it's okay if it's deeper than 10 m"):
+    #:
+    #:   * every cell inside the ring is active at ANY depth — the ring itself is the
+    #:     ``create_active`` include polygon, so ``mask_zmin`` and ``always_active_boxes_ll``
+    #:     have nothing left to do on the SFINCS mask;
+    #:   * the ring SEAWARD of the line is inactive — ``sea_polygon`` closes the line with
+    #:     ``waterlevel_line_sea_closure_ll`` and joins ``inactive_polygons_ll``;
+    #:
+    #: so ``create_boundary`` forms the forced cells ON the line, and the arms are its
+    #: sections (``waterlevel_line_arms``). Before this, the boundary was wherever the
+    #: −10 m isobath fell, and every deep channel the model had to compute needed its own
+    #: always-active box (v1.5's Ambrose finding; v4's Delaware ship channel to Bristol).
+    waterlevel_line: Path | None = None
+
+    #: (name, lon, lat) — the vertices that close the sea polygon from the line's LAST
+    #: vertex round the seaward side back to its FIRST. Outside the ring, or on an edge the
+    #: domain means to wall (v4: Cape Henlopen's Atlantic beach).
+    waterlevel_line_sea_closure_ll: tuple[tuple[str, float, float], ...] = ()
 
     #: (name, (lon_min, lat_min, lon_max, lat_max), min_z, why) — ground the merged bed
     #: MUST report as dry land, at or above ``min_z`` metres NAVD88.
@@ -1707,6 +1779,97 @@ SNAPWAVE_STEPS: dict[str, SnapWaveSteps] = {
 }
 
 
+# ── A DRAWN water-level line (v4 on): read it, close it into the sea, cut it into arms ──
+def read_waterlevel_line(path: Path) -> list[tuple[str, float, float]]:
+    """``(name, lon, lat)`` per vertex of a named-vertex line CSV, in file order."""
+    import csv
+
+    with open(path, newline="") as f:
+        rows = csv.DictReader(ln for ln in f if not ln.startswith("#"))
+        return [(r["name"], float(r["lon"]), float(r["lat"])) for r in rows]
+
+
+def sea_polygon(
+    dom: "Domain",
+) -> tuple[str, tuple[tuple[float, float], ...], str] | None:
+    """The ring seaward of ``dom.waterlevel_line``, as an ``inactive_polygons_ll`` entry.
+
+    The line in file order, then ``waterlevel_line_sea_closure_ll`` back to its start.
+    ``None`` on a domain without a drawn line.
+    """
+    if dom.waterlevel_line is None:
+        return None
+    verts = [(lo, la) for _n, lo, la in read_waterlevel_line(dom.waterlevel_line)]
+    verts += [(lo, la) for _n, lo, la in dom.waterlevel_line_sea_closure_ll]
+    return (
+        "sea_of_waterlevel_line",
+        tuple(verts),
+        f"Seaward of the drawn water-level line ({dom.waterlevel_line.name}): forced "
+        "at the line, never computed.",
+    )
+
+
+def inactive_polygons(dom: "Domain") -> tuple:
+    """``dom.inactive_polygons_ll``, plus the sea seaward of a drawn water-level line."""
+    sea = sea_polygon(dom)
+    return tuple(dom.inactive_polygons_ll) + ((sea,) if sea else ())
+
+
+def waterlevel_line_arms(
+    path: Path,
+    epsg: int,
+    sections: tuple[tuple[str, str, str], ...],
+    corridor_m: float,
+) -> tuple[BoundaryArm, ...]:
+    """Cut a drawn water-level line into ``BoundaryArm`` sections.
+
+    ``sections`` = ``((arm_name, first_vertex_name, why), ...)`` in line order; each runs
+    from its first vertex to the next section's, the last to the line's end. The first
+    must start at the line's first vertex, so every metre of the line is some arm's.
+    """
+    import numpy as np
+    import shapely
+    from pyproj import Transformer
+    from shapely.ops import substring
+
+    verts = read_waterlevel_line(path)
+    names = [n for n, _lo, _la in verts]
+    t = Transformer.from_crs(4326, epsg, always_xy=True)
+    xy = tuple(
+        (float(x), float(y))
+        for x, y in zip(*t.transform([v[1] for v in verts], [v[2] for v in verts]))
+    )
+    ln = shapely.LineString(xy)
+    s_v = np.r_[0.0, np.cumsum(np.hypot(*np.diff(np.array(xy), axis=0).T))]
+    missing = [first for _a, first, _w in sections if first not in names]
+    if missing:
+        raise ValueError(
+            f"{path.name}: section start vertices not on the line: {missing}"
+        )
+    starts = [float(s_v[names.index(first)]) for _a, first, _w in sections]
+    if starts[0] != 0.0 or any(b <= a for a, b in zip(starts, starts[1:])):
+        raise ValueError(
+            f"{path.name}: sections must start at the line's first vertex and run in "
+            f"line order (starts {starts})"
+        )
+    ends = starts[1:] + [ln.length]
+    arms = []
+    for (name, _first, why), s0, s1 in zip(sections, starts, ends):
+        x0, y0, x1, y1 = substring(ln, s0, s1).buffer(corridor_m).bounds
+        box = (
+            float(np.floor(x0 / 100) * 100),
+            float(np.floor(y0 / 100) * 100),
+            float(np.ceil(x1 / 100) * 100),
+            float(np.ceil(y1 / 100) * 100),
+        )
+        arms.append(
+            BoundaryArm(
+                name, box, why=why, line=xy, span_m=(s0, s1), corridor_m=corridor_m
+            )
+        )
+    return tuple(arms)
+
+
 # ═══════════════════════════════════════════════════════════════════════════════
 # v4 — v3 + Delaware Bay and river, the Raritan to Manville, the Arthur Kill NJ shore,
 # Newark Bay + the Meadowlands. BUILDING (ring drawn 2026-09-25/26, no mesh yet).
@@ -1718,21 +1881,25 @@ SNAPWAVE_STEPS: dict[str, SnapWaveSteps] = {
 # Hudson, Jamaica Bay, Rehoboth Bay, the Chesapeake) shut off at declared lines. Audit:
 # `scripts/audit_region_v4.py --ring <csv>`. Far banks (DE / PA / Staten Island) are
 # COMPUTED, not walled. Track C: the shelf out to lon -73.55 is inside the ring for
-# SnapWave only — `mask_zmin` stays -10, so SFINCS stops at the isobath as on v3.
+# SnapWave only — SFINCS stops at the drawn water-level line (below).
 #
-# Every box below is the UTM 18N envelope of its line in
+# 🔴 THE WATER-LEVEL BOUNDARY IS DRAWN, NOT AN ISOBATH (user, 2026-09-27):
+# `data/v4_design/waterlevel_line_v4.csv`, Cape Henlopen → the Delaware mouth → the NJ
+# coast node to node through NACCS save points → the Lower Bay entrance → Rockaway Inlet
+# → jamaica_wall_s. Everything inside the ring and landward of it is ACTIVE AT ANY DEPTH
+# (the Delaware ship channel, KvK / Newark Bay at -16 m, the C&D at -13 m, Ambrose);
+# everything seaward is inactive. That retires the 09-27 step-2 always-active boxes and
+# the `delaware_sea` polygon, which existed only to undo the -10 m cut. See
+# `Domain.waterlevel_line`.
+#
+# The other boxes below are the UTM 18N envelope of their line in
 # `data/v4_design/v4_crossings.geojson` + 300 m, rounded out to 100 m;
 # tests/test_domain_and_staging.py (TestV4Crossings) asserts each line still lies inside
 # its box, so a moved line without a moved box fails the suite.
 #
-# ⚠️ NOT BUILDABLE YET, BY DESIGN: no `refinement` (step 4) — `build_static` refuses —
-# and `bed_v4_coarse_25m` is not built yet (step 3, job B).
-#
-# THE MOUTH (step 2, 09-27): 472 km² of the Delaware below -10 m is connected to the
-# shelf, so `create_active` would switch off the ship channel to Bristol, and the KvK /
-# Newark Bay (-16 m), upper Arthur Kill, Rockaway Inlet (-14 m) and C&D (-13 m) channels
-# likewise. Declared as always-active boxes + the `delaware_sea` inactive polygon, whose
-# edge IS the mouth line (see those fields).
+# Refinement (step 4, 09-27): `data/quadtree/refinement_v4.geojson`, WRITTEN by
+# `scripts/build_refinement_v4.py` from the readable recipe in that script (which also
+# diffs it by name against v3's) — edit the recipe, not the geojson.
 #
 # Arm cell counts are UNBRACKETED (the type's default 1..10,000) until the first clean
 # mesh probe, then tightened as on v3 (08-24 probe → 08-26 freeze).
@@ -1774,6 +1941,12 @@ V4_ELEVATION_LIST: tuple[dict, ...] = (
 #: yields a `MaskOverride` 3 → 1 (the dry banks) AND a `NoWaterLevelBox` (a river takes a
 #: discharge, never an imposed level — an arm-less mask==2 there is demoted to a wall by
 #: the whitelist; the box is the alarm that says so).
+#: The drawn water-level line (see `Domain.waterlevel_line`), and how far from it an arm
+#: section claims a forced cell: 2.5 base (200 m) faces — a face on the line is within
+#: ~140 m of it, so this is margin, and nothing else forced lies within 3 km.
+_V4_WATERLEVEL_LINE = DATA / "v4_design" / "waterlevel_line_v4.csv"
+_V4_LINE_CORRIDOR_M = 500.0
+
 _V4_RIVER_CUTS: tuple[tuple[str, Box, str], ...] = (
     (
         "delaware_washington_crossing",
@@ -1859,39 +2032,50 @@ V4 = Domain(
     region=DATA / "region_v4.geojson",
     region_source=DATA / "v4_design" / "region_v4_vertices.csv",
     epsg=32618,
+    nr_subgrid_pixels=16,  # user 09-27: brings the 50 m faces to the ~3 m lidar
+    refinement=DATA / "quadtree" / "refinement_v4.geojson",
     latitude=39.86,  # (38.725 + 40.994) / 2, the drawn ring's mid-latitude
     building=True,
     # ── The forced lines. Every mask==2 cell must sit in exactly one of these. ───────
     boundary_arms=(
-        BoundaryArm(
-            "ocean",
-            (503_800, 4_280_000, 626_000, 4_487_100),
-            why="The -10 m isobath from off Cape May to the Lower Bay closure along lon "
-            "-73.94 (ring vertices ocean_rockaway_s → rockaway_1, 40.45–40.53, -8..-27 m "
-            "— v1.5 / v3's own ocean arm; needs v1.5's closure corridor, inherited "
-            "below). West edge = the delaware_mouth box's east edge; north edge = "
-            "rockaway_1, where the rockaway_inlet arm starts. South of Cape May Point "
-            "the isobath meets the `delaware_sea` polygon at x ≈ 503.5 km; cells west "
-            "of 503.8 km are the mouth arm's.",
-        ),
-        BoundaryArm(
-            "delaware_mouth",
-            # South edge = the ring's: also claims the forced sea cells along the
-            # delaware_sea polygon's Cape May meridian (x ≈ 503.5 km).
-            (491_600, 4_280_000, 503_800, 4_309_600),
-            why="Cape Henlopen (-75.093, 38.795) → Cape May Point (-74.960, 38.932), "
-            "19.1 km, INSIDE the ring. The bay and tidal river are COMPUTED from here "
-            "(scope rule 1, the v1.5 structural argument). NACCS: 7 nodes within 1.5 km "
-            "in three clusters; leave-one-out misses the peak by ≤ 0.04 m (STATUS "
-            "09-26). Forms where the always-active bay meets the `delaware_sea` "
-            "inactive polygon.",
-        ),
-        BoundaryArm(
-            "rockaway_inlet",
-            (589_400, 4_487_100, 593_300, 4_493_100),
-            why="Rockaway Inlet, rockaway_1 → jamaica_wall_s: shuts Jamaica Bay out "
-            "(its own inlet). 16 NACCS nodes within 1.5 km, worst gap 1.37 km. 2.4 km "
-            "of the line is dry Breezy Point sand, which carries no BC.",
+        # The drawn sea line, as four SECTIONS (disjoint by construction — see
+        # `BoundaryArm`). Each runs from its first vertex to the next one's.
+        *waterlevel_line_arms(
+            _V4_WATERLEVEL_LINE,
+            32618,
+            (
+                (
+                    "delaware_mouth",
+                    "cape_henlopen",
+                    "Cape Henlopen → NACCS 7171 (the cape tip, 24 m) → the ~10 m row "
+                    "across the mouth → up the outside of the Cape May shoals (user "
+                    "route 09-27, node picker). Delaware Bay and river COMPUTED behind "
+                    "it (scope rule 1, the v1.5 structural argument). Starts on the "
+                    "cape's land, which carries no BC.",
+                ),
+                (
+                    "ocean",
+                    "sp_5531",
+                    "The NJ ocean coast off Cape May → off Sea Bright, node to node "
+                    "through NACCS save points at ~10 m (traced once, hand-edited "
+                    "09-27) — replaces v3's -10 m isobath staircase.",
+                ),
+                (
+                    "lower_bay_entrance",
+                    "sp_3767",
+                    "East of Sandy Hook, across Ambrose, to the ocean side of Breezy "
+                    "Point (user route 09-27) — replaces v1.5's straight closure at lon "
+                    "-73.94. Lower, Raritan and Sandy Hook Bays COMPUTED behind it.",
+                ),
+                (
+                    "rockaway_inlet",
+                    "sp_3903",
+                    "Over the Breezy Point tip (dry, no BC) → NACCS 14089 in the inlet "
+                    "(3.3 m; kept: its Sandy peak is the inlet's own funnelled level) → "
+                    "jamaica_wall_s. Shuts Jamaica Bay (its own inlet) out.",
+                ),
+            ),
+            corridor_m=_V4_LINE_CORRIDOR_M,
         ),
         BoundaryArm(
             "narrows",
@@ -1967,58 +2151,18 @@ V4 = Domain(
         NoWaterLevelBox(name, box, why="River head of tide: " + why)
         for name, box, why in _V4_RIVER_CUTS
     ),
-    # ── STEP 2 (user 09-27): the deep channels are water, however deep. ─────────────
-    # `create_active(zmin=-10)` would switch off every channel below -10 m, and one that
-    # stays CONNECTED to inactive water is not an interior hole, so nothing refills it —
-    # `create_boundary` then rings it with imposed level inside the water v4 exists to
-    # COMPUTE (v1.5's Ambrose finding, exactly). Generous on purpose and safe to be so:
-    # these only ADD active cells, the region clip runs after them, and the Delaware sea
-    # they over-reach is switched off again by `inactive_polygons_ll`. ⚠️ An always-active
-    # EDGE must never cross deep water INSIDE the ring (v1.5: a 40.60 north edge made the
-    # Narrows arm trace the box edge); every edge below lies on land, outside the ring,
-    # or on the inactive sea polygon.
-    always_active_boxes_ll=(
-        # v1.5's Lower Bay box + the lon -73.94 closure corridor (the ring runs the same
-        # line 40.45–40.53).
-        *V1_5_RARITAN.always_active_boxes_ll,
-        # Delaware Bay + river to Burlington + the C&D (-13 m) + the Schuylkill: 472 km²
-        # below -10 m connected to the shelf, to lat 40.07. East edge -74.96 = Cape May
-        # Point, so the NJ ocean side stays on the isobath; the sea south of the mouth
-        # that this box covers is the polygon's.
-        (-75.75, 38.70, -74.96, 40.30),
-        # The river above Burlington to Trenton / Washington Crossing (lon -74.96..-74.74).
-        (-74.96, 39.95, -74.70, 40.30),
-        # KvK (-16 m) + Newark Bay + the upper Arthur Kill + the lower Passaic /
-        # Hackensack. East edge -74.07 is outside the ring (the Upper Bay, clipped).
-        (-74.30, 40.49, -74.07, 40.80),
-        # Rockaway Inlet (-13.8 m) and the water inside the forced line; Jamaica Bay and
-        # the Bight east of -73.94 are outside the ring (clipped).
-        (-73.96, 40.53, -73.89, 40.60),
-    ),
-    # 🔴 THE MOUTH. The sea between the Henlopen → Cape May line and the ring's south edge
-    # is inside the ring for SnapWave only (Track C, `ocean_south_de`), so SFINCS must
-    # not compute it: with it inactive, the always-active bay meets inactive sea exactly
-    # ON the mouth line and `create_boundary` puts the forced line there — no separate
-    # closure corridor needed (v1.5 needed one only because its cut was the ring edge).
-    # East edge = Cape May Point's meridian, so the NJ ocean side south of the Point
-    # keeps its isobath; the sea cells along that meridian become forced water-level
-    # cells and belong to the delaware_mouth arm (its box reaches south for them).
-    # West side = the Atlantic shore of Cape Henlopen, Point → Rehoboth (the ring's
-    # `ocean_south_de` west end, -75.083): ~8 km of Delaware ocean beach is therefore
-    # walled on its sea side — Sandy's water reached it from the ocean, which v4 does not
-    # compute south of the mouth; the bay side (Lewes) is computed.
-    inactive_polygons_ll=(
-        (
-            "delaware_sea",
-            (
-                (-75.093, 38.795),  # Cape Henlopen, the mouth line's SW end
-                (-74.960, 38.932),  # Cape May Point, its NE end
-                (-74.960, 38.700),  # south, past the ring's edge (38.725)
-                (-75.083, 38.700),  # west, to the ocean_south_de line's west end
-            ),
-            "Seaward of the Delaware mouth line: SnapWave only (scope rule 1 — the bay "
-            "is forced at the mouth and computed inside it).",
-        ),
+    # ── THE DRAWN LINE (user 09-27): the whole ring is active at any depth, the ring
+    # seaward of the line is inactive, so the forced cells form ON it. ────────────────
+    waterlevel_line=_V4_WATERLEVEL_LINE,
+    # From the line's end round the sea and back to its start. The last leg is Cape
+    # Henlopen's Atlantic beach (ring edge -75.083 at 38.725 → the cape tip): ~8 km of
+    # Delaware ocean beach is walled on its sea side — out of scope (v4 = NJ + Delaware
+    # Bay), the bay side (Lewes) is computed.
+    waterlevel_line_sea_closure_ll=(
+        ("sea_ne", -73.40, 40.58),  # east of jamaica_wall_s, over Rockaway (outside)
+        ("sea_se", -73.40, 38.60),  # past the ring's SE corner (-73.55, 38.855)
+        ("sea_sw", -75.083, 38.60),  # below the ring's south edge (38.725)
+        ("henlopen_beach_s", -75.083, 38.70),  # then up the beach to cape_henlopen
     ),
     # The Tottenville ground is still inside v4 and still New York (no nj_10ft_dem): the
     # positive check on whatever step 3's stack puts there.
@@ -2029,7 +2173,7 @@ V4 = Domain(
     elevation_list=V4_ELEVATION_LIST,
     # Refinement gating + face z from one pre-merged 25 m raster, as on v3 (a merge of
     # every native tier over this bbox would not fit in memory). Built from the list above
-    # by step 3's job B; missing until then, which fails the build loudly.
+    # by `scripts/build_coarse_bed.py` (step 3, 09-27).
     coarse_elevation_list=({"elevation": "bed_v4_coarse_25m"},),
     precip_dataset="aorc_sandy_v4",  # ⚠️ pulled on the old rectangle, 0.33° short N
     cn_dataset="cn_v4",  # not built yet — a missing key fails the build loudly

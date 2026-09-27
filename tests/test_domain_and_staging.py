@@ -160,11 +160,14 @@ class TestBoxesAreFullyBounded(_DomainEnv):
                 self.assertTrue(why, f"{name}/land_box {lname} has no reason recorded")
 
     def test_boundary_arms_are_disjoint(self):
-        """Overlapping arm boxes make a per-arm cell count meaningless."""
+        """Overlapping arm boxes make a per-arm cell count meaningless. (Sections of one
+        drawn line are disjoint by their spans instead — TestV4Crossings.)"""
         for name, dom in domain.DOMAINS.items():
             arms = list(dom.boundary_arms)
             for i, a in enumerate(arms):
                 for b in arms[i + 1 :]:
+                    if a.line and a.line == b.line:
+                        continue
                     ax0, ay0, ax1, ay1 = a.box
                     bx0, by0, bx1, by1 = b.box
                     overlap = (ax0 < bx1 and bx0 < ax1) and (ay0 < by1 and by0 < ay1)
@@ -1223,7 +1226,7 @@ class TestV4Crossings(unittest.TestCase):
     """
 
     #: Declared in the geojson with no box: the edge route is ordinary high land edge;
-    #: the sea south of the mouth is the `delaware_sea` polygon (tested below).
+    #: the sea south of the mouth is seaward of the drawn water-level line (tested below).
     NO_BOX = {"upper_bay_hudson_route", "ocean_south_de"}
     #: crossing name → override name where they differ (the rest are wall_<name>)
     WALL_NAME = {"jamaica_bay_wall": "wall_jamaica_bay", "bayonne_wall": "wall_bayonne"}
@@ -1268,11 +1271,24 @@ class TestV4Crossings(unittest.TestCase):
                 domain.assert_buildable(stale)
 
     def test_every_forced_line_is_inside_its_arm(self):
-        arms = {a.name: a.box for a in self.v4.boundary_arms}
+        import numpy as np
+        import shapely
+
+        arms = {a.name: a for a in self.v4.boundary_arms}
         for name, (kind, pts) in self.lines.items():
-            if kind == "forced":
-                self.assertIn(name, arms, f"forced line {name} has no arm")
-                self.assertTrue(self._inside(pts, arms[name]), name)
+            if kind != "forced":
+                continue
+            self.assertIn(name, arms, f"forced line {name} has no arm")
+            arm = arms[name]
+            if not arm.line:
+                self.assertTrue(self._inside(pts, arm.box), name)
+                continue
+            # a section: every interior point of the crossing is claimed by it (the
+            # ends are land anchors, and the line's two terminal ends are flat)
+            ln = shapely.LineString(pts)
+            p = shapely.line_interpolate_point(ln, np.linspace(0.02, 0.98, 60), True)
+            got = arm.contains(shapely.get_x(p), shapely.get_y(p))
+            self.assertTrue(got.all(), f"{name}: {int((~got).sum())} of 60 unclaimed")
 
     def test_every_cut_and_wall_is_walled(self):
         walls = {o.name: o for o in self.v4.mask_overrides}
@@ -1306,49 +1322,88 @@ class TestV4Crossings(unittest.TestCase):
         arms = self.v4.boundary_arms
         for i, a in enumerate(arms):
             for b in arms[i + 1 :]:
+                if a.line and a.line == b.line:
+                    continue
                 ax0, ay0, ax1, ay1 = a.box
                 bx0, by0, bx1, by1 = b.box
                 overlap = ax0 < bx1 and bx0 < ax1 and ay0 < by1 and by0 < ay1
                 self.assertFalse(overlap, f"{a.name} / {b.name}")
 
-    def test_sea_polygon_edge_is_the_mouth_line(self):
-        """The forced line forms where the always-active bay meets `delaware_sea`, so
-        the polygon's first edge must BE the mouth line, and the polygon must cover the
-        `ocean_south_de` sea it stands for."""
-        import json
-
+    def test_line_sections_tile_the_line(self):
+        """The four sections cover the drawn line end to end, in order, once."""
+        import numpy as np
         import shapely
 
-        ((name, verts, _why),) = self.v4.inactive_polygons_ll
-        self.assertEqual(name, "delaware_sea")
-        gj = json.loads(
-            (domain.DATA / "v4_design" / "v4_crossings.geojson").read_text()
+        secs = [a for a in self.v4.boundary_arms if a.line]
+        self.assertEqual(
+            [a.name for a in secs],
+            ["delaware_mouth", "ocean", "lower_bay_entrance", "rockaway_inlet"],
         )
-        geo = {
-            f["properties"]["name"]: f["geometry"]["coordinates"]
-            for f in gj["features"]
-        }
-        mouth = geo["delaware_mouth"]
-        for a, b in ((verts[0], mouth[0]), (verts[1], mouth[-1])):
-            self.assertAlmostEqual(a[0], b[0], places=3)
-            self.assertAlmostEqual(a[1], b[1], places=3)
-        poly = shapely.Polygon(verts).buffer(1e-6)
-        self.assertTrue(poly.covers(shapely.LineString(geo["ocean_south_de"][1:])))
+        ln = shapely.LineString(secs[0].line)
+        self.assertEqual(secs[0].span_m[0], 0.0)
+        self.assertAlmostEqual(secs[-1].span_m[1], ln.length, places=3)
+        for a, b in zip(secs, secs[1:]):
+            self.assertEqual(a.span_m[1], b.span_m[0], f"{a.name} / {b.name}")
+        # every point just landward-or-seaward of the line is claimed exactly once
+        s = np.linspace(500.0, ln.length - 500.0, 4000)  # clear of the flat ends
+        p = shapely.line_interpolate_point(ln, s)
+        for off in (-150.0, 0.0, 150.0):
+            x, y = shapely.get_x(p) + off, shapely.get_y(p)
+            n = sum(a.contains(x, y).astype(int) for a in self.v4.boundary_arms)
+            self.assertLessEqual(int(n.max()), 1, f"offset {off}: claimed twice")
+            self.assertEqual(int((n == 0).sum()), 0, f"offset {off}: unclaimed")
 
-    def test_mouth_arm_claims_the_sea_polygon_edge(self):
-        """The polygon's Cape May meridian becomes forced sea cells; the mouth arm's box
-        must reach the ring's south edge to claim them (else they are orphans)."""
-        from pyproj import Transformer
+    def test_section_ends_are_flat(self):
+        """Past a line's terminal vertex (along the wall it comes ashore on) nothing is
+        claimed; beyond the corridor nothing is claimed."""
+        import numpy as np
 
-        t = Transformer.from_crs(4326, 32618, always_xy=True)
-        ((_n, verts, _w),) = self.v4.inactive_polygons_ll
-        x0, y0 = t.transform(*verts[1])
-        _x1, y1 = t.transform(verts[2][0], 38.725)
-        box = {a.name: a.box for a in self.v4.boundary_arms}["delaware_mouth"]
-        self.assertLess(box[0], x0 - 150)
-        self.assertLess(x0 + 150, box[2])  # a 200 m face east of the meridian
-        self.assertLessEqual(box[1], y1)
-        self.assertGreaterEqual(box[3], y0)
+        arm = domain.BoundaryArm(
+            "toy",
+            (-1000.0, -1000.0, 2000.0, 1000.0),
+            line=((0.0, 0.0), (1000.0, 0.0)),
+            span_m=(0.0, 1000.0),
+            corridor_m=300.0,
+        )
+        got = arm.contains(np.array([500.0, -100, 1100, 500]), np.array([0.0, 0, 0, 400]))
+        self.assertEqual(got.tolist(), [True, False, False, False])
+
+    def test_sea_polygon_splits_the_ring(self):
+        """Seaward of the drawn line = inactive; landward = ONE active piece holding the
+        water v4 exists to compute, at any depth (user 09-27)."""
+        import geopandas as gpd
+        import shapely
+
+        name, verts, _why = domain.sea_polygon(self.v4)
+        self.assertIn(name, [n for n, _v, _w in domain.inactive_polygons(self.v4)])
+        sea = shapely.Polygon(verts)
+        self.assertTrue(sea.is_valid, shapely.is_valid_reason(sea))
+        ring = gpd.read_file(self.v4.region).to_crs(4326).geometry.iloc[0]
+        land = ring.difference(sea)
+        self.assertEqual(land.geom_type, "Polygon", "landward side is not one piece")
+        for what, lo, la in (
+            ("Cape May Point, bay side", -74.965, 38.925),
+            ("Delaware Bay", -75.10, 39.10),
+            ("Delaware ship channel off Marcus Hook", -75.40, 39.81),
+            ("Ambrose Channel by Sandy Hook", -73.98, 40.47),
+            ("Barnegat Inlet", -74.105, 39.765),
+            ("Kill van Kull", -74.12, 40.645),
+        ):
+            p = shapely.Point(lo, la)
+            self.assertTrue(land.contains(p), what)
+        for what, lo, la in (
+            ("shelf off Atlantic City", -74.20, 39.30),
+            ("sea off the Henlopen beach", -75.07, 38.75),
+        ):
+            p = shapely.Point(lo, la)
+            self.assertTrue(ring.contains(p) and sea.contains(p), what)
+
+    def test_the_isobath_no_longer_shapes_the_mask(self):
+        """With a drawn line the ring is the include polygon; the step-2 deep-channel
+        boxes and `delaware_sea` existed only to undo the -10 m cut, and are retired."""
+        self.assertIsNotNone(self.v4.waterlevel_line)
+        self.assertEqual(self.v4.always_active_boxes_ll, ())
+        self.assertEqual(self.v4.inactive_polygons_ll, ())
 
     def test_inflow_walls_are_on(self):
         self.assertGreater(self.v4.wall_outflow_near_sources_m, 248)  # max edge_m 09-26

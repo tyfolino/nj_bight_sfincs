@@ -18,13 +18,15 @@ each metre, because today
     unless it sits in a declared `boundary_arms` box;
   * EVERY other edge cell (OUTFLOW_MAX_BED = 1e4) becomes FREE OUTFLOW unless a
     `mask_overrides` box walls it — any undeclared low rim is a drain (FINDINGS §50);
-  * cells deeper than mask_zmin (-10 m) are INACTIVE unless an always-active box says
-    otherwise, and an inactive channel connected to the ocean is not an interior hole.
+  * every cell inside the ring LANDWARD of the drawn water-level line
+    (`data/v4_design/waterlevel_line_v4.csv`, `Domain.waterlevel_line`) is active at ANY
+    depth, and the ring SEAWARD of it is inactive — so a perimeter stretch out there is
+    `sea` (no edge forms), and the line itself is declared.
 
 Checks: A geometry · B perimeter walk (class per 50 m; anything within 200 m of a
 declared crossing SPAN in `data/v4_design/v4_crossings.geojson` counts as declared) ·
 C in-ring bathtub rim contact at the NACCS Sandy peak +0/+2/+3 m · D every declared
-crossing vs the ring · E deep water below mask_zmin · F forcing / validation coverage ·
+crossing vs the ring · E deep water landward of the line (active) · F forcing / validation coverage ·
 G (--maps) zoom maps of six hotspot windows + bed profiles along every span · H the TARGET
 outside the ring, MOTF land inside it · I every valley the edge crosses (ground below the level
 + MARGIN), with the USGS discharge gauges upstream of it.
@@ -341,6 +343,20 @@ def main() -> int:
     cx = gpd.read_file(CROSSINGS).to_crs(CRS)
     cx = cx[cx.kind.isin(["cut", "forced", "wall", "sea_inactive"])]
     decl = [(r["name"], r["kind"], r.geometry) for _, r in cx.iterrows()]
+    # the whole drawn water-level line is a declared forced line; the ring seaward of it
+    # is inactive by construction (`Domain.waterlevel_line`)
+    from pyproj import Transformer
+
+    from nj_sfincs import domain as _dm
+
+    _v4 = _dm.DOMAINS["v4"]
+    _to = Transformer.from_crs(4326, CRS, always_xy=True)
+    _xy = lambda pts: [_to.transform(lo, la) for lo, la in pts]  # noqa: E731
+    wl_line = LineString(
+        _xy([(lo, la) for _n, lo, la in _dm.read_waterlevel_line(_v4.waterlevel_line)])
+    )
+    sea_poly = Polygon(_xy(_dm.sea_polygon(_v4)[1]))
+    decl.append(("waterlevel_line", "forced", wl_line))
     dgdf = gpd.GeoDataFrame(
         {"name": [d[0] for d in decl], "kind": [d[1] for d in decl]},
         geometry=[d[2] for d in decl],
@@ -367,19 +383,24 @@ def main() -> int:
         near_kind[hit] = kind
     lvl = WL[r, cidx] + SLR
     tgt_touch = ndimage.binary_dilation(target, iterations=2)[r, cidx]
+    in_sea = np.array([sea_poly.contains(p) for p in P])
     cls = np.where(
         near_name != "",
         "declared",
         np.where(
-            zp < -10,
-            "deep_water",
+            in_sea,
+            "sea",
             np.where(
-                zp < -1,
-                "water_undeclared",
+                zp < -10,
+                "deep_water",
                 np.where(
-                    zp < 0,
-                    "shallow_undeclared",
-                    np.where(zmin_in < lvl + MARGIN, "land_low", "land_ok"),
+                    zp < -1,
+                    "water_undeclared",
+                    np.where(
+                        zp < 0,
+                        "shallow_undeclared",
+                        np.where(zmin_in < lvl + MARGIN, "land_low", "land_ok"),
+                    ),
                 ),
             ),
         ),
@@ -438,7 +459,8 @@ def main() -> int:
         f"ground >= the local Sandy peak + {SLR:.0f} m + {MARGIN:.0f} m; land_low = dry ground "
         "below that (→ FREE OUTFLOW by default; harmless unless the target reaches it); "
         "shallow/water_undeclared = bed < 0 not on any declared line (→ wall if < -1, "
-        "else outflow); deep_water = < -10 m (inactive under mask_zmin)"
+        "else outflow); sea = seaward of the drawn water-level line (inactive, no edge); "
+        "deep_water = < -10 m LANDWARD of it (active at any depth: a wet edge → wall)"
     )
 
     say(
@@ -504,29 +526,20 @@ def main() -> int:
         "line); end_margin_3m = lower end z − (peak + 3 m), should be > 0 for a forced line"
     )
 
-    # ── E. deep water below mask_zmin inside the ring ────────────────────────────
+    # ── E. deep water landward of the line ─────────────────────────────────────────
     say(
-        "\nE. WATER DEEPER THAN mask_zmin (-10 m) INSIDE THE RING — inactive unless boxed"
+        "\nE. WATER DEEPER THAN -10 m INSIDE THE RING, LANDWARD OF THE DRAWN LINE — all "
+        "ACTIVE (`Domain.waterlevel_line`); listed so the deep cells the model now "
+        "computes are known"
     )
-    dz = inring & (zf < -10)
-    lab, n = ndimage.label(dz, structure=S8)
-    sizes = ndimage.sum(np.ones_like(lab), lab, range(1, n + 1))
-    big = int(np.argmax(sizes)) + 1
-    from nj_sfincs.domain import V3
-
-    boxes = gpd.GeoSeries(
-        [
-            gpd.GeoSeries.from_xy([b[0], b[2]], [b[1], b[3]], crs=4326)
-            .to_crs(CRS)
-            .union_all()
-            .envelope
-            for b in V3.always_active_boxes_ll
-        ],
-        crs=CRS,
-    )
-    boxmask = rasterize(
-        [(g, 1) for g in boxes], out_shape=(H, W), transform=T, fill=0, dtype="uint8"
+    sea_r = rasterize(
+        [(sea_poly, 1)], out_shape=(H, W), transform=T, fill=0, dtype="uint8"
     ).astype(bool)
+    dz = inring & ~sea_r & (zf < -10)
+    say(
+        f"  total {dz.sum() * RES * RES / 1e6:.1f} km2 (seaward of the line, inactive: "
+        f"{(inring & sea_r).sum() * RES * RES / 1e6:.0f} km2 of ring)"
+    )
     regions = {
         "delaware_bay_river (lat>38.80, lon<-74.93)": (-75.8, 38.80, -74.93, 40.3),
         "ny_harbor_lower_bay (lat>40.42, lon<-73.93)": (-74.35, 40.42, -73.93, 40.70),
@@ -549,22 +562,9 @@ def main() -> int:
             [(bx, 1)], out_shape=(H, W), transform=T, fill=0, dtype="uint8"
         ).astype(bool)
         a = dz & bm
-        con = a & (lab == big)
         say(
             f"  {nm}: {a.sum() * RES * RES / 1e6:6.1f} km2 below -10 m; "
-            f"{con.sum() * RES * RES / 1e6:6.1f} km2 of it connected to the open-shelf deep "
-            f"component; covered by v3's always-active boxes {np.sum(a & boxmask) * RES * RES / 1e6:.1f} km2; "
             f"deepest {zf[a].min() if a.any() else np.nan:.1f} m"
-        )
-    # longest deep thalweg into the Delaware: northernmost deep cell connected to the shelf
-    dcon = lab == big
-    col_lim = int((lon_to_x(-74.93) - x0) / RES)
-    rows_, cols_ = np.where(dcon[:, :col_lim])
-    if len(rows_):
-        k = np.argmin(rows_)
-        say(
-            f"  the shelf's deep component reaches INTO the Delaware as far north as "
-            f"{to_ll(x0 + (cols_[k] + 0.5) * RES, y1 - (rows_[k] + 0.5) * RES)}"
         )
 
     # ── F. coverage ───────────────────────────────────────────────────────────────
@@ -797,7 +797,7 @@ def maps(ring, ring_name: str) -> None:
             f"v4 audit — {ring_name} — {name}: ring (magenta), cut (orange) / forced (cyan) / wall (red); "
             "yellow = flagged rim (undeclared water, or low ground the target reaches);\n"
             "black = +10 m contour, navy dashed/hatched = "
-            "-10 m (inactive under mask_zmin); ▲ HWM",
+            "-10 m (reference only: the drawn line sets the mask); ▲ HWM",
             fontsize=9,
         )
         fig.tight_layout()

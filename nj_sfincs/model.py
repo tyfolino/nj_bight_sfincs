@@ -128,12 +128,13 @@ def _subgrid_floor(sf, zb: "np.ndarray") -> "np.ndarray":
 
 
 def inactive_polygon_faces(dom, crs, fx, fy) -> dict[str, "np.ndarray"]:
-    """``{name: face-centre-inside mask}`` for each of ``dom.inactive_polygons_ll``."""
+    """``{name: face-centre-inside mask}`` for each of ``dom.inactive_polygons_ll``, and
+    the sea seaward of a drawn ``waterlevel_line``."""
     import geopandas as gpd
     import shapely
 
     out = {}
-    for name, verts, _why in dom.inactive_polygons_ll:
+    for name, verts, _why in _domain.inactive_polygons(dom):
         poly = gpd.GeoSeries([shapely.Polygon(verts)], crs=4326).to_crs(crs).iloc[0]
         out[name] = shapely.contains_xy(poly, fx, fy)
     return out
@@ -499,8 +500,7 @@ def _report_boundary_arms(sf, mask, zb) -> None:
     print(f"[bc] {len(arms)} declared boundary arm(s):")
     for arm in arms:
         code = 2 if arm.btype == "waterlevel" else 3
-        xmin, ymin, xmax, ymax = arm.box
-        sel = (mask == code) & (fx > xmin) & (fx < xmax) & (fy > ymin) & (fy < ymax)
+        sel = (mask == code) & arm.contains(fx, fy)
         n = int(sel.sum())
         zr = f"{zb[sel].min():+.2f}..{zb[sel].max():+.2f}" if n else "—"
         print(
@@ -648,9 +648,7 @@ def _check_domain_invariants(
         claimed = np.zeros(len(mask), dtype=int)
         for arm in dom.boundary_arms:
             code = 2 if arm.btype == "waterlevel" else 3
-            xmin, ymin, xmax, ymax = arm.box
-            inbox = (fx > xmin) & (fx < xmax) & (fy > ymin) & (fy < ymax)
-            sel = (mask == code) & inbox
+            sel = (mask == code) & arm.contains(fx, fy)
             claimed += sel.astype(int)
             n = int(sel.sum())
             if not (arm.min_cells <= n <= arm.max_cells):
@@ -828,12 +826,13 @@ def apply_mask_and_boundary(
     dom = _domain.active()
 
     # 4. Active mask ----------------------------------------------------------
-    _boxes = dom.always_active_boxes_ll
-    bay_include = (
-        gpd.GeoDataFrame(geometry=[shapely.box(*b) for b in _boxes], crs=4326)
-        if _boxes
-        else None
-    )
+    # With a drawn water-level line the whole RING is the include polygon — active at any
+    # depth, `zmin` overruled — and the sea seaward of the line goes inactive in 4a
+    # (`Domain.waterlevel_line`). Without one, `zmin` cuts and the boxes re-admit.
+    _incl = [shapely.box(*b) for b in dom.always_active_boxes_ll]
+    if dom.waterlevel_line is not None:
+        _incl.append(gpd.read_file(base.region).to_crs(4326).union_all())
+    bay_include = gpd.GeoDataFrame(geometry=_incl, crs=4326) if _incl else None
     sf.quadtree_mask.create_active(zmin=base.mask_zmin, include_polygon=bay_include)
 
     # Clip the active mask to the region polygon (the rotated grid fills the L's bounding
@@ -917,8 +916,7 @@ def apply_mask_and_boundary(
         for arm in dom.boundary_arms:
             if arm.btype != "waterlevel":
                 continue
-            xmin, ymin, xmax, ymax = arm.box
-            keep |= (fx > xmin) & (fx < xmax) & (fy > ymin) & (fy < ymax)
+            keep |= arm.contains(fx, fy)
         demote = (mask == 2) & ~keep
         n = int(demote.sum())
         if n:
@@ -1144,6 +1142,7 @@ def build_static(
             y=fy,
             z=sf.quadtree_grid.data["z"].values,
             mask=sf.quadtree_grid.data["mask"].values,
+            level=sf.quadtree_grid.data["level"].values,
         )
         del sf
         gc.collect()
@@ -1514,11 +1513,21 @@ def add_waves(wcfg: WaveConfig, base: BaseConfig, sf: SfincsModel) -> dict:
         # to snapwave_mask_zmin.
         _sm = sf.quadtree_grid.data["mask"].values
         _zz = sf.quadtree_grid.data["z"].values
+        _sea = _zz <= base.mask_zmin
+        _dom = _domain.active()
+        if _dom.waterlevel_line is not None:
+            # SFINCS stops at the drawn line, not the isobath, so the band starts there
+            # too — else a strip seaward of the line and shallower than mask_zmin is in
+            # neither solver.
+            _fx, _fy = _face_xy(sf)
+            _sea |= inactive_polygon_faces(_dom, sf.crs, _fx, _fy)[
+                "sea_of_waterlevel_line"
+            ] & (_zz < 0)
         _band = (
             (sf.quadtree_grid.data["snapwave_mask"].values > 0)
             & (_sm == 0)
             & np.isfinite(_zz)
-            & (_zz <= base.mask_zmin)
+            & _sea
         )
         # Interior is uniformly active (1); create_boundary below promotes the seaward rim
         # to 2. Copying the SFINCS codes verbatim would import mask==2/3 (the

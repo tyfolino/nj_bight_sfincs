@@ -130,9 +130,8 @@ def check_arms(rep: Report, dom, x, y, z, mask) -> None:
         return
     claimed = np.zeros(len(mask), dtype=bool)
     for arm in dom.boundary_arms:
-        x0, y0, x1, y1 = arm.box
         want = 2 if arm.btype == "waterlevel" else 3
-        sel = (mask == want) & (x > x0) & (x < x1) & (y > y0) & (y < y1)
+        sel = (mask == want) & arm.contains(x, y)
         claimed |= sel
         n = int(sel.sum())
         ok = arm.min_cells <= n <= arm.max_cells

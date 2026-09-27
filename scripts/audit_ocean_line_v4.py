@@ -19,7 +19,7 @@ ON it. This checks what that would mean, before any mesh exists:
   E  setup double-counting (FINDINGS §22–23): Sandy peak vs ADCIRC depth over the line's
      own nodes. On the open coast shallow nodes ran ~+0.23 m above deep ones at the crest.
   F  the shared vertices: every vertex named like a ring vertex sits ON the ring, and
-     cape_henlopen / cape_may_point ON the delaware_mouth crossing. Dry stretches that
+     cape_henlopen ON the delaware_mouth crossing. Dry stretches that
      touch such an anchor (a cape, Breezy Point) are LAND ANCHORS, not faults — no
      boundary cell forms on dry ground.
 
@@ -171,8 +171,9 @@ def main() -> int:
         from rasterio.features import geometry_mask
 
         # landward side = a 10 km strip on the line's LEFT (it runs south → north),
-        # minus Delaware Bay (west of Cape May Point's meridian) — the bay's own deep
-        # water is active through `always_active_boxes_ll` whatever this line does.
+        # minus Delaware Bay (west of Cape May Point's meridian) — the bay is computed
+        # whatever this line does (scope rule 1), so its deep channel is not the line's
+        # cost. Everything landward is active at any depth (`Domain.waterlevel_line`).
         strip = line.buffer(10000.0, single_sided=True)
         bay_x, _ = T.transform(-74.96, 38.9)
         strip = strip.difference(shapely.box(0, 0, bay_x, 1e7))
@@ -226,10 +227,7 @@ def check_anchors(v) -> None:
         f for f in gj["features"] if f["properties"]["name"] == "delaware_mouth"
     )
     ref = dict(ring)
-    ref["cape_henlopen"], ref["cape_may_point"] = map(
-        tuple,
-        (mouth["geometry"]["coordinates"][0], mouth["geometry"]["coordinates"][-1]),
-    )
+    ref["cape_henlopen"] = tuple(mouth["geometry"]["coordinates"][0])
     out = []
     for _, r in v[v.name.isin(list(ref))].iterrows():
         x0, y0 = T.transform(*ref[r["name"]])

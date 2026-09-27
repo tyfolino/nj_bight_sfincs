@@ -105,6 +105,14 @@ def main(out: str = "data/probe_mesh") -> int:
         print(f"  {label:30s} {int(sel.sum()):>9,}  "
               f"(active {int((m[sel] > 0).sum()):>9,})")
 
+    if "level" in d:
+        lv = d["level"]
+        print("\nfaces by cell size (level 1 = base_res):")
+        for lev in np.unique(lv):
+            sel = lv == lev
+            print(f"  {BaseConfig().base_res / 2 ** (int(lev) - 1):6.1f} m  "
+                  f"{int(sel.sum()):>10,}  (active {int((m[sel] > 0).sum()):>10,})")
+
     print("\nactive faces by depth band:")
     a = m > 0
     for lo, hi in [(-1e9, -30), (-30, -20), (-20, -10), (-10, -2), (-2, 0), (0, 1e9)]:

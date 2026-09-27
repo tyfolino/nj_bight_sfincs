@@ -66,8 +66,7 @@ def main(probe: str = "data/probe_mesh_v1_5") -> int:
     for arm in dom.boundary_arms:
         if arm.btype != "waterlevel":
             continue
-        x0, y0, x1, y1 = arm.box
-        sel = bc & (x > x0) & (x < x1) & (y > y0) & (y < y1)
+        sel = bc & arm.contains(x, y)
         groups[arm.name] = sel
         claimed |= sel
         print(f"  {arm.name:14s} {int(sel.sum()):>6,} cells  "

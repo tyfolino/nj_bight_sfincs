@@ -179,9 +179,9 @@
     "kind": "forced",
     "role": "ocean (bay mouth)",
     "excluded_side": "",
-    "span_km": 19.09,
-    "status": "support adequate (2026-09-26): 7 pts within 1.5 km in 3 clusters, two ~8 km gaps; leave-one-out peak error <= 0.006 m",
-    "note": "Cape May Point -> Cape Henlopen; DE end on 0.8-5.5 m spit, not the Great Dune",
+    "span_km": 34.29,
+    "status": "user route 2026-09-27 (NACCS node picker): cape_henlopen -> 7171 -> the ~10 m row 5480..5504 -> up the outside of the Cape May shoals 5506..5523 -> 5531; the first section of the forced sea line (waterlevel_line_v4.csv), replacing the straight Henlopen -> Cape May Point line. Support: 7 pts within 1.5 km of the old line, leave-one-out peak error <= 0.006 m (2026-09-26)",
+    "note": "Cape Henlopen -> outside the Cape May shoals; Cape May Point is COMPUTED (landward)",
     "drawn_line": ""
    },
    "geometry": {
@@ -192,8 +192,68 @@
       38.795
      ],
      [
-      -74.96,
-      38.932
+      -75.08333,
+      38.8
+     ],
+     [
+      -75.00092,
+      38.83222
+     ],
+     [
+      -74.98452,
+      38.83233
+     ],
+     [
+      -74.9756,
+      38.8316
+     ],
+     [
+      -74.96055,
+      38.83991
+     ],
+     [
+      -74.94962,
+      38.84798
+     ],
+     [
+      -74.93823,
+      38.85738
+     ],
+     [
+      -74.92119,
+      38.85901
+     ],
+     [
+      -74.90456,
+      38.86308
+     ],
+     [
+      -74.8756,
+      38.87747
+     ],
+     [
+      -74.84912,
+      38.88764
+     ],
+     [
+      -74.83446,
+      38.89188
+     ],
+     [
+      -74.82664,
+      38.89902
+     ],
+     [
+      -74.82519,
+      38.91989
+     ],
+     [
+      -74.82324,
+      38.9436
+     ],
+     [
+      -74.79713,
+      38.95905
      ]
     ]
    }

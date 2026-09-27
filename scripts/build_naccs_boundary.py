@@ -406,8 +406,7 @@ def screen(
         # defensible for a ~1 km cut, unlike a 123 km gauge desert.
         rep["per_arm"] = {}
         for arm in getattr(dom, "boundary_arms", ()):
-            xmin, ymin, xmax, ymax = arm.box
-            inbox = (bx > xmin) & (bx < xmax) & (by > ymin) & (by < ymax)
+            inbox = arm.contains(bx, by)
             if not inbox.any():
                 rep["per_arm"][arm.name] = dict(
                     n_cells=0, n_pts=0, max_gap_km=float("nan")

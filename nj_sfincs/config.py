@@ -138,7 +138,11 @@ class BaseConfig:
     rotated: bool = True  # rotate the grid to hug the coastline
 
     # ── Subgrid / mask ───────────────────────────────────────────────────────
-    nr_subgrid_pixels: int = 8  # subgrid sampling per cell edge
+    #: Subgrid pixels per cell EDGE, at every level (pixel = cell size / this). Read from
+    #: the domain — see Domain.nr_subgrid_pixels.
+    nr_subgrid_pixels: int = field(
+        default_factory=lambda: _domain.active().nr_subgrid_pixels
+    )
 
     #: 🔴 READ FROM THE DOMAIN, not set here. `mask_zmin` is half of `sha(z, mask)` — the
     #: domain fingerprint — so an "arm" that changed it would fail `assert_sealed_domain`
