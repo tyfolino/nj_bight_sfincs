@@ -6,6 +6,7 @@
 # 1 km straight-line tolerance); from here on it is EDITED BY HAND, and checked, never regenerated.
 # Sections run: ocean south -> Delaware west shore -> C&D -> Wilmington -> PA -> Trenton -> NJ Delaware shore
 # -> Cumberland -> NJ Atlantic inland -> Raritan -> Newark -> Hackensack -> Hudson route -> NY corner -> ocean.
+# EDIT 2026-09-27 (user route for the forced sea line): rockaway_1 / rockaway_2 replaced by lb_sp14089 … lb_sp3870 — the ring's NY corner now follows the line out past Breezy Point.
 name,lon,lat,note
 ocean_se,-73.55,38.855,
 ocean_s_bend,-74.97,38.76,
@@ -193,8 +194,11 @@ bk_flatlands,-73.94,40.641,
 bk_east_flatbush,-73.922,40.652,
 jamaica_wall_n,-73.915,40.65,jamaica_bay_wall
 jamaica_wall_mid,-73.912,40.6,jamaica_bay_wall
-jamaica_wall_s,-73.902,40.58,jamaica_bay_wall + rockaway_inlet (forced) NE end
-rockaway_2,-73.93,40.546,rockaway_inlet (forced)
-rockaway_1,-73.94,40.53,rockaway_inlet (forced)
-ocean_rockaway_s,-73.94,40.45,
+jamaica_wall_s,-73.902,40.58,jamaica_bay_wall starts; the forced sea line comes ashore here
+lb_sp14089,-73.91274,40.57326,on the forced sea line (user route 09-27; NACCS node 14089)
+lb_sp3903,-73.90216,40.53836,on the forced sea line (user route 09-27; NACCS node 3903)
+lb_sp3897,-73.90345,40.53067,on the forced sea line (user route 09-27; NACCS node 3897)
+lb_sp3879,-73.90721,40.51193,on the forced sea line (user route 09-27; NACCS node 3879)
+lb_sp3870,-73.92199,40.50596,on the forced sea line (user route 09-27; NACCS node 3870)
+ocean_rockaway_s,-73.94,40.45,ring corner in the sea; the forced line passes ~0.8 km west (seaward side inactive)
 ocean_ne,-73.55,40.45,

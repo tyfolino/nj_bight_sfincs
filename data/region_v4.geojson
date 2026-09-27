@@ -13,8 +13,8 @@
    "properties": {
     "name": "region_v4",
     "source": "data/v4_design/region_v4_vertices.csv",
-    "source_sha256": "f814dfd65977bface27c8b03e1405ded75ac4cbe47864d20408e9deb0bae79e3",
-    "n_vertices": 191,
+    "source_sha256": "f4da0ea3eef92c70f4ce9649da7cba9428f2a832b483aa89aa9ddc828d61d050",
+    "n_vertices": 194,
     "note": "DERIVED \u2014 edit the source CSV and re-run scripts/ring_to_geojson.py; never edit this file."
    },
    "geometry": {
@@ -770,12 +770,24 @@
        40.58
       ],
       [
-       -73.93,
-       40.546
+       -73.91274,
+       40.57326
       ],
       [
-       -73.94,
-       40.53
+       -73.90216,
+       40.53836
+      ],
+      [
+       -73.90345,
+       40.53067
+      ],
+      [
+       -73.90721,
+       40.51193
+      ],
+      [
+       -73.92199,
+       40.50596
       ],
       [
        -73.94,
