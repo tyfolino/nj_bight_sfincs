@@ -47,6 +47,25 @@ read the log (NodeList, MaxRSS, roughness-fill lines should now be sea only), `p
 `building`, `accept_domain.py`, delete `v4_trial_build_2026-09-27` (32 G), then the NACCS boundary + discharge list + the
 Sandy +0/+2/+3 m waves-off overflow test. ⬜ Add the Delaware / Newark / upper Raritan gauges with `sync_obs_points.py`.
 
+**✅ 09-28 — the v4 GATE is PLUMBED (user: "Yes please!" to the sea-level-rise plumbing), nothing staged yet.**
+NEW `Experiment.sea_level_offset_m` (`model.finalize` adds it to `bzs` in memory, like `wind_scale`) with a matching
+start from NEW `nj_sfincs/sea_level.py`: the offset on every cell the sea reaches through the subgrid sills (`uv_zmin`,
+flood-filled from the `mask == 2` cells), dry elsewhere, as a BINARY `inifile` + `zsini` = offset for the boundary ramp —
+🔴 FINDINGS §51: SFINCS reads a `.nc` inifile as raw binary (`nchar` never assigned; the toy blew up at t = 0), and
+`zsini` alone floods every disconnected low spot (v3 +2 m: 15,517 cells — Keansburg levee, Deal / Wesley / Como lakes,
+Cape May's lakes). uv-point order rebuilt from hydromt's builder = `npuv` exactly on v3 (6,860,215); toy run with the binary
+file: start exact, run clean. `provenance.sea_level_offset_label` → metrics column `sea_level_offset` (boundary shift
+MEASURED at staging, in the `sfincs_ini_sealevel.json` sidecar). **V4 arms registered** (`_V4`, was empty):
+`naccs-nowaves` (rain on, template start — the baseline) and the gate ladder `naccs-nowaves+rain-off+slr-{0,2,3}m`
+(connected start at +0 too, so the ladder differs ONLY in the offset — a test pins it; RAIN OFF because the ring contains a
+SURGE target and rain ponding at an upland edge would read as overflow; rivers on). All on `naccs_sandy_v4` — ⬜ build it on
+the frozen mesh (`build_naccs_boundary.py`), then declare its `n_waterlevel_support` on the arms. **Reader:** NEW
+`scripts/overflow_check.py <run> [--map]`: every model-edge cell by category (forced / outflow / `wall:<override>` / closed),
+peak depth, and the margin (dry rim → nearest wet cell, vs the 500 m design rule). 🔴 SFINCS writes NO `zsmax` on outflow
+cells (v3: 1,332 of 1,332 fill) — the checker gives them their deepest active neighbour's DEPTH (a level reads phantom
+metres on a slope). Tried on v3 `naccs-nowaves` (rain on): 417 of 1,332 outflow cells wet, the deepest at the Cape May canal
+corner (−0.82 m bed, 1.5 m) and the Raritan cut; the rest rain on upland creeks — why the gate is rain-off. 207 tests OK.
+
 **📌 2026-09-26 — NACCS pull MERGED; every v4 forced line is covered; no more webtool asks.** The user's 3 CHS zips
 (webtool CSVs, ADCIRC01 + STWAVE02/03/05/07) → `repack_naccs_zips.py --apply`: **142 new ADCIRC points (1,815 → 1,957)**,
 128 STWAVE07, 12 STWAVE03, 1 STWAVE05 (a new product zip, one point at −72.72 / 40.77, Long Island — unused); 92 re-requests

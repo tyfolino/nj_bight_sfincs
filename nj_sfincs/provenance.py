@@ -513,3 +513,27 @@ def wind_scale_label(model_dir: Path | str) -> str:
 
     a, b = _umax(f), _umax(g)
     return f"{a / b:.3f}" if b > 0 else "nan"
+
+
+def sea_level_offset_label(model_dir: Path | str) -> str:
+    """Sea-level offset of this run, as MEASURED at staging: the boundary water-level
+    mean after minus before the offset (``boundary_offset_m`` in the sea-level sidecar
+    written by ``model.finalize``), and the highest start level actually in the binary
+    inifile. ``none`` when the run has no sea-level inifile (the template's zsini
+    start). Not the registry value — and not "run minus template", because an arm's
+    boundary is usually a swapped forcing with different stations."""
+    import json
+
+    import numpy as np
+
+    from nj_sfincs.sea_level import DRY, INI_FILE, INI_META, read_ini
+
+    d = Path(model_dir)
+    if not (d / INI_FILE).is_file():
+        return "none"
+    meta = json.loads((d / INI_META).read_text()) if (d / INI_META).is_file() else {}
+    off = float(meta.get("boundary_offset_m", np.nan))
+    zs = read_ini(d)
+    wet = zs[zs > DRY]
+    start = float(wet.max()) if wet.size else float("nan")
+    return f"bnd {off:+.3f} start {start:+.3f}"

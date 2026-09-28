@@ -352,6 +352,16 @@ class Experiment:
     #: (``provenance.wind_scale_label``), never this number.
     wind_scale: float = 1.0
 
+    #: ``slr-*`` ARMS ONLY. Metres added to the boundary water level on the STAGED copy
+    #: (``model.finalize``), with a matching start: the offset on every cell the sea
+    #: reaches at that level through the subgrid sills, dry elsewhere (``inifile``, and
+    #: ``zsini`` = the offset for the boundary ramp) — ``nj_sfincs/sea_level.py`` says why
+    #: ``zsini`` alone is wrong. ``None`` = the template's start (``zsini`` 0, no inifile);
+    #: ``0.0`` = the same connected start at +0, so a +0/+2/+3 ladder differs ONLY in the
+    #: offset. The metrics row carries the MEASURED staged − template boundary mean
+    #: (``provenance.sea_level_offset_label``), never this number.
+    sea_level_offset_m: float | None = None
+
 
 def with_window(base: BaseConfig, tstop: datetime) -> BaseConfig:
     """Return a copy of ``base`` with a shorter run window (for smoke tests)."""

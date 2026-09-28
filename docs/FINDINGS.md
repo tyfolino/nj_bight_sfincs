@@ -811,6 +811,22 @@ Live campaign state is in [STATUS.md](STATUS.md). This file is for what is settl
     Arthur Kill / Sandy Hook drops 1–3 cm with the wall, through ordinary tides too.
     STATUS 2026-09-22 → 09-24, `logs/mask_repair_2026-09-22/`.
 
+51. 🔴 **A NetCDF `inifile` is silently read as BINARY by SFINCS v2.3.3 (and `main`), and a
+    `zsini` start floods every disconnected low spot — so a sea-level-offset run needs a
+    BINARY, sea-connected start.** (1) `sfincs_initial_conditions.F90` picks the NetCDF
+    reader with `if (zsinifile(nchar - 1 : nchar) == 'nc')`, where `nchar` is declared and
+    never assigned; on the native -O3 build a `.nc` file went down the binary path and the toy
+    model hit the minimum time step at t = 0 (2026-09-28). The binary reader takes a raw
+    `real*4` stream, one value per ACTIVE point in quadtree face order (`msk > 0`,
+    `sfincs_domain.f90`); verified on the toy: start +1.000 on every flagged-wet low cell,
+    dry on every flagged-dry one, clean run. (2) `zsini` alone sets `zs = max(z_zmin, zsini)`
+    on every active cell, connected or not. On v3 at +2 m that is 15,517 cells (1.0 % of the
+    floodable ones) the sea cannot reach through the subgrid sills (`uv_zmin`) — the
+    Keansburg levee, the Monmouth coastal lakes (Deal, Wesley, Como), Cape May's lakes —
+    all starting flooded; 21,783 already do at +0 in every template start. The fix is
+    `nj_sfincs/sea_level.py`: flood-fill from the forced cells across sills below the level,
+    write that as the binary inifile, `zsini` = the level for the boundary ramp.
+
 ### Closed — do not re-open
 
 Each of these cost a campaign and is settled. The evidence is in the archive's

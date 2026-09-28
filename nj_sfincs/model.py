@@ -29,7 +29,7 @@ from shapely.geometry import Point
 from hydromt_sfincs import SfincsModel
 
 from . import domain as _domain
-from . import snapwave_domain
+from . import sea_level, snapwave_domain
 from .config import ROOT, BaseConfig, WaveConfig
 
 # HDF5/netCDF file locking off before any netCDF-backed write on /cache (a failed lock
@@ -1841,6 +1841,7 @@ def finalize(
     sw: dict | None,
     rain: bool = True,
     wind_scale: float = 1.0,
+    sea_level_offset_m: float | None = None,
 ) -> None:
     """Release handles, write, patch sfincs.inp, write the SnapWave ASCII forcing.
 
@@ -1894,6 +1895,24 @@ def finalize(
             flush=True,
         )
 
+    # ``Experiment.sea_level_offset_m``: add a constant to the boundary water level IN
+    # MEMORY, on the staged copy, like wind_scale above. The matching start (a connected
+    # bathtub at the offset, not zsini everywhere) is written after sf.write() below —
+    # see nj_sfincs/sea_level.py for why.
+    if sea_level_offset_m is not None:
+        wl = sf.water_level.data
+        if wl is None or "bzs" not in wl:
+            raise SystemExit(
+                "sea_level_offset_m set but the staged model carries no water level"
+            )
+        _before = float(wl["bzs"].mean())
+        wl["bzs"] = wl["bzs"] + float(sea_level_offset_m)
+        _slr_measured = float(wl["bzs"].mean()) - _before
+        print(
+            f"[slr] boundary water level + {sea_level_offset_m:.3f} m on the staged copy",
+            flush=True,
+        )
+
     sf.write()
 
     inp = model_dir / "sfincs.inp"
@@ -1920,6 +1939,19 @@ def finalize(
     text = _infiltration_keys(
         text, model_dir, on=_domain.active().infiltration and rain
     )
+
+    # (b2) sea-level offset: start at the offset where the sea connects, dry elsewhere.
+    if sea_level_offset_m is not None:
+        info = sea_level.write_connected_ini(
+            model_dir, float(sea_level_offset_m), boundary_offset_m=_slr_measured
+        )
+        text = sea_level.ini_keys(text, float(sea_level_offset_m))
+        print(
+            f"[slr] {sea_level.INI_FILE}: {info['wet_cells']:,} cells start at "
+            f"{info['level']:+.3f} m; {info['disconnected_dry_cells']:,} cells below "
+            "it are NOT connected to the sea and start dry",
+            flush=True,
+        )
 
     # (c) waves: ensure SnapWave keys + write the ASCII boundary forcing.
     if wcfg.use_waves:

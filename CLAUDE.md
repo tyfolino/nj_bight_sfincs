@@ -243,6 +243,11 @@ not trip that guard. Do not run the sweep driver to "just rebuild" a template.
   to 1.45 km outside the mask). Screen spatial metrics with `validate.simulated_mask`,
   which reads the run's own `msk` — **not** a region polygon, which is a build input the
   mask legitimately grows past. FINDINGS §37.
+- 🔴 **A NetCDF `inifile` is read as raw BINARY by our SFINCS** (`nchar` never assigned in
+  `sfincs_initial_conditions.F90`), and `zsini` alone floods every disconnected low spot
+  below it. A start other than the template's goes through `nj_sfincs/sea_level.py`
+  (binary `real*4`, active points in face order, sea-connected through the subgrid sills).
+  FINDINGS §51.
 - **An HWM records that water ARRIVED, not which way it came in.**
 - ⚠️ **A station or mark within ~500 m of a discharge source reads the INJECTION, not the
   basin.** `rb_axis_559k` sits 253 m from the Raritan source (Qmax 110 m³/s) and carries a

@@ -125,6 +125,50 @@ _V1_5_RARITAN: dict[str, Experiment] = {
 }
 
 
+# ── v4 ────────────────────────────────────────────────────────────────────────
+# v3 + Delaware Bay / river, the Raritan to Manville, Newark Bay + the Meadowlands, far
+# banks computed. First runs = the design's own GATE (STATUS 09-24/25): waves-off Sandy at
+# +0 / +2 / +3 m — does the ring contain the water it was drawn to contain? All three use
+# the connected sea-level start (nj_sfincs/sea_level.py), +0 included, so the ladder
+# differs ONLY in the offset; rain off (a surge target). Read with
+# scripts/overflow_check.py.
+_V4_WL = dict(
+    # ⬜ built on the frozen mesh by scripts/build_naccs_boundary.py, which prints the
+    # support-point count: declare it here as n_waterlevel_support (on the ARMS, never
+    # by relaxing Domain.n_waterlevel_support).
+    waterlevel_geodataset="naccs_sandy_v4",
+)
+_V4_SLR_WHY = (
+    "Waves-off Sandy with {m:+.0f} m on the whole water-level boundary and a connected "
+    "start at {m:+.0f} m (dry where the sea does not reach through the subgrid sills). "
+    "The v4 design GATE: the ring was drawn to contain the NACCS Sandy peak + 3 m; this "
+    "reads where the model's own water reaches the ring edge, the walls and the river "
+    "cuts. RAIN OFF (rivers on): the ring contains a SURGE target, and with rain on, "
+    "ponding at an upland edge reads as water reaching it. Extent flagged "
+    "extent_admissible=False like every waves-off arm."
+)
+_V4: dict[str, Experiment] = {
+    "naccs-nowaves": Experiment(
+        "naccs-nowaves",
+        WaveConfig(use_waves=False),
+        "NACCS/CHS ADCIRC storm tide on the drawn water-level line, SnapWave OFF, the "
+        "template's start (zsini 0). The v4 baseline every later arm is paired against.",
+        **_V4_WL,
+    ),
+    **{
+        f"naccs-nowaves+rain-off+slr-{m}m": Experiment(
+            f"naccs-nowaves+rain-off+slr-{m}m",
+            WaveConfig(use_waves=False),
+            _V4_SLR_WHY.format(m=m),
+            rain=False,
+            sea_level_offset_m=float(m),
+            **_V4_WL,
+        )
+        for m in (0, 2, 3)
+    },
+}
+
+
 #: ``domain name -> {arm name -> Experiment}``.
 #:
 #: ``v1_monmouth`` is deliberately EMPTY. It is a frozen port-verification fixture: its
@@ -353,7 +397,7 @@ EXPERIMENTS_BY_DOMAIN: dict[str, dict[str, Experiment]] = {
     # once there is a fingerprint for premier.py to check them against.
     "v3": _V3,
     # ACQUISITION-ONLY (2026-09-24): a rectangle for the downloaders, no mesh, no arms.
-    "v4": {},
+    "v4": _V4,
 }
 
 
