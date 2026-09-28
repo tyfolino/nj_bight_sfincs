@@ -765,6 +765,24 @@ nlcd_2012:
     source: NLCD Annual Land Cover 2012 (USGS/MRLC)
     url: https://www.mrlc.gov/data
 
+# Same product, v4 extent. The archived nlcd_2012 clip above is NoData on ~530 km2 of
+# Delaware land inside v4 (west bank, Lewes / Cape Henlopen). This is a windowed read of
+# the MRLC Annual NLCD C1V1 COG on its native 30 m Albers grid (same CRS, same pixel
+# lattice, palette and NoData 250); 100% class agreement with nlcd_2012 where both are
+# valid (2026-09-28). Remaining NoData in the v4 landward ring: 7.6 km2, all open water
+# at the Delaware Bay mouth off Cape May.
+nlcd_2012_v4:
+  data_type: RasterDataset
+  uri: roughness_v4/nlcd_2012_v4.tif
+  driver:
+    name: rasterio
+    options: {}
+  metadata:
+    category: landuse
+    source: NLCD Annual Land Cover 2012, Collection 1 v1 (USGS/MRLC), v4 extent (region bbox + 0.05 deg)
+    url: https://www.mrlc.gov/downloads/sciweb1/shared/mrlc/data-bundles/Annual_NLCD_LndCov_2012_CU_C1V1.zip
+    script: scripts/download_nlcd.py
+
 # ── bed-baymanning: the lagoon gets its own bed roughness ────────────────────
 # Byte-identical to nlcd_2012 EXCEPT that the 203,075 class-11 (Open Water) pixels inside
 # Barnegat Bay (182.8 km2, 3.4% of all open water in the raster) are re-coded to class 12,
