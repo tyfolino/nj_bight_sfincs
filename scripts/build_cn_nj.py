@@ -16,6 +16,7 @@ domain bbox. HYSOGs250m would be an alternative but is Earthdata-gated.
 Output: data/infiltration/cn_nj.nc  (RasterDataset, var `cn`, on the NLCD grid)
 Then:   sf.infiltration.create_cn(cn="cn_nj", antecedent_moisture=None)
 """
+
 import os
 from pathlib import Path
 
@@ -34,9 +35,17 @@ ROOT = Path(os.environ.get("NJ_ROOT", Path(__file__).resolve().parents[1]))
 # Region comes from the ACTIVE DOMAIN registry, so this script follows the
 # domain being built instead of a fixed filename. (nj_sfincs/domain.py)
 from nj_sfincs import domain as _domain  # noqa: E402
+
 _DOM = _domain.active()
 REGION = _DOM.region
-NLCD = ROOT / "data/roughness/nlcd_2012.tif"
+# The domain's land cover, resolved through the catalog (Domain.landcover).
+NLCD = (
+    ROOT
+    / "data"
+    / __import__("yaml").safe_load((ROOT / "data/data_catalog.yml").read_text())[
+        _DOM.landcover
+    ]["uri"]
+)
 # 🔴 Per-domain output, same guard family as download_sandy_hwms.py: the archived
 # `data/infiltration/cn_nj.nc` (read-only symlink) stops at lat 39.556 and is what
 # the frozen domains were built with. A new domain gets its own dir + catalog key.
@@ -54,8 +63,7 @@ OUT = OUT_DIR / f"cn_{_DOM.name}.nc"
 SDA = "https://sdmdataaccess.sc.egov.usda.gov/Tabular/post.rest"
 # HSG letter -> integer code expected by NLCD_HSG.csv (see module docstring).
 # D and all dual groups collapse to code 3 (identical CN in the table).
-HSG_CODE = {"A": 1, "B": 6, "C": 5, "D": 3,
-            "A/D": 2, "B/D": 7, "C/D": 8, "D/D": 3}
+HSG_CODE = {"A": 1, "B": 6, "C": 5, "D": 3, "A/D": 2, "B/D": 7, "C/D": 8, "D/D": 3}
 DEFAULT_HSG_CODE = 3  # land with no SSURGO HSG -> treat as D (conservative)
 
 
@@ -72,15 +80,19 @@ def fetch_hsg_polygons(bbox, tile_deg=0.25):
     xs = list(np.arange(w, e, tile_deg)) + [e]
     ys = list(np.arange(s, n, tile_deg)) + [n]
     seen, parts = set(), []
-    for (x0, x1), (y0, y1) in itertools.product(zip(xs[:-1], xs[1:]), zip(ys[:-1], ys[1:])):
+    for (x0, x1), (y0, y1) in itertools.product(
+        zip(xs[:-1], xs[1:]), zip(ys[:-1], ys[1:])
+    ):
         g = _fetch_hsg_tile((x0, y0, x1, y1))
         for mukey, hsg, wkt in g:
             if (mukey, wkt) in seen:
                 continue
             seen.add((mukey, wkt))
             parts.append((mukey, hsg, wkt))
-    print(f"  SSURGO: {len(parts)} unique map-unit polygons from "
-          f"{(len(xs)-1)*(len(ys)-1)} tiles")
+    print(
+        f"  SSURGO: {len(parts)} unique map-unit polygons from "
+        f"{(len(xs) - 1) * (len(ys) - 1)} tiles"
+    )
     geoms = [shapely_wkt.loads(wk) for _m, _h, wk in parts]
     codes = [HSG_CODE.get(h, DEFAULT_HSG_CODE) for _m, h, _w in parts]
     return gpd.GeoDataFrame({"hsg_code": codes}, geometry=geoms, crs="EPSG:4326")
@@ -111,7 +123,9 @@ def main():
 
     # NLCD on its native grid, clipped to the domain (+ small buffer)
     nlcd = (
-        __import__("rioxarray").open_rasterio(NLCD, masked=False).squeeze("band", drop=True)
+        __import__("rioxarray")
+        .open_rasterio(NLCD, masked=False)
+        .squeeze("band", drop=True)
     )
     bx = gpd.GeoDataFrame(geometry=[box(*bbox)], crs=4326).to_crs(nlcd.rio.crs)
     nlcd = nlcd.rio.clip_box(*bx.total_bounds)
@@ -119,12 +133,16 @@ def main():
 
     # SSURGO HSG polygons -> rasterize onto the NLCD grid
     gdf = fetch_hsg_polygons(bbox).to_crs(nlcd.rio.crs)
-    print(f"SSURGO polygons: {len(gdf)}  HSG-code counts: "
-          f"{gdf['hsg_code'].value_counts().sort_index().to_dict()}")
+    print(
+        f"SSURGO polygons: {len(gdf)}  HSG-code counts: "
+        f"{gdf['hsg_code'].value_counts().sort_index().to_dict()}"
+    )
     transform = nlcd.rio.transform()
     hsg = rasterize(
         ((g, c) for g, c in zip(gdf.geometry, gdf["hsg_code"])),
-        out_shape=nlcd.shape, transform=transform, fill=DEFAULT_HSG_CODE,
+        out_shape=nlcd.shape,
+        transform=transform,
+        fill=DEFAULT_HSG_CODE,
         dtype="int16",
     )
 
@@ -145,18 +163,22 @@ def main():
                 continue
             cn[cls_mask & (hsg == code)] = val
 
-    # NaN cells are NLCD nodata (250) = open ocean beyond the land grid. SFINCS
-    # needs a value on every active cell, so fill with 0 — the table's water CN.
-    # (SCS infiltration only consumes rainfall, so this never touches the surge.)
-    n_ocean = int((~np.isfinite(cn)).sum())
-    cn = np.where(np.isfinite(cn), cn, 0.0).astype("float32")
+    # Open water (NLCD 11) and NaN (NLCD nodata 250 = open ocean beyond the land grid)
+    # -> CN 100: rain that falls on water STAYS in the water. 🔴 The shipped table's
+    # water CN is 0, which hydromt clips to CN 1 -> S = 990 in: every drop of rain on
+    # the bays and rivers would infiltrate, i.e. vanish (2026-09-28; cn_nj / cn_v3 were
+    # built that way, harmless only because infiltration was switched off there).
+    water = (nlcd_v == 11) | ~np.isfinite(cn)
+    cn = np.where(water, 100.0, cn).astype("float32")
 
     da = xr.DataArray(cn, coords=nlcd.coords, dims=nlcd.dims, name="cn")
     da = da.rio.write_crs(nlcd.rio.crs).rio.write_nodata(-9999.0)
-    land = cn > 0
-    print(f"CN: land cells {int(land.sum())}, ocean/water filled 0 ({n_ocean})  "
-          f"land CN range {cn[land].min():.0f}-{cn[land].max():.0f}  "
-          f"land mean {cn[land].mean():.1f}")
+    land = ~water
+    print(
+        f"CN: land cells {int(land.sum())}, water / ocean set to 100 ({int(water.sum())})"
+        f"  land CN range {cn[land].min():.0f}-{cn[land].max():.0f}"
+        f"  land mean {cn[land].mean():.1f}"
+    )
 
     # NLCD's CRS is a non-standard Albers/WGS84 (no EPSG) — reproject to EPSG:4326
     # so the data catalog + create_cn get a clean, unambiguous CRS.

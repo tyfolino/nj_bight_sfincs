@@ -424,6 +424,15 @@ class Domain:
     coarse_elevation_list: tuple[dict, ...] | None = None
     precip_dataset: str = "aorc_sandy_nj"
     cn_dataset: str = "cn_nj"
+    #: NLCD land-cover catalog key: the Manning reclass (``BaseConfig.roughness_lulc``) AND
+    #: the CN build (``scripts/build_cn_nj.py``) read it. The archived ``nlcd_2012`` clip
+    #: is NoData on ~530 km² of Delaware land inside v4 (2026-09-28), hence a per-domain key.
+    landcover: str = "nlcd_2012"
+    #: SCS curve-number infiltration (SFINCS ``cna``) from ``cn_dataset``. OFF on v1–v3
+    #: (``model.finalize`` strips the keys — their sealed runs never had it). ON for v4
+    #: (user, 2026-09-28: rain false alarms on Cape May, > 4" of Sandy rain). It only ever
+    #: subtracts from RAIN, never surge or river water. See ``model._infiltration_keys``.
+    infiltration: bool = False
     cora_waves: Path = DATA / "waves" / "cora_waves_nj.nc"
 
     #: The high-water-mark set this domain is scored against. A DOMAIN fact for the same
@@ -2177,6 +2186,8 @@ V4 = Domain(
     coarse_elevation_list=({"elevation": "bed_v4_coarse_25m"},),
     precip_dataset="aorc_sandy_v4",  # ⚠️ pulled on the old rectangle, 0.33° short N
     cn_dataset="cn_v4",  # not built yet — a missing key fails the build loudly
+    landcover="nlcd_2012_v4",  # C1V1 on the v4 bbox; = nlcd_2012 where both valid
+    infiltration=True,  # user 09-28; water CN 100, storecumprcp = 1 (model.py)
     cora_waves=DATA / "waves_v4" / "cora_waves_v4.nc",  # not built (CORA + STWAVE03)
     discharge_geodataset="usgs_sandy_discharge_v4",
     hwm_geojson=DATA / "validation_v4" / "sandy_hwms_v4.geojson",

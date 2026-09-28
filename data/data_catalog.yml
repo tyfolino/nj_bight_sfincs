@@ -1086,9 +1086,25 @@ naccs_sandy_v3:
 
 # ── v4 (building, 2026-09-27) ─────────────────────────────────────────────────
 # NOT here yet, on purpose: bed_v4_coarse_25m (built from V4_ELEVATION_LIST, step 3 job
-# B), cn_v4, cora_waves_v4 and naccs_sandy_v4 (needs the mesh).
+# B), cora_waves_v4 and naccs_sandy_v4 (needs the mesh).
 # `ehydro_delaware_v4.tif` stays keyless: it was a CHECK that CUDEM is right Philadelphia →
 # Trenton (median −0.09 m), not a tier.
+# Curve numbers for v4 (infiltration ON, user 2026-09-28). Open water / NoData = CN 100
+# (rain on water stays in the water) — unlike cn_nj / cn_v3, which carry the shipped
+# table's water CN 0. Built on nlcd_2012_v4 (Domain.landcover).
+cn_v4:
+  data_type: RasterDataset
+  uri: infiltration_v4/cn_v4.nc
+  driver:
+    name: raster_xarray
+    options: {}
+  metadata:
+    category: infiltration
+    crs: 4326
+    source: NRCS Curve Number from NLCD 2012 C1V1 (nlcd_2012_v4) x SSURGO HSG (USDA SDA,
+      90 tiles of 0.25 deg, 229,256 map-unit polygons), v4 bbox; water CN 100.
+      scripts/build_cn_nj.py
+
 usgs_sandy_discharge_v4:
   data_type: GeoDataset
   uri: discharge_v4/usgs_sandy_discharge_v4.nc

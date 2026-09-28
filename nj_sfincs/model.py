@@ -1731,6 +1731,71 @@ def _ensure_weirfile_key(text: str, model_dir: Path) -> str:
     return text.rstrip("\n") + f"\n{line}\n"  # anchor gone — append, never no-op
 
 
+#: S [inch] at or above this is CN <= ~1: hydromt's clip of the shipped table's water CN 0.
+_SCS_WATER_TRAP_IN = 900.0
+
+
+def _infiltration_keys(text: str, model_dir: Path, on: bool) -> str:
+    """Patch the infiltration keys of a written ``sfincs.inp`` (``finalize`` step b).
+
+    Always strips hydromt's keys: its quadtree ``create_cn`` sets
+    ``infiltration_file = infiltration.nc`` but writes ``scs`` into the qtrfile, so the
+    key names a file that never exists. With ``on`` it then points SFINCS at the qtrfile
+    (``cna`` reads ``scs`` in inches and converts), and forces ``storecumprcp = 1``.
+
+    🔴 Two silent traps this closes (SFINCS v2.3.3 source, 2026-09-28):
+    (1) ``cna`` accumulates ``cumprcp`` / ``cuminf`` ONLY when ``storecumprcp = 1``;
+    with 0, cumulative rain stays 0, never exceeds Ia, and EVERY drop infiltrates — a
+    rain-OFF model that runs clean. (2) A CN raster with water CN 0 gives S = 990 in, so
+    rain on the bays / rivers vanishes: refused here if any ACTIVE face carries it.
+    """
+    drop = ("infiltration_file", "infiltration_type", "scsfile")
+    if on:
+        drop += ("storecumprcp",)
+    lines = [ln for ln in text.splitlines() if not ln.strip().startswith(drop)]
+    if not on:
+        return "\n".join(lines) + "\n"
+
+    qtr = next(
+        (
+            ln.split("=", 1)[1].strip()
+            for ln in lines
+            if ln.strip().startswith("qtrfile")
+        ),
+        None,
+    )
+    if qtr is None:
+        raise SystemExit(
+            "infiltration ON but sfincs.inp has no qtrfile (not quadtree?)"
+        )
+    with xr.open_dataset(Path(model_dir) / qtr) as ds:
+        if "scs" not in ds:
+            raise SystemExit(f"infiltration ON but {qtr} carries no 'scs' (create_cn?)")
+        scs = ds["scs"].values
+        msk = ds["mask"].values if "mask" in ds else None
+    active = (msk > 0) if msk is not None else np.ones(scs.shape, bool)
+    n_trap = int((active & (scs >= _SCS_WATER_TRAP_IN)).sum())
+    if n_trap:
+        raise SystemExit(
+            f"infiltration ON but {n_trap:,} active faces have S >= "
+            f"{_SCS_WATER_TRAP_IN:.0f} in (CN ~1): rain there would vanish. Rebuild the CN "
+            "raster with water = CN 100 (scripts/build_cn_nj.py)."
+        )
+    s_act = scs[active]
+    print(
+        f"[infiltration] cna ON from {qtr}:scs, storecumprcp = 1; active S [in] "
+        f"p10/50/90 {np.percentile(s_act, [10, 50, 90]).round(2).tolist()}, "
+        f"S = 0 (CN 100) on {np.mean(s_act == 0):.0%}",
+        flush=True,
+    )
+    lines += [
+        f"{'infiltration_file':<21}= {qtr}",
+        f"{'infiltration_type':<21}= cna",
+        f"{'storecumprcp':<21}= 1",
+    ]
+    return "\n".join(lines) + "\n"
+
+
 def finalize(
     wcfg: WaveConfig,
     base: BaseConfig,
@@ -1812,16 +1877,11 @@ def finalize(
     # (the obs-point silent-drop scar, generalised).
     text = _ensure_weirfile_key(text, model_dir)
 
-    # (b) strip orphan infiltration keys (component sets key but writes no file).
-    text = (
-        "\n".join(
-            ln
-            for ln in text.splitlines()
-            if not ln.strip().startswith(
-                ("infiltration_file", "infiltration_type", "scsfile")
-            )
-        )
-        + "\n"
+    # (b) infiltration: strip hydromt's orphan keys (it names ``infiltration.nc`` but
+    # writes ``scs`` into the qtrfile), then re-add them correctly on a domain that has
+    # it ON. Rain-off arms get none — SFINCS infiltration only acts on rainfall.
+    text = _infiltration_keys(
+        text, model_dir, on=_domain.active().infiltration and rain
     )
 
     # (c) waves: ensure SnapWave keys + write the ASCII boundary forcing.

@@ -112,7 +112,8 @@ class BaseConfig:
     # REBUILD — it is NOT a `prepare_experiment` swap like `waterlevel_geodataset`. The
     # domain seal is sha(z, mask) and does NOT include roughness, so a rebuilt template
     # still audits as the same domain. That is the point: comparable by construction.
-    roughness_lulc: str = "nlcd_2012"
+    # Defaults to the domain's land cover (Domain.landcover); an arm may still override it.
+    roughness_lulc: str = field(default_factory=lambda: _domain.active().landcover)
     container_sif: Path = ROOT / "sfincs-desktop.sif"
 
     # Reproducibility: if set to a pre-built static-mesh dir, build_static COPIES it

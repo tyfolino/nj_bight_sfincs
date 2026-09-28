@@ -214,10 +214,26 @@ def prepare(model_dir: Path) -> Plan:
         },
     )
     inp.write_text(new)
+    # ⚠️ SFINCS v2.3.3 restart files do not carry `cna`'s cumprcp / cuminf: the resumed
+    # segment restarts the curve number with EMPTY soil, i.e. the storm's rain becomes
+    # two SCS events and infiltrates more (CN 85, 100 mm split 50/50: runoff ~50 -> ~39
+    # mm). Harmless if the resume falls outside the rain. A warning, not a gate.
+    cna = inp_get(text, "infiltration_type") == "cna"
     with (model_dir / HISTORY).open("a") as fh:
         fh.write(
             f"{datetime.now():%Y-%m-%d %H:%M:%S} resume from {pl.rst.name}: "
             f"segment {seg.name} retired (started {seg_start:%Y-%m-%d %H:%M})\n"
+        )
+        if cna:
+            fh.write(
+                f"  ⚠️ cna infiltration: soil state RESET at {pl.t_resume:%Y-%m-%d %H:%M} "
+                "(not in the restart file) — over-infiltrates if it rained after this\n"
+            )
+    if cna:
+        print(
+            f"⚠️ [restart] cna infiltration resets at {pl.t_resume:%Y-%m-%d %H:%M} "
+            "(restart files do not carry cumprcp / cuminf)",
+            flush=True,
         )
     return pl
 
