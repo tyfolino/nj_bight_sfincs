@@ -1967,6 +1967,367 @@ V4_ELEVATION_LIST: tuple[dict, ...] = (
 _V4_WATERLEVEL_LINE = DATA / "v4_design" / "waterlevel_line_v4.csv"
 _V4_LINE_CORRIDOR_M = 500.0
 
+# ── v4 gauges (2026-09-28): v3's 25 + the gauges the expansion brings inside. ─────────
+# Placed on the 09-27 trial mesh (= the frozen mesh's grid): nearest cell, its subgrid
+# z_zmin, distance to the forced line and to the nearest river source (all > 2.8 km, so
+# none reads an injection — CLAUDE.md §5). NUDGES move a point only onto the nearest cell
+# deep enough for what it scores, and only when that is within ~130 m. Crest coverage is
+# measured, not assumed: five USGS records share a hole 10-29 03:54 → 10-30 04:00 (or
+# later) that is REAL — the API returns nothing there in 72279 / 00065 / 62620 / 62619 —
+# so their "peak" is pre-storm and they carry record_ends at the hole. Left out: the
+# Battery (the Upper Bay is outside v4) and Rockaway Inlet 01311875 (seaward of the
+# drawn line, on an inactive cell). ⚠️ Four creek gauges land where the channel is NOT
+# in the bed (z_zmin ~0, the nearest cell below -1.2 m is 1.6–6.7 km away: Sluice Creek,
+# Cohansey at Greenwich, Murderkill at Frederica, Christina at Newport) — lidar water
+# surface, no bathymetry. Their pre-storm tide is an artefact the tide scorer refuses
+# (never turns around); the crest is read at the bank, as ObsGauge allows.
+# ── v4 HWM basins (2026-09-28). FIRST MATCH WINS: these eight come BEFORE v3's rules and
+# are bounded so that NO mark inside v3's ring changes basin (checked on
+# sandy_hwms_v4.geojson: 0 of 140 change; 0 of 166 in-ring marks unassigned —
+# tests/test_v4_scoring.py pins both). v3's own rules label the v4-only marks
+# absurdly (the Delaware at Camden as `barnegat_bay`, Bound Brook as
+# `lower_bay_si_shore`) because they are bounded by northing only. The Delaware Bay's two
+# shores are split by a SLOPED divide down the bay axis, (497,000, 4,300,000) toward
+# Salem, dx/dy -0.494.
+_V4_BAY_AXIS = dict(slope_x0=497_000, slope_y0=4_300_000, slope=-0.494)
+_V4_BASIN_RULES = (
+    BasinRule(
+        "delaware_river_upper",
+        xmin=505_000,
+        xmax=525_000,
+        ymin=4_420_000,
+        ymax=4_470_000,
+        why="Tidal Delaware, Burlington → the Trenton falls (both banks): the "
+        "amplifying end of the river, peaks ~9 h after the coast.",
+    ),
+    BasinRule(
+        "delaware_river",
+        xmax=505_000,
+        ymin=4_370_000,
+        ymax=4_470_000,
+        why="Tidal Delaware, Salem / New Castle → Philadelphia / Camden (both banks).",
+    ),
+    BasinRule(
+        "delaware_bay_de",
+        ymax=4_370_000,
+        side=-1,
+        **_V4_BAY_AXIS,
+        why="Delaware Bay's DELAWARE shore, Lewes → Delaware City: a computed far bank "
+        "(no MOTF; the HWM file has no marks here yet).",
+    ),
+    BasinRule(
+        "delaware_bay_nj_upper",
+        xmax=505_000,
+        ymin=4_345_000,
+        ymax=4_370_000,
+        side=+1,
+        **_V4_BAY_AXIS,
+        why="Delaware Bay's NJ shore north of v3's `delaware_bay_shore` box: Fortescue, "
+        "Greenwich, Salem Cove.",
+    ),
+    BasinRule(
+        "raritan_river",
+        xmax=559_000,
+        ymin=4_478_000,
+        ymax=4_500_000,
+        why="The Raritan above v3's cut (-74.305) to Bound Brook, and the South River: "
+        "COMPUTED on v4, forced/cut on v3. xmax sits 324 m west of a v3 raritan_bay mark.",
+    ),
+    BasinRule(
+        "arthur_kill_nj",
+        xmin=560_000,
+        xmax=569_000,
+        ymin=4_486_000,
+        ymax=4_500_000,
+        why="The Arthur Kill's NJ shore, Sewaren → Carteret / Linden: computed on v4, "
+        "outside v3. ⚠️ Staten Island's west shore (x > 569 km) stays in v3's "
+        "`lower_bay_si_shore`, so no v3 mark moves.",
+    ),
+    BasinRule(
+        "newark_bay",
+        xmin=565_000,
+        xmax=590_000,
+        ymin=4_500_000,
+        why="Newark Bay, the Kills north of Elizabeth, the lower Passaic / Hackensack and "
+        "the Meadowlands (no marks in the HWM file yet).",
+    ),
+    BasinRule(
+        "brooklyn_breezy",
+        xmin=588_000,
+        ymin=4_486_000,
+        why="South Brooklyn (Coney Island / Gravesend) and the Breezy Point tip — NY "
+        "ground inside the v4 ring, east of v3's ocean arm.",
+    ),
+)
+
+_V4_NOAA = "gtsm/noaa_sandy_validation_v4.nc"
+_V4_USGS = "gtsm/usgs_sandy_tidal_v4.nc"
+
+
+def _v4_gauge(
+    src, name, lon, lat, sid, kind="surge", survives=True, ends=None, note=""
+):
+    return ObsGauge(
+        name,
+        lon,
+        lat,
+        kind,
+        _V4_NOAA if src == "noaa" else _V4_USGS,
+        "waterlevel" if src == "noaa" else None,
+        sid,
+        survives_crest=survives,
+        record_ends=ends,
+        series_source="his",
+        note=note,
+    )
+
+
+_MLLW_TIE = "⚠️ MLLW-tied (no CO-OPS NAVD88): own MSL-MLLW + neighbours' NAVD88-MSL"
+
+_V4_NEW_GAUGES = (
+    # ── NOAA CO-OPS, Delaware Bay and river (hourly) ──
+    _v4_gauge(
+        "noaa",
+        "noaa_lewes",
+        -75.1193,
+        38.7828,
+        8557380,
+        note="8557380 Lewes DE. Complete; peak 1.85 m 10-29 13:00. ⚠️ 2.7 km inside the "
+        "delaware_mouth forced line — a FORCING diagnostic, not a holdout (as Cape May "
+        "is on v3).",
+    ),
+    _v4_gauge(
+        "noaa",
+        "noaa_brandywine_shoal",
+        -75.1133,
+        38.9867,
+        8555889,
+        survives=False,
+        ends="2012-10-29 12:00",
+        note=f"8555889 Brandywine Shoal Light, mid-bay. DIED 10-29 12:00 (37 of 96 h). "
+        f"{_MLLW_TIE} (0.9255 m).",
+    ),
+    _v4_gauge(
+        "noaa",
+        "noaa_ship_john_shoal",
+        -75.3767,
+        39.3054,
+        8537121,
+        note=f"8537121 Ship John Shoal, upper bay. Complete; peak 1.90 m 10-30 04:00. "
+        f"{_MLLW_TIE} (0.995 m) — the least certain tie, ~0.1 m; calm-period mean does "
+        "not line up with its neighbours.",
+    ),
+    _v4_gauge(
+        "noaa",
+        "noaa_reedy_point",
+        -75.57205,
+        39.55868,
+        8551910,
+        note="8551910 Reedy Point (C&D Canal east mouth). Complete; peak 1.87 m 10-30 "
+        "06:00. NUDGED 44 m from (-75.5719, 39.5583), a z_zmin +1.88 jetty cell, into the "
+        "-8.3 m channel. 11 km E of the cd_canal forced line.",
+    ),
+    _v4_gauge(
+        "noaa",
+        "noaa_delaware_city",
+        -75.5890,
+        39.5822,
+        8551762,
+        note=f"8551762 Delaware City. Complete; peak 2.05 m 10-30 06:00 — 0.18 m above "
+        f"Reedy Point 3 km away with calm means within 3 mm: real. {_MLLW_TIE} (0.916 m).",
+    ),
+    _v4_gauge(
+        "noaa",
+        "noaa_marcus_hook",
+        -75.4095,
+        39.8118,
+        8540433,
+        note="8540433 Marcus Hook PA. Complete; peak 2.17 m 10-30 07:00.",
+    ),
+    _v4_gauge(
+        "noaa",
+        "noaa_philadelphia",
+        -75.14052,
+        39.93307,
+        8545240,
+        note="8545240 Philadelphia PA. Complete; peak 2.29 m 10-30 08:00. NUDGED 127 m "
+        "from (-75.1420, 39.9331), a z_zmin -0.10 pier cell, onto -4.3 m.",
+    ),
+    _v4_gauge(
+        "noaa",
+        "noaa_burlington",
+        -74.8697,
+        40.0817,
+        8539094,
+        note=f"8539094 Burlington NJ. Complete; peak 2.48 m 10-30 09:00. {_MLLW_TIE} "
+        "(1.0755 m).",
+    ),
+    _v4_gauge(
+        "noaa",
+        "noaa_newbold",
+        -74.7518,
+        40.1373,
+        8548989,
+        note=f"8548989 Newbold PA, 11 km below the Trenton falls. Complete; peak 2.56 m "
+        f"10-30 09:00 — the tidal river's amplification end. {_MLLW_TIE} (1.167 m).",
+    ),
+    # ── USGS tidal (6-min) ──
+    _v4_gauge(
+        "usgs",
+        "usgs_tidal_sluice_creek",
+        -74.8322,
+        39.1617,
+        1411435,
+        note="01411435 Sluice Creek at South Dennis (Delaware Bay side of Cape May Co.). "
+        "Peak 1.83 m 10-30 04:48; 1 h hole after it. ⚠️ Channel NOT in the bed (z_zmin "
+        "+0.92, nearest cell below -1.2 m 2.4 km away): crest only.",
+    ),
+    _v4_gauge(
+        "usgs",
+        "usgs_tidal_bivalve",
+        -75.0328,
+        39.2325,
+        1412150,
+        kind="tide",
+        survives=False,
+        ends="2012-10-29 03:54",
+        note="01412150 Maurice River at Bivalve. HOLE 10-29 03:54 → 10-31 04:00: no "
+        "crest, pre-storm tide only.",
+    ),
+    _v4_gauge(
+        "usgs",
+        "usgs_tidal_greenwich",
+        -75.3503,
+        39.3836,
+        1413038,
+        kind="tide",
+        survives=False,
+        ends="2012-10-29 03:54",
+        note="01413038 Cohansey River at Greenwich. HOLE 10-29 03:54 → 10-31 04:00 (no "
+        "crest) AND the channel is NOT in the bed (z_zmin -0.08, nearest cell below "
+        "-1.2 m 1.6 km away) — nothing here scores cleanly; kept as the model point.",
+    ),
+    _v4_gauge(
+        "usgs",
+        "usgs_tidal_waretown",
+        -74.1819,
+        39.7911,
+        1409110,
+        note="01409110 Barnegat Bay at Waretown. Complete (959/960); peak 1.68 m 10-30 "
+        "03:30. A second Barnegat holdout beside Mantoloking (00065, gage datum 0 ft "
+        "NAVD88).",
+    ),
+    _v4_gauge(
+        "usgs",
+        "usgs_tidal_pt_pleasant_canal",
+        -74.0594,
+        40.0708,
+        1408043,
+        kind="tide",
+        survives=False,
+        ends="2012-10-29 03:54",
+        note="01408043 Point Pleasant Canal. HOLE 10-29 03:54 → 10-30 04:00: pre-storm "
+        "tide only (00065, datum 0 ft NAVD88).",
+    ),
+    _v4_gauge(
+        "usgs",
+        "usgs_tidal_manasquan_pp",
+        -74.0375,
+        40.1017,
+        1408050,
+        kind="tide",
+        survives=False,
+        ends="2012-10-29 03:54",
+        note="01408050 Manasquan River at Point Pleasant. HOLE 10-29 03:54 → 10-30 04:00: "
+        "pre-storm tide only. 0.8 km from the forced ocean line.",
+    ),
+    _v4_gauge(
+        "usgs",
+        "usgs_tidal_keansburg",
+        -74.14813,
+        40.44923,
+        1407081,
+        kind="tide",
+        survives=False,
+        ends="2012-10-29 03:54",
+        note="01407081 Raritan Bay at Keansburg. HOLE 10-29 03:54 → 10-30 04:00: "
+        "pre-storm tide only. NUDGED 54 m from (-74.1475, 40.4492), z_zmin -0.49 (dries "
+        "at low water), onto -1.28 m.",
+    ),
+    _v4_gauge(
+        "usgs",
+        "usgs_tidal_south_amboy",
+        -74.28155,
+        40.49241,
+        1406710,
+        ends="2012-10-30 04:00",
+        note="01406710 Raritan River at South Amboy. Peak 4.09 m 10-30 00:42 — the "
+        "highest in the set, at the Raritan mouth; record ends 10-30 04:00. NUDGED 27 m "
+        "from (-74.2817, 40.4922), z_zmin -0.93, onto -1.28 m.",
+    ),
+    _v4_gauge(
+        "usgs",
+        "usgs_tidal_newark_bay",
+        -74.1229,
+        40.7113,
+        1392650,
+        note="01392650 Newark Bay at PVSC. Peak 3.70 m 10-30 01:30, then a hole 10-30 "
+        "04:00 → 10-31 17:12. ⭐ The only gauge in COMPUTED Newark Bay (~8 km inside the "
+        "kvk_east forced line).",
+    ),
+    _v4_gauge(
+        "usgs",
+        "usgs_tidal_murderkill_frederica",
+        -75.4583,
+        39.0105,
+        1484080,
+        note="01484080 Murderkill River at Frederica DE. Complete; peak 1.21 m. ⚠️ "
+        "Channel NOT in the bed (z_zmin -0.04, nearest cell below -1.2 m 6.7 km away): "
+        "crest only.",
+    ),
+    _v4_gauge(
+        "usgs",
+        "usgs_tidal_murderkill_bowers",
+        -75.3976,
+        39.0583,
+        1484085,
+        note="01484085 Murderkill River at Bowers DE, the mouth. Complete; peak 1.48 m "
+        "10-29 14:36 (00065, datum 0 ft NAVD88).",
+    ),
+    _v4_gauge(
+        "usgs",
+        "usgs_tidal_new_castle",
+        -75.5869,
+        39.6514,
+        1482170,
+        survives=False,
+        ends="2012-10-30 04:54",
+        note="01482170 Delaware River at New Castle DE. DIED on the rising limb (last "
+        "sample IS its max, 1.92 m at 10-30 04:54; Delaware City crested 06:00). z_zmin "
+        "-0.65 and the channel is 579 m off — too far to call a nudge; a pre-failure "
+        "peak reads at the bank.",
+    ),
+    _v4_gauge(
+        "usgs",
+        "usgs_tidal_christina_newport",
+        -75.6087,
+        39.7106,
+        1480065,
+        note="01480065 Christina River at Newport DE. Complete; peak 2.56 m 10-30 07:24. "
+        "⚠️ Channel NOT in the bed (z_zmin -0.02, nearest cell below -1.2 m 4.4 km "
+        "away): crest only.",
+    ),
+    _v4_gauge(
+        "usgs",
+        "usgs_tidal_christina_wilmington",
+        -75.5406,
+        39.7361,
+        1480120,
+        note="01480120 Christina River at Wilmington DE. Complete; peak 2.52 m 10-30 "
+        "06:36.",
+    ),
+)
+
 _V4_RIVER_CUTS: tuple[tuple[str, Box, str], ...] = (
     (
         "delaware_washington_crossing",
@@ -2216,11 +2577,11 @@ V4 = Domain(
     infiltration=True,  # user 09-28; water CN 100, storecumprcp = 1 (model.py)
     cora_waves=DATA / "waves_v4" / "cora_waves_v4.nc",  # not built (CORA + STWAVE03)
     discharge_geodataset="usgs_sandy_discharge_v4",
-    # v3's 25 gauges as the STARTING set (09-28): all 25 sit on active v4 faces (nearest
-    # 3–23 m on the trial build), and a frozen mesh with no sfincs.obs cannot be synced
-    # later — scripts/sync_obs_points.py only rewrites dirs that already have one. ⬜ Add
-    # the Delaware / Newark Bay / upper Raritan gauges with that script, not a rebuild.
-    obs_gauges=V3.obs_gauges,
+    # v3's 25 (all on active v4 faces, 3–23 m) + the 23 above. The frozen mesh was
+    # built with the 25; `scripts/sync_obs_points.py --apply` adds the rest to it —
+    # observation points never move a water level, so no rebuild.
+    obs_gauges=(*V3.obs_gauges, *_V4_NEW_GAUGES),
+    hwm_rules=_V4_BASIN_RULES + V3.hwm_rules,
     hwm_geojson=DATA / "validation_v4" / "sandy_hwms_v4.geojson",
     # Rendered on the rectangle, as on v3: the sheet was a DESIGN input. ⚠️ It stops at
     # lat 40.62 (the ring reaches 40.994) and its source layer is NJ-only, so DE / PA land

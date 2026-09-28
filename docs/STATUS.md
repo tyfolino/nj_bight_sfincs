@@ -66,6 +66,42 @@ cells (v3: 1,332 of 1,332 fill) — the checker gives them their deepest active 
 metres on a slope). Tried on v3 `naccs-nowaves` (rain on): 417 of 1,332 outflow cells wet, the deepest at the Cape May canal
 corner (−0.82 m bed, 1.5 m) and the Raritan cut; the rest rain on upland creeks — why the gate is rain-off. 207 tests OK.
 
+**✅ 09-28 — v4 GAUGES + HWM BASINS declared (user: "Yes please!").** `V4.obs_gauges` = v3's 25 + **23 new**
+(`_V4_NEW_GAUGES`: 9 NOAA Delaware Bay / river — Lewes, Brandywine Shoal, Ship John, Reedy Point, Delaware City, Marcus
+Hook, Philadelphia, Burlington, Newbold; 14 USGS — Sluice Creek, Bivalve, Greenwich, Waretown, Pt Pleasant Canal, Manasquan
+PP, Keansburg, South Amboy, ⭐ Newark Bay PVSC (the only gauge in computed Newark Bay), Murderkill ×2, New Castle, Christina ×2).
+Left out: the Battery (Upper Bay is outside v4), Rockaway Inlet 01311875 (seaward of the drawn line, inactive cell). Placed on
+the trial mesh: all > 2.8 km from a river source; NUDGED where the cell is a bank and a deep enough cell is ≤ 130 m away (Reedy
+Point 44 m, Philadelphia 127 m, Keansburg 54 m, South Amboy 27 m — old coords in each note). 🔴 **The crest holes are REAL:**
+five USGS records (Bivalve, Greenwich, Pt Pleasant Canal, Manasquan PP, Keansburg) have nothing from 10-29 03:54 to 10-30/31
+04:00 — the API returns no value in 72279 / 00065 / 62620 / 62619 — so they are `kind="tide"`, `record_ends` 10-29 03:54;
+Brandywine Shoal died 10-29 12:00, New Castle 10-30 04:54 (its last sample IS its max), South Amboy ends 10-30 04:00 after
+its 4.09 m peak. 🔴 **BED GAP found on the way:** four creek gauges land where the channel is NOT in the bed — z_zmin ≈ 0
+(lidar water surface, no bathymetry) and the nearest cell below −1.2 m is 1.6–6.7 km away: Sluice Creek, Cohansey at
+Greenwich, Murderkill at Frederica, Christina at Newport. Their tide is an artefact (the tide scorer refuses a flat series);
+the crest reads at the bank. A riverbed question for the Delaware tributaries, like the upper Raritan was. **Basins:**
+`V4.hwm_rules` = 8 bounded v4 rules FIRST (`delaware_river_upper`, `delaware_river`, `delaware_bay_de`,
+`delaware_bay_nj_upper` — the bay's shores split by a sloped axis divide — `raritan_river`, `arthur_kill_nj`, `newark_bay`,
+`brooklyn_breezy`) + v3's rules verbatim. On `sandy_hwms_v4.geojson`: **0 of 140 v3-ring marks change basin, 0 of 166
+in-ring marks unassigned**; the 26 v4-only marks go delaware_river 5, raritan_river 4, arthur_kill_nj 4, brooklyn_breezy 3, the
+rest to the v3 basin they sit in (Staten Island's west shore stays `lower_bay_si_shore`). v3's rules alone had put Camden in
+`barnegat_bay` and Bound Brook in `lower_bay_si_shore`. ⚠️ The HWM file has NO Delaware-side, Newark Bay or upper-Delaware
+marks yet — three of the eight basins are empty. `tests/test_v4_scoring.py` (6); 213 tests OK. **⬜ After the freeze:**
+`NJ_DOMAIN=v4 python scripts/sync_obs_points.py --dirs data/frozen_mesh_v4 --apply` (25 → 48); the freeze log's own
+obs check will read FALSE until then (it runs against the new registry).
+
+**⏳ 09-28 — v4 RIVER-INFLOW DECISION TABLE built, awaiting the user** (`logs/v4_design_2026-09-28/river_table/`: `river_table.md`
+to read, `.csv`, `build_river_table.py` re-runs offline in ~3 s). Ratio = NHDPlus upstream basin outside the ring ÷ the gauge's
+own NHDPlus basin (map errors cancel); gauge areas check against USGS (Trenton 6,780, Calco 785, Little Falls 762 mi²). **12
+ASK, 27 proposed scalings, 22 keep.** The big three KEEP: Delaware 810, Schuylkill 728, Brandywine 204 m³/s — the in-ring land
+below Trenton / Philadelphia is < 0.5 % of their basins, so the 09-26 "gauge inside the ring" worry is timing, not volume.
+ASK rows: Great Egg (gauge sees 37 %, 10.1 → 27.5), Maurice (1.60), Beaverdam Branch (4.2; it drains to the MISPILLION —
+source at 38.907 N — not the Murderkill as `download_usgs_sandy_discharge.py` labels it), Mantua (2.0), W Br Middle Brook (9.5),
+Frankford / Cobbs / Second River / Silver Lake trib. (NHDPlus vs USGS gauge areas disagree > 10 %), St Jones / Elizabeth /
+Lawrence (dams). Total peak inflow 2,179 → 2,186 m³/s proposed (+0.4 %), 2,210 with every ASK scaled (+1.5 %). 🔴 The Elizabeth
+source sits 743 m inside the ring edge (ring edited after placement) — beyond the 500 m outflow-walling radius, so its
+crossing face may be unwalled outflow: re-snap it 150 m inside the crossing with the others.
+
 **📌 2026-09-26 — NACCS pull MERGED; every v4 forced line is covered; no more webtool asks.** The user's 3 CHS zips
 (webtool CSVs, ADCIRC01 + STWAVE02/03/05/07) → `repack_naccs_zips.py --apply`: **142 new ADCIRC points (1,815 → 1,957)**,
 128 STWAVE07, 12 STWAVE03, 1 STWAVE05 (a new product zip, one point at −72.72 / 40.77, Long Island — unused); 92 re-requests
