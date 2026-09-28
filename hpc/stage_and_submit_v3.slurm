@@ -26,6 +26,9 @@ cd "$SLURM_SUBMIT_DIR"
 export PATH=$HOME/nj_sandy_sfincs/micromamba/envs/sfincs/bin:$PATH
 export PYTHONPATH=$PWD NJ_ROOT=$PWD NJ_DOMAIN=v3
 hostname; date
+# EXPECT_MD5=<file of `md5sum` lines, written at submit time> makes the job refuse to
+# stage from files that still read STALE on this node (the halk write lag, CLAUDE.md §5).
+if [ -n "${EXPECT_MD5:-}" ]; then md5sum -c "$EXPECT_MD5" || { echo "STALE FILES — refusing"; exit 3; }; fi
 ARMS="${1:-naccs-premier,wave-stwave,naccs-nowaves}"
 # Measured 2026-09-01 on the rebuilt mesh: wave arms 5:10-5:17 wall, MaxRSS 12.8 G;
 # waves-off 0:40 / 1.3 G. 12 h / 64 G is ~2x the worst case on both axes.

@@ -258,6 +258,13 @@ class WaveConfig:
     #: traced to support points outside the mesh, and a band that continues to the Long
     #: Island shore needs it lifted for THAT ARM ONLY — never edit the Domain value.
     open_coast_max_y: float | None = None
+    #: Names of the ``Domain.boundary_arms`` whose wave-boundary cells carry INCIDENT
+    #: waves; every other ``snapwave_mask == 2`` cell is demoted to interior and no support
+    #: point is taken from it. ``None`` = no arm filter (the northing rule alone). Exists
+    #: for a COUPLED wave boundary (2026-09-28, `wave-coupled`): with the northing rule
+    #: lifted, the coupled mask would otherwise impose Atlantic swell on the Narrows and
+    #: Arthur Kill cross-sections, which are water-level cuts INSIDE the harbour.
+    wave_boundary_arms: tuple[str, ...] | None = None
     wavemaker_line: Path = DATA / "wavemakers" / "wavemaker_line.geojson"
     dtwave: float = 1800.0  # SnapWave coupling interval [s]
 

@@ -302,6 +302,29 @@ _V3: dict[str, Experiment] = {
         "on the old engine; expected within +-0.02 m again.",
         **_V3_WL,
     ),
+    "wave-coupled": Experiment(
+        "wave-coupled",
+        replace(
+            _V3_PREMIER_WAVES,
+            snapwave_domain=None,
+            decouple_snapwave=False,
+            # the SFINCS ocean arms, Rockaway leg included (the apex lesson, FINDINGS
+            # §46); NOT the Narrows / Arthur Kill cuts inside the harbour
+            wave_boundary_arms=("ocean", "ocean_south"),
+            # northing bins, Cape May -> Rockaway Point (~181 km) at ~4.5 km
+            wave_n_support=40,
+        ),
+        "Premier with the SnapWave boundary pulled back ONTO the water-level boundary "
+        "(the pre-09-08 coupled mask, no shelf band), on the fixed engine. The band was "
+        "adopted 09-08 on two reads made with the wind-direction bug in (FINDINGS §43): "
+        "the -9 m shelf keeping 0.14-0.62 of the imposed Hs, and 39 % of the cells "
+        "touching the -10 m boundary carrying no waves (the dead ring). The bug explained "
+        "most of the first; the second was never re-measured. ONE change against the "
+        "premier: where the waves enter (the Lower Bay entrance stays forced, as the apex "
+        "band supplies it). PRE-REGISTRATION in STATUS 2026-09-28.",
+        **_V3_BUILDINGS,
+        **_V3_WL,
+    ),
     # The five Sandy-Hook-cut-band runs (`wave-band-sandy-hook[+…]`, renamed 09-17)
     # were RETIRED 2026-09-21 (`experiments/v3/_retired/`, maps gone, metrics rows kept)
     # and left the registry 2026-09-22 with `_V3_OLD_BAND`; both are in git history.

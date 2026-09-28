@@ -1829,12 +1829,15 @@ def waterlevel_line_arms(
     epsg: int,
     sections: tuple[tuple[str, str, str], ...],
     corridor_m: float,
+    counts: dict[str, tuple[int, int]] | None = None,
 ) -> tuple[BoundaryArm, ...]:
     """Cut a drawn water-level line into ``BoundaryArm`` sections.
 
     ``sections`` = ``((arm_name, first_vertex_name, why), ...)`` in line order; each runs
     from its first vertex to the next section's, the last to the line's end. The first
     must start at the line's first vertex, so every metre of the line is some arm's.
+    ``counts`` = ``{arm_name: (min_cells, max_cells)}``; an arm not in it keeps the
+    ``BoundaryArm`` defaults.
     """
     import numpy as np
     import shapely
@@ -1871,9 +1874,17 @@ def waterlevel_line_arms(
             float(np.ceil(x1 / 100) * 100),
             float(np.ceil(y1 / 100) * 100),
         )
+        lo, hi = (counts or {}).get(name, (1, 10_000))
         arms.append(
             BoundaryArm(
-                name, box, why=why, line=xy, span_m=(s0, s1), corridor_m=corridor_m
+                name,
+                box,
+                min_cells=lo,
+                max_cells=hi,
+                why=why,
+                line=xy,
+                span_m=(s0, s1),
+                corridor_m=corridor_m,
             )
         )
     return tuple(arms)
@@ -2085,10 +2096,21 @@ V4 = Domain(
                 ),
             ),
             corridor_m=_V4_LINE_CORRIDOR_M,
+            # As built on the 09-27 mesh probe WITH narrow_channels (61932060) and the
+            # trial build (61932061): 606 / 3,372 / 360 / 69. Brackets ~±10 %, tight
+            # enough that a split run or a stray corner shows (CLAUDE.md, v1.5 lesson).
+            counts={
+                "delaware_mouth": (550, 670),
+                "ocean": (3_100, 3_650),
+                "lower_bay_entrance": (320, 400),
+                "rockaway_inlet": (55, 85),
+            },
         ),
         BoundaryArm(
             "narrows",
             (579_600, 4_494_800, 582_500, 4_496_400),
+            min_cells=45,
+            max_cells=75,  # as built 09-27: 59 (v1.5's 61)
             why="The Verrazzano Narrows, v1.5's segment verbatim (narrows_w → "
             "narrows_e); a tighter box than v1.5's, which reached 1.7 km west onto "
             "Staten Island. 12 NACCS nodes, worst gap 0.71 km. Must stay a WATER-LEVEL "
@@ -2097,6 +2119,8 @@ V4 = Domain(
         BoundaryArm(
             "kvk_east",
             (576_600, 4_499_400, 577_300, 4_501_200),
+            min_cells=8,
+            max_cells=16,  # as built 09-27: 11
             why="Kill van Kull east mouth, St George hill → Constable Hook (-16 m "
             "channel): Newark Bay, the Kills and the Arthur Kill are COMPUTED behind "
             "it. 11 NACCS nodes since the 09-26 pull, worst gap 0.34 km, peaks "
@@ -2105,6 +2129,8 @@ V4 = Domain(
         BoundaryArm(
             "cd_canal",
             (439_600, 4_376_600, 440_300, 4_378_300),
+            min_cells=3,
+            max_cells=8,  # as built 09-27: 5
             why="C&D Canal at lon -75.699 (250 m of -13 m between 20 m banks): shuts the "
             "Chesapeake out. ⚠️ ONE NACCS node within 1.5 km, and the canal carries a "
             "0.6 m Sandy-peak gradient (Reedy Point 1.8 → Chesapeake City 1.15); the "
@@ -2184,12 +2210,17 @@ V4 = Domain(
     # every native tier over this bbox would not fit in memory). Built from the list above
     # by `scripts/build_coarse_bed.py` (step 3, 09-27).
     coarse_elevation_list=({"elevation": "bed_v4_coarse_25m"},),
-    precip_dataset="aorc_sandy_v4",  # ⚠️ pulled on the old rectangle, 0.33° short N
+    precip_dataset="aorc_sandy_v4",  # re-pulled on the ring 09-28 (was 0.33° short N)
     cn_dataset="cn_v4",  # not built yet — a missing key fails the build loudly
     landcover="nlcd_2012_v4",  # C1V1 on the v4 bbox; = nlcd_2012 where both valid
     infiltration=True,  # user 09-28; water CN 100, storecumprcp = 1 (model.py)
     cora_waves=DATA / "waves_v4" / "cora_waves_v4.nc",  # not built (CORA + STWAVE03)
     discharge_geodataset="usgs_sandy_discharge_v4",
+    # v3's 25 gauges as the STARTING set (09-28): all 25 sit on active v4 faces (nearest
+    # 3–23 m on the trial build), and a frozen mesh with no sfincs.obs cannot be synced
+    # later — scripts/sync_obs_points.py only rewrites dirs that already have one. ⬜ Add
+    # the Delaware / Newark Bay / upper Raritan gauges with that script, not a rebuild.
+    obs_gauges=V3.obs_gauges,
     hwm_geojson=DATA / "validation_v4" / "sandy_hwms_v4.geojson",
     # Rendered on the rectangle, as on v3: the sheet was a DESIGN input. ⚠️ It stops at
     # lat 40.62 (the ring reaches 40.994) and its source layer is NJ-only, so DE / PA land

@@ -100,6 +100,29 @@ def _open_coast_max_y(wcfg=None) -> float:
     return float("inf") if y is None else y
 
 
+def _wave_arm_cells(wcfg, sf) -> np.ndarray | None:
+    """Faces inside the arms named by ``wcfg.wave_boundary_arms`` (``None`` = no filter).
+
+    Refuses a name the active domain does not declare, so a typo cannot silently demote
+    the whole wave boundary.
+    """
+    names = getattr(wcfg, "wave_boundary_arms", None)
+    if names is None:
+        return None
+    arms = {a.name: a for a in _domain.active().boundary_arms}
+    unknown = sorted(set(names) - set(arms))
+    if unknown:
+        raise KeyError(
+            f"wave_boundary_arms {unknown} not declared on domain "
+            f"{_domain.active().name} (arms: {sorted(arms)})"
+        )
+    fx, fy = _face_xy(sf)
+    keep = np.zeros(fx.shape, bool)
+    for n in names:
+        keep |= np.asarray(arms[n].contains(fx, fy), bool)
+    return keep
+
+
 def _face_xy(sf):
     return sf.quadtree_grid.data.grid.face_coordinates.T
 
@@ -1558,6 +1581,18 @@ def add_waves(wcfg: WaveConfig, base: BaseConfig, sf: SfincsModel) -> dict:
     _swfy = sf.quadtree_grid.data.grid.face_coordinates[:, 1]
     _demote = (_swm == 2) & (_swfy >= _open_coast_max_y(wcfg))
     _swm[_demote] = 1
+    # …and, when the arm names them, every boundary cell outside the named FORCED arms
+    # (WaveConfig.wave_boundary_arms): a coupled mask copies mask==2 onto the harbour
+    # cross-sections too, and those must not receive Atlantic swell.
+    _in_wave_arms = _wave_arm_cells(wcfg, sf)
+    if _in_wave_arms is not None:
+        _off = (_swm == 2) & ~_in_wave_arms
+        _swm[_off] = 1
+        print(
+            f"[waves] wave_boundary_arms {list(wcfg.wave_boundary_arms)}: "
+            f"{int((_swm == 2).sum()):,} wave-boundary cells kept, "
+            f"{int(_off.sum()):,} demoted outside them"
+        )
     sf.quadtree_grid.data["snapwave_mask"] = sf.quadtree_grid.data[
         "snapwave_mask"
     ].copy(data=_swm)
@@ -1577,6 +1612,8 @@ def add_waves(wcfg: WaveConfig, base: BaseConfig, sf: SfincsModel) -> dict:
         & (_z < -5.0)
         & (_fc[:, 1] < _open_coast_max_y(wcfg))
     )
+    if _in_wave_arms is not None:
+        _atl &= _in_wave_arms
     _bxy = _fc[_atl]
     if not len(_bxy):
         raise RuntimeError(
