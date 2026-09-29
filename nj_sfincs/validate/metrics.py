@@ -238,6 +238,25 @@ def tide_metrics(
 # ── paired interior gauges: volume vs tilt ───────────────────────────────────
 
 
+def _obs_gap_tol_s(xs: np.ndarray) -> float:
+    """Longest spacing between finite samples still read as continuous: 3x the gauge's
+    median spacing (6-min NOAA → 18 min, 15-min USGS → 45 min), never under 30 min."""
+    d = np.diff(xs)
+    return max(3.0 * float(np.median(d)), 1800.0) if d.size else 1800.0
+
+
+def _in_obs_gap(xt: np.ndarray, xs: np.ndarray) -> np.ndarray:
+    """True where a target time falls strictly inside a gap between finite samples
+    ``xs`` (sorted, seconds) wider than ``_obs_gap_tol_s``; a time ON a sample is kept."""
+    tol = _obs_gap_tol_s(xs)
+    j = np.searchsorted(xs, xt, side="right")  # xs[j-1] <= xt < xs[j]
+    inside = (j > 0) & (j < xs.size)
+    jj = np.clip(j, 1, max(xs.size - 1, 1))
+    gap = xs[jj] - xs[jj - 1]
+    on_sample = np.isclose(xt, xs[jj - 1])
+    return inside & (gap > tol) & ~on_sample
+
+
 def gauge_series_frame(
     model_dir: Path, gauge_name: str, mod=None, data_dir: Path = DATA
 ) -> pd.DataFrame:
@@ -245,7 +264,13 @@ def gauge_series_frame(
 
     Indexed by the MODEL clock with columns ``obs``, ``mod``, ``err`` (= mod − obs).
     Observations are interpolated onto that clock and are NaN outside their own coverage —
-    never extrapolated.
+    never extrapolated, and never bridged across a GAP in the record.
+
+    🔴 GAPS (2026-09-29, user: "the observations do a linear jump until the gauge is
+    working again"). ``np.interp`` over the finite samples draws a straight line through
+    every outage — hours of invented water level beside a model that keeps tiding. A model
+    time whose bracketing finite samples are further apart than ``_obs_gap_tol_s`` is NaN.
+    The peak / tide metrics read the raw series, not this frame, so no score moved.
     """
     dom = _domain.active()
     g = next((x for x in dom.obs_gauges if x.name == gauge_name), None)
@@ -269,6 +294,7 @@ def gauge_series_frame(
             xs = (ot[ok] - t0) / np.timedelta64(1, "s")
             xt = (mt - t0) / np.timedelta64(1, "s")
             obs = np.interp(xt, xs, ov[ok], left=np.nan, right=np.nan)
+            obs[_in_obs_gap(xt, xs)] = np.nan
 
     df = pd.DataFrame({"obs": obs, "mod": mv}, index=pd.to_datetime(mt))
     df["err"] = df["mod"] - df["obs"]

@@ -28,7 +28,20 @@ FAILS on v3 (15 inflows on dry ground, 1 inactive — pre-existing); the Delawar
 supervisor); the building cap (4 m) is overtopped at +3 m SLR — revisit before a waves-on SLR arm; `scripts/plot_waterlevel_boundary.py`
 is v1.5-only (3 arms, probe npz) — v4 has no scripted boundary map; the superseded `reports/figures/v4_design_motf_extent.png`
 (untracked) is the user's to delete. **Figures (09-29):** `reports/figures/v4_snapwave_domain.png`, `v4_motf_scored.png`
-(`scripts/plot_v4_domain_figures.py`). Nothing committed by Claude; the user commits.
+(`scripts/plot_v4_domain_figures.py`). **Meeting notebook** `notebooks/v4/sandy-v4-prelim-2026-09-30.ipynb`
+(executed; region vs v3, resolution, wave domain, MOTF as scored, Sandy storm tide from the rain-OFF +0 run — the rain-on run's
+upland ponding swamps a level map — the +0/+2/+3 ladder, gauges, and a scores cell that fills in once 62036907 lands).
+**Gauge gaps FIXED (user 09-29):** `gauge_series_frame` bridged every observation outage with `np.interp` (straight lines beside
+a tiding model); now NaN where the bracketing finite samples are > max(3 × median spacing, 30 min) apart (`_in_obs_gap`,
+`tests/test_obs_gaps.py`). Plots + `basin_error_decomposition` only — the peak / tide metrics read the raw series, no score
+moved. 🔶 **OPEN: 12 USGS tidal gauges have NO data 2012-10-29 04:00 → 10-30 04:00 UTC (= 10-29 EDT, the storm day)** in
+the published record (OGC `continuous`, all 'Approved'; Tuckerton / Keansburg re-fetched 09-29: 240 / 40 / 200 samples on
+10-28 / 10-29 / 10-30 UTC). A whole local day at 12 unrelated gauges looks like a USGS day-block deletion (or an API partition gap), not
+our fetch — check another source (NWISWeb 2012 data / the USGS Sandy data report) before calling their peaks missing. 🔶 **8 v4
+gauges read a dry bank or an un-carved creek** (flat / smooth model line): Cape May, Barnegat Light, Absecon Ck, Inside
+Thorofare, Cape May Harbor, Sluice Ck (the `accept_domain` high-ground WARN) and Murderkill at Frederica, Christina at Newport
+(creek channel not in the bed) — v3's fix was `series_source="map"` (wet channel cells); v4's new gauges have none yet.
+Nothing committed by Claude; the user commits.
 
 
 **✅ 09-29 morning — v4 GATE RE-READ on the flank-walled mask (`c5d8c8d7837b8461`).** All 4 solves COMPLETED 0:0 on hal
