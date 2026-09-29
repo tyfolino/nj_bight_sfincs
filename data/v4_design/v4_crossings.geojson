@@ -761,6 +761,72 @@
   {
    "type": "Feature",
    "properties": {
+    "name": "darby_creek",
+    "kind": "cut",
+    "role": "river above the +3 m end",
+    "excluded_side": "N",
+    "span_km": 0.6,
+    "status": "walled 2026-09-29 (v4 gate: drained at +2 / +3 m)",
+    "note": "Darby Creek at ring vertex pa_delco_04. CUDEM carries the tidal channel (~0 m) ~1 km past the ring to the Fall Line step; outside the ring the +3 m water fills only that channel (2.3 ha, ~20 m wide), no floodplain land. The ring audit missed it: the 25 m coarse bed smooths the channel (z_min 4.0 vs level 5.1). No Q (ungauged here; Cobbs Cr 01475530 is 5.5 km off).",
+    "drawn_line": null
+   },
+   "geometry": {
+    "type": "LineString",
+    "coordinates": [
+     [
+      -75.27397552002638,
+      39.92425140496149
+     ],
+     [
+      -75.27359548851324,
+      39.924646254853535
+     ],
+     [
+      -75.27321545263975,
+      39.92504110348789
+     ],
+     [
+      -75.27283541240581,
+      39.92543595086445
+     ],
+     [
+      -75.2724553678113,
+      39.92583079698316
+     ],
+     [
+      -75.27206096635203,
+      39.926210744386466
+     ],
+     [
+      -75.27145990770524,
+      39.926376189468606
+     ],
+     [
+      -75.27085884614944,
+      39.92654163143997
+     ],
+     [
+      -75.27025778168466,
+      39.92670707030054
+     ],
+     [
+      -75.26965671431101,
+      39.92687250605024
+     ],
+     [
+      -75.26905564402851,
+      39.927037938689026
+     ],
+     [
+      -75.26845457083722,
+      39.92720336821685
+     ]
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
     "name": "brandywine_wilmington",
     "kind": "cut",
     "role": "river head of tide",

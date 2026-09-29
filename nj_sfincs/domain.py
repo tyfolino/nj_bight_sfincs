@@ -2365,6 +2365,13 @@ _V4_RIVER_CUTS: tuple[tuple[str, Box, str], ...] = (
         "Schuylkill at the Flat Rock pool (surface 11.4 m); Fairmount is overtopped.",
     ),
     (
+        "darby_creek",
+        (476_200, 4_419_000, 477_400, 4_420_100),
+        "Darby Creek at pa_delco_04 (walled 09-29 after the gate drained it at +2 / "
+        "+3 m): CUDEM's ~0 m channel runs ~1 km past the ring to the Fall Line; "
+        "outside, the +3 m water fills only that channel (2.3 ha), no land.",
+    ),
+    (
         "brandywine_wilmington",
         (451_700, 4_401_600, 452_700, 4_402_300),
         "Brandywine at Wilmington (surface 9.5 m).",
@@ -2428,7 +2435,7 @@ V4 = Domain(
     # BASE (noaa_sandy_nj) selection, measured on the frozen mesh 2026-09-28: Battery +
     # Atlantic City + Cape May in the 100 km buffer, as on v3. Arms force from NACCS 241.
     n_waterlevel_support=3,
-    building=False,  # FROZEN 2026-09-28 — premier.V4 (4881654 / 4388 / c5d8c8d7837b8461)
+    building=False,  # FROZEN 2026-09-28 — premier.V4 (4881654 / 4388 / 23ea65f8b81ee1bd)
     # ── The forced lines. Every mask==2 cell must sit in exactly one of these. ───────
     boundary_arms=(
         # The drawn sea line, as four SECTIONS (disjoint by construction — see

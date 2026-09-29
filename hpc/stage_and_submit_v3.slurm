@@ -95,6 +95,9 @@ open(os.environ["JOBFILE"], "w").write(":".join(ids) + "\n")
 PY
 JOBS=$(cat "$JOBFILE")
 echo "solve jobs: $JOBS"
+# VALIDATE=0: solves only (2026-09-29: v4's validate OOMs at 400 G until the floodmap
+# downscale is tiled — queuing it would only burn a big-memory node).
+if [ "${VALIDATE:-1}" = "0" ]; then echo "validate: SKIPPED (VALIDATE=0)"; date; exit 0; fi
 # One validation job for ALL the arms staged here, after every solve exits 0. The scorer
 # unpacks ~60 G of rasters per arm, so one job, sequential, 128 G (STATUS 09-01 ops note).
 # afterok means a failed or timed-out solve leaves this job pending forever — squeue

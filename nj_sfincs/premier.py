@@ -163,8 +163,12 @@ V3 = DomainFingerprint(3412470, 4108, "1596ce1ecc71b374")
 #: C&D, Henlopen end) and Cape Henlopen's Atlantic side (`wall_henlopen_atlantic`). Open,
 #: the flanks drained forced water at every level and the cape drained the +2 / +3 m bay.
 #: The gate runs on the earlier mask are in experiments/v4/_pre_flankwall/.
+#: 🔴 DARBY CREEK WALLED 2026-09-29 (user, after the flank-walled gate read; same counts,
+#: the sha is the only tell): 5 outflow faces → wall in `wall_darby_creek`, one of them on
+#: the creek's CUDEM channel (z_zmin 0.53) — open, it drained the +2 / +3 m water.
 V4_PRE_FLANKWALL = DomainFingerprint(4881654, 4388, "231f92a24c972daf")
-V4 = DomainFingerprint(4881654, 4388, "c5d8c8d7837b8461")
+V4_PRE_DARBY = DomainFingerprint(4881654, 4388, "c5d8c8d7837b8461")
+V4 = DomainFingerprint(4881654, 4388, "23ea65f8b81ee1bd")
 
 EXPECTED: dict[str, DomainFingerprint] = {
     "v1_monmouth": V1_MONMOUTH,
@@ -188,6 +192,10 @@ KNOWN = {
     "shore, NACCS 224-point boundary (sha16 19f53cfd4cb804fb), 4 arms",
     V4: "v4 FROZEN 2026-09-28 — NJ coast + Delaware Bay/river + Raritan + Newark Bay, "
     "drawn water-level line, NACCS 241-point boundary (sha16 4f020321d32076d7)",
+    V4_PRE_DARBY: (
+        "v4 BEFORE the 2026-09-29 Darby Creek wall (the creek drained the +2 / +3 m "
+        "water out at pa_delco_04) — the flank-walled gate runs; superseded"
+    ),
     V4_PRE_FLANKWALL: (
         "v4 BEFORE the 2026-09-28 flank walls (forced-line ends + Henlopen Atlantic side "
         "free outflow) — the first +0/+2/+3 m gate runs; superseded, not comparable"
