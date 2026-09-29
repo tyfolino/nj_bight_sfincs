@@ -40,7 +40,7 @@ the published record (OGC `continuous`, all 'Approved'; Tuckerton / Keansburg re
 our fetch — check another source (NWISWeb 2012 data / the USGS Sandy data report) before calling their peaks missing. 🔶 **8 v4
 gauges read a dry bank or an un-carved creek** (flat / smooth model line): Cape May, Barnegat Light, Absecon Ck, Inside
 Thorofare, Cape May Harbor, Sluice Ck (the `accept_domain` high-ground WARN) and Murderkill at Frederica, Christina at Newport
-(creek channel not in the bed) — v3's fix was `series_source="map"` (wet channel cells); v4's new gauges have none yet.
+(creek channel not in the bed) — v3's fix was `series_source="map"` (wet channel cells); v4's new gauges have none yet. ⏸️ **Results website: ON HOLD (user 09-29).** If revived: a light export step on Amarel (metrics rows, per-mark residuals, gauge series, small map tiles) feeding either GitHub Pages (the repo is PUBLIC — so would the site be) or a private claude.ai artifact. Next conversation topic: EFFICIENCY.
 Nothing committed by Claude; the user commits.
 
 
