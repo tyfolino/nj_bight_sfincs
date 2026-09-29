@@ -50,7 +50,10 @@ ground), every other override a no-op (the frozen mask was otherwise in step wit
 restage lands. `hpc/stage_and_submit_v3.slurm` gained `VALIDATE=0` (solves only). ⏳ **Gate RE-STAGED: job 62029416**
 (`VALIDATE=0`, native engine, `EXPECT_MD5=logs/v4_gate_darby_expected.md5`) → 4 solves (ids in `logs/stage_v3_62029416.jobs`),
 ~2 h each. Read: `overflow_check.py` as above — expect the Darby outflow cell gone and water standing against `wall:darby_creek`
-at +2 / +3; everything else unchanged.; the Breezy Point / Rockaway corner outflow cells (−73.909, 40.559–40.561, zb 1.25–1.7) wet at every level
+at +2 / +3; everything else unchanged. ✅ **READ 09-29 afternoon** (4 solves COMPLETED 0:0 on hal0245 / 0252 / 0336 / 0339, 1 h 55 – 2 h 14;
+`logs/v4_gate_2026-09-29/overflow_check_darby.out`): the Darby outflow cell is GONE at +2 / +3; `wall:darby_creek` has 1 wet
+face (the channel, z_zmin 0.53) at h 1.50 / peak rise +1.22 at +2, +2.34 at +3 — water standing against the wall, as chosen;
+every other stretch as in the morning read (wet outflow edge cells 8 / 8 / 12 at +0 / +2 / +3, all Breezy Point / scattered).; the Breezy Point / Rockaway corner outflow cells (−73.909, 40.559–40.561, zb 1.25–1.7) wet at every level
 (0.2–0.6 m at +0, ≤ 1.75 at +3) — overtopped land, Sandy flooded it; walls in water rise with SLR as designed (Bayonne +4.1,
 Jamaica Bay +3.1 at +3). 🔴 **The validate 61996026 was OOM-KILLED at 400 G** (hal0419, 1 h 17, MaxRSS 411 G) in the floodmap step
 of the first arm — nothing written to `experiments/v4/floodmaps/`. v4's 16 px subgrid (`dep_subgrid_lev3.tif` 12.6 G) is ~4× v3's
@@ -90,6 +93,50 @@ discharge dataset; every in-region HWM + every `sfincs.obs` gauge; a flag column
 `reports/source_proximity_v4.csv`: **0 of 166 marks, 0 of 48 gauges within 500 m; closest mark 2.4 km** (6563). Self-check on
 v3 reproduces the 08-27 hand sweep exactly (6044 at 49.2 m, 6102 674 m, 6101 921 m; `reports/source_proximity_v3.csv`). Nothing
 on v4 needs the flag, so wiring `src_contaminated` into the scorer stays a v3-only loose end (HWM 6044).
+
+**🌊 09-29 — v4 WAVE BOUNDARY, step 1: WHY `wave-coupled` LOST (read-only on v3; `logs/wave_boundary_v4_2026-09-29/`,
+FINDINGS §52).** Against the 09-28 pre-registration: **(1) dead ring — my lean was WRONG:** 38 % of the cells touching
+`wave-coupled`'s boundary are dead (43 % south coast; 2.03 vs 1.03 boundary neighbours = inner corners), same as the pre-fix
+39 %; premier 0 %. **(2) −9 m shelf / CORA-at-10 m on the 19 hours cap-hit-free in both** (`convergence_*.csv`: premier 50,
+coupled 23 of 145 calls capped): premier / coupled Sea Bright 1.02 / 0.59, Atlantic City 0.95 / 0.81, Ocean City 0.93 / 0.54,
+Sea Isle 0.73 / 0.56 — FAILED, the coupled shelf is lower everywhere. (3) setup transects in `ring_*.txt`, not yet read.
+**Reading:** the band's worth is a GRID-ALIGNED boundary, not missing shelf physics → v4 cannot run SnapWave on its drawn
+(diagonal) line; it needs a stepped boundary like `v3_shelf_steps_apex`. `wave_boundary_ring.py` run from git history
+(`56e37ae^`, copy in the log dir; not restored). **v4 cost facts** (frozen v4 mesh): active 3,974,165 = 1,903,192 inside
+v3's ring + 1,783,898 Delaware bay / river / far banks + 202,843 Newark Bay / AK / Raritan-new + 84,232 other; the 200 m
+shelf seaward of the line = ~0.89 M inactive level-1 cells, so a v3-shaped band costs ~0.15–0.2 M SnapWave nodes there
+(v3's was 1.1 M at 50 m). v3 premier = 2.89 M SnapWave nodes, 25.5 h.
+**Step 2 — v4 SnapWave domain BUILT in code (user 09-29: waves on v3's area + "also Delaware Bay itself", stepped band).**
+NEW `Domain.snapwave_footprint_ll` (empty = every active cell, v1–v3 unchanged; v4 = `v3_area` = V3.region + `delaware_bay`,
+a named-vertex polygon below the Liston Point (−75.585, 39.405) – Hope Creek (−75.500, 39.460) line, both on land on
+`bed_v4_coarse_25m`); NEW `snapwave_domain.domain_cell_sets` (one definition for `model.add_waves` and
+`check_snapwave_domain.py`): `sea` = the submerged `sea_of_waterlevel_line` polygon (it closes far outside the ring, to −73.40 /
+38.60 / 40.58, so the apron and the strip south of the ring's slanted edge are band-eligible), `footprint` from the new field;
+`build_snapwave_mask(..., sea=, footprint=)` — band = inactive & finite & (z ≤ mask_zmin OR sea) & in the steps; waves = SFINCS
+active ∩ footprint, + band. This closes the 09-27 loose end ("the STEPS path still reads mask_zmin"). NEW
+`SNAPWAVE_STEPS['v4_shelf_steps']`: v3 apex's eastings redrawn on v4's grid (rotated +0.925° vs v3's −0.817°) — (1–184, 587),
+(185–284, 659), (285–384, 750), (385–1012, 821), m_west 245, n_top 1012 (column 821 crosses −12 m; Long Beach land at row
+1026); the first step carried SOUTH to row 1 (38.715 N) so the bottom edge runs from Henlopen's Atlantic beach across the
+Delaware mouth approach. **Preflight** (`check_v4_shelf_steps.txt`, `snapwave_domain_v4.geojson`): band 155,793 cells
+(v3 1.1 M), **SnapWave active 3,386,716** (v3 2.89 M → ~1.17× → **~30 h** at the premier's pace), 743,242 SFINCS faces
+without waves, 0 poke-through, 1,541 boundary cells at −12.0..−41.2 m (segment medians −25..−32), **7 predicted dead
+cells (0.45 %) = one per step corner**, footprint land cap considered and dropped (+5 m would save 65 k, 5 %). **`cora_waves_v4`
+BUILT** (`data/waves_v4/cora_waves_v4.nc`, `build_cora_waves.py`, 19,406 nodes × 121 h, 28.6 MB; bit-identical to
+`cora_waves_v3` on all 11,594 shared nodes): 63 support points along 318 km, nearest node median 1.12 / max 3.27 km. Points
+61–62 (the bottom edge off Henlopen beach, cells −12.5 / −12.1 m) take nodes at 13.4 / 10.3 m depth, peak Hs 4.5 / 4.1 m —
+depth-consistent with their cells, noted not changed. `tests/test_snapwave_domain.py` +4. 229 tests OK. **Step 3 — v4 BUILDINGS FIRST (user 09-29: "Build buildings first", so the first waves arm is the true `naccs-premier`).**
+NJDEP footprints only — the far banks get none (09-24 design rule), so no Microsoft DE/PA pull. NEW
+`Domain.merged_dep_base_level` (3; v4 2): `build_merged` / `rebuild_subgrid.py` / `merge_subgrid_dep.slurm` default to it, so a v4
+subgrid rebuild writes the 3.125 m scoring bed, never the 1.56 m one that OOMs the scorer. Catalog `bed_buildings_v4` (overlay
+tier; file on scratch, symlinked from `data/elevation_v4`); NEW `hpc/burn_buildings.slurm`; `hpc/rebuild_subgrid.slurm` now
+honours `EXPECT_MD5`. ⏳ **Job 62035742** burn (`--footprints data/buildings/raw/njdep_building_footprints_nj.fgb`, 2.9 M
+footprints, `--height 4` = v3's premier cap — ⚠️ a 4 m cap is overtopped in the +3 m SLR runs; revisit before any waves-on SLR
+arm) → **job 62035743** `rebuild_subgrid.py --dst _subgrid_buildings --overlay bed_buildings_v4` (afterok, emeraldrapids,
+200 G, 12 h; the freeze took 4 h 40 / 71 G). Read: the burn's `.json` (burned km², skipped low-ground / NaN-ground), then
+`experiments/v4/_subgrid_buildings/subgrid_diff.json` (diff `z_volmax`, not `z_zmin`) and that its `subgrid/dep_subgrid_merged.tif`
+is on the lev2 lattice. ⬜ Then register v4 `naccs-premier` (= v3's `_V3_PREMIER_WAVES` with `snapwave_domain="v4_shelf_steps"`,
+`wave_point_dataset=cora_waves_v4`, `wave_n_support=63`, `subgrid_from="_subgrid_buildings"`, NACCS 241), pre-register, stage,
+submit (~30 h, emeraldrapids, 40 h limit; maintenance 10-13).
 
 **📍 RESUME HERE (09-27 evening, before a context compaction):** v4 steps 1–3 DONE (V4 entry `building`; mouth + deep-channel masks; bed stack + `bed_v4_coarse_25m`). The FORCED SEA LINE `data/v4_design/waterlevel_line_v4.csv` is FINAL pending one check: both user routes are in (Delaware mouth cape_henlopen → 7171 → … → 5531; Lower Bay 3767 → … → 14089 → jamaica_wall_s; ring NY corner edited to follow it). ✅ (a) ring re-audit `logs/ring_audit_v4_61929920.out`: target land outside 0.00 km², MOTF 1.000 inside, HWMs 166/193 (was 165); its one flag, 1.0 km `water_undeclared` at (−73.9037, 40.5297), IS the forced line between 3879 and 3897 — the ring audit reads `v4_crossings.geojson` only; teach it the line CSV when wiring. ⬜ (b) WIRE THE LINE into domain.py/model.py: read the CSV (like `region_source`); inactive polygon = the ring seaward of the line (replaces `delaware_sea`); an always-active band landward of it (must cover the Ambrose crossing east of −73.93); arms as line SECTIONS with a buffer instead of boxes (mouth / ocean / Lower Bay / Rockaway inlet). ⬜ (c) step 4 refinement polygons (diff by NAME vs v3), (d) step 5 probe. Tools: `scripts/audit_ocean_line_v4.py --line <csv> --maps`; the NACCS node picker artifact https://claude.ai/artifact/HVn8yLyUNJ27shkoaaSNb9 (`logs/v4_design_2026-09-27/build_node_picker.py`). Nothing committed by Claude; the user commits.
 

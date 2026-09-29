@@ -21,9 +21,13 @@ The SFINCS mask (and the water-level boundary) is untouched: this only builds
 
 Rules, per cell:
 
-* band     = SFINCS-inactive, finite bed, bed <= ``mask_zmin``, ``m_west <= m1 <= M(n1)``,
-  ``n1 <= n_top``.  ``M(n1)`` is the step table's max column for that row.
-* active   = SFINCS-active OR band  (code 1)
+* band     = SFINCS-inactive, finite bed, bed <= ``mask_zmin`` (OR in ``sea``),
+  ``m_west <= m1 <= M(n1)``, ``n1 <= n_top``.  ``M(n1)`` is the step table's max column
+  for that row. ``sea`` (v4, 2026-09-29) = the submerged ring seaward of a DRAWN
+  water-level line: SFINCS stops at the line, not the isobath, so the shelf between the
+  line and −10 m must join the band or it is in neither solver.
+* active   = (SFINCS-active AND in ``footprint``) OR band  (code 1). ``footprint`` (v4)
+  = where waves are computed at all; ``None`` = every SFINCS-active cell (v1–v3).
 * boundary = band cell whose EAST, SOUTH or NORTH level-1 neighbour is outside the band
   (or which sits on the bottom row), and whose bed is <= ``bnd_zmax``  (code 2).
   Only band cells: SFINCS-active cells are never wave-boundary cells here, which is the
@@ -73,12 +77,16 @@ class SnapWaveSteps:
             raise ValueError(f"{self.name}: steps must start at row 1")
         for (lo, hi, _), (lo2, _hi2, _) in zip(rows, rows[1:]):
             if lo > hi or lo2 != hi + 1:
-                raise ValueError(f"{self.name}: step rows must tile without gaps: {rows}")
+                raise ValueError(
+                    f"{self.name}: step rows must tile without gaps: {rows}"
+                )
         if rows[-1][1] != self.n_top:
             raise ValueError(f"{self.name}: last step must end at n_top={self.n_top}")
 
 
-def level1_index(n: np.ndarray, m: np.ndarray, level: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+def level1_index(
+    n: np.ndarray, m: np.ndarray, level: np.ndarray
+) -> tuple[np.ndarray, np.ndarray]:
     """Level-1 (200 m) row/column of every face from its own-level ``n, m, level``.
 
     ``sfincs.nc`` indexes are 1-based at each level; level L has ``2**(L-1)`` cells per
@@ -99,15 +107,27 @@ def build_snapwave_mask(
     steps: SnapWaveSteps,
     mask_zmin: float,
     bnd_zmax: float = BND_ZMAX,
+    sea: np.ndarray | None = None,
+    footprint: np.ndarray | None = None,
 ) -> tuple[np.ndarray, dict]:
-    """The SnapWave mask (0 inactive / 1 active / 2 wave boundary) and a summary dict."""
+    """The SnapWave mask (0 inactive / 1 active / 2 wave boundary) and a summary dict.
+
+    ``sea`` / ``footprint`` are boolean over faces (see the module rules), usually from
+    ``domain_cell_sets``; ``None`` keeps the v1–v3 behaviour bit for bit.
+    """
     steps.validate()
     n1, m1 = level1_index(n, m, level)
     M = steps.max_column(n1)
     z = np.asarray(z, float)
     sm = np.asarray(sfincs_mask)
     inside = (m1 <= M) & (m1 >= steps.m_west) & (n1 <= steps.n_top) & (M > 0)
-    band = (sm == 0) & np.isfinite(z) & (z <= mask_zmin) & inside
+    deep = z <= mask_zmin
+    if sea is not None:
+        deep = deep | np.asarray(sea, bool)
+    band = (sm == 0) & np.isfinite(z) & deep & inside
+    waves = sm > 0
+    if footprint is not None:
+        waves = waves & np.asarray(footprint, bool)
 
     # Outside-ness of the level-1 neighbours, evaluated on the step table (not on the
     # band itself, so a shallow patch inside the band never manufactures a boundary).
@@ -118,7 +138,7 @@ def build_snapwave_mask(
     north_out = (n1 == steps.n_top) | (m1 > M_north)
     edge = band & (east_out | south_out | north_out) & (z <= bnd_zmax)
 
-    swm = np.where((sm > 0) | band, 1, 0).astype(np.int8)
+    swm = np.where(waves | band, 1, 0).astype(np.int8)
     swm[edge] = 2
 
     # The SFINCS active domain must sit strictly inside the band's seaward limit — if a
@@ -128,13 +148,58 @@ def build_snapwave_mask(
     info = dict(
         n_band=int(band.sum()),
         n_active=int((swm > 0).sum()),
+        n_sfincs_without_waves=int(((sm > 0) & ~waves).sum()),
         n_boundary=int((swm == 2).sum()),
         n_sfincs_outside_band=int(poke.sum()),
-        n_edge_too_shallow=int((band & (east_out | south_out | north_out) & (z > bnd_zmax)).sum()),
+        n_edge_too_shallow=int(
+            (band & (east_out | south_out | north_out) & (z > bnd_zmax)).sum()
+        ),
         boundary_z_min=float(np.nanmin(z[edge])) if edge.any() else float("nan"),
         boundary_z_max=float(np.nanmax(z[edge])) if edge.any() else float("nan"),
     )
     return swm, info
+
+
+def domain_cell_sets(
+    dom, crs, fx, fy, z
+) -> tuple[np.ndarray | None, np.ndarray | None]:
+    """``(sea, footprint)`` for ``build_snapwave_mask``, from the Domain's declarations.
+
+    ``sea``: the submerged (z < 0) faces of the ring seaward of ``dom.waterlevel_line``
+    (``None`` when the domain has no drawn line). ``footprint``: faces inside any of
+    ``dom.snapwave_footprint_ll`` — a region GeoJSON or a named vertex polygon (``None``
+    when none is declared = waves on every SFINCS-active cell). One definition, used by
+    ``model.add_waves`` and ``scripts/check_snapwave_domain.py`` alike.
+    """
+    from pathlib import Path
+
+    import geopandas as gpd
+    import shapely
+
+    from . import domain as _domain
+
+    fx, fy, z = np.asarray(fx), np.asarray(fy), np.asarray(z, float)
+    sea = None
+    poly = _domain.sea_polygon(dom)
+    if poly is not None:
+        _name, verts, _why = poly
+        g = gpd.GeoSeries([shapely.Polygon(verts)], crs=4326).to_crs(crs).iloc[0]
+        sea = shapely.contains_xy(g, fx, fy) & (z < 0)
+    footprint = None
+    if dom.snapwave_footprint_ll:
+        footprint = np.zeros(fx.shape, bool)
+        for _name, geom, _why in dom.snapwave_footprint_ll:
+            if isinstance(geom, (str, Path)):
+                g = gpd.read_file(geom).to_crs(crs).geometry.union_all()
+            else:  # named (name, lon, lat) or plain (lon, lat) vertices
+                verts = [(v[-2], v[-1]) for v in geom]
+                g = (
+                    gpd.GeoSeries([shapely.Polygon(verts)], crs=4326)
+                    .to_crs(crs)
+                    .iloc[0]
+                )
+            footprint |= shapely.contains_xy(g, fx, fy)
+    return sea, footprint
 
 
 def ring_report(face_faces: np.ndarray, swm: np.ndarray) -> dict:
@@ -159,7 +224,9 @@ def ring_report(face_faces: np.ndarray, swm: np.ndarray) -> dict:
     )
 
 
-def face_xy(n: np.ndarray, m: np.ndarray, level: np.ndarray, attrs: dict) -> tuple[np.ndarray, np.ndarray]:
+def face_xy(
+    n: np.ndarray, m: np.ndarray, level: np.ndarray, attrs: dict
+) -> tuple[np.ndarray, np.ndarray]:
     """Projected centre of every face from its indices and the grid's ``x0 y0 dx dy rotation``."""
     f = 2 ** (np.asarray(level).astype(np.int64) - 1)
     lx = (np.asarray(m, float) - 0.5) * float(attrs["dx"]) / f

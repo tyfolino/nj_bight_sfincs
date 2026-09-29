@@ -833,6 +833,24 @@ Live campaign state is in [STATUS.md](STATUS.md). This file is for what is settl
     `nj_sfincs/sea_level.py`: flood-fill from the forced cells across sills below the level,
     write that as the binary inifile, `zsini` = the level for the boundary ramp.
 
+52. ⭐ **A SnapWave boundary that runs DIAGONALLY across the quadtree kills ~40 % of the
+    cells inside it on the FIXED engine too — the dead ring is the staircase, not the §43
+    bug — and that, not missing shelf, is why `wave-coupled` lost.** v3 `wave-coupled`
+    (SnapWave on the SFINCS mask, boundary on the −10 m line, `winddir-fix-1`), at 10-29
+    20:00: **2,607 of 6,848 cells touching the boundary dead (0.38; 0.43 on the south
+    coast)**, dead cells touching 2.03 boundary cells vs 1.03 for live ones — the
+    inner-corner signature, the same 39 % measured before the fix. The premier's
+    grid-aligned stepped band: **0 of 2,466**. On the 19 map hours cap-hit-free in BOTH runs
+    (§44), −9 m shelf hm0 / CORA at −10 m, median: Sea Bright **1.02 vs 0.59**, Atlantic
+    City **0.95 vs 0.81**, Ocean City **0.93 vs 0.54**, Sea Isle **0.73 vs 0.56** (premier vs
+    coupled). The coupled run imposes CORA AT −10 m and loses 20–45 % within ~300 m; the
+    premier imposes CORA 14–41 km out at −22..−40 m and SnapWave's shelf transformation
+    matches SWAN's (both keep ~0.75–0.8 across the band at Atlantic City). So the band's
+    value is a boundary that FOLLOWS THE GRID, not shelf physics the −10 m line lacks — the
+    measured cost is ΔRMSE +0.028 m [+0.015, +0.044] on 94 marks (STATUS 09-28). ⚠️ A drawn
+    diagonal line (v4) inherits the same ring: v4's wave boundary must be stepped.
+    `logs/wave_boundary_v4_2026-09-29/`. STATUS 09-29.
+
 ### Closed — do not re-open
 
 Each of these cost a campaign and is settled. The evidence is in the archive's

@@ -124,9 +124,51 @@ class TestLevelIndexAndGeometry(unittest.TestCase):
             self.assertTrue(any(np.allclose(p, b) for b in bxy))
 
 
+class TestSeaAndFootprint(unittest.TestCase):
+    """v4 (2026-09-29): the band may start at a DRAWN line (``sea``), and waves may run
+    on part of the SFINCS domain only (``footprint``). ``None`` must change nothing."""
+
+    def setUp(self):
+        self.n, self.m, self.lev, self.z, self.sm, self.ff, self.idx = _grid()
+        self.steps = sd.SnapWaveSteps("t", ((1, 4, 6), (5, 8, 8)), m_west=1, n_top=8)
+        self.args = (self.n, self.m, self.lev)
+
+    def test_none_is_the_old_mask(self):
+        a, _ = sd.build_snapwave_mask(*self.args, self.z, self.sm, self.steps, -10.0)
+        b, _ = sd.build_snapwave_mask(
+            *self.args, self.z, self.sm, self.steps, -10.0, sea=None, footprint=None
+        )
+        np.testing.assert_array_equal(a, b)
+
+    def test_sea_admits_shallow_cells_seaward_of_the_line(self):
+        z = self.z.copy()
+        k = self.idx[(3, 5)]
+        z[k] = -4.0  # shallower than mask_zmin: out of the band on the isobath rule
+        swm, _ = sd.build_snapwave_mask(*self.args, z, self.sm, self.steps, -10.0)
+        self.assertEqual(int(swm[k]), 0)
+        sea = np.zeros(z.shape, bool)
+        sea[k] = True
+        swm, _ = sd.build_snapwave_mask(*self.args, z, self.sm, self.steps, -10.0, sea=sea)
+        self.assertEqual(int(swm[k]), 1)
+
+    def test_footprint_drops_sfincs_cells_but_never_the_band(self):
+        fp = np.zeros(self.z.shape, bool)
+        fp[self.m <= 2] = True  # waves on columns 1-2 of the 'coast' only
+        swm, info = sd.build_snapwave_mask(
+            *self.args, self.z, self.sm, self.steps, -10.0, footprint=fp
+        )
+        self.assertEqual(int(swm[self.idx[(3, 3)]]), 0)  # SFINCS-active, off footprint
+        self.assertEqual(int(swm[self.idx[(3, 2)]]), 1)
+        self.assertEqual(int(swm[self.idx[(3, 5)]]), 1)  # band cell, whatever fp says
+        self.assertEqual(info["n_sfincs_without_waves"], int(((self.sm > 0) & ~fp).sum()))
+
+
 class TestRegistry(unittest.TestCase):
     def test_v3_table_validates(self):
         SNAPWAVE_STEPS["v3_shelf_steps"].validate()
+
+    def test_v4_table_validates(self):
+        SNAPWAVE_STEPS["v4_shelf_steps"].validate()
 
     def test_arm_names_a_registered_table(self):
         for dom, arms in EXPERIMENTS_BY_DOMAIN.items():

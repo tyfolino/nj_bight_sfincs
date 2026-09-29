@@ -1508,6 +1508,12 @@ def add_waves(wcfg: WaveConfig, base: BaseConfig, sf: SfincsModel) -> dict:
             zmin=base.mask_zmin, copy_sfincsmask=False
         )
         _g = sf.quadtree_grid.data
+        # v4: the band starts at the DRAWN line (not only below mask_zmin) and waves run
+        # on a declared footprint of the SFINCS domain; both None on v1–v3.
+        _fx, _fy = _face_xy(sf)
+        _sea, _footprint = snapwave_domain.domain_cell_sets(
+            _domain.active(), sf.crs, _fx, _fy, _g["z"].values
+        )
         _swm_new, _info = snapwave_domain.build_snapwave_mask(
             _g["n"].values,
             _g["m"].values,
@@ -1516,6 +1522,8 @@ def add_waves(wcfg: WaveConfig, base: BaseConfig, sf: SfincsModel) -> dict:
             _g["mask"].values,
             steps,
             base.mask_zmin,
+            sea=_sea,
+            footprint=_footprint,
         )
         if _info["n_sfincs_outside_band"]:
             raise RuntimeError(
@@ -1528,7 +1536,8 @@ def add_waves(wcfg: WaveConfig, base: BaseConfig, sf: SfincsModel) -> dict:
         )
         print(
             f"[waves] snapwave_domain {steps.name}: band {_info['n_band']:,} cells, "
-            f"active {_info['n_active']:,}, boundary {_info['n_boundary']:,} at "
+            f"active {_info['n_active']:,} ({_info['n_sfincs_without_waves']:,} SFINCS "
+            f"faces outside the wave footprint), boundary {_info['n_boundary']:,} at "
             f"{_info['boundary_z_max']:.1f}..{_info['boundary_z_min']:.1f} m; "
             f"{_info['n_edge_too_shallow']} edge cells left unforced (shallower than "
             f"{snapwave_domain.BND_ZMAX} m)"

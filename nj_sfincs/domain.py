@@ -479,11 +479,29 @@ class Domain:
     #: 10 ft DEM has data, built by ``scripts/build_motf_valid_mask.py``. None = no screen.
     #: ``motf_km2_excluded_invalid`` reports what it removed.
     motf_valid_tif: Path | None = None
+    #: The subgrid level whose LATTICE ``subgrid/dep_subgrid_merged.tif`` (the scoring
+    #: bed) is written on — ``scripts/build_merged_subgrid_dep.py --base-level``. 3 = the
+    #: finest, as v1.5–v3 (3.125 m). v4 = 2 (2026-09-29): its 16 px lev3 is 1.56 m, a
+    #: 77 GB float32 raster the scorer cannot hold (validate OOM at 400 G); lev2 is 3.125 m,
+    #: v3's scoring pixel. Every builder of a merged raster reads this, so a v4 subgrid
+    #: rebuild cannot silently write the 1.56 m one.
+    merged_dep_base_level: int = 3
 
     #: Northing above which the coast is no longer open ocean (a spit tip, a harbour
     #: mouth). Incident wave energy and wave-boundary support points are taken only
     #: below it.
     open_coast_max_y: float | None = None
+
+    #: (name, region GeoJSON | ((vertex, lon, lat), ...), why) — where SnapWave runs on the SFINCS
+    #: domain, for a stepped ``WaveConfig.snapwave_domain`` (the band seaward of the
+    #: line is added on top). Empty = every SFINCS-active cell, as on v1–v3. v4
+    #: (2026-09-29, user: "also Delaware Bay itself"): v3's area + Delaware Bay below the
+    #: Liston Point – Hope Creek line; the river, Newark Bay and the far-bank uplands get
+    #: surge, wind, rain and rivers but no waves (SnapWave is 90–95 % of the wall clock).
+    #: ``snapwave_domain.domain_cell_sets`` reads it.
+    snapwave_footprint_ll: tuple[
+        tuple[str, "Path | tuple[tuple[str, float, float], ...]", str], ...
+    ] = ()
 
     #: Ordered HWM basin rules, first match wins. Splitting marks by hydraulic basin
     #: stops the pooled RMSE from blending ocean-front marks (surge delivered directly)
@@ -1800,6 +1818,29 @@ SNAPWAVE_STEPS: dict[str, SnapWaveSteps] = {
         why="v3_shelf_steps with the east leg extended 11.8 km north across the Sandy "
         "Hook–Rockaway apron so the Lower Bay entrance is forced from the E–SE too.",
     ),
+    # 2026-09-29 (user: stepped band, waves on v3's area + Delaware Bay). v3's
+    # apex steps REDRAWN on v4's own level-1 grid — v4 is rotated +0.925° (v3 −0.817°),
+    # so a v3 column drifts ~4 km across v4's; each step keeps v3's easting (556 / 570 /
+    # 588 / ~600 km) at its segment's middle. The first step is carried SOUTH to row 1
+    # (y ≈ 4285 km, 38.715 N) so the bottom edge runs from Cape Henlopen's Atlantic
+    # beach across the Delaware mouth approach: waves from the S–SE reach the mouth and
+    # the bay. The band may sit outside the RING (the apron north of 40.44, the strip
+    # south of the ring's slanted edge): SnapWave-only, on the mesh rectangle, in the
+    # `sea_of_waterlevel_line` polygon or deeper than −10 m. n_top 1012: column 821
+    # crosses −12 m there (Long Beach land at row 1026), as v3's apex leg did.
+    "v4_shelf_steps": SnapWaveSteps(
+        name="v4_shelf_steps",
+        steps=(
+            (1, 184, 587),  # y 4285–4322k: Henlopen / the mouth → off Wildwood, ~x 556
+            (185, 284, 659),  # y 4322–4342k: off Avalon / Ocean City, ~x 570 km
+            (285, 384, 750),  # y 4342–4362k: off Atlantic City / Brigantine, ~x 588 km
+            (385, 1012, 821),  # y 4362–4490k: LBI → Long Beach NY, ~x 601 → 599 km
+        ),
+        m_west=245,  # x ≈ 488 km, inside the DE Atlantic beach; land / Rehoboth self-exclude
+        n_top=1012,
+        why="v3_shelf_steps_apex on v4's grid, its first step carried south across the "
+        "Delaware mouth approach so Delaware Bay is forced from the S–SE.",
+    ),
 }
 
 
@@ -2627,6 +2668,32 @@ V4 = Domain(
     # two NY boxes v4 inherited from v3 (they are NY land, so the raster covers them).
     motf_tif=DATA / "validation_v4" / "sandy_motf_extent_v4.tif",
     motf_valid_tif=DATA / "validation_v4" / "sandy_motf_valid_nj_v4.tif",
+    merged_dep_base_level=2,  # the 3.125 m scoring bed (1.56 m lev3 OOMs the scorer)
+    # Where waves are computed (user 09-29): 3.23 M of the 3.97 M active faces — v3's
+    # 1.90 M + the bay's 1.33 M (0.77 M wet bed, 0.56 M land). A +5 m cap on the bay's
+    # land would save only 65 k (5 %), so none.
+    snapwave_footprint_ll=(
+        (
+            "v3_area",
+            V3.region,
+            "Everything v3 computed waves on: the NJ Atlantic coast, the back bays, "
+            "Raritan / Lower Bay — the open coast stays comparable to v3's premier.",
+        ),
+        (
+            "delaware_bay",
+            (
+                ("liston_point_de", -75.585, 39.405),
+                ("hope_creek_nj", -75.500, 39.460),
+                ("ne", -74.850, 39.460),
+                ("se", -74.850, 38.600),
+                ("sw", -76.000, 38.600),
+                ("nw", -76.000, 39.405),
+            ),
+            "Delaware Bay below its conventional head, the Liston Point – Hope Creek line "
+            "(both vertices on land, the line square across the channel); loose outside "
+            "the ring on purpose — only SFINCS-active faces count.",
+        ),
+    ),
     plot_window=(437_000, 626_000, 4_286_000, 4_539_000),
 )
 

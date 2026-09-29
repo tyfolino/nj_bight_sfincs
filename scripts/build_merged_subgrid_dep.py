@@ -96,7 +96,7 @@ def _block_mean(fine, win: Window, k: int, off: tuple[int, int]):
 
 
 def build_merged(
-    sg: Path, out: Path | None = None, force: bool = False, base_level: int = 3
+    sg: Path, out: Path | None = None, force: bool = False, base_level: int | None = None
 ) -> Path:
     """Write ``<sg>/dep_subgrid_merged.tif`` (or ``out``) from ``dep_subgrid_lev*.tif``.
 
@@ -107,6 +107,10 @@ def build_merged(
     ``bed-*`` arm can never be staged without the merged raster again (STATUS
     2026-09-08: one was, scored on the lev3-only bed, and every guard passed).
     """
+    if base_level is None:  # the domain's scoring lattice (Domain.merged_dep_base_level)
+        from nj_sfincs import domain as _domain
+
+        base_level = _domain.active().merged_dep_base_level
     sg = Path(sg)
     out = Path(out) if out else sg / "dep_subgrid_merged.tif"
     if out.exists() and not force:
@@ -231,9 +235,9 @@ def main() -> None:
                     help="default: <subgrid-dir>/dep_subgrid_merged.tif")
     ap.add_argument("--force", action="store_true",
                     help="overwrite an existing merged raster")
-    ap.add_argument("--base-level", type=int, default=3, choices=LEVELS,
-                    help="lattice of the output (default 3, the finest); v4 uses 2 — "
-                    "lev3 block-meaned 2x2 onto 3.125 m")
+    ap.add_argument("--base-level", type=int, default=None, choices=LEVELS,
+                    help="lattice of the output (default: Domain.merged_dep_base_level — "
+                    "3, the finest; v4 2, lev3 block-meaned 2x2 onto 3.125 m)")
     args = ap.parse_args()
     build_merged(args.subgrid_dir, args.out, args.force, args.base_level)
 

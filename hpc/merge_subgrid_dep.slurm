@@ -5,7 +5,7 @@
 # (STATUS 2026-09-08): the fallback in validate.load_floodmap is silent by design.
 #   NJ_DOMAIN=v3 sbatch hpc/merge_subgrid_dep.slurm experiments/v3/_subgrid_buildings experiments/v3/bed-buildings
 # Block-streamed, so memory is small; the premier's merge ran in well under an hour.
-# BASE_LEVEL=2 writes it on the lev2 lattice, lev3 block-meaned 2x2 (v4, 2026-09-29):
+# BASE_LEVEL=2 writes it on the lev2 lattice, lev3 block-meaned 2x2 (v4's default via the domain):
 #   NJ_DOMAIN=v4 BASE_LEVEL=2 sbatch hpc/merge_subgrid_dep.slurm data/frozen_mesh_v4 <run dirs>
 #SBATCH -p main
 # 🔴 halk* nodes cannot write to /cache/home and fail silently — see hpc/sfincs_run.slurm.
@@ -24,10 +24,10 @@ export PROJ_DATA=/home/tpj8/nj_sandy_sfincs/micromamba/envs/sfincs/share/proj
 # EXPECT_MD5=<md5sum file written at submit time>: refuse to run stale copies (CLAUDE.md §5).
 if [ -n "${EXPECT_MD5:-}" ]; then md5sum -c "$EXPECT_MD5" || { echo "STALE FILES — refusing"; exit 3; }; fi
 SRC="$1"; shift
-BASE_LEVEL="${BASE_LEVEL:-3}"
-hostname; date; echo "NJ_DOMAIN=$NJ_DOMAIN src=$SRC base_level=$BASE_LEVEL link into: $*"
+# BASE_LEVEL unset = the domain's Domain.merged_dep_base_level (v4: 2).
+hostname; date; echo "NJ_DOMAIN=$NJ_DOMAIN src=$SRC base_level=${BASE_LEVEL:-domain} link into: $*"
 /usr/bin/time -v python scripts/build_merged_subgrid_dep.py --subgrid-dir "$SRC/subgrid" \
-    --base-level "$BASE_LEVEL"
+    ${BASE_LEVEL:+--base-level "$BASE_LEVEL"}
 for d in "$@"; do
   ln -f "$SRC/subgrid/dep_subgrid_merged.tif" "$d/subgrid/dep_subgrid_merged.tif"
   echo "linked -> $d/subgrid/dep_subgrid_merged.tif"

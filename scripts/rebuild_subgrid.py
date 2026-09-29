@@ -252,7 +252,7 @@ def main(argv=None) -> int:
     # tifs; without this the scorer falls back to lev3 SILENTLY and scores the arm on
     # the finest-level faces alone (STATUS 2026-09-08: bed-buildings, row voided).
     t2 = time.time()
-    build_merged(dst / "subgrid")
+    build_merged(dst / "subgrid")  # lattice: Domain.merged_dep_base_level
     print(f"    dep_subgrid_merged.tif built in {time.time() - t2:.0f}s", flush=True)
 
     premier.assert_sealed_domain(dst, context="rebuild_subgrid output")

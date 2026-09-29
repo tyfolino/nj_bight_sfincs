@@ -65,7 +65,10 @@ def main() -> None:
     attrs = {k: ds.attrs[k] for k in ("x0", "y0", "dx", "dy", "rotation")}
     fx, fy = ds["mesh2d_face_x"].values, ds["mesh2d_face_y"].values
 
-    swm, info = sd.build_snapwave_mask(n, m, lev, z, sm, steps, dom.mask_zmin)
+    sea, footprint = sd.domain_cell_sets(dom, f"EPSG:{dom.epsg}", fx, fy, z)
+    swm, info = sd.build_snapwave_mask(
+        n, m, lev, z, sm, steps, dom.mask_zmin, sea=sea, footprint=footprint
+    )
     print(f"== {steps.name} on {mesh}")
     for k, v in info.items():
         print(f"   {k:28s} {v}")

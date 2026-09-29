@@ -1085,7 +1085,9 @@ naccs_sandy_v3:
       on the v3 mesh (mask==2 line identical between the probe and the freeze).
 
 # ── v4 (building, 2026-09-27) ─────────────────────────────────────────────────
-# NOT here yet, on purpose: cora_waves_v4 (waits on the SnapWave-boundary decision).
+# cora_waves_v4 is NOT a hydromt entry (an unstructured point set, like cora_waves_nj above):
+#   waves_v4/cora_waves_v4.nc — scripts/build_cora_waves.py, 2026-09-29, 19,406 nodes x 121 h;
+#   identical to cora_waves_v3.nc on all 11,594 shared nodes. Read via Domain.cora_waves.
 naccs_sandy_v4:
   data_type: GeoDataset
   uri: gtsm/naccs_sandy_v4.nc
@@ -1295,6 +1297,24 @@ gmrt_v4:
     source: GMRT GridServer ~100 m, the v4 ring bbox + 0.1° (lon -75.83..-73.45, lat 38.62-41.09) —
       the bottom tier; the only one on the outer shelf and south of the Delaware mouth (38.725).
       scripts/download_gmrt.py under NJ_DOMAIN=v4
+
+bed_buildings_v4:
+  data_type: RasterDataset
+  uri: elevation_v4/bed_buildings_v4.tif
+  driver:
+    name: rasterio
+    options: {}
+  metadata:
+    category: topography
+    crs: 32618
+    unit: m+NAVD88
+    source: >-
+      NJDEP building footprints (data/buildings/raw/njdep_building_footprints_nj.fgb, NJ-ONLY
+      — the far banks get no buildings, 09-24 design rule) burned as local ground + 4 m on an
+      axis-aligned 3.125 m lattice over v4's merged scoring bed; NoData elsewhere.
+      scripts/burn_building_footprints.py, 2026-09-29 (hpc/burn_buildings.slurm). An OVERLAY
+      tier only (scripts/rebuild_subgrid.py --overlay), never prepended (CLAUDE.md §5).
+      File on scratch, symlinked.
 
 bed_v4_coarse_25m:
   data_type: RasterDataset
