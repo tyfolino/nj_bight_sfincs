@@ -331,6 +331,15 @@ class Domain:
     #: source's walled count is printed.
     wall_outflow_near_sources_m: float = 0.0
 
+    #: 🔴 WALL THE EDGE AT THE ENDS OF EVERY FORCED LINE: free-outflow cells (mask 3)
+    #: within this many metres of a ``mask==2`` cell become ordinary active (1). Where a
+    #: forced line comes ashore the edge beside it is outflow, often ON WATER (v4 gate,
+    #: 2026-09-28: the Narrows flanks at −1.4..−2.8 m, the Rockaway corner, KvK east, the
+    #: Henlopen end), so forced water drains straight out at every sea level — 42 wet at
+    #: +0 — and at +3 m a cell beside the Narrows flank spiked to 45 m. ``0`` = off (v1–v3).
+    #: Applied with the inflow walls, after ``mask_overrides``; mask 2 is never touched.
+    wall_outflow_near_forced_m: float = 0.0
+
     #: THE WHITELIST. When non-empty, every ``mask==2`` cell must sit inside exactly one
     #: of these and satisfy its ``max_bed_m``; see ``BoundaryArm``.
     boundary_arms: tuple[BoundaryArm, ...] = ()
@@ -1892,7 +1901,7 @@ def waterlevel_line_arms(
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # v4 — v3 + Delaware Bay and river, the Raritan to Manville, the Arthur Kill NJ shore,
-# Newark Bay + the Meadowlands. BUILDING (ring drawn 2026-09-25/26, no mesh yet).
+# Newark Bay + the Meadowlands. FROZEN 2026-09-28 (premier.V4; ring drawn 09-25/26).
 # ═══════════════════════════════════════════════════════════════════════════════
 # The ring: `data/v4_design/region_v4_vertices.csv` (191 named vertices, hand-edited,
 # SOURCE OF TRUTH) → `data/region_v4.geojson` by `scripts/ring_to_geojson.py`. Its rule
@@ -2416,7 +2425,10 @@ V4 = Domain(
     nr_subgrid_pixels=16,  # user 09-27: brings the 50 m faces to the ~3 m lidar
     refinement=DATA / "quadtree" / "refinement_v4.geojson",
     latitude=39.86,  # (38.725 + 40.994) / 2, the drawn ring's mid-latitude
-    building=True,
+    # BASE (noaa_sandy_nj) selection, measured on the frozen mesh 2026-09-28: Battery +
+    # Atlantic City + Cape May in the 100 km buffer, as on v3. Arms force from NACCS 241.
+    n_waterlevel_support=3,
+    building=False,  # FROZEN 2026-09-28 — premier.V4 (4881654 / 4388 / c5d8c8d7837b8461)
     # ── The forced lines. Every mask==2 cell must sit in exactly one of these. ───────
     boundary_arms=(
         # The drawn sea line, as four SECTIONS (disjoint by construction — see
@@ -2521,6 +2533,17 @@ V4 = Domain(
             "reaches this line, so open it would drain into a basin the model omits.",
         ),
         MaskOverride(
+            "wall_henlopen_atlantic",
+            frm=3,
+            to=1,
+            box=(491_500, 4_287_000, 492_700, 4_294_500),
+            why="Cape Henlopen's ATLANTIC side, Gordons Pond → the point (x ≈ 492 km, "
+            "lat 38.74–38.80): the ring's edge against the switched-off sea came out as "
+            "free outflow on −1.2..+2.6 m ground. The Delaware ocean beach is out of scope "
+            "and was meant to be WALLED (user 09-27); at +2 / +3 m the flooded cape "
+            "drained out here (~120 cells, v4 gate 09-28). Walls act on mask 3 only.",
+        ),
+        MaskOverride(
             "wall_jamaica_bay",
             frm=3,
             to=1,
@@ -2543,6 +2566,7 @@ V4 = Domain(
         ),
     ),
     wall_outflow_near_sources_m=500.0,
+    wall_outflow_near_forced_m=500.0,  # user 09-28, after the gate read
     no_waterlevel_boxes=tuple(
         NoWaterLevelBox(name, box, why="River head of tide: " + why)
         for name, box, why in _V4_RIVER_CUTS

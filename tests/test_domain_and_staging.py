@@ -450,6 +450,9 @@ class TestWaterlevelSupportOverride(_DomainEnv):
             # City + Cape May, all inside the 100 km buffer of a 178 km line. The three
             # arms force from the NACCS 224, declared on each Experiment.
             "v3": 3,
+            # The BASE selection on v4, measured on the frozen mesh 2026-09-28: the
+            # same three (100 km buffer). The v4 arms force from the NACCS 241.
+            "v4": 3,
         }
         self.assertEqual(
             set(PINNED),
@@ -1163,11 +1166,11 @@ class TestBuilding(_DomainEnv):
     def _bld(self):
         return {n: d for n, d in domain.DOMAINS.items() if d.building}
 
-    def test_only_v4_is_building(self):
-        """v3 was the building domain 2026-08-24..26; it froze 2026-08-26. v4 entered this
-        state 2026-09-27 when its drawn ring replaced the rectangle. Any other domain that
-        appears here must be added deliberately."""
-        self.assertEqual(set(self._bld()), {"v4"})
+    def test_no_domain_is_building(self):
+        """v3 was the building domain 2026-08-24..26 and froze 2026-08-26; v4 was building
+        2026-09-27..28 and froze 2026-09-28 (premier.V4). Any domain that appears here
+        must be added deliberately."""
+        self.assertEqual(set(self._bld()), set())
 
     def test_one_state_at_a_time(self):
         for name, dom in domain.DOMAINS.items():

@@ -802,6 +802,17 @@ def wall_outflow_near_points(
     return out, n
 
 
+def wall_outflow_near_forced(mask, fx, fy, radius_m: float) -> np.ndarray:
+    """Free-outflow faces within ``radius_m`` of any ``mask==2`` face → active (1)."""
+    f2 = np.flatnonzero(mask == 2)
+    new, _ = wall_outflow_near_points(mask, fx, fy, fx[f2], fy[f2], radius_m)
+    print(
+        f"[mask] forced-line end walls ({radius_m:.0f} m): {int((new != mask).sum())} "
+        "free-outflow faces → active"
+    )
+    return new
+
+
 def _wall_outflow_near_sources(sf, mask, fx, fy, key: str, radius_m: float):
     """Read the domain's discharge points and wall the outflow edge around each one."""
     gdf = sf.data_catalog.get_geodataset(key).vector.to_gdf().to_crs(sf.crs)
@@ -973,6 +984,9 @@ def apply_mask_and_boundary(
         mask = _wall_outflow_near_sources(
             sf, mask, fx, fy, base.discharge_geodataset, dom.wall_outflow_near_sources_m
         )
+    # …and at the ends of every forced line (`Domain.wall_outflow_near_forced_m`).
+    if dom.wall_outflow_near_forced_m > 0:
+        mask = wall_outflow_near_forced(mask, fx, fy, dom.wall_outflow_near_forced_m)
 
     # 5c. SEAL ANY FREE-OUTFLOW BC THAT LANDS ON OPEN WATER -------------------
     # A free-outflow (Neumann) boundary is the condition you use where water may leave and

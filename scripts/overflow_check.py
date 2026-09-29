@@ -2,7 +2,7 @@
 """Where does a run's peak water reach the EDGE of the model? (v4 design gate, 2026-09-28)
 
     NJ_DOMAIN=v4 PYTHONPATH=$PWD python scripts/overflow_check.py experiments/v4/<arm> [...]
-        [--hmin 0.10] [--map]
+        [--hmin 0.10] [--map] [--compare experiments/v4/<+0 m arm> [--dz 0.05]]
 
 Read-only on the run. Writes ``<run>/overflow_check.csv`` (one row per edge cell) and,
 with ``--map``, ``<run>/overflow_check.png``.
@@ -20,8 +20,10 @@ side), its category and its peak depth ``zsmax - z_zmin`` (subgrid lowest point)
 * ``wall:<n>`` mask 1 inside a declared ``MaskOverride`` box — the river cuts and land
                lines. A river cut is wet by design; a land wall that is wet is a
                reflecting wall standing in water, the thing the far-bank rule avoids.
-* ``closed``   any other mask 1 edge cell (demoted wet cells, walls round the inflows,
-               the flat ends of the forced line).
+* ``inflow_wall`` a mask 1 edge cell within the domain's inflow-walling radius of a river
+               source — wet by the river by design.
+* ``closed``   any other mask 1 edge cell (demoted wet cells, the flat ends of the
+               forced line).
 
 and, for every DRY outflow / closed edge cell, the distance to the nearest wet cell — the
 ring's margin, against the design rule "the edge sits >= 500 m from the target".
@@ -57,8 +59,16 @@ def edge_cells(mask: np.ndarray, nb: dict[str, np.ndarray]) -> np.ndarray:
     return act & edge
 
 
-def neighbour_depth_on_outflow(h, zs, mask, nb):
-    """``h``/``zs`` with each mask-3 cell taking its deepest non-outflow neighbour's."""
+def neighbour_depth_on_outflow(h, zs, mask, nb, zmin):
+    """``h``/``zs`` on each mask-3 cell from its non-outflow neighbours.
+
+    Depth over THIS cell's own bed from a neighbour's level, capped at the neighbour's
+    own depth: ``min(zs_n - zmin_o, h_n)``, the largest over neighbours. The cap stops
+    an uphill neighbour's level reading as phantom metres on a slope; using the cell's
+    own bed stops a deep channel beside a bank (the C&D Canal, 13 m, next to its +2 m
+    bank) reading as 14 m of water on the bank. (2026-09-28: the first version took the
+    neighbour's depth alone and made every forced-line flank look flooded.)
+    """
     h, zs = h.copy(), zs.copy()
     o = np.flatnonzero(mask == 3)
     best_h = np.full(o.shape, np.nan)
@@ -67,8 +77,9 @@ def neighbour_depth_on_outflow(h, zs, mask, nb):
         j = nb[k][o]
         jj = np.maximum(j, 0)
         ok = (j >= 0) & np.isin(mask[jj], (1, 2)) & np.isfinite(h[jj])
-        better = ok & ~(h[jj] <= best_h)  # NaN-safe: first valid, then deeper
-        best_h = np.where(better, h[jj], best_h)
+        cand = np.minimum(zs[jj] - zmin[o], h[jj])
+        better = ok & ~(cand <= best_h)  # NaN-safe: first valid, then deeper
+        best_h = np.where(better, cand, best_h)
         best_z = np.where(better, zs[jj], best_z)
     h[o], zs[o] = best_h, best_z
     return h, zs
@@ -90,13 +101,29 @@ def classify(mask, fx, fy, edge, overrides) -> np.ndarray:
     return cat
 
 
-def run_one(run: Path, hmin: float, make_map: bool) -> None:
-    import pandas as pd
+def mark_inflow_walls(cat, mask, fx, fy, run: Path, radius_m: float) -> None:
+    """Relabel ``closed`` edge cells within ``radius_m`` of a discharge source as
+    ``inflow_wall``: the walls ``model.wall_outflow_near_points`` put round every
+    inflow, wet by the river BY DESIGN — not the sea reaching the rim."""
     import xarray as xr
-    from pyproj import Transformer
     from scipy.spatial import cKDTree
 
-    dom = _domain.active()
+    f = run / "sfincs_netsrcdisfile.nc"
+    if not radius_m or not f.is_file():
+        return
+    with xr.open_dataset(f) as q:
+        px, py = q["x"].values, q["y"].values
+    idx = np.flatnonzero(cat == "closed")
+    if len(idx) == 0:
+        return
+    d, _ = cKDTree(np.c_[px, py]).query(np.c_[fx[idx], fy[idx]])
+    cat[idx[d <= radius_m]] = "inflow_wall"
+
+
+def peak_state(run: Path, hmin: float) -> dict:
+    """Mesh, beds and peak water of one run, with the outflow proxy applied."""
+    import xarray as xr
+
     with xr.open_dataset(run / "sfincs.nc") as g:
         mask = g["mask"].values.astype(int)
         fx, fy = g["mesh2d_face_x"].values, g["mesh2d_face_y"].values
@@ -111,11 +138,26 @@ def run_one(run: Path, hmin: float, make_map: bool) -> None:
     # neighbours (the water arriving at the exit). A depth, not a level: on an upland
     # slope a neighbour's level minus this cell's bed reads metres of phantom water.
     h = zs - zmin
-    h, zs = neighbour_depth_on_outflow(h, zs, mask, nb)
+    h, zs = neighbour_depth_on_outflow(h, zs, mask, nb, zmin)
     wet = (mask > 0) & np.isfinite(h) & (h > hmin)
+    return dict(mask=mask, fx=fx, fy=fy, nb=nb, zmin=zmin, zs=zs, h=h, wet=wet)
+
+
+def run_one(
+    run: Path, hmin: float, make_map: bool, ref: Path | None = None, dz: float = 0.05
+) -> None:
+    import pandas as pd
+    from pyproj import Transformer
+    from scipy.spatial import cKDTree
+
+    dom = _domain.active()
+    st = peak_state(run, hmin)
+    mask, fx, fy, nb = st["mask"], st["fx"], st["fy"], st["nb"]
+    zmin, zs, h, wet = st["zmin"], st["zs"], st["h"], st["wet"]
 
     edge = edge_cells(mask, nb)
     cat = classify(mask, fx, fy, edge, dom.mask_overrides)
+    mark_inflow_walls(cat, mask, fx, fy, run, dom.wall_outflow_near_sources_m)
     lon, lat = Transformer.from_crs(dom.epsg, 4326, always_xy=True).transform(fx, fy)
 
     # margin: dry outflow/closed edge cell -> nearest wet cell
@@ -138,6 +180,17 @@ def run_one(run: Path, hmin: float, make_map: bool) -> None:
             "dist_to_wet_m": dist[idx],
         }
     )
+    if ref is not None:
+        # THE LADDER READ (2026-09-28): a river cut is wet by its own inflow, so "wet at
+        # the wall" cannot say whether the raised sea reached it. The rise of the peak
+        # over the reference run (normally +3 m vs +0 m) can: ~0 = the sea's backwater
+        # stops short of the cut, as the ring rule intends; centimetres or more = it
+        # reaches the wall, and that cut belongs further upstream.
+        rs = peak_state(ref, hmin)
+        if not np.array_equal(rs["mask"], mask):
+            raise SystemExit(f"{ref} is not on the same mesh + mask as {run}")
+        df["dzsmax_vs_ref"] = (zs - rs["zs"])[idx]
+        df["newly_wet"] = (wet & ~rs["wet"])[idx]
     out = run / "overflow_check.csv"
     df.to_csv(out, index=False, float_format="%.4f")
 
@@ -168,6 +221,21 @@ def run_one(run: Path, hmin: float, make_map: bool) -> None:
                 f"    ({r.lon:.4f}, {r.lat:.4f})  {r.category:8s} "
                 f"{r.dist_to_wet_m:6.0f} m  zb {r.z_zmin:.2f}"
             )
+    if ref is not None:
+        print(f"\n  vs {ref.name}: peak rise at the edge, by stretch (cuts first)")
+        g = df[df.category != "forced"].groupby("category")
+        t = g.agg(
+            cells=("wet", "size"),
+            max_rise=("dzsmax_vs_ref", "max"),
+            n_rise=("dzsmax_vs_ref", lambda v: int((v > dz).sum())),
+            newly_wet=("newly_wet", "sum"),
+        ).sort_values("max_rise", ascending=False)
+        print(t.to_string(float_format=lambda v: f"{v:.3f}"))
+        hot = t[(t.max_rise > dz) | (t.newly_wet > 0)]
+        print(
+            f"  {len(hot)} stretch(es) where the peak rose > {dz} m or new edge cells "
+            "wetted: " + (", ".join(hot.index) if len(hot) else "none")
+        )
     print(f"\n  wrote {out}")
 
     if make_map:
@@ -203,9 +271,16 @@ def main() -> int:
     ap.add_argument("runs", nargs="+", type=Path)
     ap.add_argument("--hmin", type=float, default=0.10, help="wet threshold [m]")
     ap.add_argument("--map", action="store_true")
+    ap.add_argument(
+        "--compare",
+        type=Path,
+        help="reference run on the same mesh (e.g. the +0 m arm): report the peak rise "
+        "at every edge stretch, river cuts included",
+    )
+    ap.add_argument("--dz", type=float, default=0.05, help="rise that counts [m]")
     a = ap.parse_args()
     for r in a.runs:
-        run_one(r, a.hmin, a.map)
+        run_one(r, a.hmin, a.map, ref=a.compare, dz=a.dz)
     return 0
 
 

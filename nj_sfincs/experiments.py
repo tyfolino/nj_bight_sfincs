@@ -133,10 +133,11 @@ _V1_5_RARITAN: dict[str, Experiment] = {
 # differs ONLY in the offset; rain off (a surge target). Read with
 # scripts/overflow_check.py.
 _V4_WL = dict(
-    # ⬜ built on the frozen mesh by scripts/build_naccs_boundary.py, which prints the
-    # support-point count: declare it here as n_waterlevel_support (on the ARMS, never
-    # by relaxing Domain.n_waterlevel_support).
     waterlevel_geodataset="naccs_sandy_v4",
+    # Built 2026-09-28 on the frozen mesh (scripts/build_naccs_boundary.py): 1,957 save
+    # points -> 388 within 2 km of a mask==2 cell -> 241 after the dry (-64) and
+    # open-coast depth (-83) screens; every arm covered (cd_canal by one point, 0.76 km).
+    n_waterlevel_support=241,
 )
 _V4_SLR_WHY = (
     "Waves-off Sandy with {m:+.0f} m on the whole water-level boundary and a connected "

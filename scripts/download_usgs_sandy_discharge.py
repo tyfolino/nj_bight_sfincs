@@ -51,6 +51,7 @@ import argparse
 import os
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 import xarray as xr
 
@@ -385,7 +386,7 @@ def _v4(site, river, name, da_mi2, along_km, side, lon, lat):
 
 # fmt: off
 STATIONS_V4 = [
-    _v4("01484100", "Beaverdam Branch (Murderkill trib.)", "BEAVERDAM BRANCH AT HOUSTON, DE", 3.02, 3.78, "above", -75.4741, 38.9071),  # z +6.1
+    _v4("01484100", "Beaverdam Branch (Mispillion trib.)", "BEAVERDAM BRANCH AT HOUSTON, DE", 3.02, 3.78, "above", -75.4741, 38.9071),  # z +6.1; crosses the ring ON THE MISPILLION (was labelled Murderkill; 09-28 river table)
     _v4("01483700", "St Jones", "ST JONES RIVER AT DOVER, DE", 31.9, 4.44, "below", -75.5501, 39.185),  # z +4.2
     _v4("01411300", "Tuckahoe", "Tuckahoe River at Head of River NJ", 30.8, 5.16, "below", -74.8613, 39.3252),  # z +6.9
     _v4("01483200", "Blackbird Creek", "BLACKBIRD CREEK AT BLACKBIRD, DE", 4.06, 0.87, "below", -75.6728, 39.3611),  # z +8.6
@@ -440,7 +441,7 @@ STATIONS_V4 = [
     _v4("01400500", "Raritan", "Raritan River at Manville NJ", 490.0, 1.27, "above", -74.5686, 40.5496),  # z +6.7, cut=raritan_manville
     _v4("01403150", "Middle Brook (W Br)", "West Branch Middle Brook near Martinsville NJ", 1.99, 7.76, "above", -74.5452, 40.5578),  # z +6.4
     _v4("01395000", "Rahway", "Rahway River at Rahway NJ", 40.9, 7.71, "below", -74.3012, 40.6458),  # z +14.5, cut=rahway
-    _v4("01393450", "Elizabeth River", "Elizabeth River at Ursino Lake at Elizabeth NJ", 16.9, 2.42, "below", -74.2373, 40.6864),  # z +7.8
+    _v4("01393450", "Elizabeth River", "Elizabeth River at Ursino Lake at Elizabeth NJ", 16.9, 3.30, "below", -74.2389, 40.6946),  # z +10.3; RE-PLACED 09-28: the old point (-74.2373, 40.6864) sat 1,038 m below the crossing of the edited ring, beyond the 500 m outflow-walling radius; now 134 m inside it by the snap_src rule
     _v4("01392500", "Second River", "Second River at Belleville NJ", 11.6, 0.7, "above", -74.1618, 40.7845),  # z +10.3
     _v4("01389890", "Passaic", "Passaic River at Dundee Dam at Clifton NJ", 805.0, 0.46, "below", -74.1304, 40.8872),  # z +7.4, cut=passaic_dundee
     _v4("01391500", "Saddle River", "Saddle River at Lodi NJ", 54.6, 0.94, "below", -74.079, 40.8963),  # z +8.4
@@ -471,6 +472,85 @@ EXCLUDED_V4 = {
     "01378500": "Hackensack at New Milford: below Oradell dam, inside the ring; an "
     "interior check on the reservoir release, not a source",
 }
+
+#: 🔁 DRAINAGE-AREA SCALING (user, 2026-09-28 — "approach 1"). The gauge's daily flow is
+#: multiplied by (area draining to where the river crosses the ring) / (area draining to
+#: the gauge), so the model gets the flow that CROSSES ITS EDGE: up for a gauge upstream
+#: of the crossing (it misses the tributaries in between), down for a gauge inside the
+#: ring (the in-ring part is already rain on the grid). Both areas are NHDPlus v2 (NLDI
+#: basins), so the map's errors cancel; built by
+#: logs/v4_design_2026-09-28/river_table/build_river_table.py. THE RULE: ratio <= 1.5 →
+#: ratio; > 1.5 → ratio^0.8 (area scaling is trusted ~0.5–1.5; the damped exponent limits
+#: a long reach); a DAM at the gauge → 1.0 (the ratio assumes natural runoff); NHDPlus and
+#: USGS disagreeing on the gauge's own area with the gauge < 1 km from the crossing → 1.0
+#: (the ratio is uncertain and the true one is ~1 there). Sum of the 61 peaks 2,575 →
+#: 2,609 m³/s. The factor rides in the output as the `area_scale(index)` coordinate.
+# fmt: off
+AREA_SCALE_V4: dict[str, tuple[float, str]] = {
+    "01484100": (3.159, "Beaverdam Branch (Mispillion trib.): area ratio 4.211 > 1.5, ratio^0.8"),
+    "01483700": (1.000, "St Jones: dam at the gauge, kept (area ratio 0.903 assumes natural runoff)"),
+    "01411300": (0.606, "Tuckahoe: area ratio, gauge inside the ring"),
+    "01483200": (0.910, "Blackbird Creek: area ratio, gauge inside the ring"),
+    "01483155": (1.000, "Silver Lake trib. (Appoquinimink): NHDPlus / USGS gauge areas disagree (ratio 0.860 vs 1.431), gauge 0.72 km from the crossing, kept"),
+    "01410500": (0.666, "Absecon Creek: area ratio, gauge inside the ring"),
+    "01411500": (1.459, "Maurice: area ratio 1.603 > 1.5, ratio^0.8"),
+    "01483170": (0.705, "Dove Nest Branch: area ratio, gauge inside the ring"),
+    "01412800": (1.200, "Cohansey: area ratio, gauge upstream"),
+    "01483165": (0.727, "Spring Mill Branch: area ratio, gauge inside the ring"),
+    "01411000": (2.219, "Great Egg Harbor: area ratio 2.708 > 1.5, ratio^0.8"),
+    "01478000": (1.181, "Christina: area ratio, gauge upstream"),
+    "01410150": (0.453, "E Br Bass River: area ratio, gauge inside the ring"),
+    "01482500": (1.191, "Salem River: area ratio, gauge upstream"),
+    "01409280": (0.984, "Westecunk Creek: area ratio, gauge inside the ring"),
+    "01410000": (0.972, "Oswego River: area ratio, gauge inside the ring"),
+    "01409810": (0.996, "W Br Wading River: area ratio, gauge inside the ring"),
+    "01479000": (0.989, "White Clay Creek: area ratio, gauge inside the ring"),
+    "01409400": (0.891, "Mullica: area ratio, gauge inside the ring"),
+    "01409210": (0.960, "Mill Creek (Manahawkin): area ratio, gauge inside the ring"),
+    "01480015": (0.991, "Red Clay Creek: area ratio, gauge inside the ring"),
+    "01477120": (0.865, "Raccoon Creek: area ratio, gauge inside the ring"),
+    "01481500": (1.007, "Brandywine: area ratio, gauge upstream"),
+    "01477800": (0.896, "Shellpot Creek: area ratio, gauge inside the ring"),
+    "01475001": (1.745, "Mantua Creek: area ratio 2.006 > 1.5, ratio^0.8"),
+    "01409095": (1.264, "Oyster Creek: area ratio, gauge upstream"),
+    "01477000": (1.037, "Chester Creek: area ratio, gauge upstream"),
+    "01476480": (1.157, "Ridley Creek: area ratio, gauge upstream"),
+    "01467150": (0.847, "Cooper River: area ratio, gauge inside the ring"),
+    "01408900": (0.915, "Cedar Creek: area ratio, gauge inside the ring"),
+    "01467081": (0.600, "S Br Pennsauken Creek: area ratio, gauge inside the ring"),
+    "01475548": (1.000, "Cobbs Creek: NHDPlus / USGS gauge areas disagree (ratio 0.933 vs 0.824), gauge 0.48 km from the crossing, kept"),
+    "01465850": (0.989, "S Br Rancocas: area ratio, gauge inside the ring"),
+    "01467000": (1.171, "N Br Rancocas: area ratio, gauge upstream"),
+    "01408500": (0.989, "Toms River: area ratio, gauge inside the ring"),
+    "01467087": (1.000, "Frankford Creek: NHDPlus / USGS gauge areas disagree (ratio 1.281 vs 0.999), gauge 0.27 km from the crossing, kept"),
+    "01474500": (0.996, "Schuylkill: area ratio, gauge inside the ring"),
+    "01467048": (1.096, "Pennypack Creek: area ratio, gauge upstream"),
+    "01465798": (0.977, "Poquessing Creek: area ratio, gauge inside the ring"),
+    "01408151": (0.985, "S Br Metedeconk: area ratio, gauge inside the ring"),
+    "01408120": (0.842, "N Br Metedeconk: area ratio, gauge inside the ring"),
+    "01465500": (1.042, "Neshaminy: area ratio, gauge upstream"),
+    "01464500": (1.193, "Crosswicks Creek: area ratio, gauge upstream"),
+    "01408029": (0.928, "Manasquan: area ratio, gauge inside the ring"),
+    "01407705": (0.897, "Shark River: area ratio, gauge inside the ring"),
+    "01407760": (0.768, "Jumping Brook (Shark R. trib.): area ratio, gauge inside the ring"),
+    "01464000": (0.978, "Assunpink Creek: area ratio, gauge inside the ring"),
+    "01463500": (0.998, "Delaware: area ratio, gauge inside the ring"),
+    "01407500": (1.000, "Swimming River (Navesink): dam at the gauge, kept (area ratio 0.987 assumes natural runoff)"),
+    "01406050": (0.856, "Deep Run (South River): area ratio, gauge inside the ring"),
+    "01405030": (1.000, "Lawrence Brook: dam at the gauge, kept (area ratio 0.911 assumes natural runoff)"),
+    "01402000": (1.107, "Millstone: area ratio, gauge upstream"),
+    "01400500": (1.002, "Raritan: area ratio, gauge upstream"),
+    "01403150": (6.048, "Middle Brook (W Br): area ratio 9.485 > 1.5, ratio^0.8"),
+    "01395000": (0.915, "Rahway: area ratio, gauge inside the ring"),
+    "01393450": (1.000, "Elizabeth River: dam at the gauge, kept (area ratio 0.731 assumes natural runoff)"),
+    "01392500": (1.000, "Second River: NHDPlus / USGS gauge areas disagree (ratio 1.074 vs 0.890), gauge 0.70 km from the crossing, kept"),
+    "01389890": (1.000, "Passaic: dam at the gauge, kept (area ratio 0.999 assumes natural runoff)"),
+    "01391500": (0.974, "Saddle River: area ratio, gauge inside the ring"),
+    "01377500": (1.030, "Pascack Brook: area ratio, gauge upstream"),
+    "01377000": (1.000, "Hackensack: dam at the gauge, kept (area ratio 1.002 assumes natural runoff)"),
+}
+# fmt: on
+AREA_SCALE_BY_DOMAIN = {"v4": AREA_SCALE_V4}
 
 STATIONS_BY_DOMAIN = {
     "v1_5_raritan": STATIONS_V1_5,
@@ -574,6 +654,18 @@ def main():
 
     df = pd.concat([series[st["id"]] for st in STATIONS], axis=1)
     df.columns = [st["id"] for st in STATIONS]
+    # Drainage-area scaling (AREA_SCALE_V4). A domain that declares a table must cover
+    # every source: a missing row would be an unscaled river nobody chose.
+    scales = AREA_SCALE_BY_DOMAIN.get(_DOM.name)
+    if scales is not None:
+        missing = [st["id"] for st in STATIONS if st["id"] not in scales]
+        if missing:
+            raise SystemExit(f"no area_scale for {missing}; add them to the table")
+    factor = [scales[st["id"]][0] if scales else 1.0 for st in STATIONS]
+    df = df * np.asarray(factor)
+    for st, f in zip(STATIONS, factor):
+        if f != 1.0:
+            print(f"  scale {st['id']} {st['river'][:34]:34s} x{f:.3f}")
 
     ds = xr.Dataset(
         {"discharge": (("time", "index"), df.values.astype("float64"))},
@@ -582,6 +674,7 @@ def main():
             "index": [int(st["id"]) for st in STATIONS],
             "lon": ("index", [st["src_lon"] for st in STATIONS]),
             "lat": ("index", [st["src_lat"] for st in STATIONS]),
+            "area_scale": ("index", np.asarray(factor, dtype="float64")),
         },
         attrs={
             "title": "USGS daily-mean river discharge at domain inflows — Hurricane Sandy",

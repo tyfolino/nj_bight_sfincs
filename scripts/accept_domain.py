@@ -241,7 +241,33 @@ def check_discharge(rep: Report, dom, x, y, z, mask) -> None:
 
     dry = near & (mask[i] > 0) & (z[i] >= 0)
     inactive = near & (mask[i] == 0)
-    if dry.any() or inactive.any():
+    if dom.wall_outflow_near_sources_m and not inactive.any():
+        # HEAD-OF-TIDE INFLOWS (v4, 2026-09-28). A domain that cuts its rivers where the
+        # +3 m water ends injects them onto riverbeds at +3..+14 m BY DESIGN, so "bed
+        # >= 0" is v3's premise, not a defect. What would be one is a source on a BANK:
+        # measure each source cell's subgrid low against the lowest within 150 m.
+        sub = ROOT / "data" / f"frozen_mesh_{dom.mesh_key or dom.name}" / "sfincs_subgrid.nc"
+        with xr.open_dataset(sub) as sg:
+            zmin = sg["z_zmin"].values
+        act = np.flatnonzero(mask > 0)
+        at = cKDTree(np.c_[x[act], y[act]])
+        _, j = at.query(np.c_[X[near], Y[near]])
+        j = act[j]
+        rings = at.query_ball_point(np.c_[X[near], Y[near]], r=150.0)
+        above = np.array(
+            [zmin[j[k]] - np.nanmin(zmin[act[r]]) for k, r in enumerate(rings)]
+        )
+        high = int((above > 1.0).sum())
+        rep.add(
+            WARN if high else PASS,
+            "discharge inflows are in their channel",
+            f"{int(near.sum())} in-domain at heads of tide, bed "
+            f"{np.nanmin(zmin[j]):+.1f}..{np.nanmax(zmin[j]):+.1f} m; above the 150 m "
+            f"local low by median {np.nanmedian(above):.2f}, max {np.nanmax(above):.2f} m"
+            + (f" — {high} more than 1 m up (water runs down into the channel)"
+               if high else ""),
+        )
+    elif dry.any() or inactive.any():
         rep.add(FAIL, "discharge inflows are wet + active",
                 f"{int(dry.sum())} on dry ground, {int(inactive.sum())} on inactive cells")
     else:

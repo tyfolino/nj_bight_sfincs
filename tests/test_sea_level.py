@@ -147,9 +147,25 @@ class TestOutflowProxy(unittest.TestCase):
         h = np.array([np.nan, 0.2])
         nb = {k: np.array([-1, -1]) for k in oc.NEIGH}
         nb["mu1"] = np.array([1, -1])
-        h2, zs2 = oc.neighbour_depth_on_outflow(h, zs, mask, nb)
+        zmin = np.array([30.0, 50.0])
+        h2, zs2 = oc.neighbour_depth_on_outflow(h, zs, mask, nb, zmin)
         self.assertAlmostEqual(h2[0], 0.2)  # not 50.2 - 30
         self.assertAlmostEqual(zs2[0], 50.2)
+
+    def test_outflow_bank_beside_a_deep_channel_is_dry(self):
+        spec = importlib.util.spec_from_file_location(
+            "overflow_check", ROOT / "scripts" / "overflow_check.py"
+        )
+        oc = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(oc)
+        # cell 0 outflow bank at +2.4 m beside a 13 m canal whose level is +1.5 m
+        mask = np.array([3, 1])
+        zs = np.array([np.nan, 1.5])
+        h = np.array([np.nan, 14.5])
+        nb = {k: np.array([-1, -1]) for k in oc.NEIGH}
+        nb["mu1"] = np.array([1, -1])
+        h2, _ = oc.neighbour_depth_on_outflow(h, zs, mask, nb, np.array([2.4, -13.0]))
+        self.assertLess(h2[0], 0.0)  # not 14.5
 
 
 class TestV4Ladder(unittest.TestCase):

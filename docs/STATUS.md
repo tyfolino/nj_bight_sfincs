@@ -4,9 +4,22 @@
 12 KB "current state" memory file and its 26 reverse-chronological campaign logs; the point
 of the format is that a reader gets the current state without replaying how it was reached.
 
-Last updated: **2026-09-27 wrap-up** (two overnight jobs to read FIRST — see 📌 NEXT SESSION; the day: v4 forced sea line ACCEPTED and WIRED IN: the −10 m isobath no longer shapes v4's mask — everything in the ring landward of the drawn line is active at any depth, seaward is inactive, arms are line sections; see the ⭐ WIRED IN block in PICK UP); before that **2026-09-26 wrap-up** (NACCS pull merged — every v4 forced line covered; Brooklyn = option B; Raritan / Millstone / Rahway / Maurice ring fixes; USGS + NOAA downloaders ported, v4 gauges pulled; riverbeds: Passaic / Hackensack eHydro adopted, Delaware above the falls pending a DRBC ask; share map `reports/figures/v4_region_satellite.png`); before that **2026-09-25 night** (wrap-up: NACCS download is the user's first task 09-26, Brooklyn A/B pending; v4 RING DRAWN by the user's +3 m rule — `data/v4_design/region_v4_vertices.csv`, 184 named vertices, 22,794 km², audits clean: no +3 m target land outside, MOTF 100 % inside, river cuts moved up to where the +3 m water ends; see the v4 block in PICK UP); before that **2026-09-25 evening** (v4 CLEANED UP: the audit's facts kept — checked crossings in `data/v4_design/v4_crossings.geojson`, the audit as `scripts/audit_region_v4.py`, the corrupt v4 NJ DEM clip deleted — and both ring generators retired; the ring is redrawn fresh as straight lines, approach to agree with the user; see the v4 block in PICK UP); before that **2026-09-24 night** (v4 ring DRAFTED by rule from the user's sketch, every cut on the ring edge and checked, Goethals NACCS merged; then v4 DESIGN RULES decided after a literature review + ring probe — far banks COMPUTED to +10 m, Arthur Kill in, Track C default, four cost tests pre-registered; see PICK UP and `reports/v4_design_literature_review_2026-09-24.md`); before that **2026-09-24** (🏁 **v3 DECLARED DONE** by the user after the mask-repair reads; v4 design STARTED — see PICK UP); before that **2026-09-23 13:05** (DUNE-FAILURE LEVER STEP 0 READ — pre/post-Sandy lidar differenced on 5,905 transects: 28 % of NJ ocean-coast dune crests dropped ≥ 1 m, but the first-blocks MISS sits mostly behind INTACT crests (Ocean City / Sea Isle / Long Branch); a `bed-postsandy` arm can reach ~a fifth of it, concentrated on the Barnegat peninsula — 13:05 block); before that **2026-09-23 12:30** (between-solves housekeeping: both wave-arm paired reads AND the intern's refreshed tif are CHAINED afterok on their validates, land on their own tonight; the two nowaves test arms retired, 6.0 G true reclaim; 12:30 block); before that **2026-09-23 11:30** (cut-split paired HWM half READ — lands inside every prediction, the cut is worth +0.025 on the NY-bay paired median and +0.51 at HWM 6102; both wave-arm solves healthy on hal, premier at sim 10-30 00:00 pacing 2.25 sim-h/wall-h → lands ~22:00 tonight, wavemaker at 10-29 18:00 pacing 1.9 → ~01:00 09-24; share-ready v3 max-depth tif for the intern exported from `mask-drain-edge+naccs-premier` by `scripts/export_share_floodmap.py`, see 11:30 block); before that **2026-09-22 23:45** (wind-x110 read — not wind-limited; mask repair ADOPTED with the Raritan cut walled, `premier.V3` moved; the waves-off pair READ — every prediction lands, AK mouth +0.25, NY-bay median +0.045 CI > 0; the cut-split READ — the cut is ~1/5 of the bay gain and all of the lower-Raritan gain; two wave arms solving, land 09-24; v4 reaches New Brunswick); before that **2026-09-21 18:00** (Great Kills read, outflow-drain mask test, GK sensor check); before that **2026-09-20 17:10** — `wave-wavemaker` (the IG lever) landed clean overnight 09-19 (hal0443, 24 h 37, no restart, validate 54 min) and is READ against its 09-18 pre-registration (section below, `logs/wavemaker_reads_2026-09-20/`): the injected IG signal is REAL — ~1 m crests (0.28 m std) fill the 100–400 m surf zone between the line and the beach and the DUNE holds them, so only beachfront marks move — open-coast paired median **+0.021 m [+0.006, +0.054]** (CI above 0, but under the +0.05 line; mean +0.084 carried by Monmouth's `south_coast` +0.28 / `atlantic_oceanfront` +0.10, marks 260–500 m from pieces 8–9), the south-NJ shelf basins ≤ +0.03; the NJ back bays untouched (+0.007 [+0.002, +0.014]); the NY seiche bays re-rang (−0.049 [−0.078, −0.021], ΔRMSE +0.031) so the pooled 94-mark ΔRMSE is a null (+0.002 [−0.020, +0.023]); MOTF POD +0.004. **Neither pre-registered branch fires cleanly: the lever is real at the beach and invisible behind an intact dune, so it does not join the premier candidates on the HWM/MOTF scores; a line closer to shore is NOT the next move (13:40 correction) — scoring the beach/dune strip and the dune-failure bed lever are.** 🔴 `usgs_stormtide_sea_bright` sits ON piece 9 (≈170 m) and reads the injection (0.28 m std, peak +0.39): flag its row, do not read it as a beach. Engine-build confound (`igk-fix-1`) is measured: `hm0ig` differs seaward (+0.14..+0.23 m at −12..−5.5) with `zs` unchanged there (p50 0.000, p90 +0.02), as §45 predicts for an uncoupled field.
+Last updated: **2026-09-28 wrap-up** (v4 FROZEN + REGISTERED `c5d8c8d7837b8461`; the +0/+2/+3 m gate re-running overnight on the flank-walled mask; v3 `wave-coupled` LOST to the offshore band, ΔRMSE −0.028 [−0.044, −0.015] — see 📌 NEXT SESSION); before that **2026-09-27 wrap-up** (two overnight jobs to read FIRST — see 📌 NEXT SESSION; the day: v4 forced sea line ACCEPTED and WIRED IN: the −10 m isobath no longer shapes v4's mask — everything in the ring landward of the drawn line is active at any depth, seaward is inactive, arms are line sections; see the ⭐ WIRED IN block in PICK UP); before that **2026-09-26 wrap-up** (NACCS pull merged — every v4 forced line covered; Brooklyn = option B; Raritan / Millstone / Rahway / Maurice ring fixes; USGS + NOAA downloaders ported, v4 gauges pulled; riverbeds: Passaic / Hackensack eHydro adopted, Delaware above the falls pending a DRBC ask; share map `reports/figures/v4_region_satellite.png`); before that **2026-09-25 night** (wrap-up: NACCS download is the user's first task 09-26, Brooklyn A/B pending; v4 RING DRAWN by the user's +3 m rule — `data/v4_design/region_v4_vertices.csv`, 184 named vertices, 22,794 km², audits clean: no +3 m target land outside, MOTF 100 % inside, river cuts moved up to where the +3 m water ends; see the v4 block in PICK UP); before that **2026-09-25 evening** (v4 CLEANED UP: the audit's facts kept — checked crossings in `data/v4_design/v4_crossings.geojson`, the audit as `scripts/audit_region_v4.py`, the corrupt v4 NJ DEM clip deleted — and both ring generators retired; the ring is redrawn fresh as straight lines, approach to agree with the user; see the v4 block in PICK UP); before that **2026-09-24 night** (v4 ring DRAFTED by rule from the user's sketch, every cut on the ring edge and checked, Goethals NACCS merged; then v4 DESIGN RULES decided after a literature review + ring probe — far banks COMPUTED to +10 m, Arthur Kill in, Track C default, four cost tests pre-registered; see PICK UP and `reports/v4_design_literature_review_2026-09-24.md`); before that **2026-09-24** (🏁 **v3 DECLARED DONE** by the user after the mask-repair reads; v4 design STARTED — see PICK UP); before that **2026-09-23 13:05** (DUNE-FAILURE LEVER STEP 0 READ — pre/post-Sandy lidar differenced on 5,905 transects: 28 % of NJ ocean-coast dune crests dropped ≥ 1 m, but the first-blocks MISS sits mostly behind INTACT crests (Ocean City / Sea Isle / Long Branch); a `bed-postsandy` arm can reach ~a fifth of it, concentrated on the Barnegat peninsula — 13:05 block); before that **2026-09-23 12:30** (between-solves housekeeping: both wave-arm paired reads AND the intern's refreshed tif are CHAINED afterok on their validates, land on their own tonight; the two nowaves test arms retired, 6.0 G true reclaim; 12:30 block); before that **2026-09-23 11:30** (cut-split paired HWM half READ — lands inside every prediction, the cut is worth +0.025 on the NY-bay paired median and +0.51 at HWM 6102; both wave-arm solves healthy on hal, premier at sim 10-30 00:00 pacing 2.25 sim-h/wall-h → lands ~22:00 tonight, wavemaker at 10-29 18:00 pacing 1.9 → ~01:00 09-24; share-ready v3 max-depth tif for the intern exported from `mask-drain-edge+naccs-premier` by `scripts/export_share_floodmap.py`, see 11:30 block); before that **2026-09-22 23:45** (wind-x110 read — not wind-limited; mask repair ADOPTED with the Raritan cut walled, `premier.V3` moved; the waves-off pair READ — every prediction lands, AK mouth +0.25, NY-bay median +0.045 CI > 0; the cut-split READ — the cut is ~1/5 of the bay gain and all of the lower-Raritan gain; two wave arms solving, land 09-24; v4 reaches New Brunswick); before that **2026-09-21 18:00** (Great Kills read, outflow-drain mask test, GK sensor check); before that **2026-09-20 17:10** — `wave-wavemaker` (the IG lever) landed clean overnight 09-19 (hal0443, 24 h 37, no restart, validate 54 min) and is READ against its 09-18 pre-registration (section below, `logs/wavemaker_reads_2026-09-20/`): the injected IG signal is REAL — ~1 m crests (0.28 m std) fill the 100–400 m surf zone between the line and the beach and the DUNE holds them, so only beachfront marks move — open-coast paired median **+0.021 m [+0.006, +0.054]** (CI above 0, but under the +0.05 line; mean +0.084 carried by Monmouth's `south_coast` +0.28 / `atlantic_oceanfront` +0.10, marks 260–500 m from pieces 8–9), the south-NJ shelf basins ≤ +0.03; the NJ back bays untouched (+0.007 [+0.002, +0.014]); the NY seiche bays re-rang (−0.049 [−0.078, −0.021], ΔRMSE +0.031) so the pooled 94-mark ΔRMSE is a null (+0.002 [−0.020, +0.023]); MOTF POD +0.004. **Neither pre-registered branch fires cleanly: the lever is real at the beach and invisible behind an intact dune, so it does not join the premier candidates on the HWM/MOTF scores; a line closer to shore is NOT the next move (13:40 correction) — scoring the beach/dune strip and the dune-failure bed lever are.** 🔴 `usgs_stormtide_sea_bright` sits ON piece 9 (≈170 m) and reads the injection (0.28 m std, peak +0.39): flag its row, do not read it as a beach. Engine-build confound (`igk-fix-1`) is measured: `hm0ig` differs seaward (+0.14..+0.23 m at −12..−5.5) with `zs` unchanged there (p50 0.000, p90 +0.02), as §45 predicts for an uncoupled field.
 
 ## ⏳ PICK UP — next session
+
+**📌 NEXT SESSION (09-28 wrap-up) — read these FIRST, in order:** (1) the v4 gate RE-RUN on the flank-walled mask: stage
+61995457 → 4 solves + one validate (ids in `logs/stage_v3_61995457.jobs`); `sacct` NodeList (hal, not halk), then
+`NJ_DOMAIN=v4 python scripts/overflow_check.py experiments/v4/naccs-nowaves+rain-off+slr-{2,3}m --compare
+experiments/v4/naccs-nowaves+rain-off+slr-0m --map` and on +0 alone — expect the flank leaks and the Narrows spike gone, Lewes dry
+at +2/+3, the 15 river cuts ≤ 0.05 m (the first read and its caveats are in the 21:30 block below; the before-runs are in
+`experiments/v4/_pre_flankwall/`). (2) The SnapWave boundary for v4: `wave-coupled` lost by 2.8 cm RMSE, so keep an offshore band;
+open question is whether a cheaper band keeps the skill — `scripts/wave_shelf_reference.py` on `wave-coupled` vs the premier, and
+the retired `scripts/wave_boundary_ring.py` from git history for the dead-ring read. Then `cora_waves_v4`. (3) Loose ends:
+`accept_domain.py` FAILS on v3 (15 inflows on dry ground, 1 inactive — pre-existing); the Delaware-tributary creek channels are not
+in the bed (Sluice, Cohansey at Greenwich, Murderkill at Frederica, Christina at Newport); the MOTF render north of 40.62 + DE/PA
+exclusion boxes; the DRBC Delaware cross-sections (user's supervisor). Nothing committed by Claude; the user commits.
+
 
 **📍 RESUME HERE (09-27 evening, before a context compaction):** v4 steps 1–3 DONE (V4 entry `building`; mouth + deep-channel masks; bed stack + `bed_v4_coarse_25m`). The FORCED SEA LINE `data/v4_design/waterlevel_line_v4.csv` is FINAL pending one check: both user routes are in (Delaware mouth cape_henlopen → 7171 → … → 5531; Lower Bay 3767 → … → 14089 → jamaica_wall_s; ring NY corner edited to follow it). ✅ (a) ring re-audit `logs/ring_audit_v4_61929920.out`: target land outside 0.00 km², MOTF 1.000 inside, HWMs 166/193 (was 165); its one flag, 1.0 km `water_undeclared` at (−73.9037, 40.5297), IS the forced line between 3879 and 3897 — the ring audit reads `v4_crossings.geojson` only; teach it the line CSV when wiring. ⬜ (b) WIRE THE LINE into domain.py/model.py: read the CSV (like `region_source`); inactive polygon = the ring seaward of the line (replaces `delaware_sea`); an always-active band landward of it (must cover the Ambrose crossing east of −73.93); arms as line SECTIONS with a buffer instead of boxes (mouth / ocean / Lower Bay / Rockaway inlet). ⬜ (c) step 4 refinement polygons (diff by NAME vs v3), (d) step 5 probe. Tools: `scripts/audit_ocean_line_v4.py --line <csv> --maps`; the NACCS node picker artifact https://claude.ai/artifact/HVn8yLyUNJ27shkoaaSNb9 (`logs/v4_design_2026-09-27/build_node_picker.py`). Nothing committed by Claude; the user commits.
 
@@ -90,7 +103,7 @@ marks yet — three of the eight basins are empty. `tests/test_v4_scoring.py` (6
 `NJ_DOMAIN=v4 python scripts/sync_obs_points.py --dirs data/frozen_mesh_v4 --apply` (25 → 48); the freeze log's own
 obs check will read FALSE until then (it runs against the new registry).
 
-**⏳ 09-28 — v4 RIVER-INFLOW DECISION TABLE built, awaiting the user** (`logs/v4_design_2026-09-28/river_table/`: `river_table.md`
+**✅ 09-28 — v4 RIVER INFLOWS SCALED (user: approach 1, gauge + drainage-area ratio) — decision table** (`logs/v4_design_2026-09-28/river_table/`: `river_table.md`
 to read, `.csv`, `build_river_table.py` re-runs offline in ~3 s). Ratio = NHDPlus upstream basin outside the ring ÷ the gauge's
 own NHDPlus basin (map errors cancel); gauge areas check against USGS (Trenton 6,780, Calco 785, Little Falls 762 mi²). **12
 ASK, 27 proposed scalings, 22 keep.** The big three KEEP: Delaware 810, Schuylkill 728, Brandywine 204 m³/s — the in-ring land
@@ -100,7 +113,92 @@ source at 38.907 N — not the Murderkill as `download_usgs_sandy_discharge.py` 
 Frankford / Cobbs / Second River / Silver Lake trib. (NHDPlus vs USGS gauge areas disagree > 10 %), St Jones / Elizabeth /
 Lawrence (dams). Total peak inflow 2,179 → 2,186 m³/s proposed (+0.4 %), 2,210 with every ASK scaled (+1.5 %). 🔴 The Elizabeth
 source sits 743 m inside the ring edge (ring edited after placement) — beyond the 500 m outflow-walling radius, so its
-crossing face may be unwalled outflow: re-snap it 150 m inside the crossing with the others.
+crossing face may be unwalled outflow: re-snap it 150 m inside the crossing with the others. **DONE:** `AREA_SCALE_V4` in
+`scripts/download_usgs_sandy_discharge.py` (one readable row per gauge with its reason): ratio ≤ 1.5 → ratio; > 1.5 → ratio^0.8
+(Beaverdam 3.16, W Br Middle Brook 6.05, Great Egg 2.22, Mantua 1.75, Maurice 1.46); a dam AT the gauge → 1.0 (St Jones,
+Swimming, Lawrence, Elizabeth, Passaic, Hackensack); NHDPlus / USGS gauge areas disagreeing with the gauge < 1 km from the
+crossing → 1.0 (Silver Lake trib., Cobbs, Frankford, Second River — the ratio is uncertain and the true one ~1 there). Sum of
+peaks 2,575 → 2,609 m³/s; 10-30 total 2,179 → 2,205. Elizabeth source RE-PLACED by the snap rule, 134 m inside the crossing
+(−74.2389, 40.6946, bed +10.3); Beaverdam relabelled Mispillion. `usgs_sandy_discharge_v4.nc` regenerated (new coordinate
+`area_scale(index)`; gauge flow = discharge / area_scale — equals the previous file to 1e-15; only the Elizabeth point moved;
+hydromt reads it). `tests/test_v4_rivers.py`. **Checker:** `overflow_check.py <+3 m run> --compare <+0 m run>` now reports
+the PEAK RISE per edge stretch — river-cut walls included, which are wet by their own inflow either way — and newly wet edge
+cells; a cut whose peak rises > `--dz` (0.05 m) is reached by the sea's backwater and belongs further upstream. Smoke-tested
+on v3 premier vs nowaves. 216 tests OK.
+
+**✅ 09-28 — v4 FROZEN + REGISTERED; the GATE is STAGING (job 61988743).** Was: **⏳ 09-28 18:20 — v4 FROZEN MESH LANDED (61979149, hal0386, 4 h 39, MaxRSS 72 GB, 32 G)**: `faces=4881654 boundary_edges=4388
+sha=906aaba3ee450bb7`, mask AND z identical to the 09-27 trial build (no rebuild drift), z_zmin identical, roughness changed on
+3.3 % of uv points (the NLCD v4 fix; 'Fill manning' blocks 163 → 72, open sea). Active 3,974,165, mask==2 4,482, outflow 4,799;
+all invariants OK, 7 arms in bracket. **NACCS boundary BUILT** on it: `data/gtsm/naccs_sandy_v4.nc` — 1,957 → 388 within 2 km →
+241 (−64 dry, −83 open-coast shallow); per arm delaware_mouth 35 / ocean 159 / lower_bay_entrance 18 / rockaway_inlet 20 /
+narrows 14 / kvk_east 12 / cd_canal 1; Sandy Hook datum anchor −0.004 m; boundary peak 3.54 m 10-30 01:00. Catalog entry +
+`n_waterlevel_support=241` on `_V4_WL`. 🔴 **NOT REGISTERED YET — two edits to the frozen dir await the user** (the auto-mode
+classifier refused the first as a shared-resource write): (1) the Elizabeth source moved AFTER the freeze, so its crossing's
+4 outflow faces (−74.243..−74.236, 40.692..40.697) are unwalled; `model.wall_outflow_near_points` with all 61 current sources
+changes exactly those 4 (3 → 1) — indices `logs/v4_freeze_2026-09-28/elizabeth_walled_idx.npy`, frozen mask saved as
+`mask_as_frozen.npy`; the sha moves. (2) `sync_obs_points.py --dirs data/frozen_mesh_v4 --apply` (25 → 48 gauges; staging
+refuses stale obs). Then: register `premier.V4`, clear `building`, `accept_domain.py`, stage the 4 v4 arms
+(`NJ_DOMAIN=v4 sbatch hpc/stage_and_submit_v3.slurm …` — now domain-generic, VALIDATE_MEM/TIME overridable). **DONE (user approved both):** the 4
+Elizabeth faces walled (exactly 4 differ from the frozen mask) and `sfincs.obs` synced 25 → 48 → **`premier.V4 = (4881654, 4388,
+"231f92a24c972daf")`** (the 906aaba3… sha was never staged), `building` cleared, `V4.n_waterlevel_support = 3` (measured: the base
+noaa_sandy_nj selection on the frozen mesh = Battery + AC + Cape May, as v3), guard tests updated (no domain building; v4 pinned
+at 3). `accept_domain.py` v4: ALL PASS, one WARN — the inflow check now measures heads-of-tide sources IN THEIR CHANNEL (subgrid
+low vs the lowest within 150 m: median 0.00, max 1.92 m; W Br Middle Brook +1.92, Delaware +1.26) instead of v3's "bed < 0" (every
+v4 source is on a +3..+14 m riverbed by design). ⚠️ Found on the way, NOT caused here (the committed script gives the same):
+`accept_domain.py` on **v3** now FAILS "discharge inflows are wet + active" — 15 on dry ground, 1 on inactive — look at it
+before the next v3 staging. **STAGED 09-28 ~18:50: job 61988743** (`stage_v4`, 200 G / 8 h; `EXPECT_MD5
+logs/stage_v4_gate_expected.md5`, 15 files incl. the frozen sfincs.nc / .obs, naccs / discharge / AORC) → builds
+`experiments/v4/_template_sealed` (scratch) and stages `naccs-nowaves` + `naccs-nowaves+rain-off+slr-{0,2,3}m`, submits the 4
+solves (premier binary, 12 h, 96 G, no constraint — waves off) and ONE validate (400 G / 24 h) after them. **Morning:**
+`sacct` NodeList (hal, not halk) → each solve's log (for the slr arms: `reading binary initial conditions file
+sfincs_ini_sealevel.bin`, and `Curve Number method` on the rain-ON baseline only) → `overflow_check.py experiments/v4/<+2,+3>
+--compare experiments/v4/naccs-nowaves+rain-off+slr-0m --map` and on +0 alone. **STAGED OK (61988743, hal0291, 21 min; 127.7 GB
+hard-linked back):** solves **61989375** (`naccs-nowaves`, hal0294), **61989376** (+0, hal0295), **61989377** (+2, hal0296),
+**61989378** (+3, hal0298); validate **61989379** afterok. Checked at start: 241 NACCS points on every arm (3 base on the
+template); the rain-on baseline logs "Curve Number method - A" (S = 0 on 50 % of active faces = water CN 100); the slr arms log
+"reading binary initial conditions file"; rain OFF on the three. Connected start: +0 → 2,156,532 cells wet, 136,455 below 0 m
+cut off (median z_zmin −0.05, p90 0.00: Delaware-shore diked marsh / Prime Hook / lidar flats — NOT channels; of 1.58 M cells
+below −2 m only 1,615 cut off: reservoirs and sand pits — Lake Lenape, the Millville pits — plus ~111 cells of Brooklyn tidal
+water, Mill Basin / Gerritsen Creek, that the jamaica_bay_wall separates from the sea: a Brooklyn option-B consequence, watch it
+in the +3 m read); +2 → 3,334,198 wet, 34,814 cut off; +3 → 3,602,633 wet, 11,570 cut off.
+
+**✅ 09-28 21:30 — v4 GATE READ (all 4 solves COMPLETED 0:0 on hal, 1 h 48 – 2 h 05, avg dt 0.66–0.69 s; outputs complete;
+`logs/v4_gate_2026-09-28/overflow_{p0,p2_p3}.txt`, maps `experiments/v4/<arm>/overflow_check.png`).** Checker fixed first (the
+first pass read artefacts): the outflow proxy is now min(neighbour level − own bed, neighbour depth) — the depth-only version
+made every forced-line flank beside a deep channel read 14 m of water on a +2 m bank — and the walls round river sources are
+their own category `inflow_wall` (wet by the river by design). **(1) ⭐ THE RIVER CUTS HOLD:** peak rise at +3 vs +0 m ≤ 0.044 m
+on all 15 (Maurice 0.044, Raritan 0.041, Red Clay 0.032, the rest ≤ 0.005) — the +3 m backwater stops short of every cut, as the
+ring rule intended. **(2) 🔴 THE ONE REAL OVERFLOW: Lewes / Cape Henlopen** — ~120 outflow cells (−75.10, 38.74–38.80) dry at +0
+are wet at +2 and +3 (the Lewes–Rehoboth lowland; the declared `cape_henlopen` wall itself newly wets 10–11 cells): the raised
+bay drains toward Rehoboth. Every other newly-wet outflow cell is a single scattered cell. **(3) 🔴 FORCED-LINE FLANK LEAKS at
+EVERY level (+0 included):** outflow cells ON WATER at the ends of the Narrows (both banks, beds −1.4..−2.8), the Rockaway Inlet /
+Jamaica Bay wall corner (−0.4..−1.4), Kill van Kull east, and the Lewes–Rehoboth canal (−1.3): 42 wet at +0, depths 1–4.5 m.
+**(4) 🔴 A NUMERICAL SPIKE at +3 only:** 6 cells on the Staten Island flank of the Narrows (−74.053, 40.603), zsmax 45.15 m for an
+instant (hourly max 5.9 m) — beside those flank outflow cells; likely the same defect. **(5) Walls standing in water rise with
+SLR, as designed:** Bayonne +4.2 m, Jamaica Bay +3.1 m at +3 (the declared hard spots). **(6)** The ~111-cell Mill Basin /
+Gerritsen pocket: no flag. **⬜ USER DECISIONS:** wall the forced-line flank outflow cells (Narrows ×2, Rockaway corner, KvK
+east, Lewes canal) and extend `cape_henlopen` north over Lewes — both MASK changes (fingerprint moves; only these diagnostic
+runs exist on it).
+
+**✅ 09-28 — `wave-coupled` (v3) LANDED: 6 h 36 on hal0387 (premier 25.5 h; ~3.9× faster) — and it LOSES.** Paired vs the
+premier (94 marks, median, 50 m, B 200k): **ΔRMSE −0.0281 m, 95 % CI [−0.0441, −0.0146], P(premier better) 1.000**; RMSE 0.357 vs
+0.329, bias −0.179 vs −0.143 (nowaves 0.393 / −0.246); Cape May back bays −0.325 vs −0.266. Against the pre-registration:
+(4) "within ±0.02, CI across 0" FAILED — the offshore band is real skill, ~3 cm of RMSE; (6) runtime held (~4×). The mechanism
+reads (1) dead ring, (2) −9 m shelf vs CORA are NOT done: `scripts/wave_boundary_ring.py` was retired (git history has it);
+`scripts/wave_shelf_reference.py` exists. For v4 this says: keep an offshore SnapWave band (the §46 apron included) and pay the
+runtime, unless the shelf read shows a cheaper band does the same.
+
+**⏳ 09-28 22:10 — v4 FLANK WALLS ADOPTED (user: "Sure let's do it") and the gate RE-STAGED (job 61995457).** NEW
+`Domain.wall_outflow_near_forced_m` (v4 = 500 m; `model.wall_outflow_near_forced`, applied with the inflow walls after
+`mask_overrides`, never touches mask 2) + `MaskOverride wall_henlopen_atlantic` (491,500–492,700 × 4,287,000–4,294,500: the
+Delaware ocean beach was meant to be walled, 09-27; the sea-polygon edge had made it free outflow). Derived on the frozen mask by
+the same two operations: **193 faces 3 → 1** (Henlopen Atlantic 143, Rockaway 18, Narrows 14, C&D 13, KvK 5), mask 2 and the
+active set unchanged; written into the frozen `sfincs.nc` (pre-edit mask `logs/v4_freeze_2026-09-28/mask_pre_flankwall.npy`).
+**`premier.V4 = (4881654, 4388, "c5d8c8d7837b8461")`**; the 231f… sha is `V4_PRE_FLANKWALL`. The first gate's template + 4 runs
+are in `experiments/v4/_pre_flankwall/` (their overflow CSV / PNGs kept); their validate 61989379 FAILED when the dirs moved
+under it — nothing written. 217 tests OK; `accept_domain.py` v4: all pass bar the inflow WARN (0 of 4,602 outflow faces below −1 m).
+**Morning:** the 4 re-runs' logs → `overflow_check.py … --compare …slr-0m --map` again: expect the flank leaks and the Narrows
+spike GONE, Lewes dry at +2/+3, the 15 river cuts unchanged (≤ 0.05 m).
 
 **📌 2026-09-26 — NACCS pull MERGED; every v4 forced line is covered; no more webtool asks.** The user's 3 CHS zips
 (webtool CSVs, ADCIRC01 + STWAVE02/03/05/07) → `repack_naccs_zips.py --apply`: **142 new ADCIRC points (1,815 → 1,957)**,

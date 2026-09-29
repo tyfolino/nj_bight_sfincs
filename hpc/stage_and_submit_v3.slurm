@@ -24,7 +24,9 @@
 set -euo pipefail
 cd "$SLURM_SUBMIT_DIR"
 export PATH=$HOME/nj_sandy_sfincs/micromamba/envs/sfincs/bin:$PATH
-export PYTHONPATH=$PWD NJ_ROOT=$PWD NJ_DOMAIN=v3
+# 2026-09-28: any domain — NJ_DOMAIN from the environment, v3 when unset (the name stays).
+export PYTHONPATH=$PWD NJ_ROOT=$PWD NJ_DOMAIN="${NJ_DOMAIN:-v3}"
+echo "domain $NJ_DOMAIN"
 hostname; date
 # EXPECT_MD5=<file of `md5sum` lines, written at submit time> makes the job refuse to
 # stage from files that still read STALE on this node (the halk write lag, CLAUDE.md §5).
@@ -38,6 +40,10 @@ SOLVE_MEM="${SOLVE_MEM:-64G}"
 # ~2.5 on emeraldrapids (STATUS 09-12 PM) — a 73 h window needs the fast nodes to fit 40 h.
 # Set SOLVE_CONSTRAINT=emeraldrapids (sbatch --constraint) for any full wave arm.
 SOLVE_CONSTRAINT="${SOLVE_CONSTRAINT:-}"
+# The scorer downscales onto the finest subgrid DEM: v3 fits 128 G / 6 h; v4 (16 px, a
+# 12.6 G lev3 raster) needs more — override per domain.
+VALIDATE_MEM="${VALIDATE_MEM:-128G}"
+VALIDATE_TIME="${VALIDATE_TIME:-06:00:00}"
 MIN_FREE_G="${MIN_FREE_G:-15}"
 
 # 2026-09-03: experiments/ is a symlink to /scratch (1 TB soft / 2 TB hard), so the
@@ -82,7 +88,7 @@ for arm in os.environ["ARMS"].split(","):
     extra = [f"--time={os.environ['SOLVE_TIME']}", f"--mem={os.environ['SOLVE_MEM']}"]
     if os.environ.get("SOLVE_CONSTRAINT"):
         extra.append(f"--constraint={os.environ['SOLVE_CONSTRAINT']}")
-    job = run.submit_slurm(d, sif=sif, binary=binary, extra_args=extra + ["-J", f"v3_{arm}"])
+    job = run.submit_slurm(d, sif=sif, binary=binary, extra_args=extra + ["-J", f"{os.environ['NJ_DOMAIN']}_{arm}"])
     print(f"[submit] {arm} -> job {job}", flush=True)
     ids.append(str(job))
 open(os.environ["JOBFILE"], "w").write(":".join(ids) + "\n")
@@ -93,7 +99,7 @@ echo "solve jobs: $JOBS"
 # unpacks ~60 G of rasters per arm, so one job, sequential, 128 G (STATUS 09-01 ops note).
 # afterok means a failed or timed-out solve leaves this job pending forever — squeue
 # shows it as DependencyNeverSatisfied; scancel it and read the solve log.
-VJOB=$(sbatch --parsable --dependency=afterok:"$JOBS" --mem=128G --time=06:00:00 \
-       -J "v3_validate" hpc/run_experiments.slurm --experiments "$ARMS" --validate-only)
+VJOB=$(sbatch --parsable --dependency=afterok:"$JOBS" --mem="$VALIDATE_MEM" --time="$VALIDATE_TIME" \
+       -J "${NJ_DOMAIN}_validate" hpc/run_experiments.slurm --experiments "$ARMS" --validate-only)
 echo "validate job: $VJOB (afterok:$JOBS)"
 date

@@ -1085,8 +1085,25 @@ naccs_sandy_v3:
       on the v3 mesh (mask==2 line identical between the probe and the freeze).
 
 # ── v4 (building, 2026-09-27) ─────────────────────────────────────────────────
-# NOT here yet, on purpose: bed_v4_coarse_25m (built from V4_ELEVATION_LIST, step 3 job
-# B), cora_waves_v4 and naccs_sandy_v4 (needs the mesh).
+# NOT here yet, on purpose: cora_waves_v4 (waits on the SnapWave-boundary decision).
+naccs_sandy_v4:
+  data_type: GeoDataset
+  uri: gtsm/naccs_sandy_v4.nc
+  driver:
+    name: geodataset_xarray
+    options: {}
+  metadata:
+    category: ocean
+    crs: 4326
+    unit: m+NAVD88
+    source: NACCS/CHS ADCIRC SimB1HT storm 001 (Sandy), 241 save points on the drawn
+      water-level line (delaware_mouth 35, ocean 159, lower_bay_entrance 18,
+      rockaway_inlet 20, narrows 14, kvk_east 12, cd_canal 1; support sha16
+      4f020321d32076d7), MSL(1992)->NAVD88 from NOAA VDatum's 2019 separation grids
+      sampled offline (Sandy Hook anchor -0.004 m). Built 2026-09-28 by
+      scripts/build_naccs_boundary.py on the frozen v4 mesh (mask==2 identical to the
+      09-27 trial build).
+
 # `ehydro_delaware_v4.tif` stays keyless: it was a CHECK that CUDEM is right Philadelphia →
 # Trenton (median −0.09 m), not a tier.
 # Curve numbers for v4 (infiltration ON, user 2026-09-28). Open water / NoData = CN 100
@@ -1120,6 +1137,9 @@ usgs_sandy_discharge_v4:
       all Approved. Each river traced along its NLDI flowline to where it crosses the v4 ring;
       the point is 150 m inside that crossing, snapped to the lowest bed within 100 m
       (PROVISIONAL — re-check on the merged bed). scripts/download_usgs_sandy_discharge.py
+      SCALED to the crossing by drainage area (2026-09-28, AREA_SCALE_V4 in that script:
+      ratio <= 1.5 as is, above it ratio^0.8, dams and near-crossing area disagreements 1.0);
+      the factor is the area_scale(index) coordinate, gauge flow = discharge / area_scale.
 
 aorc_sandy_v4:
   data_type: RasterDataset

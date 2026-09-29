@@ -150,12 +150,28 @@ V2_BARNEGAT_PREMASK = DomainFingerprint(1143357, 2164, "9ccbab0bc7a9fc0d")
 #: Runs on the 08-31 mask are the `mask-drain-edge+…` dirs — the "before" record.
 V3_PRE_MASKWALL = DomainFingerprint(3412470, 4108, "5ad01a84978a87f8")
 V3 = DomainFingerprint(3412470, 4108, "1596ce1ecc71b374")
+#: v4 FROZEN 2026-09-28 (data/frozen_mesh_v4 → scratch; job 61979149, 4 h 39): v3 + Delaware
+#: Bay / river to Washington Crossing, the Raritan to Manville, Newark Bay; far banks
+#: computed; the drawn water-level line (7 arms); 16 px subgrid. faces 4,881,654 · active
+#: 3,974,165 · mask==2 4,482. Mask and z identical to the 09-27 trial build. Then 4 outflow
+#: faces at the Elizabeth River crossing walled (3 → 1, the 500 m inflow rule re-applied
+#: after that source was re-placed; user-approved, before any run) — the frozen sha
+#: 906aaba3ee450bb7 was never staged.
+#: 🔴 FLANK WALLS 2026-09-28 (user, after the +0/+2/+3 m gate read; same mesh, same counts,
+#: the sha is the only tell): 193 outflow faces → wall — every outflow face within 500 m of
+#: a forced line (`Domain.wall_outflow_near_forced_m`: Narrows ×2, Rockaway corner, KvK east,
+#: C&D, Henlopen end) and Cape Henlopen's Atlantic side (`wall_henlopen_atlantic`). Open,
+#: the flanks drained forced water at every level and the cape drained the +2 / +3 m bay.
+#: The gate runs on the earlier mask are in experiments/v4/_pre_flankwall/.
+V4_PRE_FLANKWALL = DomainFingerprint(4881654, 4388, "231f92a24c972daf")
+V4 = DomainFingerprint(4881654, 4388, "c5d8c8d7837b8461")
 
 EXPECTED: dict[str, DomainFingerprint] = {
     "v1_monmouth": V1_MONMOUTH,
     "v1_5_raritan": V1_5_RARITAN_Z10,
     "v2_barnegat": V2_BARNEGAT,
     "v3": V3,
+    "v4": V4,
 }
 
 KNOWN = {
@@ -170,6 +186,12 @@ KNOWN = {
     ),
     V3: "v3 FROZEN 2026-08-26, NY edge + Raritan cut WALLED 2026-09-22 — full Jersey "
     "shore, NACCS 224-point boundary (sha16 19f53cfd4cb804fb), 4 arms",
+    V4: "v4 FROZEN 2026-09-28 — NJ coast + Delaware Bay/river + Raritan + Newark Bay, "
+    "drawn water-level line, NACCS 241-point boundary (sha16 4f020321d32076d7)",
+    V4_PRE_FLANKWALL: (
+        "v4 BEFORE the 2026-09-28 flank walls (forced-line ends + Henlopen Atlantic side "
+        "free outflow) — the first +0/+2/+3 m gate runs; superseded, not comparable"
+    ),
     V3_PRE_MASKWALL: (
         "v3 BEFORE the 2026-09-22 mask repair (NY edge + Raritan cut drained ~40,000 "
         "m³/s) — the mask-drain-edge+… before-runs; superseded, not comparable"
