@@ -112,5 +112,59 @@ class TestMergedDep(unittest.TestCase):
         self.assertTrue(np.isfinite(a).all())
 
 
+class TestMergedDepV4Layout(unittest.TestCase):
+    """v4's actual lattice: rows run +y (``e > 0``) and lev2's origin sits OUTSIDE lev3's
+    (the base window starts at a negative fine offset); the oracle is a plain in-bounds
+    read of each 2x2 block. ⚠️ This does NOT reproduce the 2026-09-29 boundless-read bug —
+    that appeared only on the real 160,656-row raster, which is why ``build_merged``
+    spot-checks its own output (``_spot_check``) before publishing it."""
+
+    @classmethod
+    def setUpClass(cls):
+        rng = np.random.default_rng(1)
+        cls.tmp = tempfile.TemporaryDirectory()
+        sg = cls.sg = Path(cls.tmp.name)
+        rot = Affine.rotation(0.925)
+
+        def write(name, a, res, off_px3=0.0):
+            t = Affine.translation(X0, Y0) * rot * Affine.translation(off_px3, off_px3)
+            t = t * Affine.scale(res, res)  # e > 0: row 0 is the SOUTH edge
+            with rasterio.open(
+                sg / name,
+                "w",
+                driver="GTiff",
+                width=a.shape[1],
+                height=a.shape[0],
+                count=1,
+                dtype="float32",
+                crs="EPSG:32618",
+                transform=t,
+                nodata=np.nan,
+            ) as d:
+                d.write(a.astype("float32"), 1)
+
+        cls.l3 = rng.uniform(-15, 5, (60, 60))
+        write(
+            "dep_subgrid_lev3.tif", cls.l3, 1, off_px3=4
+        )  # lev2 origin at lev3 (-4,-4)
+        write("dep_subgrid_lev2.tif", rng.uniform(-15, 5, (34, 34)), 2)
+        write("dep_subgrid_lev1.tif", rng.uniform(-15, 5, (17, 17)), 4)
+        write("dep_subgrid_lev0.tif", rng.uniform(-15, 5, (9, 9)), 8)
+        cls.out = build_merged(sg, sg / "m2.tif", base_level=2)
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.tmp.cleanup()
+
+    def test_every_covered_pixel_is_its_own_2x2_mean(self):
+        with rasterio.open(self.out) as m:
+            a = m.read(1)
+        # lev2 px (r, c) covers lev3 rows 2r-4..2r-3; fully covered for r, c in 2..31
+        for r in range(2, 32):
+            for c in range(2, 32):
+                blk = self.l3[2 * r - 4 : 2 * r - 2, 2 * c - 4 : 2 * c - 2]
+                self.assertAlmostEqual(a[r, c], blk.mean(), places=4, msg=(r, c))
+
+
 if __name__ == "__main__":
     unittest.main()

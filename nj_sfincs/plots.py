@@ -31,6 +31,20 @@ import rioxarray  # noqa: F401  (registers .rio)
 from . import domain as _domain
 from .config import DATA, exp_root
 
+#: Natural Earth 1:10m states (cartopy's local cache) — a ~1 km-generalised outline for
+#: map CONTEXT only; never a scoring or masking input.
+_NE_STATES = (
+    Path.home()
+    / ".local/share/cartopy/shapefiles/natural_earth/cultural"
+    / "ne_10m_admin_1_states_provinces_lakes.shp"
+)
+
+
+def state_outline(epsg: int, names=("New Jersey",)) -> gpd.GeoSeries:
+    """Boundary lines of ``names`` in ``epsg``, for a faint context outline on a map."""
+    st = gpd.read_file(_NE_STATES, columns=["name"])
+    return st[st["name"].isin(names)].to_crs(epsg).boundary
+
 
 
 def _hwm_path(data_dir):

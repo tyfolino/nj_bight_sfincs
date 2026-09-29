@@ -5,6 +5,7 @@
 # (STATUS 2026-09-08): the fallback in validate.load_floodmap is silent by design.
 #   NJ_DOMAIN=v3 sbatch hpc/merge_subgrid_dep.slurm experiments/v3/_subgrid_buildings experiments/v3/bed-buildings
 # Block-streamed, so memory is small; the premier's merge ran in well under an hour.
+# FORCE=1 rebuilds an existing merged raster (a NEW inode; the links below re-point every run dir).
 # BASE_LEVEL=2 writes it on the lev2 lattice, lev3 block-meaned 2x2 (v4's default via the domain):
 #   NJ_DOMAIN=v4 BASE_LEVEL=2 sbatch hpc/merge_subgrid_dep.slurm data/frozen_mesh_v4 <run dirs>
 #SBATCH -p main
@@ -27,7 +28,7 @@ SRC="$1"; shift
 # BASE_LEVEL unset = the domain's Domain.merged_dep_base_level (v4: 2).
 hostname; date; echo "NJ_DOMAIN=$NJ_DOMAIN src=$SRC base_level=${BASE_LEVEL:-domain} link into: $*"
 /usr/bin/time -v python scripts/build_merged_subgrid_dep.py --subgrid-dir "$SRC/subgrid" \
-    ${BASE_LEVEL:+--base-level "$BASE_LEVEL"}
+    ${BASE_LEVEL:+--base-level "$BASE_LEVEL"} ${FORCE:+--force}
 for d in "$@"; do
   ln -f "$SRC/subgrid/dep_subgrid_merged.tif" "$d/subgrid/dep_subgrid_merged.tif"
   echo "linked -> $d/subgrid/dep_subgrid_merged.tif"

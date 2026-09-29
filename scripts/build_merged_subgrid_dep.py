@@ -71,7 +71,9 @@ def _finer_offset(base, fine, k: int) -> tuple[int, int]:
     inv, x, y = ~fine.transform, base.transform.c, base.transform.f
     col, row = inv.a * x + inv.b * y + inv.c, inv.d * x + inv.e * y + inv.f
     rc, cc = round(row), round(col)
-    if not (math.isclose(row, rc, abs_tol=1e-3) and math.isclose(col, cc, abs_tol=1e-3)):
+    if not (
+        math.isclose(row, rc, abs_tol=1e-3) and math.isclose(col, cc, abs_tol=1e-3)
+    ):
         sys.exit(f"base origin at fine pixel ({row}, {col}) is not whole — refusing")
     return rc, cc
 
@@ -83,10 +85,17 @@ def _block_mean(fine, win: Window, k: int, off: tuple[int, int]):
     pixels where only some are (counted — they sit on the fine level's coverage edge).
     """
     h, w = int(win.height), int(win.width)
-    fwin = Window(
-        int(win.col_off) * k + off[1], int(win.row_off) * k + off[0], w * k, h * k
-    )
-    a = fine.read(1, window=fwin, boundless=True, fill_value=np.nan)
+    r0, c0 = int(win.row_off) * k + off[0], int(win.col_off) * k + off[1]
+    # NOT read(boundless=True): on a ROTATED raster rasterio serves that through a
+    # warped VRT and returns pixels from the wrong place (v4, 2026-09-29: +8.2 m on the
+    # -15.2 m Delaware channel, the whole lev3-covered area). Clip, read, pad by hand.
+    a = np.full((h * k, w * k), np.nan, dtype=np.float32)
+    rr0, rr1 = max(r0, 0), min(r0 + h * k, fine.height)
+    cc0, cc1 = max(c0, 0), min(c0 + w * k, fine.width)
+    if rr1 > rr0 and cc1 > cc0:
+        a[rr0 - r0 : rr1 - r0, cc0 - c0 : cc1 - c0] = fine.read(
+            1, window=Window(cc0, rr0, cc1 - cc0, rr1 - rr0)
+        )
     a = a.reshape(h, k, w, k)
     n = np.isfinite(a).sum(axis=(1, 3))
     with np.errstate(invalid="ignore"):
@@ -95,8 +104,39 @@ def _block_mean(fine, win: Window, k: int, off: tuple[int, int]):
     return mean.astype(np.float32), int(((n > 0) & (n < k * k)).sum())
 
 
+def _spot_check(
+    merged: Path, fine, k: int, off: tuple[int, int], n: int = 4000
+) -> None:
+    """Random base pixels whose k x k fine block is fully finite must equal that block's
+    mean, read plainly in bounds. Refuse to publish the raster otherwise: the boundless
+    bug (see ``_block_mean``) passed a tiny rotated fixture and failed only on the real
+    160,656-row raster, so the real raster is what gets checked."""
+    rng = np.random.default_rng(0)
+    bad = checked = 0
+    with rasterio.open(merged) as m:
+        for r, c in zip(rng.integers(0, m.height, n), rng.integers(0, m.width, n)):
+            fr, fc = int(r) * k + off[0], int(c) * k + off[1]
+            if fr < 0 or fc < 0 or fr + k > fine.height or fc + k > fine.width:
+                continue
+            blk = fine.read(1, window=Window(fc, fr, k, k))
+            if not np.isfinite(blk).all():
+                continue
+            got = m.read(1, window=Window(int(c), int(r), 1, 1))[0, 0]
+            checked += 1
+            bad += not math.isclose(got, float(blk.mean()), abs_tol=1e-3)
+    print(f"spot check vs direct lev reads: {bad} of {checked} wrong")
+    if bad:
+        sys.exit(
+            f"{merged}: {bad}/{checked} spot-checked pixels are not their fine "
+            "block's mean — refusing to publish it"
+        )
+
+
 def build_merged(
-    sg: Path, out: Path | None = None, force: bool = False, base_level: int | None = None
+    sg: Path,
+    out: Path | None = None,
+    force: bool = False,
+    base_level: int | None = None,
 ) -> Path:
     """Write ``<sg>/dep_subgrid_merged.tif`` (or ``out``) from ``dep_subgrid_lev*.tif``.
 
@@ -107,7 +147,9 @@ def build_merged(
     ``bed-*`` arm can never be staged without the merged raster again (STATUS
     2026-09-08: one was, scored on the lev3-only bed, and every guard passed).
     """
-    if base_level is None:  # the domain's scoring lattice (Domain.merged_dep_base_level)
+    if (
+        base_level is None
+    ):  # the domain's scoring lattice (Domain.merged_dep_base_level)
         from nj_sfincs import domain as _domain
 
         base_level = _domain.active().merged_dep_base_level
@@ -136,8 +178,13 @@ def build_merged(
 
     prof = base.profile.copy()
     prof.update(
-        compress="deflate", predictor=3, tiled=True,
-        blockxsize=512, blockysize=512, bigtiff="IF_SAFER", nodata=np.nan,
+        compress="deflate",
+        predictor=3,
+        tiled=True,
+        blockxsize=512,
+        blockysize=512,
+        bigtiff="IF_SAFER",
+        nodata=np.nan,
     )
     inv = {lev: ~srcs[lev].transform for lev in coarser}
     T = base.transform
@@ -184,12 +231,18 @@ def build_merged(
                         fc = inv[lev].a * X + inv[lev].b * Y + inv[lev].c
                         fr = inv[lev].d * X + inv[lev].e * Y + inv[lev].f
                         sc, sr = np.floor(fc).astype(int), np.floor(fr).astype(int)
-                        ok = need & (sr >= 0) & (sr < srcs[lev].height) \
-                            & (sc >= 0) & (sc < srcs[lev].width)
+                        ok = (
+                            need
+                            & (sr >= 0)
+                            & (sr < srcs[lev].height)
+                            & (sc >= 0)
+                            & (sc < srcs[lev].width)
+                        )
                         if not ok.any():
                             continue
                         swin = Window(
-                            sc[ok].min(), sr[ok].min(),
+                            sc[ok].min(),
+                            sr[ok].min(),
                             sc[ok].max() - sc[ok].min() + 1,
                             sr[ok].max() - sr[ok].min() + 1,
                         )
@@ -201,10 +254,15 @@ def build_merged(
                         filled[lev] += int(good.sum())
                 dst.write(a, 1, window=win)
             got = "/".join(f"{filled[lev]:,}" for lev in sorted(filled, reverse=True))
-            print(f"  row {r0 + h}/{ny}  base lev{base_level}; filled lev"
-                  f"{'/'.join(str(v) for v in sorted(filled, reverse=True))} = {got}"
-                  + (f"; partial fine blocks {partial}" if finer else "")
-                  + f"  {time.time() - t0:.0f}s", flush=True)
+            print(
+                f"  row {r0 + h}/{ny}  base lev{base_level}; filled lev"
+                f"{'/'.join(str(v) for v in sorted(filled, reverse=True))} = {got}"
+                + (f"; partial fine blocks {partial}" if finer else "")
+                + f"  {time.time() - t0:.0f}s",
+                flush=True,
+            )
+    for lev in finer:
+        _spot_check(tmp, srcs[lev], 2 ** (lev - base_level), fine_off[lev])
     tmp.replace(out)
 
     # The downscale pipeline opens the dep by OVERVIEW level ("Cannot open overview
@@ -221,8 +279,10 @@ def build_merged(
 
     with rasterio.open(out) as r:
         a = r.read(1, out_shape=(r.height // 16, r.width // 16))
-    print(f"wrote {out} ({out.stat().st_size / 1e9:.2f} GB); "
-          f"finite fraction at 16x: {np.isfinite(a).mean():.3f}")
+    print(
+        f"wrote {out} ({out.stat().st_size / 1e9:.2f} GB); "
+        f"finite fraction at 16x: {np.isfinite(a).mean():.3f}"
+    )
     for s in srcs.values():
         s.close()
     return out
@@ -231,13 +291,23 @@ def build_merged(
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--subgrid-dir", required=True, type=Path)
-    ap.add_argument("--out", type=Path, default=None,
-                    help="default: <subgrid-dir>/dep_subgrid_merged.tif")
-    ap.add_argument("--force", action="store_true",
-                    help="overwrite an existing merged raster")
-    ap.add_argument("--base-level", type=int, default=None, choices=LEVELS,
-                    help="lattice of the output (default: Domain.merged_dep_base_level — "
-                    "3, the finest; v4 2, lev3 block-meaned 2x2 onto 3.125 m)")
+    ap.add_argument(
+        "--out",
+        type=Path,
+        default=None,
+        help="default: <subgrid-dir>/dep_subgrid_merged.tif",
+    )
+    ap.add_argument(
+        "--force", action="store_true", help="overwrite an existing merged raster"
+    )
+    ap.add_argument(
+        "--base-level",
+        type=int,
+        default=None,
+        choices=LEVELS,
+        help="lattice of the output (default: Domain.merged_dep_base_level — "
+        "3, the finest; v4 2, lev3 block-meaned 2x2 onto 3.125 m)",
+    )
     args = ap.parse_args()
     build_merged(args.subgrid_dir, args.out, args.force, args.base_level)
 

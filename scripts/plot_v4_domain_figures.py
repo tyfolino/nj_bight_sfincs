@@ -36,6 +36,7 @@ from pyproj import Transformer  # noqa: E402
 
 import nj_sfincs  # noqa: F401,E402 — pyproj before hydromt
 from nj_sfincs import domain as _domain  # noqa: E402
+from nj_sfincs import plots  # noqa: E402
 from nj_sfincs import snapwave_domain as sd  # noqa: E402
 
 FIG = ROOT / "reports" / "figures"
@@ -97,6 +98,7 @@ def _bin(fx, fy, cat, win, res, size=None):
 
 
 def _decorate(ax, dom, ring, lx, ly, win, title=None):
+    plots.state_outline(dom.epsg).plot(ax=ax, color=INK_2, lw=0.5, alpha=0.45)
     ring.boundary.plot(ax=ax, color=INK_2, lw=0.6)
     ax.plot(lx, ly, color=INK, lw=1.1)
     ax.set_xlim(win[0], win[1])
@@ -221,6 +223,7 @@ def snapwave(dom) -> Path:
         ),
         plt.Line2D([], [], color=INK, lw=1.1, label="forced water-level line"),
         plt.Line2D([], [], color=INK_2, lw=0.6, label="v4 ring"),
+        plt.Line2D([], [], color=INK_2, lw=0.5, alpha=0.45, label="New Jersey"),
         plt.Line2D(
             [],
             [],
@@ -334,6 +337,7 @@ def motf(dom) -> Path:
         ),
         plt.Line2D([], [], color=INK, lw=1.1, label="forced water-level line"),
         plt.Line2D([], [], color=INK_2, lw=0.6, label="v4 ring"),
+        plt.Line2D([], [], color=INK_2, lw=0.5, alpha=0.45, label="New Jersey"),
     ]
     ax.legend(
         handles=handles,
