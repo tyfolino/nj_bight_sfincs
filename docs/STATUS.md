@@ -69,8 +69,27 @@ partial block, coarser fill, lev3 default unchanged); the overview ladder now dr
 future staging inherits it — v3's lives only in its run dirs), hard-linked into `_template_sealed` + the 4 arms. ⏳ **Job
 62030877** v4_validate, `--experiments naccs-nowaves --validate-only`, 400 G / 24 h, afterok 62030874 + the solve 62030656 —
 ONE arm (the SLR arms are rain-off gate runs, nothing to score; one arm also keeps the floodmap memo from stacking). Read its
-MaxRSS first (`sacct -j 62030877 --format=MaxRSS,Elapsed`). ⚠️ It is a WAVES-OFF first look (`extent_admissible=False`), and
-the MOTF CSI is not yet meaningful: the MOTF render north of 40.62 and the DE/PA exclusion boxes are still missing.
+MaxRSS first (`sacct -j 62030877 --format=MaxRSS,Elapsed`). ⚠️ It is a WAVES-OFF first look (`extent_admissible=False`).
+✅ **Merge 62030874 DONE** (hal0289, 25 min, 3.3 G RSS): `dep_subgrid_merged.tif` 7.39 GB on the lev2 lattice, 6 links (frozen +
+template + 4 arms); lev3-meaned 709.6 M px, lev1 492 M, lev0 2,905 M; partial 2×2 blocks 457,794 (0.06 %); finite 0.999.
+✅ **MOTF v4 FIXED (09-29) — both gaps:** (a) RE-RENDERED on the drawn ring's bbox (`download_sandy_motf_extent.py`, 20 tiles,
+24 s): 12,541 × 16,819 @ 15 m, 2,015.6 km² wet (was 1,848, stopping at 40.62 — Newark Bay / Meadowlands / Hackensack now
+scored); vs the 09-24 render on the overlap 99.91 % pixel agreement (sub-pixel grid offset), wet counts equal to 0.01 %.
+(b) **Scored ONLY ON NJ LAND (user 09-29: "score only NJ land")** — NEW `Domain.motf_valid_tif` =
+`data/validation_v4/sandy_motf_valid_nj_v4.tif` (NEW `scripts/build_motf_valid_mask.py`: 1 where the NJ-only
+`nj_10ft_dem_v4` has data, nearest onto the MOTF grid), joined to the boxes inside `metrics.motf_exclude_mask` so the score,
+`fa_decomp` and `plots` share one screen; a raster off the MOTF grid RAISES; new key `motf_km2_excluded_invalid`
+(`motf_km2_excluded_boxes` = the whole screen, name kept). V4's two inherited NY boxes RETIRED (NY land is off the raster). Why
+not boxes: the sheet is NJ-only (ring land 7,448 km²: NJ 5,331, non-NJ 2,117 with only 0.86 km² MOTF-wet on it) and the
+DE / PA border above Wilmington is a diagonal river no box staircase follows (the NJ-to-DE/PA gap per 0.02° band goes
+negative above 39.65). Measured: MOTF-wet ring land removed 0.93 of 1,498.6 km² (0.06 %, slivers along the river at
+Trenton / Burlington + 0.05 at Sandy Hook). 🔴 **The inherited `staten_island` box held 41 km² of NJ land on v4** (Carteret /
+Linden / Elizabeth, new to v4) — the raster scores it. v3 is CLEAN: its boxes remove 14.16 km², 0.00 NJ (its published CSI
+stands). `tests/test_motf_valid_mask.py` (4). 225 tests OK. The validate job reads all of this when it starts. ✅ **§40 source-proximity check DONE on v4 (09-29)** — NEW `scripts/source_proximity.py` (staged sources, named by the
+discharge dataset; every in-region HWM + every `sfincs.obs` gauge; a flag column, never a filter) →
+`reports/source_proximity_v4.csv`: **0 of 166 marks, 0 of 48 gauges within 500 m; closest mark 2.4 km** (6563). Self-check on
+v3 reproduces the 08-27 hand sweep exactly (6044 at 49.2 m, 6102 674 m, 6101 921 m; `reports/source_proximity_v3.csv`). Nothing
+on v4 needs the flag, so wiring `src_contaminated` into the scorer stays a v3-only loose end (HWM 6044).
 
 **📍 RESUME HERE (09-27 evening, before a context compaction):** v4 steps 1–3 DONE (V4 entry `building`; mouth + deep-channel masks; bed stack + `bed_v4_coarse_25m`). The FORCED SEA LINE `data/v4_design/waterlevel_line_v4.csv` is FINAL pending one check: both user routes are in (Delaware mouth cape_henlopen → 7171 → … → 5531; Lower Bay 3767 → … → 14089 → jamaica_wall_s; ring NY corner edited to follow it). ✅ (a) ring re-audit `logs/ring_audit_v4_61929920.out`: target land outside 0.00 km², MOTF 1.000 inside, HWMs 166/193 (was 165); its one flag, 1.0 km `water_undeclared` at (−73.9037, 40.5297), IS the forced line between 3879 and 3897 — the ring audit reads `v4_crossings.geojson` only; teach it the line CSV when wiring. ⬜ (b) WIRE THE LINE into domain.py/model.py: read the CSV (like `region_source`); inactive polygon = the ring seaward of the line (replaces `delaware_sea`); an always-active band landward of it (must cover the Ambrose crossing east of −73.93); arms as line SECTIONS with a buffer instead of boxes (mouth / ocean / Lower Bay / Rockaway inlet). ⬜ (c) step 4 refinement polygons (diff by NAME vs v3), (d) step 5 probe. Tools: `scripts/audit_ocean_line_v4.py --line <csv> --maps`; the NACCS node picker artifact https://claude.ai/artifact/HVn8yLyUNJ27shkoaaSNb9 (`logs/v4_design_2026-09-27/build_node_picker.py`). Nothing committed by Claude; the user commits.
 

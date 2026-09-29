@@ -473,6 +473,12 @@ class Domain:
     motf_exclude_boxes_ll: tuple[
         tuple[str, tuple[float, float, float, float], str], ...
     ] = ()
+    #: Where the MOTF sheet CAN adjudicate, as a raster ON the ``motf_tif`` grid (uint8,
+    #: 1 = valid). Scored only where it is 1, on top of the boxes; a grid mismatch
+    #: raises. v4 (2026-09-29, user: "score only NJ land"): NJ land = where the NJ-only
+    #: 10 ft DEM has data, built by ``scripts/build_motf_valid_mask.py``. None = no screen.
+    #: ``motf_km2_excluded_invalid`` reports what it removed.
+    motf_valid_tif: Path | None = None
 
     #: Northing above which the coast is no longer open ocean (a spit tip, a harbour
     #: mouth). Incident wave energy and wave-boundary support points are taken only
@@ -2614,12 +2620,13 @@ V4 = Domain(
     obs_gauges=(*V3.obs_gauges, *_V4_NEW_GAUGES),
     hwm_rules=_V4_BASIN_RULES + V3.hwm_rules,
     hwm_geojson=DATA / "validation_v4" / "sandy_hwms_v4.geojson",
-    # Rendered on the rectangle, as on v3: the sheet was a DESIGN input. ⚠️ It stops at
-    # lat 40.62 (the ring reaches 40.994) and its source layer is NJ-only, so DE / PA land
-    # reads confidently dry now that the far banks are computed — both need exclusion
-    # boxes before any v4 CSI is quoted.
+    # RE-RENDERED 2026-09-29 on the drawn ring's bbox (the 09-24 render stopped at lat
+    # 40.62; the ring reaches 40.994 — Newark Bay / the Meadowlands were unscored). Its
+    # source layer is NJ-only, so DE / PA / NY land reads confidently dry now that the
+    # far banks are computed: scored only on NJ land (user 09-29), which replaces the
+    # two NY boxes v4 inherited from v3 (they are NY land, so the raster covers them).
     motf_tif=DATA / "validation_v4" / "sandy_motf_extent_v4.tif",
-    motf_exclude_boxes_ll=V3.motf_exclude_boxes_ll,
+    motf_valid_tif=DATA / "validation_v4" / "sandy_motf_valid_nj_v4.tif",
     plot_window=(437_000, 626_000, 4_286_000, 4_539_000),
 )
 

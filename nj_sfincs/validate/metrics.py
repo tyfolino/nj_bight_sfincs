@@ -37,7 +37,6 @@ from .. import domain as _domain
 from ..config import DATA
 from .core import (
     DEPTH_MIN,
-    aligned_pair,
     his_bed,
     his_series,
     peak_after_floor,
@@ -136,12 +135,22 @@ def gauge_peak_metrics(mod, model_dir: Path, data_dir: Path = DATA) -> dict:
         out[f"peak_obs_{n}_m"] = o_peak
         out[f"peak_obs_time_{n}"] = str(o_time)[:16] if o_time is not None else ""
         out[f"peak_mod_full_{n}_m"] = m_full
-        out[f"peak_mod_full_time_{n}"] = str(m_full_t)[:16] if m_full_t is not None else ""
+        out[f"peak_mod_full_time_{n}"] = (
+            str(m_full_t)[:16] if m_full_t is not None else ""
+        )
 
         if g.record_ends:
             end = np.datetime64(pd.Timestamp(g.record_ends))
-            o_cmp = float(np.nanmax(ov[np.isfinite(ov) & (ot <= end)])) if ov.size else np.nan
-            m_cmp = float(np.nanmax(mv[np.isfinite(mv) & (mt <= end)])) if mv.size else np.nan
+            o_cmp = (
+                float(np.nanmax(ov[np.isfinite(ov) & (ot <= end)]))
+                if ov.size
+                else np.nan
+            )
+            m_cmp = (
+                float(np.nanmax(mv[np.isfinite(mv) & (mt <= end)]))
+                if mv.size
+                else np.nan
+            )
             out[f"peak_mod_prefail_{n}_m"] = m_cmp
             out[f"peak_err_prefail_{n}_m"] = m_cmp - o_cmp
             out[f"peak_record_ends_{n}"] = g.record_ends
@@ -157,7 +166,9 @@ def gauge_peak_metrics(mod, model_dir: Path, data_dir: Path = DATA) -> dict:
 # ── pre-storm tide: range and phase ──────────────────────────────────────────
 
 
-def tide_metrics(mod, model_dir: Path, data_dir: Path = DATA, hours: float = 24.0) -> dict:
+def tide_metrics(
+    mod, model_dir: Path, data_dir: Path = DATA, hours: float = 24.0
+) -> dict:
     """Pre-storm tidal RANGE and PHASE LAG per gauge (minutes, + = model LATE).
 
     Both are measured over the same clean window (see ``core.prestorm_window``), on the
@@ -201,7 +212,11 @@ def tide_metrics(mod, model_dir: Path, data_dir: Path = DATA, hours: float = 24.
             series = np.asarray(mv, float).ravel()[sel]
             if series.size >= 4:
                 sig = tidal_signal(series)
-                drift, frac, is_tidal = sig["drift_m"], sig["frac_rising"], sig["is_tidal"]
+                drift, frac, is_tidal = (
+                    sig["drift_m"],
+                    sig["frac_rising"],
+                    sig["is_tidal"],
+                )
                 mod_range = sig["range_m"] if is_tidal else float("nan")
                 if is_tidal:
                     # dt matched to the source's own cadence: his is 10-min, the map hourly.
@@ -348,7 +363,6 @@ HWM_ESTIMATOR_DEFAULT = "median"
 HWM_RADIUS_M = 50.0
 
 
-
 def _hwm_path(data_dir):
     """The HWM file for the ACTIVE domain, under `data_dir`.
 
@@ -385,21 +399,50 @@ def motf_path(data_dir):
     return Path(data_dir) / rel.parent.name / rel.name
 
 
+def motf_invalid_mask(shape, transform):
+    """True where the domain's MOTF VALIDITY raster says the sheet cannot adjudicate
+    (``Domain.motf_valid_tif`` != 1), or None when the domain declares none.
+
+    v4 (2026-09-29): the far banks are COMPUTED, so ~2,100 km² of DE / PA land sits in
+    the ring on a sheet that renders it confidently dry; the river border is diagonal and
+    boxes cannot follow it. The raster is NJ land = where the NJ-only 10 ft DEM has data
+    (``scripts/build_motf_valid_mask.py``) — the discriminator v1.5's boxes were validated
+    with, used directly. It must be ON the MOTF grid: a shifted mask would silently move
+    the scored footprint, so a mismatch raises.
+    """
+    import rasterio  # noqa: PLC0415
+
+    from .. import domain as _domain  # noqa: PLC0415
+
+    f = _domain.active().motf_valid_tif
+    if f is None:
+        return None
+    with rasterio.open(str(f)) as r:
+        if r.shape != tuple(shape) or not r.transform.almost_equals(transform):
+            raise ValueError(
+                f"{f} is not on the MOTF grid ({r.shape} {r.transform} vs {shape} "
+                f"{transform}) — rebuild it with scripts/build_motf_valid_mask.py"
+            )
+        return r.read(1) != 1
+
+
 def motf_exclude_mask(shape, transform, crs_epsg: int | None = None):
-    """Boolean mask over a MOTF-grid raster: True where a domain exclude box says the
-    sheet is invalid (``Domain.motf_exclude_boxes_ll``).
+    """Boolean mask over a MOTF-grid raster: True where the sheet is invalid — inside a
+    domain exclude box (``Domain.motf_exclude_boxes_ll``) OR off the domain's validity
+    raster (``Domain.motf_valid_tif``, see ``motf_invalid_mask``).
 
     Boxes are lon/lat; the raster is projected, so cell centres are transformed
     exactly rather than approximating the box as a projected rectangle. Returns None
-    when the active domain declares no boxes, so callers can skip the work.
+    when the active domain declares neither, so callers can skip the work.
     """
     from pyproj import Transformer  # noqa: PLC0415
 
     from .. import domain as _domain  # noqa: PLC0415
 
+    invalid = motf_invalid_mask(shape, transform)
     boxes = _domain.active().motf_exclude_boxes_ll
     if not boxes:
-        return None
+        return invalid
     epsg = crs_epsg or _domain.active().epsg
     h, w = shape
     Xc = transform.c + (np.arange(w) + 0.5) * transform.a
@@ -409,7 +452,7 @@ def motf_exclude_mask(shape, transform, crs_epsg: int | None = None):
     excl = np.zeros(shape, dtype=bool)
     for _name, (w0, s0, e0, n0), _why in boxes:
         excl |= (lon >= w0) & (lon <= e0) & (lat >= s0) & (lat <= n0)
-    return excl
+    return excl if invalid is None else excl | invalid
 
 
 def _clip_to_region(hwm):
@@ -566,7 +609,9 @@ def hwm_metrics(
     obs = hwm["elev_m"].values
     qual = hwm["quality"].values.astype(float)
     mod_wse = np.full(len(obs), np.nan)  # wet-only (NaN where the model is dry)
-    mod_ground = np.full(len(obs), np.nan)  # lowest ground in the window -> dry-mark score
+    mod_ground = np.full(
+        len(obs), np.nan
+    )  # lowest ground in the window -> dry-mark score
     for k, (X, Y) in enumerate(zip(hwm.geometry.x.values, hwm.geometry.y.values)):
         col, row = int((X - T.c) / T.a), int((Y - T.f) / T.e)
         if 0 <= row < ny and 0 <= col < nx:
@@ -606,7 +651,9 @@ def hwm_metrics(
         # headline (scored): every q<=2 mark on the grid counts
         "hwm_n_scored": int(head_s.sum()),
         "hwm_n_dry_scored": int((head_s & ~wet).sum()),
-        "hwm_rmse_scored_m": float(np.sqrt((rs**2).mean())) if head_s.any() else float("nan"),
+        "hwm_rmse_scored_m": float(np.sqrt((rs**2).mean()))
+        if head_s.any()
+        else float("nan"),
         "hwm_bias_scored_m": float(rs.mean()) if head_s.any() else float("nan"),
         "hwm_within0.5_scored": (
             float(np.mean(np.abs(rs) < 0.5)) if head_s.any() else float("nan")
@@ -616,7 +663,9 @@ def hwm_metrics(
         "hwm_n_dry": int((~wet).sum()),
         "hwm_rmse_m": float(np.sqrt((r**2).mean())) if head.any() else float("nan"),
         "hwm_bias_m": float(r.mean()) if head.any() else float("nan"),
-        "hwm_within0.5": float(np.mean(np.abs(r) < 0.5)) if head.any() else float("nan"),
+        "hwm_within0.5": float(np.mean(np.abs(r) < 0.5))
+        if head.any()
+        else float("nan"),
     }
 
     # Per-basin residuals. A pooled bias near zero hides that the ocean-front basin
@@ -636,7 +685,9 @@ def hwm_metrics(
         rbs = resid_s[ms]
         result[f"hwm_n_scored_{b}"] = int(ms.sum())
         result[f"hwm_n_dry_{b}"] = int((ms & ~wet).sum())
-        result[f"hwm_bias_scored_{b}_m"] = float(rbs.mean()) if ms.any() else float("nan")
+        result[f"hwm_bias_scored_{b}_m"] = (
+            float(rbs.mean()) if ms.any() else float("nan")
+        )
         result[f"hwm_rmse_scored_{b}_m"] = (
             float(np.sqrt((rbs**2).mean())) if ms.any() else float("nan")
         )
@@ -705,13 +756,17 @@ def motf_metrics(da_hmax, da_dep, model_dir: Path, data_dir: Path = DATA) -> dic
     footprint = (motf != m_nd) & (dep_at > 0.0)
     sim = simulated_mask(model_dir, motf.shape, mtf)
     excl = motf_exclude_mask(motf.shape, mtf)
+    invalid = motf_invalid_mask(motf.shape, mtf)
     land_in = footprint & sim
     km2 = abs(mtf.a * mtf.e) / 1e6
+    km2_invalid = (
+        0.0 if invalid is None else float(int((land_in & invalid).sum()) * km2)
+    )
     if excl is None:
         km2_excluded = 0.0
     else:
-        # what the boxes removed FROM THE SCORED SET — ground that passed every other
-        # screen and would have entered the counts
+        # what the screen (boxes + validity raster) removed FROM THE SCORED SET —
+        # ground that passed every other screen and would have entered the counts
         km2_excluded = float(int((land_in & excl).sum()) * km2)
         land_in = land_in & ~excl
     nh = int((motf_wet & mod_wet & land_in).sum())
@@ -728,8 +783,11 @@ def motf_metrics(da_hmax, da_dep, model_dir: Path, data_dir: Path = DATA) -> dic
         "motf_km2_unsimulated": float(int((footprint & ~sim).sum()) * km2),
         "motf_km2_unsim_motfwet": float(int((footprint & ~sim & motf_wet).sum()) * km2),
         "motf_km2_unsim_modwet": float(int((footprint & ~sim & mod_wet).sum()) * km2),
-        # What the sheet-validity boxes removed (0.0 when the domain declares none).
+        # What the sheet-validity screen removed (0.0 when the domain declares none):
+        # boxes AND validity raster together (the name predates the raster, 09-29) …
         "motf_km2_excluded_boxes": km2_excluded,
+        # … and the validity raster's share of it (v4: the non-NJ land).
+        "motf_km2_excluded_invalid": km2_invalid,
     }
 
 

@@ -481,6 +481,12 @@ Live campaign state is in [STATUS.md](STATUS.md). This file is for what is settl
     do not share it. ⭐ **No scored HWM mark is within 500 m of any discharge source**
     (closest 674 m, n=46), so this contaminates no score — but a station or mark inside an
     injection zone reads the source, not the basin.
+    **Per domain** (`scripts/source_proximity.py`, staged sources, 500 m;
+    `reports/source_proximity_<domain>.csv`): v1.5 0 of 46 (above); **v3 1 of 140
+    in-region marks — HWM 6044, 49 m from the Absecon Creek source (01410500)**, 0 of 25
+    gauges; **v4 0 of 166 marks, 0 of 48 gauges, closest mark 2.4 km** (6563, Darby
+    Creek source 01475548) — v4 injects at the heads of tide where the ring cuts each
+    river, so its Absecon source sits 3.2 km above 6044.
 
     ⚠️ Conditions: ONE arm (waves-off, PRE-weir), one storm. This establishes what the
     motion IS; it does not by itself explain why two arms ring differently. The axis
