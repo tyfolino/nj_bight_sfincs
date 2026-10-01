@@ -54,7 +54,7 @@ hydromt_sfincs
 *.tar
 *.tar.gz
 
-# Jupyter checkpoints (there is no notebooks/ dir yet, but the pattern is free)
+# Jupyter checkpoints
 .ipynb_checkpoints/
 **/.ipynb_checkpoints/
 

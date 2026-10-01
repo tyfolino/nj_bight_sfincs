@@ -1296,8 +1296,10 @@ V2_BARNEGAT = Domain(
 # The ring: `data/region_v3_EDITED_inland.geojson` (user, QGIS, 2026-08-24). v1.5's three
 # FORCED cuts verbatim (ocean arm, Narrows, Arthur Kill mouth); the landward edge runs
 # through the head of tide of every southern river (Metedeconk, Toms, Wading, Mullica,
-# Great Egg, Tuckahoe) so every river crossing is DRY — no water-level or outflow BC on
-# any river, discharge sources at the gauges, inside. The Cape May Canal is NOT cut: the
+# Great Egg, Tuckahoe) so every river crossing is DRY — no water-level BC on any river,
+# discharge sources at the gauges, inside. ⚠️ A dry crossing is still an OUTFLOW edge
+# (every dry edge cell is, OUTFLOW_MAX_BED) and drains once water reaches it — hence the
+# Tuckahoe wall below and FINDINGS §50/§53. The Cape May Canal is NOT cut: the
 # ring leaves land north of the canal's Delaware Bay mouth (NOAA 8536110 sits on it) and
 # a forced wedge in Delaware Bay rounds Cape May Point. Gate: scripts/validate_region_v3.py
 # (exit 0, 17 declared reaches, zero river reaches). docs/STATUS.md has the measurements.
@@ -2650,10 +2652,10 @@ V4 = Domain(
     # by `scripts/build_coarse_bed.py` (step 3, 09-27).
     coarse_elevation_list=({"elevation": "bed_v4_coarse_25m"},),
     precip_dataset="aorc_sandy_v4",  # re-pulled on the ring 09-28 (was 0.33° short N)
-    cn_dataset="cn_v4",  # not built yet — a missing key fails the build loudly
+    cn_dataset="cn_v4",  # built 09-28 (build_cn_nj.py); SSURGO × NLCD 2012 v4
     landcover="nlcd_2012_v4",  # C1V1 on the v4 bbox; = nlcd_2012 where both valid
     infiltration=True,  # user 09-28; water CN 100, storecumprcp = 1 (model.py)
-    cora_waves=DATA / "waves_v4" / "cora_waves_v4.nc",  # not built (CORA + STWAVE03)
+    cora_waves=DATA / "waves_v4" / "cora_waves_v4.nc",  # built 09-29 (build_cora_waves.py)
     discharge_geodataset="usgs_sandy_discharge_v4",
     # v3's 25 (all on active v4 faces, 3–23 m) + the 23 above. The frozen mesh was
     # built with the 25; `scripts/sync_obs_points.py --apply` adds the rest to it —

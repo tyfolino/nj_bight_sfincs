@@ -66,9 +66,11 @@ The printed support-point count must be declared as ``n_waterlevel_support=<N>``
 on the ARM in ``nj_sfincs/config.py`` — never relaxed on the Domain, which guards
 every other arm. ``check_waterlevel_support`` fails loudly otherwise, by design.
 
-Per CLAUDE.md §6, report the flanking-gauge check beside the incumbent:
-``python scripts/holdout_gauge_check.py``. It is a diagnostic, not a gate, and it
-compares forcing products to gauges — never a model diagnostic.
+Per CLAUDE.md §6, report the flanking-gauge check beside the incumbent. Its script,
+``holdout_gauge_check.py``, lives only in the frozen archive (``~/nj_coast_sfincs/scripts/``,
+never ported); ``scripts/check_naccs_vs_sensors.py`` is this repo's forcing-vs-gauge
+check. Either is a diagnostic, not a gate, and compares forcing products to gauges —
+never a model diagnostic.
 """
 
 from __future__ import annotations
@@ -808,7 +810,7 @@ NEXT — two things, neither automatic:
      arm on this domain, including the sealed premier.
 
   Then report the flanking-gauge check beside the incumbent (CLAUDE.md §6):
-       python scripts/holdout_gauge_check.py
+       python scripts/check_naccs_vs_sensors.py
 """)
     return 0
 

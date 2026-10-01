@@ -1,12 +1,13 @@
 #!/bin/bash
-# Run the full wave-sensitivity sweep on a compute node: build the static model +
-# forcing template ONCE, then build/run/validate every experiment and write
-# experiments/metrics.csv + report.html. Self-contained — submit it and let your
-# interactive node expire; this job stands on its own.
+# Run the sweep driver (run_experiments.py) on a compute node: stage, run, validate and
+# aggregate the named arms of the active domain (NJ_DOMAIN). Self-contained — submit it
+# and let your interactive node expire; this job stands on its own.
 #
-#   sbatch hpc/run_experiments.slurm                     # all 6 experiments
-#   sbatch hpc/run_experiments.slurm --experiments igwaves,wavemaker
-#   sbatch hpc/run_experiments.slurm --experiments baseline_no_waves --tstop 2012-10-29
+#   NJ_DOMAIN=v3 sbatch hpc/run_experiments.slurm --experiments naccs-nowaves --check
+#   NJ_DOMAIN=v3 sbatch hpc/run_experiments.slurm --experiments naccs-premier --validate-only
+#
+# `--experiments` has no default (`all` needs `--yes`); only `--check` is read-only
+# (CLAUDE.md §4). Staged dirs are better submitted with hpc/stage_and_submit_v3.slurm.
 #
 # Any args after the script name pass straight through to run_experiments.py.
 # Target `main` (main-redhat was merged INTO it 2026-08-20; submitting to main-redhat now

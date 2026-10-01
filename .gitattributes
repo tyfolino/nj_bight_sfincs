@@ -1,3 +1,5 @@
-*.ipynb filter=nbstripout
-*.zpln filter=nbstripout
-*.ipynb diff=ipynb
+# Notebooks are committed RENDERED, outputs included (hpc/push_rendered_notebook.sh), so
+# they can be read on GitHub. An nbstripout filter was declared here until 2026-09-30 but
+# was never installed in any clone; installing it would have silently stripped every
+# rendered notebook on `git add`. Keep one rendered notebook per domain epoch and retire
+# the superseded one in the same pass (reports/cleanup/ manifests).

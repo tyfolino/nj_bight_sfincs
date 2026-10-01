@@ -241,6 +241,77 @@ class TestProvenanceIsWiredIn(unittest.TestCase):
         self.assertIn("provenance.txt", src)
 
 
+class TestNoDanglingScriptPaths(unittest.TestCase):
+    """Every ``scripts/…`` or ``hpc/…`` path the live docs and code name must exist.
+
+    Two cleanups (2026-08, 09-20) deleted scripts on a "zero references" claim that was
+    wrong for eight of them, and the docs went on citing deleted tools for weeks. A path
+    to a retired file is fine when its line SAYS so ("retired", "git history",
+    "git show"); anything else is a dangling reference.
+
+    Not scanned: ``ARCHIVE.md`` (it describes the other repo) and ``reports/cleanup/``
+    (a deletion manifest names deleted files by design).
+    """
+
+    SCANNED = (
+        "CLAUDE.md",
+        "README.md",
+        "docs/FINDINGS.md",
+        "docs/STATUS.md",
+        "data/data_catalog.yml",
+        "run_experiments.py",
+    )
+    SCANNED_DIRS = ("nj_sfincs", "scripts", "hpc", "tests")
+    _PATH = re.compile(r"(?<![\w/.-])((?:scripts|hpc)/[\w.-]+\.(?:py|sh|slurm|md))")
+    _RETIRED = re.compile(r"retired|git history|git show", re.IGNORECASE)
+
+    def _files(self):
+        for rel in self.SCANNED:
+            p = ROOT / rel
+            if p.exists():
+                yield p
+        for d in self.SCANNED_DIRS:
+            for p in sorted((ROOT / d).rglob("*")):
+                if p.is_file() and p.suffix in (".py", ".sh", ".slurm", ".md"):
+                    yield p
+
+    def test_named_paths_exist(self):
+        dangling = []
+        for p in self._files():
+            for i, line in enumerate(p.read_text(errors="ignore").splitlines(), 1):
+                for rel in self._PATH.findall(line):
+                    if (ROOT / rel).exists() or self._RETIRED.search(line):
+                        continue
+                    dangling.append(f"{p.relative_to(ROOT)}:{i}: {rel}")
+        self.assertEqual(
+            dangling,
+            [],
+            "paths to files that do not exist:\n  " + "\n  ".join(dangling) + "\n"
+            "  Fix the path, or say on the same line that the file was retired "
+            "(convention: 'retired <date>, in git history').",
+        )
+
+
+class TestScriptsIndex(unittest.TestCase):
+    """``scripts/README.md`` lists every script, and only scripts that exist."""
+
+    _ROW = re.compile(r"^\| `([\w.-]+\.(?:py|sh))` \|", re.M)
+
+    def test_index_matches_directory(self):
+        index = set(self._ROW.findall((ROOT / "scripts" / "README.md").read_text()))
+        on_disk = {
+            p.name
+            for p in (ROOT / "scripts").iterdir()
+            if p.is_file() and p.suffix in (".py", ".sh")
+        }
+        self.assertEqual(
+            sorted(on_disk - index), [], "scripts missing from scripts/README.md"
+        )
+        self.assertEqual(
+            sorted(index - on_disk), [], "scripts/README.md rows for missing files"
+        )
+
+
 class TestEngineIsExplicit(unittest.TestCase):
     """The batch script has NO engine fallback (2026-09-11). The old default to
     sfincs-cpu.sif (Galibier) silently ran a different engine than the sealed premier's;

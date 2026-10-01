@@ -16,8 +16,11 @@ The fingerprint is unchanged by construction — ``sfincs.nc`` is the template's
 byte — and ``premier.assert_sealed_domain`` is run on the output to prove it. A
 subgrid built on any other mesh is refused at staging.
 
-**Diff ``z_volmax``, not ``z_zmin``** (CLAUDE.md §5): a footprint burn restores sub-cell
-relief, and ``z_zmin`` moves only where a cell is FULLY covered. ``subgrid_diff.json``
+**Diff the right key** (CLAUDE.md §5, FINDINGS §55): for a CARVE diff ``z_volmax``; for a
+footprint BURN read ``z_level`` — the burn RAISES ``z_volmax`` (storage up to ``z_zmax``;
+p50 +2,461 m³ on v3) while the storage it removes is at a given water level. ``z_zmin``
+moves wherever a cell's LOWEST pixel is under a building (11,995 faces on v3), not only in
+the 849 fully covered ones. ``subgrid_diff.json``
 carries both, plus ``uv_zmax`` and the uv level spacing, since a building cap raises the
 equal-depth uv tables' ceiling.
 

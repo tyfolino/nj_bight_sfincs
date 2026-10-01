@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# hpc/vscode_node.sh — grab a main-redhat compute node and HOLD it (tmux + salloc)
+# hpc/vscode_node.sh — grab a `main` compute node and HOLD it (tmux + salloc)
 # so you can attach desktop VSCode (Remote-SSH) to it and run the notebook + Claude
 # Code on the node — never on the login node.
 #
@@ -17,8 +17,9 @@
 #   ./hpc/vscode_node.sh --status              # show the node you're holding (if any)
 #   ./hpc/vscode_node.sh --stop                # release the allocation
 #
-# Defaults: -p main-redhat -c 32 --mem 128G -t 08:00:00
-#   main-redhat node tiers: 192 GB / 256 GB / 512 GB (max single-node ~500G).
+# Defaults: -p main -c 32 --mem 128G -t 08:00:00
+#   main node tiers: 192 GB / 256 GB / 512 GB (max single-node ~500G). main-redhat was
+#   merged into main on 2026-08-20; submitting to it fails outright.
 #
 # ─────────────────────────────────────────────────────────────────────────────
 # ONE-TIME laptop setup — put this in your laptop's ~/.ssh/config (replace <netid>):
@@ -49,7 +50,7 @@ set -uo pipefail
 
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
-PART="${VSCODE_PART:-main-redhat}"
+PART="${VSCODE_PART:-main}"
 CORES="${VSCODE_CORES:-32}"
 MEM="${VSCODE_MEM:-128G}"
 TIME="${VSCODE_TIME:-08:00:00}"

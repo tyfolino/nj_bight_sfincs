@@ -8,6 +8,11 @@ history to reconstruct the present. Those logs still exist, in the archive, inde
 
 Live campaign state is in [STATUS.md](STATUS.md). This file is for what is settled.
 
+📌 **Citations of the form "STATUS 09-22" or "STATUS L1946"** point at the campaign log as it
+stood before the 2026-09-30 cleanup: `git show d70dd1e:docs/STATUS.md`. STATUS has held only
+the live state since then; its durable facts were moved here (§53–§60 and part 4, the v4 design record) or into
+CLAUDE.md §5.
+
 ---
 
 ## 1. General findings — these transfer to any domain on this coast
@@ -91,12 +96,9 @@ Live campaign state is in [STATUS.md](STATUS.md). This file is for what is settl
    the waves-off run carries **0.431 m** of sub-hourly excursion above its own hourly field,
    against premier's 0.255 m. Every spatial score in this project — HWM residuals, the
    floodmap, MOTF CSI — is computed from `zsmax`, so in that basin they all inherit a
-   ~0.18 m arm-dependent offset before any physics. ⏳ **Whether that excursion is a real
-   seiche that SnapWave damps (which would make the original hypothesis right, by a route
-   nobody proposed) or numerical chatter in a shallow basin is UNRESOLVED and cannot be
-   settled from hourly output.** Settle it by re-running the cheap `naccs-nowaves` arm
-   (803 s) with fine `dtout`, or with observation points in the bay head — there are
-   currently none west of the Arthur Kill mouth.
+   ~0.18 m arm-dependent difference. ✅ **Settled by §40:** the excursion is a real,
+   coherent basin seiche, so a single arm's bay `zsmax` stands; what is fragile is its
+   PHASE between arms, which is why bay arms are compared paired.
 
    ✅ **The open coast is CLEAN and the §4 correction above still stands**: excess 0.010 /
    0.004, arm gap +0.007, and zsmax (+0.090) agrees with hourly (+0.089) to 1 mm. The
@@ -110,8 +112,9 @@ Live campaign state is in [STATUS.md](STATUS.md). This file is for what is settl
    for the 0.018: v1_5_raritan, `naccs-premier` − `naccs-nowaves`, MOTF CSI over the
    simulated mask, 2026-08-20, container engine v2.3.3 with `snapwave_wind = 1` — i.e.
    waves imposed in the WIND direction (§43). It is the size of the waves-on/off confound
-   on that engine, not a measurement of correctly directed setup; re-measure on the fixed
-   engine before quoting it for a new premier.
+   on that engine, not a measurement of correctly directed setup. **Re-measured on the fixed
+   engine (v3, repaired mask, `metrics.csv`, unpaired): premier CSI 0.706 / POD 0.880 /
+   FAR 0.219 vs `naccs-nowaves` 0.697 / 0.853 / 0.207 — ΔCSI 0.009.**
 
 5. **Compare arms PAIRED.** Bootstrap the per-mark differences, not the two pooled
    statistics. Two arms can differ by more than either differs from the truth while the
@@ -178,6 +181,10 @@ Live campaign state is in [STATUS.md](STATUS.md). This file is for what is settl
 
 15. **For any bed edit, diff `z_volmax`, not `z_zmin`.** A carve restores sub-cell relief;
     it is not a uniform lowering, so `z_zmin` shows ~nothing while the run changes.
+    ⚠️ For a RAISE (a building burn) read `z_level` instead: the burn raises `z_volmax`
+    (storage up to `z_zmax`, p50 +2,461 m³ on v3) while the storage it removes sits at a
+    given water level; `z_zmin` moves wherever a cell's lowest pixel is under a footprint
+    (11,995 faces on v3, against 849 fully covered). §55.
 
 16. **A frozen mesh short-circuits `build_static`.** A roughness or elevation change
     therefore produces a silent NO-OP template — it needs a subgrid rebuild. A *mask* change
@@ -199,7 +206,34 @@ Live campaign state is in [STATUS.md](STATUS.md). This file is for what is settl
 
 ### Physics and forcing
 
-20. **SnapWave is 90–95% of runtime** and scales per-iteration with the wave domain.
+20. **SnapWave is nearly all of the runtime, and our configuration, not the method, makes
+    it so.** v3 premier: 96.9 % of simulation time, 23.4 h of a 25.5 h solve, against 46 min
+    for the same mesh waves-off; its 84 min "Time in input" is also SnapWave (the
+    nearest-point search for 1.12 M SnapWave-only band nodes; `wave-coupled` pays 45 s).
+    `scripts/snapwave_cost.py <run>` reads it from the log (a call over 999.99 s logs
+    `took ******`; the script imputes those — summing `took` drops the slowest 16 of 145).
+    **Where the time goes** (premier log, 145 calls, fit R² 0.999): call ≈ 42 s +
+    1.33 s·iterations + 103 s·W, W = full-domain-equivalent sweeps; median W 3.8; 56 % of
+    node-work is in iterations 1–5 and 10 % in iterations 26+, so an iteration cap or a
+    looser stop buys little (v2.4.x's "99 % converged" rule would save ~0.8 h). The
+    per-call cost is nodes × direction bins × work per node × passes: 2.89 M nodes × 72
+    bins (5° over 360°; engine default 10° over 180° = 18), wind growth on (a second
+    tridiagonal solve per node; wind off was 4–5× cheaper per call), and v2.3.3 COLD-starts
+    the energy field every call (`snapwave_solver.f90` L486–496; v2.4.x warm-starts).
+    Leijnse et al. 2025 report 13.3 % of compute and 5–10 s per call on 1.4 M nodes on
+    v2.1.1; the paper does not state its direction settings, but the v2.1.1 source fixes the
+    sector at 180° (`ntheta = int(180.1/dtheta)`) and has no wind source term. 🔴 **The node sweep is SERIAL** in v2.3.3, v2.4.x
+    and `main` (nodes walked in upwind order; no OpenMP around it, and no `!$acc` in
+    `snapwave/*.f90`, so a GPU build speeds only the 3 % that is flow): every finished
+    64-thread v3 solve used 5.9–6.8 effective cores. A SnapWave-only shelf band's cost is
+    set by the REFINEMENT gate, not the SnapWave mask: v3's `low_water` gate (level 2,
+    zmin −20) made 75 % of the 1.1 M band cells 50 m. Engine facts that bear on reading it:
+    one period per cell, no frequency spectrum, no whitecapping (friction is the only
+    distributed shelf sink), no diffraction; wind-off `tp` is constant (12.68 s everywhere
+    on v3); no dissipation field is written (`hm0 tp wavdir hm0ig tpig snapwavedepth beta
+    fwx fwy`; forces need `storefw = 1`); the log line about band nodes "using the nearest
+    SFINCS point" means water level and wind, not the bed. STATUS 09-14, 09-29;
+    `logs/wave_boundary_v4_2026-09-29/`.
 
 21. **ERA5 is inadmissible as a nearshore wave boundary.** Measured at 7 support points, it
     imposes 8.624 m in ~9.9 m of water — γ 0.86–0.89, ABOVE the 0.78 depth-limited breaking
@@ -326,6 +360,20 @@ Live campaign state is in [STATUS.md](STATUS.md). This file is for what is settl
    `validate.simulated_mask` is wrong on neither and cannot go stale against the run.
    `motf_km2_unsimulated` reports what was removed — quote it beside the CSI.
 
+   🔴 **The scoring BED must cover every active face.** hydromt writes
+   `dep_subgrid_lev3.tif` only under the finest faces; a scorer on it treats every coarser
+   face as off the grid. On v3 (08-29) lev3 covered 10 % of the rectangle; 51 of 140
+   in-region HWMs (all on active faces, 49 wet) had no lev3 coverage — n 63 → 94 once the
+   merged all-level `dep_subgrid_merged.tif` was used — and the truncated frame FLATTERED
+   extent AND hid skill: CSI 0.83 → 0.70 on the full frame, hits 359 → 702 km². Never quote a
+   lev3-only extent score beside a merged-frame one. v4 scores on the lev2 lattice (3.125 m,
+   each pixel the mean of its 2×2 lev3 pixels): the 1.56 m bed is 77 GB as float32 and the
+   validate peaks at ~10× its raster (v3 99 G; v4 191 G on 3.125 m). The NJ-only MOTF sheet
+   reads NY land as confidently dry (pixels are only {0,1}); v4 screens with a validity
+   raster where the NJ-only DEM has data (`Domain.motf_valid_tif`), because a box staircase
+   cannot follow the DE/PA river border — the inherited `staten_island` box held 41 km² of NJ
+   land on v4.
+
 38. **The Keansburg overshoot is MISSING FLOOD PROTECTION, not bad elevation data — and
     MOTF makes the same error, so it cannot arbitrate it.** Diagnosed 2026-08-20,
     `scripts/diagnose_keansburg.py` → `reports/keansburg/` (both retired 2026-09-21, in git history). Three marks read obs
@@ -368,8 +416,7 @@ Live campaign state is in [STATUS.md](STATUS.md). This file is for what is settl
       2.9 m broad-crested weir at cd 0.6.
     - ⚠️ Marks 2–5 km WEST of the weir moved by −0.2..−0.3 m between the two nowaves
       runs. Do not attribute that to the weir: it is inside this basin's known
-      arm-dependent `zsmax` sub-hourly band (STATUS, "do not quote a Raritan Bay
-      difference between arms" caveat). The local capping is 3–4× that band.
+      arm-dependent seiche phase (§40). The local capping is 3–4× that band.
     - ✅ **The waves-on decision run agrees (2026-08-21,
       `diag-premier-keansburg-weir`; pre-reg
       `reports/keansburg/preregistration_weir_decision.md`).** Pocket marks
@@ -378,7 +425,7 @@ Live campaign state is in [STATUS.md](STATUS.md). This file is for what is settl
       **0.52 km²**, miss 0.24 → 0.68 km² (MOTF floods the pocket too, so correctly
       drying it books misses against the reference's own error). Domain-wide: HWM
       Δ RMSE +0.007 m [−0.114, +0.120] paired n=46 — a wash inside the bay ringing
-      band (STATUS, his-ringing entry 2026-08-21); MOTF CSI 0.7108 → 0.7044
+      band (§40); MOTF CSI 0.7108 → 0.7044
       with FAR improving 0.1764 → 0.1682. Promote-vs-delta is the user's decision.
     - ✅ **PROMOTED 2026-08-21 (user decision).** The weir is in the TEMPLATE so every
       arm inherits it; the verified weir runs were adopted as `naccs-premier` /
@@ -387,16 +434,28 @@ Live campaign state is in [STATUS.md](STATUS.md). This file is for what is settl
       bias −0.037, CSI 0.7044 / FAR 0.1682. Durable source
       `data/structures_v1_5/keansburg_weir.weir`; `model._ensure_weirfile_key` keeps
       the inp key alive across re-staging (`tests/test_weir_staging.py`).
+    The nowaves weir run scores HWM RMSE 0.3867 (`extent_admissible=False`). The weir
+    lives in the TEMPLATE, not in the premier alone, because a premier-only weir would
+    confound premier-vs-nowaves forever.
     Not indicated: bed burn (the bed already matches the lidar — nothing to burn
-    short of inventing a crest the survey does not show). The v3 refinement design
-    should still raise the `bay_fringe` gate (zmax 2.0 excludes every berm crest on
-    this shore).
+    short of inventing a crest the survey does not show). ⏸️ Raising the `bay_fringe` gate
+    past zmax 2.0 (which excludes every berm crest on this shore) is a deliberate future
+    change, declined for now: the user kept 2.0 verbatim on v3 and v4 for parity with v1.5
+    (2026-08-31).
 
 39. **The FA "disconnected = rain" classifier is VALIDATED against a rain-off run —
-    and the rain share was an undercount.** Measured 2026-08-21,
-    `scripts/measure_rain_share.py` (pre-registered in its docstring) →
-    `reports/rain/rain_share_v1_5_raritan.csv` (both retired 2026-09-21, in git history); `naccs-premier` vs `diag-premier-norain`
-    (byte-identical staging minus `netamprfile`), on the MOTF grid under the
+    and the rain share was an undercount.** The classifier (`validate/fa_decomp.py`): each
+    false-alarm pixel is split by whether its water EVER had a wet surface path to tidal
+    water — `hmax` is a running max, so its footprint is the union of everything ever wet,
+    and a wet component that never touches the sea got its water from rain or runoff. MOTF
+    is a surge-only bathtub and cannot contain rain ponding. First read (v1.5 rebaselined
+    premier, pre-weir): FA connected 3.45 km² (30 %), never connected 7.96 km² (70 %);
+    `motf_far_connected` 0.061 vs `motf_far` 0.176; `motf_csi_connected` 0.795 vs 0.711;
+    `naccs-nowaves` disconnected 7.49 km² (rain is arm-independent). Measured 2026-08-21,
+    `scripts/measure_rain_share.py` (retired 2026-09-21, in git history; pre-registered in
+    its docstring) → `reports/rain/rain_share_v1_5_raritan.csv` (also retired);
+    `naccs-premier` vs `diag-premier-norain`
+    (both PRE-weir; byte-identical staging minus `netamprfile`), on the MOTF grid under the
     `motf_metrics` screens ∧ simulated-in-both. Ground truth: wet-in-premier ∧
     dry-in-norain (`DEPTH_MIN` threshold).
 
@@ -411,11 +470,11 @@ Live campaign state is in [STATUS.md](STATUS.md). This file is for what is settl
 
     So `fa_decomp`'s connectivity heuristic is a near-perfect rain detector here:
     99% of what it excuses is genuinely rain, and it misses 9% of the rain-true FA
-    (conservative in its claimed direction — the 70%-of-FA figure in the fa_decomp
-    entry was an undercount of the true 75.7%). The `motf_csi_connected` /
+    (conservative in its claimed direction — the 70 %-of-FA first read above was an
+    undercount of the true 75.7%). The `motf_csi_connected` /
     `motf_far_connected` keys therefore mean what they say. ⚠️ Conditions: one
-    domain, one storm, infiltration effectively OFF (`model.py` strips the CN
-    keys), and both runs share `zsmax` sub-hourly behaviour except where rain
+    domain, one storm, infiltration OFF (`model._infiltration_keys` strips hydromt's keys
+    on every domain but v4, §59), and both runs share `zsmax` sub-hourly behaviour except where rain
     itself changes it. ⚠️ Runs accepted on the user's visual inspection + the
     `output WHOLE` audit, 2026-08-21, waiving the >26 h three-clock re-audit
     (neither diag run ever had a halk submission against its directory).
@@ -427,7 +486,13 @@ Live campaign state is in [STATUS.md](STATUS.md). This file is for what is settl
     on both domains; the RECALL does not carry — on v3, 84 km² of rain-true FA is
     "connected" (rain-fed marsh and creek cells contiguous with the surge-wet body), so
     `motf_far_connected` still contains rain there. The script now writes
-    `reports/rain/rain_share_<domain>.csv`, one file per domain. ⚠️ A rain-off run also **re-rings the
+    `reports/rain/rain_share_<domain>.csv`, one file per domain. Rain-off also costs v3
+    real flooding: `motf_pod` −0.07, because 7 % of the MOTF-wet area (marsh platforms) is
+    reached only with rain on, and Monmouth's coastal-lake marks are rain-filled
+    (`south_coast` 4 of 4 dry rain-off, bias −2.19; `hwm_rmse_scored` 0.384 → 0.754;
+    `atlantic_oceanfront` unchanged). On v3 `motf_csi_connected` (0.807 premier / 0.811
+    norain) is the fairer extent number for a compound run, with the recall-0.62 caveat.
+    ⚠️ A rain-off run also **re-rings the
     Raritan Bay seiche (§40)**: with rain OFF the bay peaks moved +0.3–0.4 m (Great Kills
     3.68 → 4.02 m) while ocean stations did not move, and the his difference is a 40–60
     min oscillation present from hour 3 of the window, before any rain fell. Never read
@@ -473,7 +538,11 @@ Live campaign state is in [STATUS.md](STATUS.md). This file is for what is settl
     perturbation re-rings the basin — which is exactly why instantaneous |Δzs| between
     two arms reaches 1.32 m while their crest PEAKS differ by only 0.03–0.15 m. **The
     envelope is robust; the phase is not.** Continue to compare bay arms paired and to
-    treat a bay-wide Δ inside ±0.1–0.4 m as unattributable.
+    treat a bay-wide Δ inside ±0.1–0.4 m as unattributable. The size of it, on v3 (pre-repair,
+    container engine): Δpeak at the NY bay gauges for four single-flag perturbations —
+    rain-off +0.27..+0.41, waves-off −0.18..−0.26, STWAVE for CORA −0.11..−0.26, buildings
+    +0.15..+0.28 m. In the buildings pair the his difference exceeds 0.2 m from 44 h before
+    the crest with mean Δ −0.005 m and an unchanged 3-h high-pass envelope.
 
     ⚠️ **`rb_axis_559k` is a discharge-injection artefact, flagged not dropped.** It sits
     **253 m** from the Raritan River source (Qmax 110 m³/s) and carries a single-face,
@@ -532,10 +601,15 @@ Live campaign state is in [STATUS.md](STATUS.md). This file is for what is settl
     quote the point estimate WITH the CI, argue any preference structurally. Where they
     DO differ is bias (−0.156 vs −0.218) and it is concentrated in the Raritan lobe
     (Great Kills peak err −0.07 CORA vs −0.60 STWAVE), consistent with STWAVE grid 07
-    (NY Bight) running low against the other grids where they overlap (STATUS 08-26).
-    Waves-on vs waves-OFF, by contrast, IS separated: ΔRMSE −0.0463,
-    CI [−0.0718, −0.0170], P(better) = 0.998 — waves are real skill on this coast;
-    which admissible product supplies them is (so far) not decidable from these marks.
+    (NY Bight) running low against the other grids where they overlap: median max|ΔHs|
+    2.5 m (02∩03), 2.6 m (02∩07), 3.7 m (03∩07); shared points took the grid whose centre
+    they are nearest; `alpham` was read as nautical-FROM by inference (10-28 00:00: waves
+    28°, wind 64°), not documentation. Both rows are CONTAINER-engine, waves misdirected (§43).
+    Waves-on vs waves-OFF IS separated, on every engine: container (misdirected) ΔRMSE
+    −0.0463 [−0.0718, −0.0170]; fixed engine, old band, IG off (`wave-noig` − nowaves)
+    −0.051 [−0.073, −0.033]; fixed-engine premier, repaired mask −0.064 [−0.086, −0.042]
+    (§48). Waves are real skill on this coast; which admissible product supplies them is
+    not decidable from these marks.
 
 43. 🔴 **SnapWave's wind mode REPLACES the imposed wave direction with the domain-mean
     wind direction** (SFINCS v2.3.3 through v2.4.1 and `main`; introduced by PR #194,
@@ -564,9 +638,10 @@ Live campaign state is in [STATUS.md](STATUS.md). This file is for what is settl
     the wind from the NE, so wind-on sent the swell down the coast: entry-band transmission
     0.63–0.88 vs 0.82–0.99 wind-off, −9 m shelf 0.16–0.36 vs 0.22–0.44 of the imposed
     height; at landfall (wind and swell both from the SE) the two agree. Wind-on also hit
-    the iteration cap on 36 of 145 SnapWave calls (8 wind-off) and carries hm0 blow-ups,
-    because the interior solution is stored by bin index too and a wind swing between
-    calls rotates the previous solution used as the initial guess.
+    the iteration cap on 36 of 145 SnapWave calls (8 wind-off) and carries hm0 blow-ups.
+    The likely source (a hypothesis from reading the code, never tested): the interior
+    solution is stored by bin index too, so a wind swing between calls rotates the
+    previous solution used as the initial guess. The patched engine still caps (§44).
 
     **The mechanism** (`source/src/snapwave/snapwave_boundaries.f90`, tag `v2.3.3` =
     `091f531a`), in `update_boundary_conditions`: (a) `update_boundary_points` builds the
@@ -613,6 +688,22 @@ Live campaign state is in [STATUS.md](STATUS.md). This file is for what is settl
     peak (Lower Bay N, Sandy Hook Bay pocket, Raritan S; `scripts/snapwave_bay_census.py`
     boxes): SnapWave refracts but does not diffract, so little swell rounds Sandy Hook.
 
+    **The patch** (`hpc/patches/snapwave_winddir_v2.3.3.patch`, engine lineage
+    `nj-winddir-fix-1`, then `nj-winddir-igk-fix-1` for the wavemaker backport, §47)
+    builds the boundary spectrum centred explicitly on the imposed mean direction, AFTER
+    the final `make_theta_grid`, so PR #194's wind-centred grid is kept; a lobe outside a
+    sector-limited grid gives zero energy, not NaN; a one-time WARNING fires for wind on
+    with a sector under 360°. It is provably a no-op with wind OFF (G2w0: every field
+    bit-identical over 5.14 M wave cells × 13 steps, 25/25 iteration counts). **Not fixed,
+    on either engine, wind on or off:** each boundary point is launched in ONE mean
+    direction (`thetamean`), not its own `wdt_bwv(ib)`, so CORA's along-boundary spread
+    (≈140–182° at one hour) collapses to its mean — mild, but real. Filed upstream as
+    Deltares/SFINCS issue #362 and PR #363 (2026-09-14; `docs/upstream/`). Bay wind-sea on
+    the fixed engine is physically sized (Lower + Raritan Bay subtidal median hm0
+    0.26–0.51 m, 0.65–0.68 once the wind passes 10 m/s; wind-off 0.06–0.10), and wind-off
+    removes a real process: every back-bay gauge reads hm0 0.00–0.07 m against 0.2–0.5 m
+    with wind (Sandy raised ~0.5 m fetch waves in Barnegat Bay).
+
 44. 🔴 **The patched wind-on solve is DETERMINISTIC; the unpatched container-vs-native
     disagreement is compiler rounding amplified by the SnapWave limit cycle, not run-to-run
     noise.** `G3_patched_rep` (same binary, hal0384) vs `G3_patched` (hal0386), the 12-hour
@@ -631,6 +722,27 @@ Live campaign state is in [STATUS.md](STATUS.md). This file is for what is settl
     lever `snapwave_sigmax` (2 s and 3 s cuts) does not remove it, it relocates the
     blow-ups onto the open shelf; the engine-side interior initial-guess remap is the open
     follow-up.
+
+    **The native build reproduces the container** (2026-09-11, `scripts/engine_gate.py`):
+    G1 (hydromt `sfincs_compound` example, no SnapWave) is STRICT — zs / zsmax / h max|Δ| 0
+    on every cell and step, patched and unpatched alike — so waves-OFF numbers are
+    bit-identical across container and native. G2 (`v1_monmouth`, 12 h, SnapWave) PASSES by
+    user decision: zs p99 0.32 mm, zsmax max 5.4 mm, identical boundary `wavdir` and
+    iteration counts; the 0.19 m max is three boundary-ring cells 112 m inside the forced
+    boundary (53 of 395,574 cells ever exceed 8 mm). Half the bulk residual is glibc's libm
+    (the same binary inside the container: p99 0.08 mm), the rest the compiler/runtime.
+    `engine_gate.py`'s instantaneous-max bars stay as written and fail at threshold cells by
+    design; the envelope, boundary direction and iteration counts are the evidence.
+    **Reading the SnapWave log:** `error` is the single worst cell's change relative to the
+    field max; `%ok` is CUMULATIVE within a call (a converged cell is skipped thereafter), so
+    a capped call means a handful of cells never settle while the field is done. The logged
+    cap is `snapwave_niter / 4` (niter 200 = 50 logged iterations); raising niter 100 → 200
+    bought no convergence. The limit cycle: capped calls are periodic (period 2–3, identical
+    to the last digit for 30+ iterations), on cells along the channel axis in the Sandy Hook
+    shadow sitting at the period floor (`tp` 1.1–1.6 s, hm0 6–23 m) — a different few hundred
+    cells each hour. On a capped hour the `tp` field is not trustworthy. On a wind-on field a
+    shelf |Δhm0| p99 criterion is unmeetable (the control's own spikes give p99 1.57 m); use
+    site medians on cap-hit-free hours.
 
 45. 🔴 **`snapwave_igwaves = 1` does NOTHING to SFINCS water levels unless a WAVEMAKER is
     defined — every "IG" arm ever scored (v1.5 `wave-ig`, v3 premier vs `wave-noig`) was a
@@ -701,7 +813,7 @@ Live campaign state is in [STATUS.md](STATUS.md). This file is for what is settl
     Clamped main (`gammax 2`) is stable offshore (|Δzs| p99 0.07 m, no cell-hour > 1 m), holds the −9 m
     shelf within 0.03 of v2.3.3 at three of four sites, and lifts shoreline setup by only 1.1–1.4×
     (0.14–0.18 m against 0.13 at hour 24, Sea Bright / Atlantic City) — in the open-coast basins
-    (+0.03..+0.10) and not the NY bays (−0.05..−0.10). It runs 1.7× faster with no cap-hits because
+    (+0.03..+0.10) and not the NY bays (−0.02..−0.10). It runs 1.7× faster with no cap-hits because
     it STOPS on `%ok ≥ 99` (`converged at iteration 3 error = 85`) where v2.3.3 iterates the error
     down, and its IG solve reports `%ok_ig 48` at "converged". The toy's 5× does not transfer to the
     real coast. v2.3.3 stays the premier engine; the wavemaker arm goes on it. STATUS 2026-09-18,
@@ -727,6 +839,12 @@ Live campaign state is in [STATUS.md](STATUS.md). This file is for what is settl
     move is the local excess (≤ 0.1 m at the two spit marks and the pocket gauge), not the
     +0.11. Pooled: ΔRMSE −0.066 m [−0.087, −0.046] (waves are worth 7 cm of HWM RMSE on this
     engine). `logs/phase4b_2026-09-17/D3_paired_zone_premier_vs_nowaves.log`; STATUS.
+    **On the repaired mask (§50; re-read 2026-09-30, `paired_hwm_bootstrap.py --by-basin`,
+    94 marks, median, 50 m):** ΔRMSE **−0.064 m [−0.086, −0.042]** (0.329 vs 0.393); by group,
+    Δ modelled level median / ΔRMSE: open coast (n 23) +0.137 / −0.082 [−0.139, −0.039];
+    inlets (14) +0.134 / −0.089; NJ back bays (19) +0.133 / −0.075 [−0.124, −0.019]; NY bays
+    (38) +0.048 / −0.035 [−0.067, −0.004]. The wave gain is as large in the NJ back bays as on
+    the open coast — imported setup — and about half that in the NY bays.
     **The shadow is GEOMETRY-limited, not spread-limited (D4, 2026-09-18):** doubling the boundary
     directional spread (`snapwave.bds` 30° → 60°, one 24 h cut on the premier's engine) leaves the
     pocket's median hm0 unchanged (−0.005 m at the five swell hours cap-hit-free in both runs, no
@@ -816,6 +934,24 @@ Live campaign state is in [STATUS.md](STATUS.md). This file is for what is settl
     second change. Unexplained, small, in every pair: the whole-window mean at Great Kills /
     Arthur Kill / Sandy Hook drops 1–3 cm with the wall, through ordinary tides too.
     STATUS 2026-09-22 → 09-24, `logs/mask_repair_2026-09-22/`.
+    **The forcing is not what is low.** The Narrows arm forces 3.42 m, the observed
+    `sss_narrows_si` peak; the Arthur Kill arm forces 4.04–4.11 m, ABOVE the AK-mouth gauge's
+    3.81 m 1.5 km away. The drain flattened the along-bay tilt (model 0.12 m against ~0.3 m of
+    steady wind tilt from ERA5 20–21 m/s over 8 m of water); walled, the tilt is 0.37 → 0.59 m
+    against ~0.4–0.6 at the gauges. At Great Kills the wall is worth only +0.06 m (the entrance
+    resupplies the central bay). **Why a wall and not a moved edge:** the MOTF raster cannot
+    arbitrate (Staten Island is off the NJ-only sheet), 9 of the 17 HWMs in the SI window
+    stand outside the model, and moving the edge inland puts NYC land in the model — a domain
+    change. A wall ponds, so the walled run is the upper bound on the edge's worth and the
+    drain the lower; the drain removed ~3 × 10⁸ m³ against ~2–3 × 10⁷ m³ of plausible SI storage.
+    **The Great Kills sensor offset:** `sss_great_kills` (STN site 7560, a bulkhead inside
+    Great Kills Harbor; no wave noise, surveyed 1.902 m and reads 1.893 dry) sits +0.25..+0.37 m
+    above Sandy Hook / AK / the Battery at pre-storm slack high water on the upwind shore for
+    3.5 h while those three agree to ~0.1; at the same site re-surveyed in 2015, during Jonas
+    2016, it sits only +0.10..+0.17 above them. NACCS is 0.35–0.39 low at Great Kills and
+    nowhere else in the bay, and the q1 HWM 6413 1.6 km away reads 3.81. Working value: treat
+    the observed Great Kills peak as ~3.75–3.85 m, not 3.99 (cause unproven — flag, do not
+    rewrite the file); Arthur Kill mouth is the cleaner number.
 
 51. 🔴 **A NetCDF `inifile` is silently read as BINARY by SFINCS v2.3.3 (and `main`), and a
     `zsini` start floods every disconnected low spot — so a sea-level-offset run needs a
@@ -850,6 +986,181 @@ Live campaign state is in [STATUS.md](STATUS.md). This file is for what is settl
     measured cost is ΔRMSE +0.028 m [+0.015, +0.044] on 94 marks (STATUS 09-28). ⚠️ A drawn
     diagonal line (v4) inherits the same ring: v4's wave boundary must be stepped.
     `logs/wave_boundary_v4_2026-09-29/`. STATUS 09-29.
+    The rule is in the source (v2.3.3): `inner(k) = .false.` for any direction that lacks an
+    upwind pair, so a cell with boundary on two sides gets no wave state; the boundary
+    spectrum is cut at ±90° around each point's mean direction; `snapwave.bds` is in degrees.
+    Band-design facts: Sandy's imposed swell came from the SOUTH through the rise and peak
+    (CORA median over the support points 146° → 181° at 10-29 12:00, 112° by 10-30 12:00), so
+    a N–S coast band's supply edge is its BOTTOM edge until 10-30 06:00 — read the two halves
+    of the window separately. CORA's own SWAN keeps 0.61–0.83 of Hs between v3's stepped line
+    (−22..−40 m) and the −10 m line. An UNFORCED band edge drains (hm0 0.15–0.4 m in its first
+    300 m). A stepped line hugging −13 m still leaves a 461 k-cell band 6.7 km wide on this flat
+    shelf, with more friction loss per km, so pulling the boundary shoreward is not cheaper.
+    Upstream has not been told about the corner rule (issue #362 covers only §43).
+
+### Rivers, rings and inputs (harvested from the campaign log, 2026-09-30)
+
+53. ⭐ **River cuts: what is settled.** (a) **A river takes a DISCHARGE, never an imposed
+    level, and never free outflow.** An imposed ocean level across a tidal river PUMPS it;
+    free outflow DRAINS it (§10: the Navesink lost 92.5 % of its inflow). `no_waterlevel_boxes`
+    make an imposed level at a cut a build-time error. (b) **A DRY crossing is still an
+    outflow edge** — every dry edge cell is (`OUTFLOW_MAX_BED`) — and drains once water
+    reaches it (§50); v3 walled a Tuckahoe outflow cell at +1.22 m 480 m from its source, and
+    v4 walls every outflow face within 500 m of a source (`wall_outflow_near_sources_m`;
+    every v4 inflow sits 51–248 m from the ring edge). (c) **Sources exist so the model does
+    not DRAIN the valleys, not because river flow floods them** in Sandy: peak daily-mean
+    inflows on v3's southern rivers were 2.0–18.4 m³/s (Manasquan 18.4, W Br Wading 17.7,
+    Toms 13.9 … E Br Bass 2.0); v4's 61 sources sum to 2,205 m³/s on 10-30 (Delaware at
+    Trenton ~810, Schuylkill ~728), against ~40,000 m³/s through v3's edge drain and the
+    4–5.5 × 10³ m³/s it takes to damp the Delaware tide (PNNL FVCOM). Discharge is daily-mean
+    only (USGS archived nothing finer for these gauges in 2012). No discharge-off arm has ever
+    been run. (d) **Gauged flow is a LOWER bound** wherever a tributary joins below the gauge
+    (Toms/Wrangle Brook; Batsto R 01409500 has no Sandy record; Middle River on the Great Egg;
+    the South River, 94.6 mi², ungauged for Sandy — scaling puts it near 13 m³/s against the
+    Raritan's 110, deliberately not synthesised). v4 scales by drainage area outside the ring
+    (ratio ≤ 1.5 → ratio; > 1.5 → ratio^0.8; a dam at the gauge → 1.0), 10-30 total 2,179 → 2,205 m³/s
+    (`scripts/build_river_table_v4.py`, `AREA_SCALE_V4`). (e) **A source is a property of the
+    RING, not the river**: 150 m inside the crossing, on the lowest bed within 100 m; verify it
+    lands on a wet `mask == 1` face of the FINAL bed (a queued Raritan point once sat on +8.99 m
+    dry land) and ≥ 500 m from any station or scored mark (§40). (f) **Placement, three rules
+    used so far:** v1.5 cut the Raritan on tidal water (a `no_waterlevel_box`, source at the
+    cut); v3 put the landward edge through the head-of-tide GAUGES of the southern rivers,
+    where the DEM is ≥ +1 m (Tuckahoe 1.0 … W Br Wading 6.3), so every crossing is dry with the
+    source inside; v4 cut each river where the Sandy +3 m water ENDS, walled, flow from the
+    nearest gauge — heads of tide move UP at +3 m (Delaware → Washington Crossing, 4.7 km above
+    the drowned Trenton falls; Raritan → Manville; Schuylkill → Manayunk; Hackensack above
+    Oradell), while the Passaic stays at Dundee Dam (pool 7.4 m > the 6.4 m level). v4's gate
+    confirms its cuts: peak rise +3 m vs +0 m ≤ 0.044 m at all 15 (the 16th, Darby Creek,
+    was walled after the gate found it leaking, §58f). (g) **A cut does not sit
+    where a HUC-12 boundary does:** HUC boundaries never fall at heads of tide (a watershed
+    walker put the upper Neshaminy and the Millstone IN and the Assunpink and the Saddle OUT).
+    (h) Hydrography traps: the Great Egg and the Tuckahoe are two rivers that do not combine
+    above a ring at lat ~39.306 (two sources, Folsom 57.1 mi², Head of River 30.8 mi²); the
+    Mullica cluster (4 gauges, ≈ 211 mi²) sits entirely above a cut at lat 39.55; the v4
+    cut first named `raritan_manville` was on the Millstone; the Rahway and the Maurice each
+    crossed the ring 3× at a meander until vertices moved.
+
+54. 🔴 **Elevation products fail by FILLING, not by leaving holes — and a NoData assert passes
+    on a fill forever.** Every one of these is a bed that is present and wrong: (a) **CUDEM
+    holds NON-TIDAL water as a flat ~0 m NAVD88 surface** (Union Lake 3.5 km², bed −0.16 under
+    a 7.56 m lake surface; the Delaware from the Trenton falls to Yardley, where z_zmin −0.2..
+    −0.8 made a fake trench and the v4 peak level 2.3 → 6.4 m; 15.6 km² in v4 overall); CoNED
+    carries the same fill. (b) **CUDEM holds the WATER SURFACE, not the bed, on the Passaic /
+    Hackensack above lat ~40.72** (CUDEM − eHydro +3.7 m Passaic, +8.5 m Hackensack; NOS H03725
+    of 1915 agrees), while from Philadelphia to Trenton CUDEM matches the surveys (median
+    −0.09 m). (c) **CUDEM cuts off Ward Point in a razor-straight line and backfills ~230 m of
+    headland as −3 to −5.5 m of bay**, and has no tile west of lon −74.25 in the Arthur Kill /
+    Raritan band, where the bed falls to 50 m GMRT — ~5 m too shallow in both western channels
+    (−8.98 vs −13.56 m; −4.94 vs −9.85 m). When the drawn ring disagrees with the bed and the
+    imagery agrees with the ring, suspect the bed. (d) **No public measured bed exists on the
+    Delaware above the Trenton falls** (eHydro stops at the head of navigation; CUDEM is flat
+    −0.6..−0.9 m to 40.25, then absent) or on the Raritan above New Brunswick; NOS H05647 (1934)
+    reads 1.17 m shallower than the 2012 survey in the dredged channel. v4 fills these reaches
+    as lidar surface − a gauge mean depth (Trenton 1.20 m, Manville 0.55 m; the Schuylkill at
+    Philadelphia is bimodal, 4.15 m pool vs 0.88 m riffle), shallow for pools by ±0.5 m.
+    (e) A POSTSTORM product may override a pre-storm one only on non-erodible ground inside a
+    declared box: CoNED (2015, post-Sandy) is clipped to `coned_sw_raritan` and excludes
+    Oakwood Beach, where CUDEM's −4.08 m pre-storm bed is the right one. Tier ORDER is
+    load-bearing: CoNED above `cudem_nj` (phantom water is a value, not NoData), below the
+    eHydro carve. (f) Coverage edges: GMRT is required south of lat 39.6; the 1/3″ CUDEM has no
+    tile west of lon −74.75; USACE 2010 lidar stops at Cape May Point; `nj_10ft_dem` is NJ-only
+    and its `zmin 0.001` screen cannot supply a bed below the waterline. (g) eHydro survey
+    NAMES and DATUMS vary per survey ("Arthur Kill" surveys never touch its mouth; `NJ_03_SWO`
+    is on COE Mean Low Water, `RR_01_RAR` on MLLW, ~0.17 m apart); CENAP `.xyz` files of
+    2013–2016 hold only 2–30 % of the soundings (read the gdb `SurveyPoint` layer); VDatum's web
+    API returns HTTP 412 on the tidal Delaware. **The defence is a POSITIVE check:** declared
+    dry-land boxes whose bed must read above a stated elevation (`check_dry_land_boxes`) —
+    and such a check must be SEEN to fail once, and an empty box is an error.
+
+55. **Buildings are subgrid POROSITY, and for Sandy they barely matter.** Decision in force
+    (user + supervisor, 2026-09-03): footprints burned into the fine subgrid DEM (Building
+    Block, Schubert & Sanders 2012), not mask holes (a lottery on 25 m cells) and not roughness
+    (NLCD already carries developed n 0.10/0.13). NJDEP statewide footprints, NJ-only; 56 % of
+    v3's are 2014 post-Sandy lidar vintage, so destroyed-and-not-rebuilt houses are absent.
+    8 px per cell resolves them (exact coverage vs pixel burn: bias −0.0003, RMSE 0.017, r
+    0.997 at 25 m). The height cap is ground + 4 m (clears 99.994 % of wet land pixels in
+    Sandy; ⚠️ overtopped at +3 m SLR). hydromt spaces the uv tables by EQUAL DEPTH, so a cap
+    stretches them: land uv `dlevel` p50 0.08 → 0.21 m at `nr_levels` 10. Score extent with
+    footprints masked out of BOTH rasters (they are dry by construction in the model and wet
+    in MOTF): v3 fixed engine, masked CSI 0.721 vs 0.723 without buildings. HWM:
+    `bed-nobuildings` − premier ΔRMSE −0.021 [−0.048, +0.008] (fixed engine, old band; the
+    only measurement — never re-run on the apex band); container-era, the whole effect sat in
+    the Raritan seiche basins (Δbias +0.196) and was zero on the other 56 marks.
+
+56. **SnapWave bottom friction: `fw` 0.01 is the premier's, and the engine's default.** Every
+    arm before 2026-09-11 wrote 0.02, double the default. One-flag pair on the fixed engine
+    (old band): `wave-fw02` − premier ΔRMSE +0.0095 [+0.0020, +0.0184], P(arm better) 0.006.
+    In SnapWave's coefficient at Sandy's orbital velocities, SWAN's JONSWAP swell value ≈ 0.006,
+    wind-sea ≈ 0.010, a 5 cm-ripple Madsen law ≈ 0.02. Friction is the only distributed shelf
+    sink (`Dfk = 0.28·ρ·fw·u_orb³`; a 6 m / 13.6 s swell in 18 m keeps 0.87 of its height per
+    10 km at 0.01, 0.77 at 0.02).
+
+57. **The southern back-bay pre-storm deficit is bay-MINUS-ocean, and a uniform boundary lift
+    cannot produce it.** Time-aligned obs − model over the quiet window 10-28 06:00 → 10-29
+    12:00 (v3, 09-01 runs, container engine): Atlantic City NOAA pier **+0.006**, Sandy Hook
+    +0.053, but Absecon Channel +0.246, Great Egg +0.397, Ocean City +0.554, Sea Isle +0.329,
+    Stone Harbor +0.277, Tuckerton +0.227, Ship Bottom +0.179, with the tide range right to ~5 %.
+    Observed bays sit 0.2–0.55 m ABOVE the ocean; model bays sit at it. Observed bay-minus-pier
+    grows 0.3 → 0.5 m as boundary Hs grows 2.3 → 3.8 m and turns negative once the wind goes
+    offshore — the wave-setup / lagoon-superelevation signature (Ocean City's size is also
+    wind tilt, downwind end of Great Egg Harbor Bay). `BRACKET+setup-stockdon` (waves off,
+    Stockdon η added at the boundary, β_f 0.03) lifts the bays by ≈ η AND the 7 m-deep pier 1:1
+    (AC +0.006 → −0.320), so the mechanism must act between the pier and the bay; its scores
+    (RMSE 0.358 / bias +0.074, CSI 0.763; paired vs premier −0.026 [−0.080, +0.027]) are the
+    size of the prize for a mechanism inside the surf zone and inlets, never a candidate.
+    ⚠️ The seven southern stations are one USGS network; a program-wide datum error is
+    unlikely (sign and size agree with independent northern stations and with the wave
+    dependence) but not excluded — the check is a calm month against the nearest NOAA gauge.
+
+58. **Mask and ring construction — lessons with no other home.** (a) After a region clip,
+    "outside" and "an inactive island inside" are topologically identical, so
+    `_fill_inactive_holes` re-activates clipped ground (v1.5: 14,435 cells against 14,141
+    outside); the clip is re-applied after the fill, and clip, re-clip and invariant share ONE
+    `_outside_region` helper. (b) An always-active box EDGE across a deep channel becomes the
+    boundary (v1.5's Narrows arm traced the box, 670 m south of the drawn cut). (c) A bracket
+    wide enough to admit the defect it guards is not a bracket (`arthur_kill` passed [15..300]
+    with 35 phantom cells; re-cut to [16..40]) — the mirror of §19. (d) Plot the built BC set
+    against the drawn ring after EVERY mesh change; every invariant was green while the
+    boundary was wrong in three places, and the figure that caught it was two builds stale.
+    (e) Declare crossings as coordinate BOXES, never as ring-segment tags (the tagged Raritan
+    segment was dry end to end; the real crossing was in the next segment). (f) 🔴 **A ring
+    audit on a coarse bed cannot see a narrow channel:** a 75 m max-resampled walk missed a
+    110 m-wide Cape May Canal crossing and a 54 m Metedeconk reach; v4's audit on the 25 m
+    coarse bed missed Darby Creek, which leaked at +2/+3 m until walled. Walk any segment near
+    a canal or creek at 10 m on 1/9″ CUDEM, and treat the SLR gate runs as the real sweep.
+    (g) The quadtree builds the region's ROTATED BOUNDING BOX before the clip deactivates it
+    (v1.5: 40.8 % of faces are `mask == 0`). (h) `_drop_detached_active_islands` keeps only the
+    largest component and ate half of two narrow v1.5 cuts before the bay box; its log line
+    counting BC cells always prints 0 (it runs before `create_boundary`). (i) Porting a domain
+    drops more than refinement polygons: v3 silently lost v1.5's always-active / dry-land /
+    no-water-level boxes (the Raritan lobe was severed), its two Raritan sources, and
+    `open_coast_max_y` (the NY limb went under-supported) — diff the predecessor's Domain
+    FIELDS and source list, not only its polygon list.
+
+59. **Infiltration (v4 only, user 2026-09-28) has three traps.** (1) v2.3.3's `cna` accumulates
+    `cumprcp` / `cuminf` only when `storecumprcp = 1`; otherwise every drop infiltrates — a
+    silently rain-off model. (2) `NLCD_HSG.csv` gives open water CN 0, which hydromt clips to 1
+    (S = 990 in) — rain on the bays vanishes; `build_cn_nj.py` sets water / NoData CN 100 and
+    staging refuses any active face with S ≥ 900 in. (3) Restart files do not carry `cumprcp`
+    / `cuminf`, so a solve resumed during the rain restarts with an empty soil (warned, not
+    gated). `cna` only ever subtracts from RAIN, never from surge or river water. Check the log
+    for "Curve Number method - A".
+
+60. **Gauges, sensors and marks.** (a) USGS storm-tide sensors are mounted ABOVE normal water
+    and read their own floor below it, so their statistics are HIGH-WATER statistics; tidal
+    range is unmeasurable at every v1.5 sensor. A sensor on ground above normal water (2255,
+    +1.45 m) is an HWM with a clock. (b) Pick a NACCS comparison node by DEPTH, not distance
+    (a −1.25 m node produced a +1.7 m spurious "product error"). (c) Basin rules are per
+    domain: v1's unbounded `sandy_hook_bay` swallowed all of Raritan Bay on v1.5, and
+    `unclassified` must stay empty. (d) A mark the boundary cannot move is a constant, not a
+    test: 4 `v1_monmouth` `south_coast` marks moved 0.0005 m under a +0.115 m uniform boundary
+    offset — detect it with that offset. (e) The q ≤ 2 cut removes the tallest open-coast marks
+    (the 5.79 m mark is q 3; q ≤ 2 tops out at 4.18 m on v1.5). (f) 🔶 12 USGS tidal gauges have
+    NO data 2012-10-29 04:00 → 10-30 04:00 UTC in the published record (OGC `continuous`, all
+    Approved) — likely a USGS day-block gap; `gauge_series_frame` now leaves gaps as NaN instead
+    of bridging them (`_in_obs_gap`). (g) A gauge on a dry bank or an un-carved creek reads a
+    flat, smoothed series (v4: Sluice Creek, Cohansey at Greenwich, Murderkill at Frederica,
+    Christina at Newport — the creek channels are not in the bed).
 
 ### Closed — do not re-open
 
@@ -873,7 +1184,11 @@ Each of these cost a campaign and is settled. The evidence is in the archive's
   wind-sea hm0 +8..+10 %, boundary hm0 unchanged) moves the Great Kills / Arthur Kill mouth
   peaks by **+0.017 / +0.021 m**, the NY-bay paired median by +0.012 [−0.003, +0.021] (n 38,
   50 m), the open coast by −0.002 (control): dη/dU in the bay is ~0.02 m per 10 % of wind,
-  an order of magnitude short of the −0.44 / ~−0.25 m deficit. The E wind steepens the
+  an order of magnitude short of the −0.44 (pre-repair) / ~−0.25 m deficit. ERA5 as applied
+  (9 × 12-cell, ~25 km `netamuv` grid) is not low offshore — NDBC 44065 / 44025 22.3 / 22.2
+  m/s at 5 m against ERA5 24.8 / 25.1 at 10 m, ≈ 1.0 after the height correction — and ~10 %
+  low at the exposed coast (Robbins Reef 0.89, Cape May 0.90). Sheltered land stations
+  (Bergen Point 0.59×, Kings Point 0.43×) are not over-water winds. The E wind steepens the
   along-bay tilt by ~0.04 m end to end (west +0.024, Sandy Hook pocket −0.019) and that is
   all of it. So a better wind product (H*Wind / RAP / GAHM) is NOT a bay lever; the deficit
   is supply-side (the edge drain — walled 2026-09-22, §50 — then the bay's wave/setup side). ⚠️ Read as a LOWER bound
@@ -890,10 +1205,19 @@ Each of these cost a campaign and is settled. The evidence is in the archive's
 - **CORA is rejected for WATER LEVEL** (tide late, levels 0.14–0.31 m low) and **adopted for
   WAVES**. ❌ "CORA runs low" does NOT extend to its waves. 🔑 Its `*_map.zarr` are kerchunk
   reference files, not real zarr stores.
-- **The Galibier engine is retired** — and re-tested on v3 2026-09-18 (§47: unclamped explodes, clamped buys 1.1–1.4× setup on a looser stop) and refused again. The Faber container (`sfincs-cpu.sif`, v2.3.3) was
+- **The Galibier engine is retired** — and re-tested on v3 2026-09-18 (§47: unclamped explodes, clamped buys 1.1–1.4× setup on a looser stop) and refused again. The Faber container (`sfincs-desktop.sif`, v2.3.3; the
+  `sfincs-cpu.sif` image was Galibier v2.4.0, never an engine of record, deleted 2026-09-11) was
   the engine for every run to 2026-09-10; from the Phase-2 rebuild onward the engine is the
-  native patched v2.3.3 build (`Build-Revision … nj-winddir-fix-1`, §43). Every metrics
+  native patched v2.3.3 build (the `nj-winddir-fix-1` lineage: `winddir-fix-1`, and
+  `winddir-igk-fix-1` for wavemaker arms, §43/§47). Every metrics
   row carries an `engine` column from that epoch; do not compare across it without saying so.
+- **The bridge-as-dam sweep on v3's premier bed found no dam — no carve** (2026-08-26,
+  scripts retired). 47 wet bodies behind a wall < 300 m (43 with a crest in −1..0 m =
+  shoals) and four crests above 0 m (Grassy Sound causeway, Brigantine/Absecon, Shrewsbury,
+  Point Pleasant Canal) were all the −1 m threshold reading flats as a wall, or real land.
+  CUDEM 1/9″ topobathy has no deck at any of 21 v4 bridges probed (2026-09-26). ⚠️ The sweep
+  reports the body cell NEAREST the ocean, not the wall; on a long channel those differ.
+  Re-run it on any new domain's merged bed before a freeze.
 
 ---
 
@@ -997,8 +1321,18 @@ junction, which had **zero** NACCS support within 9.56 km while the mouth has a 
 0.21 km. ⚠️ Cutting there walls off the Raritan Bay ↔ Newark Bay exchange and puts a forced
 level on ~1 km of Raritan shoreline — a milder instance of the very defect v1.5 fixes, so
 do not claim the interior is *wholly* computed. The Narrows carries the Upper Bay + Hudson
-prism and stays open. ⚠️ The dropped rationale ("Carteret / Woodbridge are HWM-rich") is
-**untested**: our HWM file has no marks there but is clipped at lat 40.515. See STATUS.
+prism and stays open. The price: the full USGS STN set holds 8 marks in the Carteret /
+Woodbridge / Elizabeth box (−74.30…−74.15, 40.52…40.68), judged acceptable for a domain whose
+goal is forcing Raritan Bay correctly (2026-08-13). v4 computes that shore.
+
+**Also recorded for v1.5** (frozen; details in `git show d70dd1e:docs/STATUS.md` L5498–6767):
+dense NACCS forcing beats the 2-node NOAA interpolant on the marks — premier − `noaa-2node`
+ΔRMSE **−0.0717 [−0.161, −0.013]** (n 46, pre-weir, container engine; a FORCING-DENSITY
+result, not the boundary-move argument; 71 of 71 NACCS support points lie inside the domain
+vs 0 of 2). Jamaica Bay's exclusion is a 1.20 km closed wall ON water (−4 to −7 m) that
+removes its tidal prism by design; 17 forced cells in the Rockaway Inlet throat were kept
+deliberately. v1.5's high-ground outflow edge is the §50 drain, never measured on v1.5 — every
+v1.5 bay number carries it.
 
 **What makes it auditable rather than asserted:** flux cross-sections just inside each arm.
 SFINCS writes `crosssection_discharge` every 10 min, so Q(t) through the Narrows is the
@@ -1039,10 +1373,15 @@ region, `SimB1HT` water level. Zips land in `data/NACCS/`.
    `np.interp` never extrapolates at `tstart`. A product starting exactly at `tstart` gets
    clamped flat and **fabricates both tidal range and lag**.
 
-⭐ **How to confirm a file is ADCIRC and not STWAVE** — relevant now that STWAVE output is
-being pulled alongside. The ADCIRC columns are `RMP00` pressure, **`ET00` water elevation**,
-`UU00`/`VV00` velocity, `RMU00`/`RMV00` wind — and **no wave parameters at all**. That
-absence is the check.
+⭐ **How to confirm a MEMBER is ADCIRC and not STWAVE** — the CHS zips are mixed, ADCIRC
+(`…_ADCIRC01_Timeseries.csv`, 15-min) and STWAVE (`…_STWAVE07_…`, 30-min) side by side, so
+product is a per-MEMBER fact. The ADCIRC columns are `RMP00` pressure, **`ET00` water
+elevation**, `UU00`/`VV00` velocity, `RMU00`/`RMV00` wind — and **no wave parameters at all**.
+That absence is the check; the builder filters on `_ADCIRC01_` and looks `ET00` up by name
+(column 9 is `TM` in STWAVE). The two products have DISJOINT save-point ID spaces (STWAVE
+`SP0089` = ADCIRC `SP03584`): join on coordinates with a tolerance, never on id. After the
+2026-09-26 merge, v3's NACCS boundary is byte-reproducible only from the pre-merge zips in
+`data/NACCS/_originals_pending_delete/` — deleting them ends that.
 
 🔴 **The 2 km screen must live in the FILE**, not in a downstream selection.
 `water_level.create` selects support points by buffering the **`mask==2` line** — not the
@@ -1057,9 +1396,14 @@ The 2 km screen is what makes it not matter: with a support point within 2 km of
 every cell, the answer is insensitive to the weighting. If the screen is ever loosened, that
 assumption goes with it.
 
-**VDatum per point.** NACCS is MSL epoch 1992; convert LMSL → NAVD88 per save point via the
-NOAA VDatum API (cached to `data/NACCS/vdatum_lmsl_navd88.csv`). ⚠️ **A scalar will not do**
-— the separation drifts 0.065 m across the domain, **concentrated in the Raritan limb**,
+**VDatum per point.** NACCS is MSL epoch 1992; convert LMSL → NAVD88 per save point from
+NOAA's 2019 NAVD88 separation grids sampled OFFLINE (`data/NACCS/vdatum_grids/*_tss.gtx`,
+offset = −tss), falling back grid → web API → station plane, with a per-row `source`. The web
+service fails south of lat ~39.34–39.47 (NOAA's March-2024 grids, whose `tss` reads +0.44 m
+at Atlantic City); grid − web = 0.0000 m mean / 0.0009 max over 144 v1.5 points; AC +0.120,
+Cape May +0.137, Lewes +0.121 vs gauges 0.122 / 0.137 / 0.122. A station plane errs 2–3 cm on
+the shelf and up to 8 cm in the bays. ⚠️ **A scalar will not do**
+— the separation drifts 0.065 m across v1.5 (~0.09 m across v3), **concentrated in the Raritan limb**,
 which is exactly the water v1.5 is about. The script validates itself against an
 independently known offset at Sandy Hook (−0.073 m, NOAA-published and reproduced by the
 NACCS conversion key) and refuses to write past a 0.030 m disagreement; measured agreement
@@ -1091,3 +1435,72 @@ correction on a boundary that waves already push up. The builder still supports
 **Two things the builder now emits that it did not before:** per-arm coverage (aggregate
 coverage hides an empty arm) and a **support-geometry sha16**, so a run can be traced to the
 point set that forced it the way the domain fingerprint traces it to a mesh.
+
+---
+
+## 4. The v4 design record
+
+v4 = v3 + Delaware Bay and the tidal Delaware, the Raritan to Manville, the Arthur Kill NJ
+shore and Newark Bay, with the far banks (DE / PA / Staten Island) COMPUTED, not walled.
+Frozen 2026-09-28; registered `premier.V4 = (4881654, 4388, "23ea65f8b81ee1bd")` after four
+post-freeze mask patches on the same mesh (Elizabeth source faces, forced-line flanks + the
+Henlopen Atlantic beach, Darby Creek). Only waves-off runs exist.
+
+**The rule that drew it (user, 2026-09-25): the ring contains the NACCS Sandy peak + 3 m,
+connected from the ocean;** the edge sits on ground ≥ that level + 2 m, ≥ 500 m from it, or on
+a declared line; rivers are cut where the +3 m water ENDS (walled, flow from the nearest
+gauge); the neighbour basins with their own inlets (NY Upper Bay / Hudson, Jamaica Bay,
+Rehoboth Bay, the Chesapeake) are shut off. Traced once into
+`data/v4_design/region_v4_vertices.csv` (194 named vertices, 22,860 km²) and edited by hand
+since; `scripts/audit_region_v4.py` checks it (target land outside the ring 0.00 km²; MOTF
+land inside 1.000 of 1,582 km²; 166 of 193 HWMs inside). Two generators (a rule-driven draft
+and a HUC-12 walker) needed rule upon rule and still misplaced rivers, and were retired: an
+algorithm CHECKS a ring, it does not make one.
+
+**The forced sea line replaces the −10 m isobath** (user, 2026-09-27): one named-vertex line
+node-to-node through NACCS save points, Cape Henlopen → Brooklyn
+(`data/v4_design/waterlevel_line_v4.csv`, 99 vertices, 241 km); everything landward in the
+ring is active at ANY depth (174 km² of water deeper than −10 m becomes active — the accepted
+cost), arms are SECTIONS of the line plus three boxes (Narrows, Kill van Kull east, C&D
+canal), 241 NACCS support points. The C&D canal carries a 0.6 m Sandy-peak gradient
+(Reedy Point 1.76–1.83 → 1.15 m at Chesapeake City), so where its line sits matters.
+
+**What a crossing needs:** a FORCED line needs NACCS nodes on it, a short crossing where the
+level is uniform (a channel or mouth, never an amplifying basin), and both ends above the
+forced level + SLR; a RIVER cut is §53; a LAND edge clears the +3 m target. Every DRY edge
+cell is free outflow unless walled, so the gate (waves-off Sandy at +0 / +2 / +3 m,
+`scripts/overflow_check.py … --compare`) is what finds leaks: it found the Lewes / Cape
+Henlopen overflow (~120 outflow cells wet at +2/+3), outflow cells ON water at the ends of
+the forced lines at every level (42 at +0), a +3 m-only numerical spike beside them on the
+Narrows flank, and Darby Creek. Walls fixed each (`wall_outflow_near_forced_m = 500`,
+`wall_henlopen_atlantic`, the `darby_creek` cut); the re-read left 8 / 8 / 12 wet outflow
+cells at Breezy Point, overtopped land Sandy flooded. Walls standing in water rise with SLR
+as designed (Bayonne +4.1, Jamaica Bay +3.1 m at +3).
+
+**Cost.** 4.88 M faces, 3.97 M active (v3 3.41 M / 1.76 M): 1.90 M inside v3's ring + 1.78 M
+Delaware bay / river / far banks + 0.20 M Newark Bay / Arthur Kill / new Raritan + 0.08 M
+other; 25 m 1.42 M, 50 m 2.25 M, 100 m 0.26 M, 200 m 0.95 M (52 k active — the Track C coarse
+shelf seaward of the line). `narrow_channels` (25 m within 50 m of any channel narrower than
+50 m) costs +254 k active faces: 1,349 km of named channel is under 50 m wide, and a cell
+wider than its channel mis-carries the flow (van Ormondt et al. 2025). 16 px subgrid
+(`dep_subgrid_lev3.tif` 12.6 G). Freeze 4 h 39 / 72 GB; a waves-off solve 1 h 33 – 2 h 14;
+the validate needs ~200 G on the 3.125 m scoring bed. **The river reaches are cheap in solver
+time; their cost is bed data, mask patches and design effort** (§53, §54). Waves: the
+SnapWave domain is v3's area + Delaware Bay below the Liston Point – Hope Creek line, with a
+stepped band (`v4_shelf_steps`, 155,793 cells; 7 predicted dead corner cells) —
+3.39 M SnapWave nodes, projected ~30 h at the v3 premier's settings; never run.
+
+**First waves-off look (validate 62039939, 2026-09-29; rain on, infiltration on;
+`extent_admissible=False`; before any inland-water fix):** HWM RMSE 0.577 / bias −0.408
+(median, 50 m, n 110), CSI 0.684. Basins shared with v3 read much lower than v3's own
+waves-off run (Barnegat Bay −0.84 vs −0.38; Raritan Bay −0.42 vs −0.20; south_coast −1.07
+vs −0.49) — different forcing, mesh and rain treatment, not yet paired or explained.
+Delaware gauge peaks run 0.23–0.57 m low (Lewes −0.23 … Marcus Hook −0.57), Newark Bay
+−0.71, Christina at Wilmington −0.91.
+
+**Open inland-water defects** (parked 2026-09-30 pending the river-policy decision): the
+CUDEM ~0 m fill under lakes and non-tidal rivers (§54a); the Schuylkill backing up to
+7–10 m NAVD88 through Philadelphia, attributed to the box-MEAN Manning above `uv_zmax`
+(NLCD puts 29 % of its channel pixels in developed classes, n 0.10–0.13) — untested; creek
+channels missing from the bed at four Delaware-tributary gauges (§60g); Union / Sunset Lake
+dam crests unchecked; no measured bed above the Trenton falls (a DRBC request is out).

@@ -12,27 +12,28 @@ frozen and read-only — see [ARCHIVE.md](ARCHIVE.md). What is believed true *no
 
 ---
 
-## 1. What this repo is FOR
+## 1. What this repo is for, and where it stands
 
-**Move the water-level boundary out of Raritan Bay.**
+A Sandy compound-flood hindcast of the New Jersey coast that holds up against the gauges,
+the marks and the MOTF extent, built domain by domain (§2). **v3** (Cape May → the Narrows)
+is DONE and is the reference. **v4** (v3 + Delaware Bay and river, the Raritan to Manville,
+Newark Bay; the far banks computed) is frozen but PARKED while two things are re-decided
+(user, 2026-09-30): **where rivers are cut** (today's head of tide, the gauge, the Sandy
++3 m rule, or whole watersheds) and **how waves are represented** (SnapWave is ~97 % of the
+wall time, FINDINGS §20). STATUS has the plan; nothing about the domain changes until the
+user picks from the decision memo.
 
-The previous domains ran their boundary *through the middle of Raritan Bay*, forced by a
-linear interpolation between two NOAA gauges that both sit **outside** it. NOAA harmonics
-say the interior tidal maximum is real — 0.732–0.761 m, exceeding both exterior anchors —
-and a linear interpolation between two outside points **structurally cannot** produce an
-interior maximum. That lobe was under-forced by construction, not by calibration error.
+**The lineage's founding argument, still the rule for how to argue a boundary:** the
+predecessors ran the water-level boundary *through the middle of Raritan Bay*, forced by a
+linear interpolation between two NOAA gauges that both sit outside it. NOAA harmonics say
+the interior tidal maximum is real — 0.732–0.761 m, exceeding both exterior anchors — and an
+interpolation between two outside points **structurally cannot** produce an interior
+maximum. `v1_5_raritan` moved the boundary to the Narrows and the Arthur Kill mouth; v3 and
+v4 keep Lower, Raritan and Sandy Hook Bays computed.
 
-`v1_5_raritan` relocates the boundary so Lower Bay, Raritan Bay and Sandy Hook Bay are
-**computed**: one ocean arm (v1's own Atlantic trace, extended ~3.3 km straight north to
-Rockaway Point) plus two short forced cross-sections at **Verrazzano Narrows** and the
-**Arthur Kill MOUTH**. Staten Island's south shore is a declared land boundary; Jamaica Bay
-is excluded; no NYC land is in the model. v1.5 keeps v1's southern limit, lat 40.150.
-
-🔴 **The case for it is STRUCTURAL, and must be argued that way.** The measured waves-on
-comparison that motivated the move does **not** separate the two candidate boundaries:
-ΔRMSE −0.042 m, 95% CI [−0.238, +0.137], P = 0.706 on 38 marks. The dense boundary wins
-every point estimate and is **not a demonstrated win**. Do not quote that margin as the
-justification; quote the geometry.
+🔴 **That case is STRUCTURAL and must be argued that way.** The measured waves-on comparison
+that motivated the move does **not** separate the two candidate boundaries: ΔRMSE −0.042 m,
+95% CI [−0.238, +0.137], P = 0.706 on 38 marks. Quote the geometry, not that margin.
 
 ## 2. The one thing that will bite you: domains
 
@@ -43,7 +44,7 @@ Every geographic fact lives in **`nj_sfincs/domain.py`**, keyed by the `NJ_DOMAI
 | `v1_monmouth` | Sandy Hook → Sea Girt, 547,408 faces | **FROZEN** — port-verification fixture only |
 | `v1_5_raritan` | boundary relocated to the Narrows + Arthur Kill | **FROZEN 2026-08-14** — `faces=696230 boundary_edges=1652 sha=2a23667dd16e449c`, three arms run + scored (see STATUS) |
 | `v3` | full NJ ocean coast, Cape May → the Narrows, NACCS boundary | **DONE 2026-09-24** — `faces=3412470 boundary_edges=4108 sha=1596ce1ecc71b374` (mask repaired 09-22); reference = `naccs-premier` (FINDINGS §50) |
-| `v4` | v3 + Delaware Bay and river to where Sandy +3 m ends (Washington Crossing; forced at the mouth) + the Raritan to Manville + the Arthur Kill shore **and Newark Bay**; **far banks (DE/PA/Staten Island) COMPUTED, not walled**; Track C coarse shelf | **FROZEN 2026-09-28** — `faces=4881654 boundary_edges=4388 sha=c5d8c8d7837b8461` (after the freeze: 4 Elizabeth-crossing faces walled, then 193 forced-line-end + Henlopen-Atlantic outflow faces walled after the first gate read); the forced boundary is the DRAWN line `data/v4_design/waterlevel_line_v4.csv` (7 arms, NACCS 241 points), the ring `data/v4_design/region_v4_vertices.csv` (edit by hand, check with `scripts/audit_region_v4.py --ring <csv>`); first runs = the design gate, waves-off Sandy at +0/+2/+3 m (`naccs-nowaves+rain-off+slr-*`, read with `scripts/overflow_check.py … --compare`) — STATUS |
+| `v4` | v3 + Delaware Bay and river to where Sandy +3 m ends (Washington Crossing; forced at the mouth) + the Raritan to Manville + the Arthur Kill shore **and Newark Bay**; **far banks (DE/PA/Staten Island) COMPUTED, not walled**; Track C coarse shelf | **FROZEN 2026-09-28, PARKED 2026-09-30** — `faces=4881654 boundary_edges=4388 sha=23ea65f8b81ee1bd` (after the freeze, on the same mesh: 4 Elizabeth-crossing faces walled, then 193 forced-line-end + Henlopen-Atlantic outflow faces, then 5 Darby Creek faces; FINDINGS part 4); the forced boundary is the DRAWN line `data/v4_design/waterlevel_line_v4.csv` (7 arms, NACCS 241 points), the ring `data/v4_design/region_v4_vertices.csv` (194 named vertices; edit by hand, check with `scripts/audit_region_v4.py --ring <csv>`); first runs = the design gate, waves-off Sandy at +0/+2/+3 m (`naccs-nowaves+rain-off+slr-*`, read with `scripts/overflow_check.py … --compare`) — STATUS |
 
 **The same experiment name exists on every domain and means a different model each time.**
 That is why runs live at `experiments/<domain>/<arm>`, why `EXPERIMENTS` is keyed by domain
@@ -80,11 +81,13 @@ nj_sfincs/          the package
   validate/         core.py (floodmap + caches + series) · metrics.py (the scores)
   plots.py animate.py provenance.py run.py report.py gdaltools.py
 run_experiments.py  the sweep driver (stage → run → validate → aggregate)
-scripts/            data acquisition, staging, scoring, verify_port.py
-experiments/<domain>/<arm>/     run dirs (gitignored; SYMLINK → /scratch/tpj8, see STATUS DISK)
+scripts/            flat, indexed in scripts/README.md (a hygiene test keeps them in step)
+experiments/<domain>/<arm>/     run dirs (gitignored; SYMLINK → /scratch/tpj8 — NOT backed up,
+                                 files unread for 90 days are purged; STATUS "Disk")
 data/               per-subdir symlinks into the archive for bulk; NACCS/ gtsm/ quadtree/ local
 docs/FINDINGS.md    ⭐ what is believed true NOW. No history, no retractions.
-docs/STATUS.md      ⭐ the live campaign state.
+docs/STATUS.md      ⭐ the live campaign state (≤ ~300 lines; the old log is git history).
+logs/               gitignored; dated campaign dirs + logs/slurm/<yyyy-mm>/ for job stdout
 ARCHIVE.md          the frozen predecessor + an index of its 26 campaign logs
 ```
 
@@ -94,14 +97,22 @@ ARCHIVE.md          the frozen predecessor + an index of its 26 campaign logs
 export PATH=$HOME/nj_sandy_sfincs/micromamba/envs/sfincs/bin:$PATH   # git lives here too
 export PYTHONPATH=$PWD
 
-python -m unittest discover -s tests            # 54 tests, ~2 s
+python -m unittest discover -s tests            # ~240 tests, ~30 s on a compute node
 python scripts/verify_port.py                   # ⭐ the port gate (see STATUS)
 
 python run_experiments.py --experiments <arm> --check       # READ-ONLY
-python run_experiments.py --experiments <arm> --tstop 2012-10-29   # short-window smoke
 python run_experiments.py --experiments <arm> --slurm --slurm-args "--time=12:00:00"
 python run_experiments.py --experiments <arm> --validate-only
 ```
+
+⚠️ **This session may be on a LOGIN node** (`hostname` = `amarel*`). Anything heavier than
+a grep — scoring, floodmaps, figures, the test suite — goes through `srun` on an
+allocation (`salloc --no-shell -p main --exclude=halk[0001-0159] …`, then
+`srun --jobid=<id> --overlap …`). A v3 paired score peaks at ~121 GB.
+
+⚠️ **`--tstop` cannot run on a sealed template** (a window change makes the driver try to
+rebuild it, and the seal refuses). For a short window on a finished run use
+`scripts/engine_gate.py make <run> <dst> --hours H` (outside `experiments/`).
 
 🔴 **`--check` is the ONLY read-only mode.** `--inputs-only`, `--no-run` and the deprecated
 `--dry-run` all `rmtree` each experiment directory before skipping the solver. Reading "dry
@@ -149,14 +160,17 @@ not trip that guard. Do not run the sweep driver to "just rebuild" a template.
   setup there changed by +0.5 m, and all three 08-27 v3 arms were voided (STATUS 08-31).
   Every guard passed: the fingerprint seals whatever mesh you built, not the one you
   meant. When a new domain claims comparability with a predecessor, **diff the two
-  refinement polygon LISTS by name** before freezing. Also: staging's transient is ~3
+  refinement polygon LISTS by name** before freezing — and the predecessor's Domain FIELDS,
+  boxes and discharge list: v3 also silently lost v1.5's always-active / dry-land /
+  no-water-level boxes, its Raritan sources and `open_coast_max_y` (FINDINGS §58i). Also: staging's transient is ~3
   full template copies BEFORE `dedupe_experiment_inputs` runs — budget ~25 G free.
 - **A roughness or elevation change needs a SUBGRID rebuild on the frozen mesh.**
   `build_static` copies the frozen mesh and returns early, so it will silently produce a
   no-op template. A *mask* change is the opposite: no subgrid rebuild, but the fingerprint
   moves.
 - **For any bed edit, diff `z_volmax`, not `z_zmin`.** A carve restores sub-cell relief; it
-  is not a uniform lowering, and `z_zmin` shows ~nothing while the run changes.
+  is not a uniform lowering, and `z_zmin` shows ~nothing while the run changes. For a
+  building BURN read `z_level` instead (FINDINGS §15).
 - 🔴 **Do not PREPEND a burn raster (footprints, walls) to the elevation list.** hydromt's
   `merge_multi_dataarrays` forces BILINEAR on every tier but the first, whatever
   `reproj_method` says, so a NoData-edged raster grows by a pixel at full height; and the
@@ -174,13 +188,29 @@ not trip that guard. Do not run the sweep driver to "just rebuild" a template.
   frame too; the de-rotated product is `experiments/v3/floodmaps/<arm>_hmax_lev3.tif`. A
   scorer that samples them with `x0 + col*res` reproduces the premier's CSI as 0.572
   instead of 0.706 and finds an EMPTY beach band (2026-09-20) — a self-check against the
-  published row is what caught it.
+  published row is what caught it (a correct affine sampler reproduces it to 3 decimals,
+  not 4; arm-to-arm deltas to 4). ⚠️ `rasterio` `read(window, boundless=True)` on a rotated
+  raster returns pixels from the WRONG PLACE (v4's first scoring bed: 47 of 54 sampled
+  pixels wrong, +8.2 m on the −15.2 m Delaware channel; FINDINGS §37) —
+  `build_merged_subgrid_dep.py` now spot-checks its output.
 - **eHydro sign convention flips by USACE district.** New York district ships negative
   elevations; Philadelphia ships positive depths. A hardcoded formula produces a silently
   empty raster on the wrong side.
 - **`nj_10ft_dem` is NEW-JERSEY-ONLY.** Any domain reaching Staten Island, the Narrows or
   the Rockaway shore falls through it to CUDEM/3DEP. `build_static` now asserts no active
-  cell has NoData in the merged bed.
+  cell has NoData in the merged bed. 🔴 **That assert cannot see a FILL:** CUDEM holds
+  non-tidal water as a flat ~0 m surface (fake pits under lakes and above-tide rivers),
+  holds the water SURFACE on the upper Passaic / Hackensack, and backfilled Ward Point as
+  bay; GMRT at 50 m sits under every gap and is ~5 m shallow in dredged channels. Only an
+  independent product or a POSITIVE check (declared dry-land boxes) finds a bed that is
+  present and wrong. FINDINGS §54.
+- 🔴 **A ring audit on a coarse bed cannot see a narrow channel.** A 75 m walk missed a
+  110 m Cape May Canal crossing; v4's audit on the 25 m coarse bed missed Darby Creek, which
+  drained the +2/+3 m water until walled. Walk creek and canal crossings at 10 m on 1/9″
+  CUDEM, and let the SLR gate runs be the real sweep. FINDINGS §58f.
+- **Bridge decks:** lidar puts a deck on the bed and the model reads a causeway as a dam
+  (the Shrewsbury lesson). Sweep the MERGED bed for ridges across wet channels BEFORE a
+  freeze — a dam found after it is a new domain. FINDINGS "Closed".
 - **Import `pyproj` before `hydromt_sfincs`** — `nj_sfincs/__init__.py` does this; it
   prevents a native double-free in `downscale_floodmap`.
 - 🔴 **The `halk*` nodes write to `/cache/home` LATE, and their late writes CLOBBER a good
@@ -215,22 +245,33 @@ not trip that guard. Do not run the sweep driver to "just rebuild" a template.
   it starves any job that is starting, and the wreckage is indistinguishable from the `halk`
   trap above. Reclaim with `scripts/dedupe_experiment_inputs.py` (within a domain) or
   `scripts/dedupe_home.py` (across all four data roots — it hard-links, never deletes, so it
-  is safe to point at the frozen archive; 20 GB the first time).
+  is safe to point at the frozen archive; 20 GB the first time). `mmlsquota` lags ~10 min
+  after a dedupe, and after hard-linking `du` counts shared inodes — measure a trim by
+  `st_nlink`. `snapwave.upw` is a rebuildable runtime table (safe to delete); a
+  `*_hmax_lev3.tif` is re-downscalable from a surviving `sfincs_map.nc`.
+- 🔴 **Do not score or plot a run until the audit says `output WHOLE`** (`python -m
+  nj_sfincs.premier`). A run read mid-write looks like a plausible catastrophe (v1.5:
+  "median −1.87 m, 20 of 46 dry, CSI 0.20" — the output stopped 0.7 h before the crest).
+- **`sacct MaxRSS` is a 30 s sample and under-reads a fast OOM** (a render killed at 100 G
+  read 32 G). Scorer rasters ACCUMULATE across arms in one process: three v3 arms OOM at
+  128 G where one fits; the v3 HWM panel figure peaks at 165 G for six arms.
 - **A truncated floodmap cache reads back clean and scores bone-dry.** Writes are atomic
   now; do not weaken that.
-- **SnapWave is 90–95% of runtime** and scales per-iteration; the 3 h batch default is not
-  enough for a large domain. Pass `--slurm-args "--time=12:00:00"`.
+- **SnapWave is ~97% of runtime** (FINDINGS §20; `scripts/snapwave_cost.py` reads it off a
+  log); the 3 h batch default is not enough for a large domain. Pass `--slurm-args "--time=12:00:00"`.
 - 🔴 **A wind-on SnapWave solve on v3 needs the FAST nodes** (confirmed 2026-09-13 on the
   full 73 h run): 3.3 sim-h per wall-h on `emeraldrapids` (21 h 55 total) vs 0.98 on
   `icelake` (`hal02xx`) → ~74 h, past the 40 h limit, and a TIMEOUT is NOT auto-requeued
   (`--requeue` covers preemption only). Submit with `SOLVE_CONSTRAINT=emeraldrapids`
   (`hpc/stage_and_submit_v3.slurm`) or `--constraint=emeraldrapids`; check `sacct
   --format=NodeList` before believing a pace. It is per-core speed plus cap-hits, not
-  threading (`sstat AveCPU` shows ~30 effective cores on every node). ⚠️ 3.3 was F.4 (IG off, `fw 0.02`,
+  threading: the SnapWave node sweep is SERIAL (FINDINGS §20), so every finished 64-thread
+  solve used 5.9–6.8 effective cores. ⚠️ 3.3 was F.4 (IG off, `fw 0.02`,
   no buildings); the PREMIER config paces 2.2–2.6 on the same nodes (09-14) — budget
   33–36 h. Read pace from the restart-file mtimes: a SnapWave call over 999.99 s logs
   `took ****** seconds` (Fortran overflow), so summing the `took` field drops the slowest calls. ⚠️ And check
   `scontrol show reservation` first: the monthly maintenance takes every hal node for ~40 h,
+  (next: 10-13, 11-10, 12-15, 08:00 → next day 23:59),
   and a job whose time limit overlaps it will not START (`Reserved for maintenance`) —
   ~1.5× the measured pace is enough, and users may shorten a queued job's limit with
   `scontrol update JobId=<id> TimeLimit=<h>:00:00` (only an increase is refused).
@@ -252,10 +293,10 @@ not trip that guard. Do not run the sweep driver to "just rebuild" a template.
 - ⚠️ **A station or mark within ~500 m of a discharge source reads the INJECTION, not the
   basin.** `rb_axis_559k` sits 253 m from the Raritan source (Qmax 110 m³/s) and carries a
   single-face, sub-2-minute **1.33 m** `zsmax` spike its own 60 s series never sees;
-  neighbouring faces do not share it. `scripts/diagnose_bay_seiche.py` computes
-  `dist_nearest_src_m` / `src_contaminated` so the flag is a column, not a footnote.
-  Measured clean for the scored HWMs on v1.5 (0 of 46 within 500 m, closest 674 m) —
-  **re-check on any new domain**, because it is a per-domain fact. FINDINGS §40.
+  neighbouring faces do not share it. `scripts/source_proximity.py` computes the distance
+  from every staged source to every mark and gauge, as a flag column, not a filter
+  (v1.5 0 of 46, v3 1 of 140 — HWM 6044, v4 0 of 166) — **re-check on any new domain**,
+  because it is a per-domain fact. FINDINGS §40.
 
 ## 6. Conventions
 

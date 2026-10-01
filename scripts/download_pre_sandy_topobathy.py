@@ -42,7 +42,7 @@ from pathlib import Path
 #
 # On memory: the old comment warned this raster is ~20 GB in RAM at a large bbox
 # and OOMed the elevation merge. That was a desktop constraint. On Amarel the
-# build runs under hpc/build_mesh.slurm (--mem=150G), so size the clip to the
+# build runs on a compute node (hpc/freeze_mesh.slurm, 200 G), so size the clip to the
 # domain and let the scheduler carry it.
 from nj_sfincs import domain as _domain  # noqa: E402
 from nj_sfincs.gdaltools import run_gdal  # noqa: E402

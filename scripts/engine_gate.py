@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """Does a native SFINCS binary reproduce the container? Cut, run, compare.
 
-    python scripts/engine_gate.py make    <src_run> <dst> [--hours H]
+    python scripts/engine_gate.py make    <src_run> <dst> [--hours H] [--set KEY=VALUE ...]
     python scripts/engine_gate.py run     <dir> (--sif X.sif | --bin sfincs) [--threads N]
     python scripts/engine_gate.py compare <a> <b> [--json out.json]
 
@@ -12,7 +12,9 @@ on the native build, then `compare`d.
 
 `make` builds a gate dir from a finished run: every INPUT is hard-linked (same filesystem)
 or copied, `sfincs.inp` is copied with `tstop = tstart + H hours` and the restart keys
-dropped. 🔴 Outputs are NEVER linked — SFINCS truncates `sfincs_map.nc` / `sfincs_his.nc` /
+dropped. `--set KEY=VALUE` (repeatable, 2026-09-30) replaces that inp key or appends it —
+the cheap way to time an inp-only change (a SnapWave setting) against the same cut; the
+changes are recorded in `gate_source.txt`. 🔴 Outputs are NEVER linked — SFINCS truncates `sfincs_map.nc` / `sfincs_his.nc` /
 `snapwave.upw` on create, so a linked output would clobber the source run's file through
 the shared inode. `make` also refuses a source whose map is younger than 30 minutes (a job
 may still be writing it). Gate dirs belong under `/scratch/tpj8/engine_gate/`, OUTSIDE
@@ -131,7 +133,9 @@ def _link_or_copy(src: Path, dst: Path) -> str:
 # ── make ──────────────────────────────────────────────────────────────────────────
 
 
-def make(src: Path, dst: Path, hours: float | None) -> None:
+def make(
+    src: Path, dst: Path, hours: float | None, sets: list[str] | None = None
+) -> None:
     src, dst = Path(src).resolve(), Path(dst).resolve()
     inp = src / "sfincs.inp"
     if not inp.is_file():
@@ -174,6 +178,14 @@ def make(src: Path, dst: Path, hours: float | None) -> None:
         if "=" in ln:
             k, _, v = ln.partition("=")
             keys[k.strip()] = v.strip()
+    overrides = {}
+    for kv in sets or []:
+        k, sep, v = kv.partition("=")
+        if not sep or not k.strip() or not v.strip():
+            raise SystemExit(f"--set expects KEY=VALUE, got {kv!r}")
+        if k.strip() in DROP_KEYS or k.strip() in ("tstart", "tstop"):
+            raise SystemExit(f"--set {k.strip()}: use --hours for the window")
+        overrides[k.strip()] = v.strip()
     out = []
     for ln in text.splitlines():
         k = ln.partition("=")[0].strip()
@@ -185,11 +197,20 @@ def make(src: Path, dst: Path, hours: float | None) -> None:
                 int(round(hours * 3600)), "s"
             )
             line = f"{'tstop':<20} = {_fmt_t(tstop)}"
+        if k in overrides:
+            line = f"{k:<20} = {overrides[k]}"
         out.append(line)
+    for k, v in overrides.items():
+        if k not in keys:
+            out.append(f"{k:<20} = {v}")
     (dst / "sfincs.inp").write_text("\n".join(out) + "\n")
+    changed = " ".join(
+        f"{k}={keys.get(k, '(absent)')}->{v}" for k, v in overrides.items()
+    )
     (dst / "gate_source.txt").write_text(
         f"source  {src}\nhours   {hours if hours is not None else 'full'}\n"
         f"staged  {' '.join(staged)}\nlinked  {n_link}\ncopied  {n_copy}\n"
+        f"set     {changed or '(none)'}\n"
     )
     print(
         f"{dst}: {n_link} linked, {n_copy} copied, tstop → "
@@ -431,6 +452,13 @@ def main(argv=None) -> int:
     m.add_argument(
         "--hours", type=float, default=None, help="window from tstart (default full)"
     )
+    m.add_argument(
+        "--set",
+        action="append",
+        default=[],
+        metavar="KEY=VALUE",
+        help="replace (or append) one sfincs.inp key in the cut; repeatable",
+    )
     r = sub.add_parser("run")
     r.add_argument("dir", type=Path)
     r.add_argument("--sif", type=Path, default=None)
@@ -442,7 +470,7 @@ def main(argv=None) -> int:
     c.add_argument("--json", type=Path, default=None)
     a = ap.parse_args(argv)
     if a.cmd == "make":
-        make(a.src, a.dst, a.hours)
+        make(a.src, a.dst, a.hours, a.set)
         return 0
     if a.cmd == "run":
         return run(a.dir, a.sif, a.bin, a.threads)

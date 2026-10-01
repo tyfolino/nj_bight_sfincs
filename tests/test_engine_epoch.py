@@ -2,22 +2,16 @@
 
 Pins: the premier is ONE constant off the shelf-steps wave config (fw 0.01, IG on); every
 attribution arm differs from the premier in exactly the fields its name says; union names
-are alphabetical; the retired arms are gone; and scripts/stamp_metrics_epoch.py fills the
-epoch columns and touches nothing else.
+are alphabetical; and the retired arms are gone. (The one-off epoch stamp,
+``scripts/stamp_metrics_epoch.py``, and its test were retired 2026-09-30, in git history —
+the migration ran on 2026-09-11 and every row carries its columns.)
 """
 
 from __future__ import annotations
 
-import importlib.util
-import sys
-import tempfile
 import unittest
 from dataclasses import asdict, replace
-from pathlib import Path
 
-import pandas as pd
-
-from nj_sfincs.config import ROOT
 from nj_sfincs.experiments import _V3_SHELF_STEPS_WAVES, EXPERIMENTS_BY_DOMAIN
 
 V3 = EXPERIMENTS_BY_DOMAIN["v3"]
@@ -69,10 +63,28 @@ class TestPremierConstant(unittest.TestCase):
             "wave-wavemaker": {"wavemaker", "wavemaker_line"},
             # 2026-09-20: the wind-sensitivity probe on top of the wavemaker line.
             "wave-wavemaker+wind-x110": {"wavemaker", "wavemaker_line", "wind_scale"},
+            # 2026-09-30: the wave cost tests. Wind off pins the sector so it is ONE
+            # physics change (without it the sector would narrow to 180° as well).
+            "wave-dt3600+wave-dtheta10+wave-noig": {
+                "dtwave",
+                "snapwave_dtheta",
+                "wave_igwaves",
+            },
+            "wave-nowind": {"wave_wind", "snapwave_sector"},
+            "wave-dt3600+wave-dtheta10+wave-noig+wave-nowind": {
+                "dtwave",
+                "snapwave_dtheta",
+                "wave_igwaves",
+                "wave_wind",
+                "snapwave_sector",
+            },
         }
         for name, fields in expect.items():
             self.assertEqual(_diff_fields(V3[name], PREMIER), fields, name)
         self.assertEqual(V3["wave-fw02"].waves.snapwave_fw, 0.02)
+        for name in ("wave-nowind", "wave-dt3600+wave-dtheta10+wave-noig+wave-nowind"):
+            self.assertFalse(V3[name].waves.wave_wind, name)
+            self.assertEqual(V3[name].waves.sector(), 360, name)
         self.assertFalse(V3["wave-noig"].waves.wave_igwaves)
         self.assertTrue(V3["wave-wavemaker"].waves.wavemaker)
         self.assertTrue(V3["wave-wavemaker"].waves.wave_igwaves)
@@ -109,51 +121,6 @@ class TestPremierConstant(unittest.TestCase):
             "bed-nobuildings+wave-band-sandy-hook+wave-fw02+wave-noig",
         ):
             self.assertNotIn(old, V3, old)
-
-
-def _load_stamp():
-    spec = importlib.util.spec_from_file_location(
-        "stamp_metrics_epoch", ROOT / "scripts" / "stamp_metrics_epoch.py"
-    )
-    mod = importlib.util.module_from_spec(spec)
-    sys.modules[spec.name] = mod
-    spec.loader.exec_module(mod)
-    return mod
-
-
-class TestStampTouchesOnlyEpochColumns(unittest.TestCase):
-    def test_stamp_and_diff(self):
-        S = _load_stamp()
-        with tempfile.TemporaryDirectory() as td:
-            root = Path(td)
-            for arm, wind in (("old-arm", "1"), ("off-arm", "0")):
-                d = root / arm
-                d.mkdir()
-                (d / "sfincs.inp").write_text(f"snapwave = 1\nsnapwave_wind = {wind}\n")
-                (d / "sfincs.log").write_text(
-                    "Build-Revision: $Rev: v2.3.3 mt. Faber+\n"
-                )
-            (root / "_retired" / "gone-arm").mkdir(parents=True)
-            (root / "_retired" / "gone-arm" / "sfincs.inp").write_text("snapwave = 0\n")
-            df = pd.DataFrame(
-                {"hwm_rmse_m": [0.38, 0.40, 0.41, 0.5], "domain": ["v3"] * 4},
-                index=["old-arm", "off-arm", "gone-arm", "vanished"],
-            )
-            new = S.stamp(df, root)
-            self.assertEqual(new.loc["old-arm", "snapwave_direction"], "wind")
-            self.assertEqual(new.loc["off-arm", "snapwave_direction"], "imposed")
-            self.assertIn("faber", new.loc["old-arm", "engine"])
-            self.assertEqual(new.loc["gone-arm", "retired_to"], "_retired/gone-arm")
-            self.assertEqual(new.loc["gone-arm", "snapwave_direction"], "off")
-            self.assertEqual(new.loc["vanished", "engine"], "unknown (run dir gone)")
-            lines = S.diff(df, new)
-            self.assertEqual(len(lines), 4 * 4)  # four epoch cells per row
-            self.assertTrue(new["hwm_rmse_m"].equals(df["hwm_rmse_m"]))
-            # a changed number is refused
-            bad = new.copy()
-            bad.loc["old-arm", "hwm_rmse_m"] = 0.0
-            with self.assertRaises(AssertionError):
-                S.diff(df, bad)
 
 
 if __name__ == "__main__":

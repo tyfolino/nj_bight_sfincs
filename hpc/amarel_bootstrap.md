@@ -126,8 +126,9 @@ Env manager is **micromamba** (no conda module on Amarel), installed into
 > into PROJ/GDAL data paths, so the env cannot be moved without rewriting it — but the
 > repo it serves can be renamed freely. Keep `$PROJ` pointed at the toolchain and run
 > everything else from the repo. **Never let `$PROJ` leak into `PYTHONPATH` or `NJ_ROOT`**
-> — `hpc/build_mesh.slurm` and `hpc/probe_mesh.slurm` both carry a comment about the time
-> it did exactly that and imported the wrong `nj_sfincs`.
+> — it once did exactly that and imported the wrong `nj_sfincs` (the batch scripts that
+> recorded it, `build_mesh.slurm` / `probe_mesh.slurm`, were retired 2026-09-30, in git
+> history; `tests/test_repo_hygiene.py` now pins the rule).
 
 ```bash
 export PROJ=$HOME/nj_sandy_sfincs        # TOOLCHAIN (env + containers); add to ~/.bashrc
@@ -146,16 +147,10 @@ git apply $PROJ/hpc/patches/quadtree_mixin_pad2.patch
 $MM run -n sfincs pip install -e . --no-deps   # --no-deps: conda already has numba/pyflwdir/etc.
 ```
 
-### nbstripout git filter (run once per clone)
-The repo strips notebook outputs/metadata on commit via an nbstripout clean filter.
-`.gitattributes` travels with the repo, but the filter *config* lives in `.git/config`
-(not committed), so activate it once per clone using the env's python (so the filter
-points at the right interpreter on Amarel):
-```bash
-cd $PROJ && $MM run -n sfincs python scripts/setup_nbstripout.py
-```
-Without this, commits still work but notebooks land un-stripped. The filter keeps cell
-ids (`--keep-id`) and drops outputs + `kernelspec`/`language_info`.
+### Notebooks are committed rendered
+There is no nbstripout filter (removed 2026-09-30, `.gitattributes`): notebooks are committed
+with their outputs so they read on GitHub (`hpc/push_rendered_notebook.sh`). Do not install
+one — it would silently strip every rendered notebook on `git add`.
 
 Gotcha chain we hit (now baked into `environment.yml`, kept here for the record):
 the editable `pip install -e .` with `--no-deps` left runtime imports failing one by

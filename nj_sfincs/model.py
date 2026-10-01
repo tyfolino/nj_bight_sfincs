@@ -53,12 +53,14 @@ OUTFLOW_MAX_DEPTH = -1.0
 # that had been drawn as one clean shoreline. The bed there runs to +26 m; the inland
 # limits run to +80 m.
 #
-# Raising it is safe in the one direction that has ever bitten: the drain. `zmin` is
-# still OUTFLOW_MAX_DEPTH, and 5c re-seals any outflow cell that lands on water, so the
-# Navesink failure mode cannot return. On genuinely dry ground a Neumann face is inert
-# until water reaches it, and when water DOES reach it, letting the flood leave is more
-# physical than ponding it against an artificial wall — which on Staten Island's south
-# shore would push water back into the Raritan Bay lobe this domain exists to measure.
+# `zmin` is still OUTFLOW_MAX_DEPTH, and 5c re-seals any outflow cell that lands on
+# water, so the Navesink failure (an outflow face ON water) cannot return. 🔴 But a DRY
+# outflow edge is not inert: once the surge tops it, it drains. v3's Staten Island /
+# Raritan-cut edge on +2.4..+2.9 m ground carried ~40,000 m³/s out of the bay at the
+# peak, and walling it raised the Arthur Kill mouth +0.22..+0.25 m (FINDINGS §50). An
+# edge the surge can reach must be walled (`Domain.mask_overrides`,
+# `wall_outflow_near_sources_m`, `wall_outflow_near_forced_m`) or moved to ground the
+# water never reaches; the frozen v1.5 mesh carries the drain unmeasured.
 OUTFLOW_MAX_BED = 1.0e4
 # A cell the model calls (near-)land while a real survey says there is water this deep
 # beneath it has been PAVED OVER by a failed lidar return.

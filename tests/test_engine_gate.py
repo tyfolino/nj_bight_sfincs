@@ -141,6 +141,29 @@ class TestMakeIsSafe(unittest.TestCase):
                 (dst / "sfincs.inp").read_text(),
             )
 
+    def test_set_replaces_or_appends_a_key_and_records_it(self):
+        G = _load()
+        with tempfile.TemporaryDirectory() as td:
+            src = _run_dir(td, map_age_s=3600)
+            dst = Path(td) / "gate"
+            G.make(src, dst, hours=12, sets=["dtmaxout=3600.0", "snapwave_crit=0.01"])
+            text = (dst / "sfincs.inp").read_text()
+            self.assertIn("dtmaxout             = 3600.0", text)
+            self.assertNotIn("21600.0", text.split("dtmaxout")[1].splitlines()[0])
+            self.assertIn("snapwave_crit        = 0.01", text)
+            self.assertEqual(text.count("dtmaxout"), 1)
+            rec = (dst / "gate_source.txt").read_text()
+            self.assertIn("dtmaxout=21600.0->3600.0", rec)
+            self.assertIn("snapwave_crit=(absent)->0.01", rec)
+            self.assertEqual(src.joinpath("sfincs.inp").read_text(), INP)
+
+    def test_set_refuses_the_window_keys(self):
+        G = _load()
+        with tempfile.TemporaryDirectory() as td:
+            src = _run_dir(td, map_age_s=3600)
+            with self.assertRaises(SystemExit):
+                G.make(src, Path(td) / "gate", hours=12, sets=["tstop=20121029 000000"])
+
 
 if __name__ == "__main__":
     unittest.main()

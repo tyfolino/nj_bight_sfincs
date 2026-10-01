@@ -4,9 +4,12 @@
 # the sealed engine passed explicitly, then queue ONE dependent validation job that
 # scores the arms once every solve has finished. 2026-08-26; generalised 2026-09-02.
 #
-#   sbatch hpc/stage_and_submit_v3.slurm                       # the three 08-26 arms
-#   sbatch hpc/stage_and_submit_v3.slurm diag-premier-norain   # one arm
-#   SOLVE_TIME=08:00:00 SOLVE_MEM=64G sbatch hpc/stage_and_submit_v3.slurm wave-stwave
+#   sbatch hpc/stage_and_submit_v3.slurm naccs-premier,naccs-nowaves   # comma-separated arms
+#   SOLVE_TIME=08:00:00 SOLVE_MEM=64G sbatch hpc/stage_and_submit_v3.slurm wave-noig
+#   NJ_DOMAIN=v4 VALIDATE=0 sbatch hpc/stage_and_submit_v3.slurm naccs-nowaves
+#
+# The arm list is REQUIRED (2026-09-30): the old default named a retired arm and the v3
+# reference run dir, which staging would destroy and re-stage.
 #
 # 🔴 DISK FIRST. Staging copies the 9.9 G template per arm BEFORE dedupe hard-links it
 # back, the solve writes ~2.5 G of snapwave.upw + ~5 G of output, and validation adds a
@@ -31,7 +34,7 @@ hostname; date
 # EXPECT_MD5=<file of `md5sum` lines, written at submit time> makes the job refuse to
 # stage from files that still read STALE on this node (the halk write lag, CLAUDE.md §5).
 if [ -n "${EXPECT_MD5:-}" ]; then md5sum -c "$EXPECT_MD5" || { echo "STALE FILES — refusing"; exit 3; }; fi
-ARMS="${1:-naccs-premier,wave-stwave,naccs-nowaves}"
+ARMS="${1:?give the arms to stage, comma-separated (no default since 2026-09-30)}"
 # Measured 2026-09-01 on the rebuilt mesh: wave arms 5:10-5:17 wall, MaxRSS 12.8 G;
 # waves-off 0:40 / 1.3 G. 12 h / 64 G is ~2x the worst case on both axes.
 SOLVE_TIME="${SOLVE_TIME:-12:00:00}"
@@ -98,8 +101,10 @@ echo "solve jobs: $JOBS"
 # VALIDATE=0: solves only (2026-09-29: v4's validate OOMs at 400 G until the floodmap
 # downscale is tiled — queuing it would only burn a big-memory node).
 if [ "${VALIDATE:-1}" = "0" ]; then echo "validate: SKIPPED (VALIDATE=0)"; date; exit 0; fi
-# One validation job for ALL the arms staged here, after every solve exits 0. The scorer
-# unpacks ~60 G of rasters per arm, so one job, sequential, 128 G (STATUS 09-01 ops note).
+# One validation job for ALL the arms staged here, after every solve exits 0. ⚠️ The
+# scorer's rasters ACCUMULATE across arms in one process: three v3 wave arms OOM'd at
+# 128 G (MaxRSS 114 G, 2 h 12, nothing written) while one arm fits in 128 G. For 2+ arms
+# raise VALIDATE_MEM (200 G) or validate one arm per job; v4 needs ~200 G for ONE arm.
 # afterok means a failed or timed-out solve leaves this job pending forever — squeue
 # shows it as DependencyNeverSatisfied; scancel it and read the solve log.
 VJOB=$(sbatch --parsable --dependency=afterok:"$JOBS" --mem="$VALIDATE_MEM" --time="$VALIDATE_TIME" \

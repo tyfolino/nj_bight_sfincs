@@ -35,8 +35,9 @@ Writes data/v4_design/v4_audit.{txt,gpkg} (layers rim_segments, rim_flags,
 declared_lines, deeper_than_zmin, target, target_outside, valley_crossings) and, with --maps, reports/figures/v4_audit_*.png.
 
 History: born 2026-09-25 as the independent check of the generated v4 draft ring; the
-two generators it checked (`scripts/draft_region_v4.py`, a HUC-12 watershed walker)
-were retired the same day. The +3 m target rule replaced the flat +10 m edge rule that
+two generators it checked (`draft_region_v4.py`, a HUC-12 watershed walker) were
+retired the same day (deleted in commit 56b4097, in git history). The +3 m target
+rule replaced the flat +10 m edge rule that
 evening; the ring was traced once around it and is edited by hand since (STATUS).
 """
 

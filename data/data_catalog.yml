@@ -1,23 +1,8 @@
 # Data catalog for NJ Sandy SFINCS model.
 # Pass this single file to data_libs in the model build notebook.
 
-# ── Inlet channel burn (experiment_inlet_connectivity only) ──────────────────
-# Hand-defined inlet centerlines burned at -2 m NAVD88 (Shrewsbury, Shark R
-# Inlet, Deal Lake outlet). Added as TOP layer in the experiment build to
-# resolve the throttled 50 m inlets that show as MOTF inland misses. NoData
-# elsewhere -> a true fill (only the channel pixels override the merge).
-
-inlet_channels_burn:
-  data_type: RasterDataset
-  uri: elevation/inlet_channels_burn.tif
-  driver:
-    name: rasterio
-    options: {}
-  metadata:
-    category: topography
-    crs: 32618
-    unit: m+NAVD88
-    source: scripts/build_inlet_channels.py (hand-defined inlet polylines)
+# Retired 2026-09-30, in git history: `inlet_channels_burn` (a v1 arm's burn raster;
+# its file and builder no longer exist anywhere).
 
 # ── Elevation (SEVEN-layer merge, top → bottom) ──────────────────────────────
 # ⚠️ The numbered list below is the v1 FIVE-layer merge and is kept for its
@@ -178,7 +163,7 @@ ehydro_nj:
 # never reaches the coarse z. Leaving z/mask alone is deliberate — the subgrid tables are
 # what the solver uses for conveyance, and the domain fingerprint stays intact so the arm
 # remains comparable to `wave-cora`.
-# Build: python scripts/build_ehydro_south.py
+# Build: python ~/nj_coast_sfincs/scripts/build_ehydro_south.py (archive; not ported)
 ehydro_south:
   data_type: RasterDataset
   uri: elevation/ehydro_south.tif
@@ -205,22 +190,8 @@ shrewsbury_ehydro_2015:
     source: USACE eHydro NJ_14_SNR_20150902_CS_4368_15 (2015-09-02 condition survey)
     url: https://services7.arcgis.com/n1YM8pTrFmm7L4hs/arcgis/rest/services/eHydro_Survey_Data/FeatureServer
 
-# Workstream H diagnostic — widened Navesink+Shrewsbury narrows. -5 m in a ~150 m
-# band around the eHydro channel (+ a cut through the Rumson-Sea Bright causeway),
-# NoData elsewhere. Sits ON TOP (prepended to elevation_list) to over-widen the
-# channel cross-section and falsify/confirm the "eHydro ribbon too narrow" residual.
-# Built by scripts/make_narrows_dredge.py. NOT part of the premier build.
-narrows_wide_h:
-  data_type: RasterDataset
-  uri: elevation/narrows_wide_h.tif
-  driver:
-    name: rasterio
-    options: {}
-  metadata:
-    category: topography
-    crs: 32618
-    unit: m+NAVD88
-    source: derived (widened eHydro channel, Workstream H diagnostic)
+# Retired 2026-09-30, in git history: `narrows_wide_h` (the Workstream H diagnostic;
+# its file and builder no longer exist anywhere).
 
 # 2010 USACE NCMP Topobathy LiDAR DEM — pre-Sandy 1 m topobathy.
 # Clipped tight to the model region: ~4 GB in memory (was ~20 GB at the old
@@ -389,7 +360,7 @@ noaa_sandy_nj:
 # So: keep 2 stations, advance ONLY the Battery's TIDE to open-coast phase, leave every NTR
 # and Atlantic City untouched. Residual phase error -0.7..-3.1 min coastwide. Same stations,
 # same coordinates, same hourly grid as noaa_sandy_nj => the ONLY variable is tidal timing.
-# Build: python scripts/build_noaa_phaseshift.py
+# Build: python ~/nj_coast_sfincs/scripts/build_noaa_phaseshift.py (archive; not ported)
 noaa_sandy_phaseshift:
   data_type: GeoDataset
   uri: gtsm/noaa_sandy_phaseshift.nc
@@ -420,7 +391,7 @@ noaa_sandy_phaseshift:
 # the Battery->AC line. Two nodes define the line themselves. The removal IS the arm.
 # ⚠️ NTR is never scaled — Raritan surge amplification is UNOBSERVED.
 # Pre-registration: docs/campaigns/2026-08_tide_anchor.md
-# Build: python scripts/build_noaa_tideanchor.py
+# Build: python ~/nj_coast_sfincs/scripts/build_noaa_tideanchor.py (archive; not ported)
 noaa_sandy_tideanchor:
   data_type: GeoDataset
   uri: gtsm/noaa_sandy_tideanchor.nc
@@ -444,7 +415,7 @@ noaa_sandy_tideanchor:
 # a HARBOUR gauge 26 km up the Hudson that GTSM's 2.5 km mesh cannot resolve and
 # that our ocean boundary cares least about.
 #
-# THE CORRECTION (scripts/build_gtsm_tidecorr.py):
+# THE CORRECTION (~/nj_coast_sfincs/scripts/build_gtsm_tidecorr.py (archive; not ported)):
 #   corrected = 1.2221 * (waterlevel - surge) + surge + msl_to_navd88(lat)
 # Amplitude calibrated at the only two gauges with a GTSM point within ~1 km —
 # Sandy Hook 0.814, Atlantic City 0.823, agreeing to 1% across 123 km. NO phase
@@ -461,7 +432,7 @@ noaa_sandy_tideanchor:
 # ⚠️ KNOWN COST: the Raritan limb (389 of 1669 mask==2 cells) has 0% of cells
 # within 2 km of a GTSM point (median 11.1 km) and is extrapolated.
 #
-# Build: PYTHONPATH=$PWD python scripts/build_gtsm_tidecorr.py
+# Build: PYTHONPATH=$PWD python ~/nj_coast_sfincs/scripts/build_gtsm_tidecorr.py (archive; not ported)
 
 gtsm_sandy_tidecorr:
   data_type: GeoDataset
@@ -799,8 +770,8 @@ nlcd_2012_v4:
 # lagoon where the published range is 0.025-0.045.
 #
 # ⚠️ Roughness feeds the SUBGRID tables, so this needs a TEMPLATE REBUILD
-# (scripts/setup_baymanning_template.py), NOT a prepare_experiment forcing swap.
-# Build: python scripts/build_bay_manning.py
+# (~/nj_coast_sfincs/scripts/setup_baymanning_template.py (archive; not ported)), NOT a prepare_experiment forcing swap.
+# Build: python ~/nj_coast_sfincs/scripts/build_bay_manning.py (archive; not ported)
 nlcd_2012_baymanning:
   data_type: RasterDataset
   uri: roughness/nlcd_2012_baymanning.tif

@@ -370,6 +370,49 @@ _V3: dict[str, Experiment] = {
         **_V3_BUILDINGS,
         **_V3_WL,
     ),
+    # ── WAVE COST TESTS — 2026-09-30 (plan Phase 3; STATUS "Wave cost tests") ─────────
+    # SnapWave is ~97 % of the premier's wall time (FINDINGS §20). Which cheaper setting
+    # keeps the waves-on gain (ΔRMSE −0.064 m vs naccs-nowaves, §48)? Full-window, scored.
+    # The wind-off arms pin the 360° sector so switching wind off is ONE physics change.
+    "wave-dt3600+wave-dtheta10+wave-noig": Experiment(
+        "wave-dt3600+wave-dtheta10+wave-noig",
+        replace(
+            _V3_PREMIER_WAVES, dtwave=3600.0, snapwave_dtheta=10, wave_igwaves=False
+        ),
+        "Premier with the three settings that cost time without (as far as we know) "
+        "buying setup: SnapWave every 60 min instead of 30 (the engine default), 10° "
+        "direction bins over the full 360° (36 bins, not 72; the engine default bin), "
+        "and the IG balance off (a null without a wavemaker, FINDINGS §45). Wind growth "
+        "stays ON. The physics-preserving cheap configuration; scored paired against "
+        "the premier and naccs-nowaves, by basin group.",
+        **_V3_BUILDINGS,
+        **_V3_WL,
+    ),
+    "wave-nowind": Experiment(
+        "wave-nowind",
+        replace(_V3_PREMIER_WAVES, wave_wind=False, snapwave_sector=360),
+        "Premier with SnapWave wind growth OFF, sector kept at 360°. What wind growth is "
+        "worth on the FIXED engine (the only wind-off rows so far are on the misdirected "
+        "engine and old band). Wind-off removes the 0.2–0.5 m bay fetch waves (§43) but "
+        "also the wind-mode limit cycle; expected several times cheaper.",
+        **_V3_BUILDINGS,
+        **_V3_WL,
+    ),
+    "wave-dt3600+wave-dtheta10+wave-noig+wave-nowind": Experiment(
+        "wave-dt3600+wave-dtheta10+wave-noig+wave-nowind",
+        replace(
+            _V3_PREMIER_WAVES,
+            dtwave=3600.0,
+            snapwave_dtheta=10,
+            wave_igwaves=False,
+            wave_wind=False,
+            snapwave_sector=360,
+        ),
+        "The cheapest real SnapWave: the cheap configuration above with wind growth off "
+        "as well. Swell and its setup only. Scored like the others.",
+        **_V3_BUILDINGS,
+        **_V3_WL,
+    ),
     # The five Sandy-Hook-cut-band runs (`wave-band-sandy-hook[+…]`, renamed 09-17)
     # were RETIRED 2026-09-21 (`experiments/v3/_retired/`, maps gone, metrics rows kept)
     # and left the registry 2026-09-22 with `_V3_OLD_BAND`; both are in git history.
@@ -393,11 +436,9 @@ EXPERIMENTS_BY_DOMAIN: dict[str, dict[str, Experiment]] = {
     # Frozen archive fixture, score-only (scripts/score_v2_barnegat.py): its five
     # archived runs are RESCORED in place, never staged from a config.
     "v2_barnegat": {},
-    # ⏳ BUILDING (see nj_sfincs/domain.py): the polygon is drawn and gated, the mesh is
-    # not frozen. Arms (`naccs-premier`, `naccs-nowaves`) are registered at the freeze,
-    # once there is a fingerprint for premier.py to check them against.
+    # DONE 2026-09-24; reference = naccs-premier on the repaired mask (FINDINGS §50).
     "v3": _V3,
-    # ACQUISITION-ONLY (2026-09-24): a rectangle for the downloaders, no mesh, no arms.
+    # FROZEN 2026-09-28; waves-off design-gate arms only, no waves-on premier yet.
     "v4": _V4,
 }
 

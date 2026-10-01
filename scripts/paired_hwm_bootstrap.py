@@ -31,6 +31,13 @@ Usage:
     PYTHONPATH=$PWD python scripts/paired_hwm_bootstrap.py \
         faber-nowaves+tide-anchor faber-nowaves+tide-shift
     PYTHONPATH=$PWD python scripts/paired_hwm_bootstrap.py A B --thresholds 0.01 0.05
+    PYTHONPATH=$PWD python scripts/paired_hwm_bootstrap.py A B --by-basin
+
+``--by-basin`` adds the grouped read (open coast / NY bays / NJ back bays / rivers) and a
+per-basin line. It replaces the ``grouped_paired_ab.py`` copies that lived in four
+``logs/`` dirs and ``scripts/paired_hwm_basin_split.py`` (both retired 2026-09-30, in git
+history). Why grouping matters: any perturbation re-rings Raritan Bay (FINDINGS §40), so
+the NY bay marks move together between ANY two arms and can dominate a pooled delta.
 """
 
 from __future__ import annotations
@@ -48,6 +55,37 @@ from nj_sfincs.config import exp_root
 from nj_sfincs.validate import DEPTH_MIN
 
 GROUND_CAP = 0.5  # m; matches hwm_metrics
+
+#: Basin groups for ``--by-basin``. Names are ``Domain.hwm_rules`` names; a group whose
+#: basins are absent on the active domain is simply skipped. Any basin in no group is
+#: still reported on its own line.
+BASIN_GROUPS = {
+    "open coast": (
+        "atlantic_oceanfront",
+        "south_coast",
+        "lbi_barrier",
+        "absecon_atlantic_city",
+        "cape_may",
+        "barnegat_barrier",
+    ),
+    "inlets": ("manasquan", "shark_river", "great_egg"),
+    "NY bays": (
+        "raritan_bay",
+        "sandy_hook_bay",
+        "shrewsbury_navesink",
+        "lower_bay_si_shore",
+        "brooklyn_breezy",
+    ),
+    "NJ back bays": ("cape_may_back_bays", "great_bay_mullica", "barnegat_bay"),
+    "rivers / Newark Bay": (
+        "raritan_river",
+        "arthur_kill_nj",
+        "newark_bay",
+        "delaware_river",
+        "delaware_river_upper",
+    ),
+    "Delaware Bay": ("delaware_bay_shore", "delaware_bay_de", "delaware_bay_nj_upper"),
+}
 
 
 def scored_marks():
@@ -142,6 +180,11 @@ def main() -> int:
         "level, so its zone median/mean is the zone's wave (or "
         "whatever-A-changes) contribution.",
     )
+    p.add_argument(
+        "--by-basin",
+        action="store_true",
+        help="ALSO report the paired read per basin group (BASIN_GROUPS) and per basin",
+    )
     a = p.parse_args()
 
     root = exp_root()
@@ -191,18 +234,96 @@ def main() -> int:
     )
     if a.bbox:
         zone_report(a, res, common, rng)
+    if a.by_basin:
+        basin_report(a, res, common, rng)
     return 0
 
 
-def zone_report(a, res, common, rng):
-    """Zone-vs-rest split (``--bbox``): per-mark Δ modelled level, ΔRMSE, per-basin, ids."""
-    lon0, lon1, lat0, lat1 = a.bbox
+def _scored_marks_aligned(common):
     hwm = scored_marks()
     if len(hwm) != len(common):
         raise SystemExit(
             f"scored_marks() has {len(hwm)} rows but residuals scored "
             f"{len(common)} — the clip/order drifted; fix before reading"
         )
+    return hwm
+
+
+def _boot(ra_all, rb_all, sel, rng, n_boot):
+    """Paired bootstrap of one subset: Δ modelled level (A − B) and ΔRMSE, with CIs."""
+    i = np.nonzero(sel)[0]
+    A, B = ra_all[i], rb_all[i]
+    dd = A - B
+    n = len(i)
+    draws = rng.integers(0, n, size=(min(n_boot, 100_000), n))
+    dmean = dd[draws].mean(1)
+    dmed = np.median(dd[draws], axis=1)
+    drm = np.sqrt((A[draws] ** 2).mean(1)) - np.sqrt((B[draws] ** 2).mean(1))
+    return dict(
+        n=n,
+        med=float(np.median(dd)),
+        mean=float(dd.mean()),
+        mean_ci=np.percentile(dmean, [2.5, 97.5]),
+        med_ci=np.percentile(dmed, [2.5, 97.5]),
+        n_up=int((dd > 0).sum()),
+        n_gt05=int((np.abs(dd) > 0.05).sum()),
+        rmse_a=float(np.sqrt((A**2).mean())),
+        rmse_b=float(np.sqrt((B**2).mean())),
+        drmse_ci=np.percentile(drm, [2.5, 97.5]),
+        bias_a=float(A.mean()),
+        bias_b=float(B.mean()),
+    )
+
+
+def _print_boot(label, r, width=4):
+    print(
+        f"  {label:{width}s} n={r['n']:3d}  Δ median {r['med']:+.3f} m "
+        f"[{r['med_ci'][0]:+.3f}, {r['med_ci'][1]:+.3f}]   "
+        f"Δ mean {r['mean']:+.3f} m [{r['mean_ci'][0]:+.3f}, {r['mean_ci'][1]:+.3f}]"
+        f"   n(Δ>0)={r['n_up']}  n(|Δ|>0.05)={r['n_gt05']}"
+    )
+    print(
+        f"  {'':{width}s} RMSE A {r['rmse_a']:.3f} B {r['rmse_b']:.3f}  "
+        f"ΔRMSE {r['rmse_a'] - r['rmse_b']:+.3f} "
+        f"[{r['drmse_ci'][0]:+.3f}, {r['drmse_ci'][1]:+.3f}]   "
+        f"bias A {r['bias_a']:+.3f} B {r['bias_b']:+.3f}"
+    )
+
+
+def basin_report(a, res, common, rng):
+    """``--by-basin``: the paired read per basin group, then one line per basin."""
+    hwm = _scored_marks_aligned(common)
+    basins = hwm["basin"].values
+    ra_all, rb_all = res[a.arm_a], res[a.arm_b]
+    print(
+        "\n=== --by-basin: per-mark Δ = modelled level (A − B); ΔRMSE = RMSE A − RMSE B"
+    )
+    grouped = set()
+    for label, names in BASIN_GROUPS.items():
+        sel = common & np.isin(basins, names)
+        grouped.update(names)
+        if sel.sum() < 2:
+            continue
+        _print_boot(label, _boot(ra_all, rb_all, sel, rng, a.n_boot), width=20)
+    ungrouped = sorted(set(basins[common]) - grouped)
+    if ungrouped:
+        print(f"  (in no group, reported per basin below: {', '.join(ungrouped)})")
+    print("\n  per basin:")
+    d_all = ra_all - rb_all
+    for b in sorted(set(basins[common])):
+        s = common & (basins == b)
+        dd = d_all[s]
+        print(
+            f"    {b:24s} n={int(s.sum()):2d}  Δ median {np.median(dd):+.3f}  "
+            f"mean {dd.mean():+.3f}  bias A {ra_all[s].mean():+.3f} "
+            f"B {rb_all[s].mean():+.3f}  n(Δ>0)={int((dd > 0).sum())}"
+        )
+
+
+def zone_report(a, res, common, rng):
+    """Zone-vs-rest split (``--bbox``): per-mark Δ modelled level, ΔRMSE, per-basin, ids."""
+    lon0, lon1, lat0, lat1 = a.bbox
+    hwm = _scored_marks_aligned(common)
     inbox = (
         (hwm["lon"].values >= lon0)
         & (hwm["lon"].values <= lon1)
@@ -222,47 +343,11 @@ def zone_report(a, res, common, rng):
         " contribution\n"
     )
 
-    def boot(sel):
-        i = np.nonzero(sel)[0]
-        A, B = ra_all[i], rb_all[i]
-        dd = A - B
-        n = len(i)
-        draws = rng.integers(0, n, size=(min(a.n_boot, 100_000), n))
-        dmean = dd[draws].mean(1)
-        dmed = np.median(dd[draws], axis=1)
-        drm = np.sqrt((A[draws] ** 2).mean(1)) - np.sqrt((B[draws] ** 2).mean(1))
-        return dict(
-            n=n,
-            med=float(np.median(dd)),
-            mean=float(dd.mean()),
-            mean_ci=np.percentile(dmean, [2.5, 97.5]),
-            med_ci=np.percentile(dmed, [2.5, 97.5]),
-            n_up=int((dd > 0).sum()),
-            n_gt05=int((np.abs(dd) > 0.05).sum()),
-            rmse_a=float(np.sqrt((A**2).mean())),
-            rmse_b=float(np.sqrt((B**2).mean())),
-            drmse_ci=np.percentile(drm, [2.5, 97.5]),
-            bias_a=float(A.mean()),
-            bias_b=float(B.mean()),
-        )
-
     for label, sel in (("ZONE", common & inbox), ("REST", common & ~inbox)):
         if sel.sum() < 2:
             print(f"  {label}: n={int(sel.sum())} — nothing to bootstrap")
             continue
-        r = boot(sel)
-        print(
-            f"  {label:4s} n={r['n']:3d}  Δ median {r['med']:+.3f} m "
-            f"[{r['med_ci'][0]:+.3f}, {r['med_ci'][1]:+.3f}]   "
-            f"Δ mean {r['mean']:+.3f} m [{r['mean_ci'][0]:+.3f}, {r['mean_ci'][1]:+.3f}]"
-            f"   n(Δ>0)={r['n_up']}  n(|Δ|>0.05)={r['n_gt05']}"
-        )
-        print(
-            f"       RMSE A {r['rmse_a']:.3f} B {r['rmse_b']:.3f}  "
-            f"ΔRMSE {r['rmse_a'] - r['rmse_b']:+.3f} "
-            f"[{r['drmse_ci'][0]:+.3f}, {r['drmse_ci'][1]:+.3f}]   "
-            f"bias A {r['bias_a']:+.3f} B {r['bias_b']:+.3f}"
-        )
+        _print_boot(label, _boot(ra_all, rb_all, sel, rng, a.n_boot))
 
     basins = hwm["basin"].values
     print("\n  zone by basin:")
