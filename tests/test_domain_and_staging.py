@@ -1457,8 +1457,10 @@ class TestBreakHardlinks(unittest.TestCase):
                 f.write(b"arm")
             self.assertEqual((src / "sfincs_subgrid.nc").read_bytes(), b"premier")
             self.assertTrue((arm / "link.nc").is_symlink())
-            self.assertEqual(sorted(p.name for p in arm.iterdir()),
-                             ["link.nc", "sfincs.inp", "sfincs_subgrid.nc"])
+            self.assertEqual(
+                sorted(p.name for p in arm.iterdir()),
+                ["link.nc", "sfincs.inp", "sfincs_subgrid.nc"],
+            )
 
     def test_finalize_breaks_links_before_it_writes(self):
         import inspect
@@ -1466,4 +1468,6 @@ class TestBreakHardlinks(unittest.TestCase):
         from nj_sfincs import model
 
         src = inspect.getsource(model.finalize)
-        self.assertLess(src.index("break_hardlinks(model_dir)"), src.index("sf.write()"))
+        self.assertLess(
+            src.index("break_hardlinks(model_dir)"), src.index("sf.write()")
+        )
