@@ -1430,3 +1430,40 @@ class TestWallOutflowNearPoints(unittest.TestCase):
         self.assertEqual(new.tolist(), [1, 1, 2, 3, 1, 0])
         self.assertEqual(n.tolist(), [2])
         self.assertEqual(mask.tolist(), [3, 3, 2, 3, 1, 0])  # input not mutated
+
+
+class TestBreakHardlinks(unittest.TestCase):
+    """A staged arm's write must not reach the runs it shares inodes with (10-01: one
+    staging rewrote the premier's ``sfincs_subgrid.nc`` through a ``swap_subgrid`` link)."""
+
+    def test_write_after_break_does_not_reach_the_other_link(self):
+        import tempfile
+
+        from nj_sfincs.model import break_hardlinks
+
+        with tempfile.TemporaryDirectory() as td:
+            src, arm = Path(td) / "src", Path(td) / "arm"
+            src.mkdir()
+            arm.mkdir()
+            (src / "sfincs_subgrid.nc").write_bytes(b"premier")
+            os.link(src / "sfincs_subgrid.nc", arm / "sfincs_subgrid.nc")
+            (arm / "sfincs.inp").write_text("private")
+            os.symlink(src / "sfincs_subgrid.nc", arm / "link.nc")
+
+            self.assertEqual(break_hardlinks(arm), ["sfincs_subgrid.nc"])
+            self.assertEqual((arm / "sfincs_subgrid.nc").read_bytes(), b"premier")
+            self.assertEqual((arm / "sfincs_subgrid.nc").stat().st_nlink, 1)
+            with open(arm / "sfincs_subgrid.nc", "wb") as f:  # how a writer truncates
+                f.write(b"arm")
+            self.assertEqual((src / "sfincs_subgrid.nc").read_bytes(), b"premier")
+            self.assertTrue((arm / "link.nc").is_symlink())
+            self.assertEqual(sorted(p.name for p in arm.iterdir()),
+                             ["link.nc", "sfincs.inp", "sfincs_subgrid.nc"])
+
+    def test_finalize_breaks_links_before_it_writes(self):
+        import inspect
+
+        from nj_sfincs import model
+
+        src = inspect.getsource(model.finalize)
+        self.assertLess(src.index("break_hardlinks(model_dir)"), src.index("sf.write()"))

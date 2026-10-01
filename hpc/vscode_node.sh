@@ -17,7 +17,7 @@
 #   ./hpc/vscode_node.sh --status              # show the node you're holding (if any)
 #   ./hpc/vscode_node.sh --stop                # release the allocation
 #
-# Defaults: -p main -c 32 --mem 128G -t 08:00:00
+# Defaults: -p main -c 32 --mem 128G -t 08:00:00 --exclude=halk[0001-0159]
 #   main node tiers: 192 GB / 256 GB / 512 GB (max single-node ~500G). main-redhat was
 #   merged into main on 2026-08-20; submitting to it fails outright.
 #
@@ -54,6 +54,12 @@ PART="${VSCODE_PART:-main}"
 CORES="${VSCODE_CORES:-32}"
 MEM="${VSCODE_MEM:-128G}"
 TIME="${VSCODE_TIME:-08:00:00}"
+# halk* nodes are on their own InfiniBand fabric (`scontrol show topology`: hdrck*/ndrk*
+# cores, no switch shared with hal* or the storage leaf), so every GPFS metadata op
+# crosses a bridge. Same CPUs, but a cold stat of ~/.vscode-server/extensions took
+# 9-21 s there vs 2-4 s on hal* (2026-10-01), and VSCode, git and Python imports are
+# all metadata-bound. VSCODE_EXCLUDE= (empty) allows them again.
+EXCLUDE="${VSCODE_EXCLUDE-halk[0001-0159]}"
 JOB="vscode"
 SESS="vscode"
 ACTION="start"
@@ -96,9 +102,10 @@ fi
 if [[ -z "$node" ]]; then
   command -v tmux >/dev/null || { echo "ERROR: tmux not found on this login node — install it or use 'screen'."; exit 1; }
   tmux has-session -t "$SESS" 2>/dev/null && tmux kill-session -t "$SESS"
-  echo "Allocating: -p $PART -c $CORES --mem $MEM -t $TIME  (held in tmux session '$SESS')..."
+  echo "Allocating: -p $PART -c $CORES --mem $MEM -t $TIME${EXCLUDE:+ --exclude=$EXCLUDE}  (held in tmux session '$SESS')..."
+  XARG=""; [[ -n "$EXCLUDE" ]] && XARG="--exclude='$EXCLUDE'"
   tmux new-session -d -s "$SESS" \
-    "salloc -p '$PART' -J '$JOB' -c '$CORES' --mem='$MEM' -t '$TIME' sleep infinity"
+    "salloc -p '$PART' $XARG -J '$JOB' -c '$CORES' --mem='$MEM' -t '$TIME' sleep infinity"
   for _ in $(seq 1 90); do
     node="$(current_node)"; [[ -n "$node" ]] && break; sleep 2
   done

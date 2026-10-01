@@ -46,7 +46,9 @@ def parse(log: Path) -> tuple[pd.DataFrame, dict]:
     for line in log.read_text(errors="ignore").splitlines():
         m = _ITER.match(line)
         if m:
-            it, err, ok = int(m[1]), float(m[2]), float(m[3])
+            # the error field overflows too (`**********`, wind-off logs, 2026-10-01)
+            err = float(m[2]) if re.fullmatch(r"[\d.eE+-]+", m[2]) else np.nan
+            it, ok = int(m[1]), float(m[3])
             if it == 1 or cur is None:
                 cur = {"ok": [], "err": [], "converged": False}
             cur["ok"].append(ok)

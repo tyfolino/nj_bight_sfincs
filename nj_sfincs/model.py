@@ -1858,6 +1858,27 @@ def _infiltration_keys(text: str, model_dir: Path, on: bool) -> str:
     return "\n".join(lines) + "\n"
 
 
+def break_hardlinks(model_dir: Path) -> list[str]:
+    """Give every hard-linked file at the top of ``model_dir`` its own inode.
+
+    ``sf.write()`` rewrites ``sfincs_subgrid.nc`` (and the rest) IN PLACE, so a file
+    ``swap_subgrid`` or a dedupe hard-linked is written THROUGH to every other run that
+    shares it — on 2026-09-30 one staging rewrote the premier's subgrid table and 15 other
+    links (same bytes that time, only the netCDF version stamp moved; STATUS 10-01).
+    A copy, not an unlink: files the writer does not re-emit must survive.
+    ``dedupe_experiment_inputs`` re-links identical bytes afterwards.
+    """
+    broken = []
+    for f in sorted(Path(model_dir).iterdir()):
+        if f.is_symlink() or not f.is_file() or f.stat().st_nlink < 2:
+            continue
+        tmp = f.with_name(f".{f.name}.private")
+        shutil.copy2(f, tmp)
+        os.replace(tmp, f)
+        broken.append(f.name)
+    return broken
+
+
 def finalize(
     wcfg: WaveConfig,
     base: BaseConfig,
@@ -1938,6 +1959,9 @@ def finalize(
             flush=True,
         )
 
+    broken = break_hardlinks(model_dir)
+    if broken:
+        print(f"[write] private copies before write: {', '.join(broken)}", flush=True)
     sf.write()
 
     inp = model_dir / "sfincs.inp"

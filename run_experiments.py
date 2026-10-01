@@ -189,7 +189,9 @@ def swap_subgrid(exp_dir: Path, src: Path, name: str) -> None:
 
     The only way a bed/roughness edit reaches a run (see ``Experiment.subgrid_from``).
     Hard-links (same filesystem) with a copy fallback; the copytree'd originals are
-    unlinked first, so nothing is written through to the template. Refuses a source
+    unlinked first, so nothing is written through to the template — and
+    ``model.finalize`` gives the links private inodes before ``sf.write()``, which would
+    otherwise write through to ``src`` and every arm sharing it. Refuses a source
     built on any mesh but the sealed one — a subgrid table is only meaningful on the
     mesh it was cut for.
     """
