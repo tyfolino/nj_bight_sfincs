@@ -18,7 +18,7 @@ Last updated: **2026-10-01** — wave cost tests read; wind-off SnapWave diverge
   while the river policy and the wave treatment are re-decided (user, 2026-09-30). Only
   waves-off runs exist; the first look is in FINDINGS part 4.
 - **The rethink (plan `~/.claude/plans/pasted-content-id-5f76-hey-claude-giggly-star.md`):**
-  (1) repo cleanup — done today, staged for the user to commit; (2) literature review of
+  (1) repo cleanup — done, committed 2026-10-01; (2) literature review of
   where others end their rivers and how they treat wave setup; (3) SnapWave cost tests on
   v3; (4) a plain-language decision memo. No domain changes until the user picks from it.
 - **Subgrid write-through, FIXED 2026-10-01 (staged, uncommitted).** `finalize()`'s
@@ -31,26 +31,30 @@ Last updated: **2026-10-01** — wave cost tests read; wind-off SnapWave diverge
 
 ## Next, in order
 
-1. User reviews and commits the cleanup (`git status`; manifest
-   `reports/cleanup/deletion_manifest_2026-09-30.md`).
-2. Literature review — DONE 2026-09-30: `reports/literature_review_2026-10.md` (+ three
-   appendices with the verbatim quotes). Still owed: the plain-language summary page for
-   the user, folded into the decision memo.
-3. Wave cost tests on v3 (section below) — submit, read with `scripts/snapwave_cost.py` and
-   `scripts/paired_hwm_bootstrap.py --by-basin`.
-4. Decision memo: four river policies (today's head of tide / the gauge / the +3 m rule /
-   whole watersheds), each costed for a Sandy-only and a +3 m model; the wave-cost table.
-   The user decides; then the memory rule "do not exclude upriver communities" and the +3 m
-   rule are kept or rewritten explicitly.
+1. Read the cheap + wavemaker arm when it lands (Jobs; 5b pre-registration): `sacct`
+   NodeList → `premier` audit `output WHOLE` → cost → transects vs the POST-repair baseline →
+   paired marks vs `wave-wavemaker`. Only post-09-22-repair runs and numbers as references.
+2. Unread from the wave tests: `engine_gate.py compare` on cuts 2–4 vs c1 (does crit 0.01
+   freeze bay cells?). Then a user call: chase the wind-off divergence or strike that option;
+   is test 8 (formula setup at the shoreline) still worth 2–3 days now the cheap config ties.
+3. Decision memo: the four river policies (head of tide / gauge / +3 m rule / whole
+   watersheds), each costed Sandy-only and +3 m; the wave table (cheap config, ± wavemaker);
+   the literature summary folded in. The user decides; then the "do not exclude upriver
+   communities" and +3 m rules are kept or rewritten explicitly.
+4. FINDINGS §49's beach numbers are PRE-repair — flag or revise once arm 5b is read (user
+   call). Fold today's durable results (cheap config, wind-off divergence, IG null) into
+   FINDINGS when the wave half of the memo is settled.
 
 ## Jobs
 
-**Paired reads, submitted 2026-10-01 16:16:** job **62099849** (`wcost_paired`, hal, 220 G)
-runs `paired_hwm_bootstrap.py <arm> {naccs-premier,naccs-nowaves} --by-basin` for the three
-full-window arms, sequentially → `logs/wave_cost_2026-10-01/paired_<arm>__vs__<ref>.txt`.
-Fold the paired CIs into the results table below, then the decision memo.
+**Cheap + wavemaker arm, submitted 2026-10-01 17:32:** solve **62104450**
+(`wave-dt3600+wave-dtheta10+wave-wavemaker`, igk engine, emeraldrapids, 24 h) → validate
+**62104451** (afterok, 160 G). Staged inputs checked against `wave-wavemaker`: only `dtwave`
+and `snapwave_dtheta` differ; `sfincs.wvm` and SnapWave boundary files identical; the three
+forcing NetCDFs differ only in bytes, every variable and attribute identical
+(`forcing_diff.txt`). Read per the 5b pre-registration below: `sacct` NodeList first.
 
-- Maintenance 10-13 08:00 — the job above ends well before it.
+- Maintenance 10-13 08:00 → 10-14 23:59.
 
 ## Domains at a glance
 
@@ -106,6 +110,25 @@ Question: the cheapest wave treatment that keeps most of v3's waves-on gain
 | 7 | 5 + wind off | full | cheapest real solver, scored |
 | 8 | shoreline setup through the wavemaker `wstfile`, no SnapWave | full | the parameterised floor (last; needs a builder) |
 
+**📝 Pre-registration, arm 5b `wave-dt3600+wave-dtheta10+wave-wavemaker` (written 2026-10-01,
+before submission; user asked).** The cheap config's two real changes (60 min, 10°) on
+`wave-wavemaker` (IG on, same line, engine `v2.3.3-winddir-igk-fix-1-gf11`). Question: does
+the cheap setup still deliver the shoreline IG, so the memo's wave recommendation covers a
+model WITH beach IG? **Reads**, all paired against `wave-wavemaker` (same binary): (a) cost —
+`snapwave_cost.py` vs `wave-wavemaker` and vs the cheap arm; (b) the beach —
+`compare_usgs_transects.py wave-wavemaker <arm>` (restored today): Δ beach level on the
+with-line transects, level − USGS TWL, overwash POD/FAR vs Z_Max; the Sea Bright storm-tide
+peak (post-repair `wave-wavemaker` 3.35, premier 2.91, obs 3.47 m — 🔴 NOT §49's 3.30 / transect numbers, which are the PRE-09-22-repair `mask-drain-edge+` run; baseline re-read on the repaired runs: `logs/wave_cost_2026-10-01/transects_baseline_postrepair.txt`); (c) `paired_hwm_bootstrap.py <arm> wave-wavemaker
+--by-basin`; (d) the NY-bay > 1 h motion as in `ig_seiche_check.py`. **What I expect, to
+check, not a rule:** solver ~10–12 h (cheap 9.3 h + the IG balance); beach level within a
+decimetre of `wave-wavemaker` at the median — the injected IG follows `hm0ig`, which is
+updated hourly instead of half-hourly and computed on 36 bins, so a lower or smoother
+shoreline signal is the risk; marks ~unchanged; NY-bay marks moved by a phase, either sign.
+**Post-repair beach baseline (read 2026-10-01, before the arm ran):** `wave-wavemaker` vs
+`naccs-premier`, all 2,348 transects: Δ beach level p50 **+0.63 m** (p10 0.00, p90 +1.95);
+level − USGS TWL p50 −1.45 → −0.66 m (n 1,356); overwash vs Z_Max POD 0.115 → 0.165, FAR
+0.348 → 0.239 (observed rate 0.49). The arm is read against THESE, not §49's pre-repair set.
+
 Not tested: a 180° sector (the SnapWave literature thread and Deltares' own practice say
 360° when wind is on).
 
@@ -139,22 +162,34 @@ SnapWave` (`snapwave_cost.py`, overflowed calls imputed); "input" (~84 min) is f
 | `wave-nowind` | 73 h | 6.12 h | 3.99 h | 95 s | 17/145 |
 | `…+wave-nowind` (all four) | 73 h | 2.87 h | 0.75 h | 36 s | 7/73 |
 
-HWM median 50 m, n 94 (unpaired headline; paired CIs pending, job 62099849):
+HWM median 50 m, n 94; paired ΔRMSE vs the premier and vs waves-off (`paired_hwm_bootstrap.py --by-basin`, B 200,000; `paired_<arm>__vs__<ref>.txt`):
 
-| arm | RMSE | bias | MOTF CSI |
-|---|---|---|---|
-| `naccs-premier` | 0.329 | −0.143 | 0.706 |
-| `wave-dt3600+wave-dtheta10+wave-noig` | **0.328** | −0.137 | 0.708 |
-| `wave-nowind` ⚠️ | 0.355 | −0.117 | 0.711 |
-| `…+wave-nowind` ⚠️ | 1.009 | +0.501 | 0.721 |
-| `naccs-nowaves` (not ranked) | 0.393 | −0.246 | 0.697 |
+| arm | RMSE | bias | MOTF CSI | ΔRMSE vs premier | ΔRMSE vs waves-off |
+|---|---|---|---|---|---|
+| `naccs-premier` | 0.329 | −0.143 | 0.706 | — | (−0.064, §48) |
+| `wave-dt3600+wave-dtheta10+wave-noig` | **0.328** | −0.137 | 0.708 | −0.002 [−0.007, +0.003] | **−0.066 [−0.088, −0.044]** |
+| `wave-nowind` ⚠️ | 0.355 | −0.117 | 0.711 | +0.026 [+0.010, +0.044] | −0.038 [−0.062, −0.016] |
+| `…+wave-nowind` ⚠️ | 1.009 | +0.501 | 0.721 | +0.679 [+0.470, +0.879] | +0.615 [+0.402, +0.818] |
+| `naccs-nowaves` (not ranked) | 0.393 | −0.246 | 0.697 | | — |
 
-- **The physics-preserving cheap config costs 0.36× the premier's solve and scores the
-  same.** Paired vs `naccs-premier` (median, 50 m, n 94): ΔRMSE −0.0018 m [−0.0072,
+- **The physics-preserving cheap config costs 0.36× the premier's solve and keeps ALL of
+  the waves-on gain** (−0.066 vs waves-off, the premier's own −0.064). Paired vs `naccs-premier` (median, 50 m, n 94): ΔRMSE −0.0018 m [−0.0072,
   +0.0027], P(A better) 0.77. By group: open coast −0.003 [−0.010, +0.003], NY bays −0.006
   [−0.019, +0.003], NJ back bays −0.005 [−0.011, −0.000]; the INLETS move: marks 1 cm lower,
   ΔRMSE +0.013 [+0.002, +0.021] (n 14). Blow-up faces 1,580 vs the premier's 1,511 (the
   known boundary-point artefact, FINDINGS "Closed").
+- **The tie is not a seiche hiding lost open-coast setup** (user question; `ig_seiche_check.txt`).
+  IG off is a null by construction (§45: no wavemaker → IG never reaches the flow), so the
+  cheap config's changes are dtheta and dtwave. Where the premier's waves lift `zsmax` > 5 cm
+  (982k faces, boundary blow-ups dropped) the cheap config keeps, median: Monmouth 0.97,
+  Barnegat–LBI 0.99, AC–Cape May 1.12, NY bays 0.84 (p10 0.21 — small lifts, phase-sensitive).
+  Sea Bright storm-tide setup (vs waves-off) 0.137 → 0.166 m day-mean; AC pier 0.059 →
+  0.073. NY-bay > 1 h motion std is LOWER in the cheap run (Great Kills 0.076 → 0.057 m), so
+  hourly forcing does not ring the bay harder. Outlier: Cape May Harbor peak +0.11 m.
+  ⚠️ Open, and bigger than this question: waves ON ring the NY bays 3–5× more than waves-off
+  (> 1 h std 0.045–0.076 vs 0.012–0.021 m), the same size as the NY-bay waves-on gain
+  (Δ mean +0.063 m) — how much of that gain is `zsmax` sampling a wave-excited seiche is
+  unmeasured (§40: envelope robust, phase not).
 - 🔴 **Wind growth OFF makes SnapWave DIVERGE on this engine.** Faces whose hm0 is ever
   `inf` or > 20 m: premier 1,511, cheap config 1,580, `wave-nowind` **34,845**, all-four
   **83,273** (hm0max p99.9 73 m and 611 m). Brief sub-hourly spikes — the hourly zs matches
@@ -162,7 +197,11 @@ HWM median 50 m, n 94 (unpaired headline; paired CIs pending, job 62099849):
   Cape May, 22–48 m at Coney Island and Brigantine. The all-four arm's excess is northern
   (Sandy Hook Bay +1.63 m bias, Raritan +1.32, Shrewsbury +0.98; southern bays within cm).
   `wave-nowind`'s 0.355 is therefore NOT a clean "what wind growth is worth" number
-  (Lower Bay SI shore +0.36 vs −0.18). The 12 h wind-off cut already showed it: SnapWave's
+  (Lower Bay SI shore +0.36 vs −0.18). Its paired read shows the split: vs the premier the
+  typical mark moves ~1 cm DOWN in every group (Δ median −0.008 to −0.013 m), while the
+  means are pulled up by a few blown-up marks (open coast Δ mean +0.069, NY bays +0.027).
+  So the clean part of wind growth looks like ~1 cm at the marks; the +0.026 m ΔRMSE is
+  mostly the divergence. The 12 h wind-off cut already showed it: SnapWave's
   error field `**********` and a 0.99989 oscillation with %ok = 100.
   (`blowup_where.txt`, `hm0_blowup_census.txt`). Mechanism not read.
 - **Against the pre-registration:** dtheta 10° came in at 0.70× SnapWave time, not ~0.5×;

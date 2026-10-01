@@ -44,6 +44,7 @@ Every script reads `NJ_DOMAIN` unless its row names a domain. Run from the repo 
 | `paired_hwm_bootstrap.py` | Paired HWM comparison of two arms; `--bbox` zone and `--by-basin` groups | live |
 | `overflow_check.py` | Where the peak water reaches the model edge; `--compare` for the SLR ladder | live |
 | `source_proximity.py` | Which marks and gauges sit close enough to a river inflow to read it | live |
+| `compare_usgs_transects.py` | Model beach runup level vs USGS Sandy transects (TWL, dune crest, sandline washover) — the read where IG shows | live (restored 2026-10-01) |
 | `stockdon_envelope.py` | Stockdon (2006) runup envelope on a still-water run (diagnostic) | live |
 | `diagnose_bay_seiche.py` | Raritan Bay sub-hourly motion: coherent seiche or chatter (v1.5) | frozen |
 | `make_flux_crosssections.py` | Two control lines partitioning inflow to the Shrewsbury / Navesink | frozen |

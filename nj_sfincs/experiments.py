@@ -388,6 +388,24 @@ _V3: dict[str, Experiment] = {
         **_V3_BUILDINGS,
         **_V3_WL,
     ),
+    "wave-dt3600+wave-dtheta10+wave-wavemaker": Experiment(
+        "wave-dt3600+wave-dtheta10+wave-wavemaker",
+        replace(
+            _V3_PREMIER_WAVES,
+            dtwave=3600.0,
+            snapwave_dtheta=10,
+            wavemaker=True,
+            wavemaker_line=DATA / "wavemakers_v3" / "v3_wavemaker_5m_mhw.geojson",
+        ),
+        "The cheap configuration's two real changes (SnapWave every 60 min, 10° bins) "
+        "on wave-wavemaker: IG ON and the same ocean-side line, so the IG balance "
+        "reaches the water (FINDINGS §45, §49). Does the cheap setup still deliver the "
+        "shoreline IG? Engine v2.3.3-winddir-igk-fix-1, as wave-wavemaker; paired "
+        "against wave-wavemaker (same binary), read at the beach (Sea Bright storm-tide "
+        "sensor, USGS sandline transects), not only the pooled marks. STATUS 10-01.",
+        **_V3_BUILDINGS,
+        **_V3_WL,
+    ),
     "wave-nowind": Experiment(
         "wave-nowind",
         replace(_V3_PREMIER_WAVES, wave_wind=False, snapwave_sector=360),

@@ -24,7 +24,7 @@ directory).
 ## A. Tracked — `git rm` (staged)
 
 Scripts (one-off reads of closed investigations, or superseded):
-- `scripts/compare_usgs_transects.py`, `scripts/score_beach_strip.py`,
+- `scripts/compare_usgs_transects.py` (⚠️ RESTORED 2026-10-01 for the cheap-wavemaker arm), `scripts/score_beach_strip.py`,
   `scripts/engine_gate_reads.py`, `scripts/render_notebook_profiled.py` — 09-17…09-20 reads,
   results in FINDINGS §44/§49.
 - `scripts/make_v3_epoch_notebook.py` — generated the v3 epoch notebooks; v3 is DONE.

@@ -27,7 +27,7 @@
 set -euo pipefail
 cd "$SLURM_SUBMIT_DIR"
 export PATH=$HOME/nj_sandy_sfincs/micromamba/envs/sfincs/bin:$PATH
-# 2026-09-28: any domain — NJ_DOMAIN from the environment, v3 when unset (the name stays).
+# 2026-09-28: any domain (the name stays). NJ_DOMAIN is required (2026-10-01).
 export PYTHONPATH=$PWD NJ_ROOT=$PWD NJ_DOMAIN="${NJ_DOMAIN:?set NJ_DOMAIN in the submitting shell}"
 echo "domain $NJ_DOMAIN"
 hostname; date
