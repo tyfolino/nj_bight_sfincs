@@ -33,9 +33,9 @@ TOOLCHAIN="${NJ_TOOLCHAIN:-$HOME/nj_sandy_sfincs}"
 MM="$TOOLCHAIN/micromamba/bin/micromamba"
 ENV="$TOOLCHAIN/micromamba/envs/sfincs"
 export PYTHONPATH="$REPO" NJ_ROOT="$REPO"
-# NJ_DOMAIN is inherited from the submitter's environment (sbatch exports it); default
-# to the domain this script is used for when it is not set.
-export NJ_DOMAIN="${NJ_DOMAIN:-v3}"
+# NJ_DOMAIN is inherited from the submitter's environment (sbatch exports it). No
+# default (2026-10-01): a default goes stale as the working domain moves on.
+export NJ_DOMAIN="${NJ_DOMAIN:?set NJ_DOMAIN in the submitting shell}"
 
 # All cores for SnapWave (it scales across both sockets; run_sfincs interleaves
 # memory). PROJ/GDAL data dirs for the GeoTIFF read/write in build + downscale.

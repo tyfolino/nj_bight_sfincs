@@ -8,8 +8,10 @@ decided exceptions (dams, near-crossing area disagreements) held at 1.0.
 from __future__ import annotations
 
 import importlib.util
+import os
 import unittest
 from pathlib import Path
+from unittest import mock
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -19,7 +21,9 @@ def _mod():
         "dl_q", ROOT / "scripts" / "download_usgs_sandy_discharge.py"
     )
     m = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(m)
+    # the script reads the active domain on import, and there is no default
+    with mock.patch.dict(os.environ, {"NJ_DOMAIN": "v4"}):
+        spec.loader.exec_module(m)
     return m
 
 

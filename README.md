@@ -28,7 +28,7 @@ export PYTHONPATH=$PWD
 
 python -m unittest discover -s tests    # ~240 tests, ~30 s on a compute node, no solver
 python scripts/verify_port.py           # rescore an archived run, bit for bit
-python -m nj_sfincs.premier             # audit every run dir on the active domain
+NJ_DOMAIN=v3 python -m nj_sfincs.premier  # audit every run dir on that domain
 ```
 
 On Amarel, run anything heavier than a quick read on a compute node (`srun`), not the

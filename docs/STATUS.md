@@ -6,7 +6,7 @@ running, what is next, what is open. When an item closes, its durable fact goes 
 Git has the history. The campaign log this file grew into until 2026-09-29 (6,767 lines) is
 `git show d70dd1e:docs/STATUS.md`; FINDINGS cites it as "STATUS <date>".
 
-Last updated: **2026-09-30** — repo cleanup; river / wave rethink started.
+Last updated: **2026-10-01** — wave cost tests read; wind-off SnapWave diverges; subgrid write-through fixed.
 
 ---
 
@@ -21,6 +21,13 @@ Last updated: **2026-09-30** — repo cleanup; river / wave rethink started.
   (1) repo cleanup — done today, staged for the user to commit; (2) literature review of
   where others end their rivers and how they treat wave setup; (3) SnapWave cost tests on
   v3; (4) a plain-language decision memo. No domain changes until the user picks from it.
+- **Subgrid write-through, FIXED 2026-10-01 (staged, uncommitted).** `finalize()`'s
+  `sf.write()` rewrote `sfincs_subgrid.nc` THROUGH the `swap_subgrid` hard link, i.e. into
+  the premier's and 15 other runs' table, at every staging that borrowed
+  `_subgrid_buildings`. No harm done: the 09-23 snapshot and today's file are bit-identical
+  in every variable (only `_NCProperties` netCDF 4.10.0 → 4.10.1, 7 bytes; the stamp
+  `8518110d` → `af1bd866` in `metrics.csv` is that and nothing else). Fix:
+  `model.break_hardlinks()` before the write + `TestBreakHardlinks`; 238 tests OK.
 
 ## Next, in order
 
@@ -38,18 +45,12 @@ Last updated: **2026-09-30** — repo cleanup; river / wave rethink started.
 
 ## Jobs
 
-**Wave cost tests, submitted 2026-09-30 ~14:00 (read FIRST next session):**
-- 12 h cuts under `/scratch/tpj8/engine_gate/wave_cost_2026-09-30/`, emeraldrapids, premier
-  binary: **62056475** `c1_control`, **62056476** `c2_dtheta10`, **62056477** `c3_crit01`,
-  **62056478** `c4_windoff`. Read: `python scripts/snapwave_cost.py <cut>` on each, then
-  `python scripts/engine_gate.py compare <cut> <.../c1_control>` (on a compute node).
-- Staging job **62056698** (`stage_wcost`) stages and submits the three full-window v3 arms
-  `wave-dt3600+wave-dtheta10+wave-noig`, `wave-nowind`,
-  `wave-dt3600+wave-dtheta10+wave-noig+wave-nowind` (emeraldrapids, 30 h limit) and ONE
-  validate for all three (360 G, 10 h). Solve ids land in `logs/stage_v3_62056698.jobs`.
-  Read: `sacct` NodeList (hal, not halk) → `snapwave_cost.py` on each → `paired_hwm_bootstrap.py
-  <arm> naccs-premier --by-basin` and `<arm> naccs-nowaves --by-basin` (≥ 150 G allocation).
-- Maintenance 10-13 08:00 — everything above ends well before it.
+**Paired reads, submitted 2026-10-01 16:16:** job **62099849** (`wcost_paired`, hal, 220 G)
+runs `paired_hwm_bootstrap.py <arm> {naccs-premier,naccs-nowaves} --by-basin` for the three
+full-window arms, sequentially → `logs/wave_cost_2026-10-01/paired_<arm>__vs__<ref>.txt`.
+Fold the paired CIs into the results table below, then the decision memo.
+
+- Maintenance 10-13 08:00 — the job above ends well before it.
 
 ## Domains at a glance
 
@@ -88,7 +89,7 @@ Creek (tidal); (3) Manor Lake — tide-connected or closed?; (4) keep the other 
 the coarse shelf seaward of the drawn line, the drawn-line forcing, the CUDEM fills. A
 paired read on common marks is the first step if v4 continues.
 
-## Wave cost tests (Phase 3 of the plan) — not yet submitted
+## Wave cost tests (Phase 3 of the plan) — cuts 1–4 and arms 5–7 RUN, read 10-01
 
 Question: the cheapest wave treatment that keeps most of v3's waves-on gain
 (ΔRMSE −0.064 m [−0.086, −0.042], FINDINGS §48). Levers ranked by the log's cost anatomy
@@ -123,7 +124,57 @@ cheaper, with the risk of low-energy bay cells freezing early (bay hm0 lower); w
 cheaper with bay hm0 → ~0 and open-coast hm0 close to the control. These are pre-storm
 hours: they time cost and compare fields, they cannot score HWMs.
 
+**Results (2026-10-01; `logs/wave_cost_2026-10-01/`).** All on the premier binary, all hal
+(emeraldrapids), audit `output WHOLE`. Times are the solver's own `Total time` / `Time in
+SnapWave` (`snapwave_cost.py`, overflowed calls imputed); "input" (~84 min) is fixed.
+
+| run | window | solver total | SnapWave | median call | cap-hits |
+|---|---|---|---|---|---|
+| c1 control | 12 h | 5.85 h | 4.35 h | 477 s | 11/25 |
+| c2 dtheta 10° | 12 h | 4.53 h | 3.03 h (0.70×) | 295 s | 10/25 |
+| c3 crit 0.01 | 12 h | 4.11 h | 2.60 h (0.60×) | 392 s | 11/25 |
+| c4 wind off | 12 h | 2.19 h | 0.69 h (0.16×) | 92 s | 4/25 |
+| `naccs-premier` | 73 h | 25.5 h | 23.4 h | 453 s | 50/145 |
+| `wave-dt3600+wave-dtheta10+wave-noig` | 73 h | **9.26 h** | 7.13 h | 236 s | 35/73 |
+| `wave-nowind` | 73 h | 6.12 h | 3.99 h | 95 s | 17/145 |
+| `…+wave-nowind` (all four) | 73 h | 2.87 h | 0.75 h | 36 s | 7/73 |
+
+HWM median 50 m, n 94 (unpaired headline; paired CIs pending, job 62099849):
+
+| arm | RMSE | bias | MOTF CSI |
+|---|---|---|---|
+| `naccs-premier` | 0.329 | −0.143 | 0.706 |
+| `wave-dt3600+wave-dtheta10+wave-noig` | **0.328** | −0.137 | 0.708 |
+| `wave-nowind` ⚠️ | 0.355 | −0.117 | 0.711 |
+| `…+wave-nowind` ⚠️ | 1.009 | +0.501 | 0.721 |
+| `naccs-nowaves` (not ranked) | 0.393 | −0.246 | 0.697 |
+
+- **The physics-preserving cheap config costs 0.36× the premier's solve and scores the
+  same.** Paired vs `naccs-premier` (median, 50 m, n 94): ΔRMSE −0.0018 m [−0.0072,
+  +0.0027], P(A better) 0.77. By group: open coast −0.003 [−0.010, +0.003], NY bays −0.006
+  [−0.019, +0.003], NJ back bays −0.005 [−0.011, −0.000]; the INLETS move: marks 1 cm lower,
+  ΔRMSE +0.013 [+0.002, +0.021] (n 14). Blow-up faces 1,580 vs the premier's 1,511 (the
+  known boundary-point artefact, FINDINGS "Closed").
+- 🔴 **Wind growth OFF makes SnapWave DIVERGE on this engine.** Faces whose hm0 is ever
+  `inf` or > 20 m: premier 1,511, cheap config 1,580, `wave-nowind` **34,845**, all-four
+  **83,273** (hm0max p99.9 73 m and 611 m). Brief sub-hourly spikes — the hourly zs matches
+  the healthy arm except the `inf` hour — but `zsmax` catches them: 294 m at a face near
+  Cape May, 22–48 m at Coney Island and Brigantine. The all-four arm's excess is northern
+  (Sandy Hook Bay +1.63 m bias, Raritan +1.32, Shrewsbury +0.98; southern bays within cm).
+  `wave-nowind`'s 0.355 is therefore NOT a clean "what wind growth is worth" number
+  (Lower Bay SI shore +0.36 vs −0.18). The 12 h wind-off cut already showed it: SnapWave's
+  error field `**********` and a 0.99989 oscillation with %ok = 100.
+  (`blowup_where.txt`, `hm0_blowup_census.txt`). Mechanism not read.
+- **Against the pre-registration:** dtheta 10° came in at 0.70× SnapWave time, not ~0.5×;
+  wind off at 0.16×, cheaper than the 3–5× guessed — but it is unusable as built. crit
+  0.01 is 0.60×; whether bay cells freeze early is still unread (`engine_gate.py compare`).
+- Still to read: `engine_gate.py compare` on cuts 2–4 vs c1 (hm0 by region).
+
 ## Open questions (each with what would close it)
+
+- **Wind-off SnapWave diverges (above).** Close: where the first `inf` appears (boundary
+  points vs interior; Sandy Hook / Coney Island shoals) on c4, then decide whether "no wind
+  growth" is a config worth repairing for the memo or simply struck.
 
 - **Southern back-bay deficit (§57):** mechanism unknown. Close: pre-storm bay-minus-pier on
   a fixed-engine run whose inlet setup lifts the bays; and the calm-month datum check of the

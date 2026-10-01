@@ -11,13 +11,18 @@ Nothing here reads a run dir or a raster.
 
 from __future__ import annotations
 
+import os
 import unittest
 from pathlib import Path
+from unittest import mock
 
 from nj_sfincs.config import Experiment, WaveConfig
 from nj_sfincs.experiments import EXPERIMENTS_BY_DOMAIN
 
 
+# Importing ``run_experiments`` resolves ``exp_root()``, which needs a declared domain
+# (no default since 2026-10-01); these tests do not depend on which.
+@mock.patch.dict(os.environ, {"NJ_DOMAIN": "v1_monmouth"})
 class TestBedArms(unittest.TestCase):
     def test_default_is_no_subgrid_swap(self):
         e = Experiment("x", WaveConfig(use_waves=False))

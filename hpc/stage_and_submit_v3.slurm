@@ -4,11 +4,11 @@
 # the sealed engine passed explicitly, then queue ONE dependent validation job that
 # scores the arms once every solve has finished. 2026-08-26; generalised 2026-09-02.
 #
-#   sbatch hpc/stage_and_submit_v3.slurm naccs-premier,naccs-nowaves   # comma-separated arms
-#   SOLVE_TIME=08:00:00 SOLVE_MEM=64G sbatch hpc/stage_and_submit_v3.slurm wave-noig
+#   NJ_DOMAIN=v3 sbatch hpc/stage_and_submit_v3.slurm naccs-premier,naccs-nowaves  # comma-separated
+#   NJ_DOMAIN=v3 SOLVE_TIME=08:00:00 SOLVE_MEM=64G sbatch hpc/stage_and_submit_v3.slurm wave-noig
 #   NJ_DOMAIN=v4 VALIDATE=0 sbatch hpc/stage_and_submit_v3.slurm naccs-nowaves
 #
-# The arm list is REQUIRED (2026-09-30): the old default named a retired arm and the v3
+# NJ_DOMAIN is REQUIRED (2026-10-01), like the arm list. The arm list is REQUIRED (2026-09-30): the old default named a retired arm and the v3
 # reference run dir, which staging would destroy and re-stage.
 #
 # 🔴 DISK FIRST. Staging copies the 9.9 G template per arm BEFORE dedupe hard-links it
@@ -28,7 +28,7 @@ set -euo pipefail
 cd "$SLURM_SUBMIT_DIR"
 export PATH=$HOME/nj_sandy_sfincs/micromamba/envs/sfincs/bin:$PATH
 # 2026-09-28: any domain — NJ_DOMAIN from the environment, v3 when unset (the name stays).
-export PYTHONPATH=$PWD NJ_ROOT=$PWD NJ_DOMAIN="${NJ_DOMAIN:-v3}"
+export PYTHONPATH=$PWD NJ_ROOT=$PWD NJ_DOMAIN="${NJ_DOMAIN:?set NJ_DOMAIN in the submitting shell}"
 echo "domain $NJ_DOMAIN"
 hostname; date
 # EXPECT_MD5=<file of `md5sum` lines, written at submit time> makes the job refuse to

@@ -15,10 +15,17 @@ from __future__ import annotations
 import os
 import unittest
 from pathlib import Path
+from unittest import mock
 
 from nj_sfincs import domain, premier
 from nj_sfincs.config import ROOT, exp_root
 from nj_sfincs.experiments import EXPERIMENTS_BY_DOMAIN, experiments, sweepable
+
+#: The domain tests that need SOME domain (to import ``run_experiments``, to resolve
+#: ``exp_root``) run on. There is no library default (2026-10-01); this is the declared
+#: fixture — the frozen port-verification domain, which nothing can build on.
+FIXTURE_DOMAIN = "v1_monmouth"
+_on_fixture = mock.patch.dict(os.environ, {"NJ_DOMAIN": FIXTURE_DOMAIN})
 
 
 class _DomainEnv(unittest.TestCase):
@@ -39,8 +46,16 @@ class TestDomainRegistry(_DomainEnv):
         for key, dom in domain.DOMAINS.items():
             self.assertEqual(key, dom.name, f"DOMAINS[{key!r}].name is {dom.name!r}")
 
-    def test_default_domain_is_registered(self):
-        self.assertIn(domain.DEFAULT_DOMAIN, domain.DOMAINS)
+    def test_unset_domain_is_refused(self):
+        """No default (2026-10-01): an unset NJ_DOMAIN stops, it never picks one."""
+        self.assertFalse(hasattr(domain, "DEFAULT_DOMAIN"))
+        for unset in (None, ""):
+            if unset is None:
+                os.environ.pop("NJ_DOMAIN", None)
+            else:
+                os.environ["NJ_DOMAIN"] = unset
+            with self.assertRaises(RuntimeError):
+                domain.active()
 
     def test_active_follows_env(self):
         for name in domain.DOMAINS:
@@ -697,6 +712,7 @@ class TestRainOffIsWrittenNotMerelyNotWritten(_DomainEnv):
             self.skipTest("no rain-off arms staged on any domain")
 
 
+@_on_fixture
 class TestForcingBracketIsRefusedByName(_DomainEnv):
     def test_sealed_template_is_not_mistaken_for_a_forcing_bracket(self):
         """The 2026-09-09 trap: a forcing bracket shares the sealed fingerprint, and the
@@ -718,6 +734,7 @@ class TestForcingBracketIsRefusedByName(_DomainEnv):
                 fake.unlink()
 
 
+@_on_fixture
 class TestBracketRowsStayOutOfMetrics(unittest.TestCase):
     def test_split(self):
         import pandas as pd
@@ -739,6 +756,7 @@ class TestBracketRowsStayOutOfMetrics(unittest.TestCase):
         self.assertEqual(list(brk.index), ["BRACKET+setup-stockdon"])
 
 
+@_on_fixture
 class TestMetricsMergeKeepsOtherArms(unittest.TestCase):
     """``--validate-only --experiments X`` updates X's row, not the whole table."""
 
@@ -831,6 +849,7 @@ class TestMetricsMergeKeepsOtherArms(unittest.TestCase):
             self.assertEqual(sorted(out.index), ["naccs-premier", "wave-noig"])
 
 
+@_on_fixture
 class TestStagingIsSafeBeforeItIsDestructive(_DomainEnv):
     """⭐ THE REGRESSION TEST FOR THE DATA-LOSS BUG.
 
@@ -1140,9 +1159,6 @@ class TestAcquisitionOnly(_DomainEnv):
         """The guard has to let the normal case through, or it is just a wall."""
         dom = domain.DOMAINS["v1_5_raritan"]
         self.assertIs(domain.assert_buildable(dom), dom)
-
-    def test_default_domain_is_buildable(self):
-        self.assertFalse(domain.DOMAINS[domain.DEFAULT_DOMAIN].acquisition_only)
 
     def test_region_is_the_provisional_rectangle(self):
         """If someone points an acquisition domain at a real polygon they must also
@@ -1469,5 +1485,5 @@ class TestBreakHardlinks(unittest.TestCase):
 
         src = inspect.getsource(model.finalize)
         self.assertLess(
-            src.index("break_hardlinks(model_dir)"), src.index("sf.write()")
+            src.index("break_hardlinks(model_dir)"), src.index("\n    sf.write()\n")
         )

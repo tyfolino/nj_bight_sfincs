@@ -2842,11 +2842,6 @@ def region_source_mismatch(dom: "Domain") -> str | None:
     return None
 
 
-#: Until v1_5_raritan is registered the only domain is the frozen port-verification
-#: fixture. That is the safe default: anything that tries to BUILD on it is refused.
-DEFAULT_DOMAIN = "v1_monmouth"
-
-
 def classify_hwm_basin(x, y, dom: "Domain | None" = None):
     """Label each HWM (easting/northing in the domain CRS) by hydraulic basin.
 
@@ -2881,8 +2876,15 @@ def map_windows(dom: "Domain | None" = None) -> dict:
 
 
 def active() -> Domain:
-    """The domain this process is working on (``NJ_DOMAIN`` env var)."""
-    name = os.environ.get("NJ_DOMAIN", DEFAULT_DOMAIN)
+    """The domain this process is working on (``NJ_DOMAIN`` env var). NO default
+    (user, 2026-10-01): a default goes stale as the working domain moves on, and the
+    domain a process runs on unasked is how a sweep once came out void (CLAUDE.md §2)."""
+    name = os.environ.get("NJ_DOMAIN")
+    if not name:
+        raise RuntimeError(
+            f"NJ_DOMAIN is not set — say which domain, e.g. NJ_DOMAIN=v3. "
+            f"Known: {sorted(DOMAINS)}"
+        )
     if name not in DOMAINS:
         raise KeyError(
             f"NJ_DOMAIN={name!r} is not a known domain. Known: {sorted(DOMAINS)}"

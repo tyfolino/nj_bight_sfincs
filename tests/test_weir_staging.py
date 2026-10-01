@@ -9,6 +9,7 @@ when it must.
 
 from __future__ import annotations
 
+import os
 import tempfile
 import unittest
 from pathlib import Path
@@ -48,9 +49,7 @@ class TestEnsureWeirfileKey(unittest.TestCase):
 
     def test_sealed_template_carries_both(self):
         """The promotion itself: template has the file, the key, and they match data/."""
-        from nj_sfincs import domain
-
-        if domain.active().name != "v1_5_raritan":
+        if os.environ.get("NJ_DOMAIN") != "v1_5_raritan":
             self.skipTest("v1_5_raritan-specific")
         from nj_sfincs.config import ROOT
 

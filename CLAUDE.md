@@ -38,6 +38,8 @@ that motivated the move does **not** separate the two candidate boundaries: ΔRM
 ## 2. The one thing that will bite you: domains
 
 Every geographic fact lives in **`nj_sfincs/domain.py`**, keyed by the `NJ_DOMAIN` env var.
+🔴 **`NJ_DOMAIN` has NO default (2026-10-01)** — `domain.active()` and the hpc scripts refuse
+to run until it is set; tests that need *a* domain declare the `v1_monmouth` fixture.
 
 | `NJ_DOMAIN` | what | status |
 |---|---|---|
@@ -58,7 +60,7 @@ the experiment was about was 30% down in tidal range. Read `premier.py`'s module
 before touching staging.
 
 ```bash
-python -m nj_sfincs.premier                    # audit every run dir on the active domain
+NJ_DOMAIN=v3 python -m nj_sfincs.premier       # audit every run dir on that domain
 NJ_DOMAIN=v1_monmouth python -m nj_sfincs.premier
 ```
 
