@@ -6,7 +6,7 @@ running, what is next, what is open. When an item closes, its durable fact goes 
 Git has the history. The campaign log this file grew into until 2026-09-29 (6,767 lines) is
 `git show d70dd1e:docs/STATUS.md`; FINDINGS cites it as "STATUS <date>".
 
-Last updated: **2026-10-06 10:50** — overnight read: the harbour trench fixes Newark Bay but not
+Last updated: **2026-10-06 16:30 (end of day)** — overnight read: the harbour trench fixes Newark Bay but not
 Raritan Bay (the Arthur Kill drain is ruled out); runs A / B solving ~3× faster than planned, both
 validated tonight; the v3 re-run's Great Egg inlet fix restores the southern back-bay tide.
 
@@ -24,7 +24,25 @@ validated tonight; the v3 re-run's Great Egg inlet fix restores the southern bac
   pieces still being built (below) and then re-baselines the premier.
 - **Goal: first waves-on v4 results for Wednesday morning.**
 
-## ☀️ Tuesday 10-06 — the overnight read (10:45) and today's list
+## ☀️ PICK UP (Wednesday 10-07 morning)
+
+1. `squeue -u tpj8` + `sacct -S 2026-10-06T16:00 -X`: rebuild 62308704 → the `v4_refreeze` stagings
+   and solves (ids in `logs/refreeze_2026-10-06/v4_refreeze/README.md`); run B validate 62291413;
+   the Wednesday read (report 62305023). `DependencyNeverSatisfied` = something upstream failed.
+2. `v4_refreeze` checks in each arm's `sfincs.log`: "221 structure u/v points found"; the binary
+   ini line (premier / nowaves); `fix_meteo_grid_origin.py --check` says fixed; fingerprint as
+   registered; the `wind-naccs` arms' `sfincs_netamuv.nc` = `data/wind_v4/naccs_blend/`'s.
+3. Read `reports/v4_first_results_2026-10-07/summary.md` (B vs A, v4 vs v3 re-run, harbour vs v3_off on
+   shared marks). Flag the Keansburg pocket marks (6133/6155/6156: runs A/B had no levee) and the
+   7 crest-hole gauges. Then the `v4_refreeze` scores: new reference + the NACCS-wind pair (Raritan:
+   South Amboy obs 4.09; Barnegat — NACCS pushes south 0.38× ERA5, unrefereed).
+4. Stage the `v4_refreeze` subagent's code once its suite is green (domain / experiments / premier /
+   config / model / provenance / run_experiments / tests) — review the diff for any change to
+   EXISTING domains first. Republish the brief (same file) with the morning's scores.
+5. Next tests: the hourly-wave ±0.15 m swing (short window, finer `dtwave`); NACCS vs ERA5 pressure
+   (`--pressure era5`); record the meteo convention in metrics/provenance.
+
+## Tuesday 10-06 — the overnight read (10:45) and the day's list
 
 **Overnight:** every chain staged; all solves on emeraldrapids, logs clean.
 
