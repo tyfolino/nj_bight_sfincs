@@ -113,12 +113,23 @@ within 3 km). Barnegat / south_coast rain-pond marks sit by no lake-overlay pixe
    `nj_sfincs/meteo_blend.py` + `data/wind_v4/naccs_blend/`; user fetching the CHS points). USER to fetch
    from CHS (`logs/wind_products_2026-10-06/naccs_fetch_list.csv`): SP05387, SP06904, SP13201
    (min; near buoys 44009 / 44065 / 44025) — 15 for the full set; optional 58 shelf points.
+**🌙 Tonight (user 10-06 evening): NEW domain `v4_refreeze`** (= `v4_hot_plus_walls` + Lewes; run B
+untouched for the Wednesday read) on `_subgrid_refreeze` + ERA5-bilinear meteo + weirs (Keansburg +
+Overpeck dam + bypass sill, expect 221 structure points) + Overpeck pool start −1.005 m + obs fixes;
+arms `naccs-premier`, `naccs-nowaves`, SLR gate +0/+2/+3, and `wind-naccs` on/off if the blend is
+ready. Subagent registering + staging (`logs/refreeze_2026-10-06/v4_refreeze/`). CHS points (436,
+incl. SP05387 by 44009): `data/NACCS/naccs_chs_2026-10-06.zip`. Brief: `reports/weekly_2026-10-06.html`.
 5. **Tonight's re-freeze (user 10-06: floor only on runs ending at a head of tide; Overpeck cut at
    its Ridgefield tide gate — being verified; FIX the meteo half-cell shift and fold it in):**
    ✅ Hierarchy revised (47.93 km²; floor on head-of-tide runs only; Overpeck cut 125 m below the
    OVERPECK TIDAL DAM, NJ00799, Ridgefield, crest ~1.7 m NAVD88 — overtopped by Sandy; user 10-06:
-   model it as a WEIR — subagent building `data/structures_v4/` + auditing whether v4 silently
-   DROPPED v3's Keansburg levee weir (v4 templates carry no `sfincs.weir`). **REBUILD SUBMITTED 62308704** —
+   model it as a WEIR. 🔴 v4 had silently DROPPED v3's Keansburg levee weir (FINDINGS §38) —
+   runs A / B score pocket marks 6133/6155/6156 ~+1.7 m (6155 is a headline mark): flag it in the
+   Wednesday summary. ✅ `data/structures_v4/sfincs.weir` (Keansburg + Overpeck 1.74 m) copied into
+   `data/frozen_mesh_v4/`; at restage also copy it into the template + `weirfile` key, expect
+   "216 structure u/v points" (re-predict on `_subgrid_refreeze` with `structures/weir_on_mesh.py`).
+   ❓ Overpeck: the subgrid opens a BYPASS round the dam at 0.84 m (lidar divide 1.30–1.37 m;
+   Hackensack MHHW 0.77) and the pool starts at 0 m vs its normal −1.0 m. **REBUILD SUBMITTED 62308704** —
    `logs/refreeze_2026-10-06/submit_rebuild.sh` → `_subgrid_refreeze` on
    `v4_hot_plus_walls`: buildings cap10 → lakes → unpave → harbour → Raritan-corner surveys →
    back-bay unpave → Sayreville → Little Egg → `riverbeds_hierarchy_v4` LAST; `--manning-overlay

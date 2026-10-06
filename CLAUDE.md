@@ -186,6 +186,12 @@ not trip that guard. Do not run the sweep driver to "just rebuild" a template.
   `/scratch/tpj8/nj_bight_sfincs_data/`, and `..` resolves PHYSICALLY — so that scratch dir
   carries an `elevation` symlink back to the archive. Moving any data dir: grep its VRTs for
   `relativeToVRT="1">../` first.
+- 🔴 **A new freeze silently drops HAND-PLACED frozen-mesh files.** `sfincs.weir` (the Keansburg
+  levee, FINDINGS §38) and `sfincs.obs` live as files dropped into `data/frozen_mesh_<domain>/`,
+  not as domain fields; `frozen_mesh_v4` got the obs file by hand and NOT the weir, so every v4
+  run until 10-06 had no levee (pocket marks +1.7 m). After any freeze: `diff <(ls
+  data/frozen_mesh_v3) <(ls data/frozen_mesh_<new>)`, and check the staged `sfincs.log` for
+  "N structure u/v points found".
 - **A roughness or elevation change needs a SUBGRID rebuild on the frozen mesh.**
   `build_static` copies the frozen mesh and returns early, so it will silently produce a
   no-op template. A *mask* change is the opposite: no subgrid rebuild, but the fingerprint

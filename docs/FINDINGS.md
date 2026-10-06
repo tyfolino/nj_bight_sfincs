@@ -434,6 +434,14 @@ CLAUDE.md §5.
       bias −0.037, CSI 0.7044 / FAR 0.1682. Durable source
       `data/structures_v1_5/keansburg_weir.weir`; `model._ensure_weirfile_key` keeps
       the inp key alive across re-staging (`tests/test_weir_staging.py`).
+    - 🔴 **v4 LOST the weir (found 2026-10-06; every v4-mesh run before the 10-06 re-baseline).**
+      The weir was never a domain field: a hand-placed `frozen_mesh_v3/sfincs.weir` that staging
+      copies; `frozen_mesh_v4` (09-28) got `sfincs.obs` by hand but not the weir. Run B: pocket
+      marks 6133 / 6155 / 6156 peak 3.32–3.36 m vs v3's 2.60–2.61 (obs 1.55–1.58) — the pre-weir
+      numbers again; 6155 is a headline mark. Restored 10-06: `data/structures_v4/sfincs.weir`
+      (Keansburg byte-identical + the OVERPECK TIDAL DAM, crest 1.74 m NAVD88 = 6.7 ft NGVD29 via
+      VDatum, Cd 0.6) copied into `data/frozen_mesh_v4/`; the engine keeps 212 + 4 crossings
+      (`logs/refreeze_2026-10-06/structures/`). Not a fingerprint change (z, mask only).
     The nowaves weir run scores HWM RMSE 0.3867 (`extent_admissible=False`). The weir
     lives in the TEMPLATE, not in the premier alone, because a premier-only weir would
     confound premier-vs-nowaves forever.
