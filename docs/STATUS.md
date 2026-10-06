@@ -6,55 +6,200 @@ running, what is next, what is open. When an item closes, its durable fact goes 
 Git has the history. The campaign log this file grew into until 2026-09-29 (6,767 lines) is
 `git show d70dd1e:docs/STATUS.md`; FINDINGS cites it as "STATUS <date>".
 
-Last updated: **2026-10-01** — wave cost tests read; wind-off SnapWave diverges; subgrid write-through fixed.
+Last updated: **2026-10-06 10:50** — overnight read: the harbour trench fixes Newark Bay but not
+Raritan Bay (the Arthur Kill drain is ruled out); runs A / B solving ~3× faster than planned, both
+validated tonight; the v3 re-run's Great Egg inlet fix restores the southern back-bay tide.
 
 ---
 
 ## Now
 
-- **v3 is DONE** (user, 2026-09-24). Reference: `naccs-premier` on the repaired mask — HWM
-  RMSE 0.329 / bias −0.143 (median, 50 m, n 94), MOTF CSI 0.706 / POD 0.880 / FAR 0.219.
-- **v4 is FROZEN but PARKED.** Its inland-water fixes and its first waves-on run are on hold
-  while the river policy and the wave treatment are re-decided (user, 2026-09-30). Only
-  waves-off runs exist; the first look is in FINDINGS part 4.
-- **The rethink (plan `~/.claude/plans/pasted-content-id-5f76-hey-claude-giggly-star.md`):**
-  (1) repo cleanup — done, committed 2026-10-01; (2) literature review of
-  where others end their rivers and how they treat wave setup; (3) SnapWave cost tests on
-  v3; (4) a plain-language decision memo. No domain changes until the user picks from it.
-- **Subgrid write-through, FIXED 2026-10-01 (staged, uncommitted).** `finalize()`'s
-  `sf.write()` rewrote `sfincs_subgrid.nc` THROUGH the `swap_subgrid` hard link, i.e. into
-  the premier's and 15 other runs' table, at every staging that borrowed
-  `_subgrid_buildings`. No harm done: the 09-23 snapshot and today's file are bit-identical
-  in every variable (only `_NCProperties` netCDF 4.10.0 → 4.10.1, 7 bytes; the stamp
-  `8518110d` → `af1bd866` in `metrics.csv` is that and nothing else). Fix:
-  `model.break_hardlinks()` before the write + `TestBreakHardlinks`; 238 tests OK.
+- **v3 is DONE** (2026-09-24). Reference `naccs-premier` on the repaired mask — HWM RMSE 0.329 /
+  bias −0.143 (median, 50 m, n 94), MOTF CSI 0.706 / POD 0.880 / FAR 0.219. A re-run with the
+  shared bed fixes is in flight (below); the reference stays until it is read.
+- **v4 is DECIDED and RE-FROZEN (user 10-05):** rivers at today's head of tide (A+), waves 5° /
+  hourly, buildings +10 m, frozen domain **`v4_hot_plus_walls`** (A+ + 11 leak walls + the
+  Henlopen gap + 4 inflows in their channels; `77b5eda1fcd51cf6`). FINDINGS part 4 has the
+  decisions and the audit. Its bed fixes are subgrid overlays; the final re-freeze bed adds the
+  pieces still being built (below) and then re-baselines the premier.
+- **Goal: first waves-on v4 results for Wednesday morning.**
 
-## Next, in order
+## ☀️ Tuesday 10-06 — the overnight read (10:45) and today's list
 
-1. Read the cheap + wavemaker arm when it lands (Jobs; 5b pre-registration): `sacct`
-   NodeList → `premier` audit `output WHOLE` → cost → transects vs the POST-repair baseline →
-   paired marks vs `wave-wavemaker`. Only post-09-22-repair runs and numbers as references.
-2. Unread from the wave tests: `engine_gate.py compare` on cuts 2–4 vs c1 (does crit 0.01
-   freeze bay cells?). Then a user call: chase the wind-off divergence or strike that option;
-   is test 8 (formula setup at the shoreline) still worth 2–3 days now the cheap config ties.
-3. Decision memo: the four river policies (head of tide / gauge / +3 m rule / whole
-   watersheds), each costed Sandy-only and +3 m; the wave table (cheap config, ± wavemaker);
-   the literature summary folded in. The user decides; then the "do not exclude upriver
-   communities" and +3 m rules are kept or rewritten explicitly.
-4. FINDINGS §49's beach numbers are PRE-repair — flag or revise once arm 5b is read (user
-   call). Fold today's durable results (cheap config, wind-off divergence, IG null) into
-   FINDINGS when the wave half of the memo is settled.
+**Overnight:** every chain staged; all solves on emeraldrapids, logs clean.
 
-## Jobs
+| run | state (10:45) | next |
+|---|---|---|
+| harbour test `v4_hot_plus/bed-harbour+naccs-nowaves` | ✅ solved + validated | read below; FINDINGS part 4 (e) |
+| run A twin `v4_hot_plus/bed-buildings+bed-channels+naccs-nowaves` | ✅ validated | Wednesday read |
+| run A `…+naccs-premier` | solving, **62289819** (hal0408), 54 of 72 sim-h; ~6–8 sim-h per wall-h | done ~13:30–14:00 → validate **62289820** |
+| run B `v4_hot_plus_walls/naccs-premier` | solving, **62291412** (hal0441), 36 of 72 sim-h | done ~16:00–16:30 → validate **62291413** |
+| run B twin `v4_hot_plus_walls/naccs-nowaves` | ✅ solved 08:03; validate **62291643** pending (Priority) | — |
+| v3 re-run `bed-v4fixes+naccs-nowaves` | ✅ validated | read below |
+| v3 re-run `bed-v4fixes+wave-dt3600` | ✅ solved (14 h 42); validate 62284068 PREEMPTED 10:39 → resubmitted **62304642** (`--requeue`) | — |
+| data swap 62282097 | FAILED at `elevation_v4/enc`: scratch holds `raw_cohansey/` (written there by the 10-05 Cohansey build), so the strict listing diff refused. Everything before `enc` swapped; `enc`, `gmrt_v4.tif`, `inland_water`, `nj_10ft_dem_v4.tif.ovr` (~2.1 G) still on home. Home 67 G — not urgent | finish with a diff that allows dst-only files |
 
-**Cheap + wavemaker arm, submitted 2026-10-01 17:32:** solve **62104450**
-(`wave-dt3600+wave-dtheta10+wave-wavemaker`, igk engine, emeraldrapids, 24 h) → validate
-**62104451** (afterok, 160 G). Staged inputs checked against `wave-wavemaker`: only `dtwave`
-and `snapwave_dtheta` differ; `sfincs.wvm` and SnapWave boundary files identical; the three
-forcing NetCDFs differ only in bytes, every variable and attribute identical
-(`forcing_diff.txt`). Read per the 5b pre-registration below: `sacct` NodeList first.
+**Run A waves-on SCORED (16:xx):** HWM RMSE 0.565 → 0.501, bias −0.383 → −0.266 (median, 50 m,
+n 110; waves-off twin → on), CSI 0.704 (admissible); wave lift −0.064 RMSE = v3's §48 −0.064.
+Lift by basin +0.06…+0.23 (Raritan +0.15, Barnegat Bay +0.20, LBI +0.18); South Amboy 3.57 → 3.72
+(obs 4.09). ⚠️ NY-bay lifts carry the hourly-wave swing. Solve 9 h 20 on emeraldrapids.
+Pace is ~3× the 10-05 estimate (hourly waves; SnapWave calls 280–380 s), so both waves-on runs
+are validated tonight, not Wednesday.
 
-- Maintenance 10-13 08:00 → 10-14 23:59.
+**Harbour test read (vs the 10-05 pre-registration):** Newark Bay ✅ (peak 2.99 → 3.50, obs 3.70;
+range ratio 0.68 → 1.04; timing +67 → −6 min vs obs); Arthur Kill marks −0.58 → −0.25 (n 3);
+open coast / Narrows < 1 cm ✅; the Arthur Kill flux REVERSES (+9.9 → −24.2 Mm³). **But South
+Amboy 3.56 → 3.57 (predicted +0.2–0.4) and Raritan Bay marks −0.419 → −0.409 (predicted
++0.15–0.35)** ✗. The drain was not the Raritan cause → the Arthur-Kill-walled bracket is moot
+(the Kill already flows the other way). v4's harbour-side gauge peaks sit 5–6 cm under v3's
+(Sandy Hook, AK mouth, Great Kills); the basin-bias gap to v3 (−0.41 vs −0.20) mixes different
+mark sets → read it PAIRED on shared marks (Wednesday preset).
+
+**v3 re-run, waves-off twin (vs `naccs-nowaves`):** HWM RMSE 0.393 → 0.382, bias −0.246 → −0.250
+(median, 50 m, n 94); CSI 0.697 → 0.705. Great Egg inlet fix is large: Great Egg tide range 0.70
+→ 1.31 (obs 1.23), Ocean City 0.74 → 1.34 (obs 1.13), peaks −0.34/−0.41 → −0.13/−0.14; absecon
+basin +0.12. Inside Thorofare is now TIDAL (range 0.12 → 1.42, obs 1.22); its "+0.44 m peak" is
+an obs artefact (the crest falls in the §60f hole; 7 gauges lack `record_ends` — FINDINGS §60f).
+`great_bay_mullica` −0.08 → −0.25 is TWO marks (6066 +0.75 → −0.19, 6053 +0.13 → −0.48): the
+`riverbeds_gmrt_v4` carve removed a GMRT plug (+2.8…+3.9 m) behind which v3's no-infiltration
+rain ponded — −0.25 is the honest number (= the §57 deficit); NOT the lakes overlay (no lake pixel
+within 3 km). Barnegat / south_coast rain-pond marks sit by no lake-overlay pixel either
+(`logs/morning_2026-10-06/per_mark/`). Predict for B twin vs A twin: 6066 falls, 6053 rises.
+
+**Today, in order:**
+1. ✅ **USER decisions (10-06):** (a) a 1.2 m-below-MLLW FLOOR on the guessed (slope) tier only —
+   measured tiers keep their values; (b) ADD the damped fill-bed tidal reaches of the screen
+   (Wading/Bass, Murderkill, Alloway, Salem R., Dividing, Great Egg Harbor R., Cedar/Nantuxent,
+   Broadkill, Overpeck, Appoquinimink/Blackbird, Leipsic–Smyrna; NOT the Salem/Pennsville shore
+   polygon or the Mispillion, already tidal); (c) KEEP marsh n (NLCD 90/95) on tidal polygons —
+   0.02 stays on lakes, non-tidal rivers and the developed-class overrides; marsh n is ALSO kept on
+   the 20.5 km² of tidal-looking LAKE polygons (marsh pools; user 10-06). Subagents building
+   (a)+(b) (`bed_hierarchy/`) and (c) (`roughness/`). (a)+(b) ✅ DONE: `riverbeds_hierarchy_v4`
+   rebuilt, 32 reaches, 48.52 km² (eHydro 0.75 / CUDEM 0.58 / chart-NOS 13.25 / slope 33.94);
+   md5 list `bed_hierarchy/riverbeds_hierarchy_v4.md5`. ❓ USER: the floor also fills 12.6 km of
+   gaps BETWEEN two measured stretches (pockets deeper than both neighbours: Overpeck, Lewes,
+   St Jones) — rec. limit it to runs ending at a head of tide; Overpeck: tide gate? The screen
+   mislabelled 120006713 (= Alloway) / 120006724 (= Stow Creek); Salem River (120006699) stays out. (c) ✅ DONE: `manning_water_v4.tif` rebuilt (painted 580.7 → 486.9 km²; n
+   changes on 58.5 km²; check clean; old raster `/scratch/tpj8/manning_water_v4_old_2026-10-05/`).
+2. ✅ **Wednesday read SUBMITTED** with the v3 re-run pairs, harbour vs `Aplus_base` / `v3_off`, and
+   B vs the v3 re-run (on + off): 21 jobs `62305002`–`62305022` (afterok on 62289820, 62291413,
+   62291643, 62304642), report **62305023** → `reports/v4_first_results_2026-10-07/`. No
+   `--requeue` on these: a preempted residual job shows up as "missing" in the summary.
+3. ✅ Per-mark read DONE (above). Follow-up: add `record_ends="2012-10-29 03:54"` (or a crest-hole
+   flag) to the 7 gauges in `_V3_USGS_GAUGES` — no fingerprint change; after the queued jobs start.
+4. After run B validates: park run B under `_pre_refreeze/` + its KNOWN fingerprint; apply the
+   Lewes edit as an override on `V4_HOT_PLUS_WALLS` only (test 62283012: invariants OK, active
+   3,965,068 → 3,965,303 (+235), 61 sources active, SnapWave band −4 cells, new sha
+   `378014e154b4ff41`); move the `usgs_tidal_absecon_creek` obs point off its +2.92 m face.
+4b. **Raritan Bay low (calm-water, ~0.5 m at the west end):** v3 forced NACCS at the Arthur Kill
+   mouth, v4 doesn't (FINDINGS part 4 (e)). Subagents: a toy-basin wind-setup test of our engine
+   (`logs/raritan_2026-10-06/wind_setup_toy/`) and SnapWave vs NACCS/STWAVE bay waves
+   (`logs/raritan_2026-10-06/waves_vs_naccs/`). Then one targeted waves-on bracket run.
+   ✅ Toy test DONE: the engine reproduces analytical wind setup (0.99–1.02×), but 🔴 its
+   `netamuv`/`netamp` reader shifts every wind/pressure sample ~12.5 km W + 12.5 km N (half an
+   ERA5 cell; FINDINGS 'NOT wind-limited' entry) — applied stress 0.73–0.86× in the NY bays, in
+   EVERY run. v4's ~0.18 m Raritan tilt ≈ what that wind can build; the rest of the ~0.67 m is
+   forcing (wind strength + wave setup), not the solver. ❓ USER: fix it (write half-cell-shifted
+   coordinates, verify with the toy `probe_lin` → zero shift) and fold it into the re-baseline?
+   ✅ Waves vs NACCS DONE: the bay's missing push is mostly WIND (ERA5 0.63–0.72× NACCS along
+   the axis; NACCS = observed at Robbins Reef), waves second (SnapWave hm0 ≈ 0.65× STWAVE; +0.05–0.1
+   m). Hourly wave updates make a ±0.15 m bay swing (§40's waves-on ringing?). FINDINGS part 4 (e).
+   🔜 **Better wind (user 10-06):** subagent scoring ERA5 (true positions) vs RAP 13 km, NAM 12/4 km,
+   RTMA 2.5 km, H*Wind, NACCS save-point winds against over-water stations + buoys
+   (`logs/wind_products_2026-10-06/`); it will name the NACCS OFFSHORE save points the user
+   should fetch from CHS. ✅ DONE: no gridded product helps over the bays; rec. a BLEND — NACCS
+   save-point u, v, p on a ~0.5–1 km grid inside the domain, tapered into ERA5 (true positions)
+   offshore → a `wind-naccs` arm beside the ERA5 baseline (user 10-06: YES; subagent building
+   `nj_sfincs/meteo_blend.py` + `data/wind_v4/naccs_blend/`; user fetching the CHS points). USER to fetch
+   from CHS (`logs/wind_products_2026-10-06/naccs_fetch_list.csv`): SP05387, SP06904, SP13201
+   (min; near buoys 44009 / 44065 / 44025) — 15 for the full set; optional 58 shelf points.
+5. **Tonight's re-freeze (user 10-06: floor only on runs ending at a head of tide; Overpeck cut at
+   its Ridgefield tide gate — being verified; FIX the meteo half-cell shift and fold it in):**
+   ✅ Hierarchy revised (47.93 km²; floor on head-of-tide runs only; Overpeck cut 125 m below the
+   OVERPECK TIDAL DAM, NJ00799, Ridgefield, crest ~1.7 m NAVD88 — overtopped by Sandy; user 10-06:
+   model it as a WEIR — subagent building `data/structures_v4/` + auditing whether v4 silently
+   DROPPED v3's Keansburg levee weir (v4 templates carry no `sfincs.weir`). **REBUILD SUBMITTED 62308704** —
+   `logs/refreeze_2026-10-06/submit_rebuild.sh` → `_subgrid_refreeze` on
+   `v4_hot_plus_walls`: buildings cap10 → lakes → unpave → harbour → Raritan-corner surveys →
+   back-bay unpave → Sayreville → Little Egg → `riverbeds_hierarchy_v4` LAST; `--manning-overlay
+   manning_water_v4`. 🔴 Its md5 guard covers `nj_sfincs/domain.py`: the Lewes override waits
+   until the rebuild job STARTS. ✅ Meteo fix DONE (`nj_sfincs/meteo_grid.py`, applied in `finalize`;
+   13 new tests, suite 256 OK; real engine now samples at +0.0 / −1.7 m): at restage run
+   `python scripts/fix_meteo_grid_origin.py --era5-bilinear experiments/v4_hot_plus_walls/_template_sealed`
+   (user 10-06: YES, ERA5 bilinear on a 5 km UTM grid; hydromt's own regrid is nearest-neighbour). To do:
+   record the meteo convention in `metrics.csv` / `provenance.txt` (like `snapwave_direction`). Then re-baseline (freeze run B's rows, park run B, repoint
+   `naccs-premier`), waves-on + waves-off + SLR gate.
+6. Finish the data swap (above).
+
+**Read plans still open (pre-registered 10-05):**
+- **Runs A / B:** the wave lift = waves-on − twin (v3: −0.064 m RMSE); Raritan / Newark Bay
+  should read the harbour fix; the Maurice / Mullica / Tuckahoe / Rancocas reaches should wet
+  (B only). Check: the SnapWave band's 53 boundary cells shallower than −20 m (to −12 m, the
+  southern E–W step) — hm0 there vs depth (depth-limited breaking at the boundary?).
+- **v3 re-run waves-on:** as the twin above, plus the wave lift vs `wave-dt3600`.
+
+**Wednesday read — `scripts/v4_first_results.py`** (built + tested 10-05; reproduces metrics.csv
+and §48's v3 ΔRMSE −0.0640 [−0.0859, −0.0424] exactly): `plan --preset wednesday` (read-only) →
+`submit` → `reports/v4_first_results_2026-10-07/summary.md`. v4 residual jobs ~211 GiB each, one
+run per job. B − A differs in bed AND mask AND inflows; CSI is not comparable across domains.
+
+**Bed hierarchy (DONE 10-05):** `riverbeds_hierarchy_v4` (18 tidal reaches, 29.6 km²) REPLACES the
+Cohansey, GMRT and tidal builds (+ `_shaped`); paint it LAST. `riverbeds_hierarchy_tier_v4.vrt`
+is provenance, NOT a bed — never `--overlay` it. Premier-tier inconsistencies
+(`premier_tiers.csv`): `riverbeds_v4` form (flat), `usace_nj_2010_v3` over 4.8 km² of real CUDEM,
+`coned_sw_raritan` east of −74.25. Paerdegat: leave it (user).
+
+## The re-freeze — what is left (`reports/v4_refreeze_list_2026-10-05.md`)
+
+**In progress (subagents, 10-05 PM; notes under `logs/refreeze_2026-10-05/`):**
+1. ✅ **Roughness overlay route DONE** (`roughness/README.md`): `rebuild_subgrid.py
+   --manning-overlay <key>` (byte-identical without it; only the uv n-tables move with it;
+   `tests/test_rebuild_subgrid.py`) + `manning_water_v4` (catalog; n 0.02 on all NHD water in the
+   ring, 581 km² painted, n changes on 152 km²). ❓ USER: keep 0.02 on the ~94 km² of tidal marsh
+   creeks NLCD calls marsh / woody wetland? **Schuylkill:** the whole 4.8 m excess is the first
+   3 km below the dam, exactly where the bed is CUDEM's ~0 m fill (then −7…−11 m); 1-D backwater
+   needs n ≳ 0.06 for 6.8 m, n 0.02 gives ~3.1 m — roughness AND the fill bed; fix both (the
+   reach joins §2's "CUDEM ~0 m on tidal rivers").
+2. ✅ **Bed candidates DONE** (`bed_candidates/README.md`; catalog keys added):
+   `usace_unpave_backbay_v4` (11 laser-paved back-bay channels/basins, none are bridges; 9 more
+   patches are beach / inlet shoals → keep the 2010 bed), `riverbed_sayreville_v4` (2012 survey +
+   H05647, within 4 cm of the 2012 survey), `littleegg_channel_v4` (NOAA H12597 2014 agrees with
+   the 2024 eHydro to 0.35 m — CUDEM missed a 5–14 m inlet channel; IN per the hierarchy,
+   eHydro first). Rahway mouth: no material → the slope rule. No raster needed: Cape May Pt
+   (marginal), the "Trenton crossing" (a sand-and-gravel pit), the C&D "ridge" (a spoil dike),
+   the DE borrow pit. ❓ USER: **Lewes ring edit** (edge ~250 m east so the Lewes–Rehoboth canal
+   isn't cut off, 0.92 km²) and optionally move `jamaica_wall_mid` west of Paerdegat.
+3. ✅ **Tidal carves DONE** (`tidal_carves/README.md`): `riverbeds_tidal_v4` (catalog) —
+   Christina (NOS H10042 1982, then −2.11 m; 1.17 km²), Big Timber (NOS H09886 1980; branches
+   −2.17 m; 1.26 km²), St Jones (stated −2.09 m; 1.56 km²; the real channel at Lebanon is
+   narrower and deeper). **Shaped-section OPTION** (catalog `*_shaped_v4` keys; each REPLACES its
+   flat twin): natural sections here average 0.55–0.65 of their deepest depth, so depth below
+   MLLW = d_c·(1−(1−ξ)^1.5); area below MLLW Maurice −33 %, Christina −37 %, Big Timber −33 %,
+   Rancocas −21 %, Mullica −16 %, Tuckahoe −5 %, stated-depth reaches unchanged. ❓ USER: adopt
+   shaped? (rec. yes). Minor: St Jones MLLW −0.890 vs −1.011 (cross-bay pair); Big Timber
+   branch heads may still be tidal (+1.1–1.5 m lidar water vs MHHW 1.09) — unpainted.
+
+4. **ONE bed-source hierarchy (user 10-05 evening; no sensitivity test):** eHydro → real CUDEM
+   → NOAA charts / NOS → sloping-river approximation (shaped section). Subagent building
+   `riverbeds_hierarchy_v4` (`bed_hierarchy/`) to REPLACE the 10-05 Cohansey / GMRT / tidal
+   builds in the final bed, plus a consistency report on the premier's own tiers.
+
+**Then (main session):** the final overlay list (cap10 buildings; lakes; every channel fix; the
+new pieces; manning) → rebuild on `v4_hot_plus_walls` → **re-baseline**: freeze run B's rows
+as `metrics_<date>_pre_refreeze_rebaseline.csv`, park run B's dirs, point `naccs-premier` at the
+final bed (never repoint it silently) → waves-on + waves-off + the +0/+2/+3 m SLR gate.
+**After run B stages (~21:00), not before** (its template audit checks obs points): move the
+`usgs_tidal_absecon_creek` obs point off its +2.92 m face (Inside Thorofare's +3.47 m face is the
+2010-lidar paving, fixed by the unpave overlay — confirm on run B's bed).
+
+**Fix-material registry (catalog keys, all overlays):** `bed_buildings_v4` (+4) /
+`bed_buildings_v4_cap10`; `inland_water_bed_v4` (85 lakes + 2 rivers, 5.16 km², bed only;
+user's four calls); `usace_unpave_v4` (`build_usace_unpave_v4.py`, 3 boxes);
+`ehydro_harbour_v4` / `ehydro_refreeze_cenan_v4` (`download_ehydro_v4.py --set …`);
+`riverbed_cohansey_v4` (`build_riverbed_cohansey_v4.py`; −2.14 m); `riverbeds_gmrt_v4`
+(`build_riverbeds_gmrt_v4.py`; ENC / NOS H06254+H06218 soundings, else 1.2 m below MLLW from
+on-river CO-OPS stations; `logs/bedfix_2026-10-05/gmrt_reaches/`). Paint order: buildings →
+lakes → channel fixes (later wins). Run B's discharge file: `usgs_sandy_discharge_v4_hot_plus_walls`.
 
 ## Domains at a glance
 
@@ -62,228 +207,91 @@ forcing NetCDFs differ only in bytes, every variable and attribute identical
 |---|---|---|---|
 | `v1_monmouth` | frozen, port fixture | 547,408 | — |
 | `v1_5_raritan` | frozen 2026-08-14 | 696,230 / 1,652 / `2a23667dd16e449c` | `naccs-premier` (carries the §50 edge drain, unmeasured) |
-| `v2_barnegat` | archived, score-only | — | 5 rescored rows in `experiments/v2_barnegat/metrics.csv` (three fingerprints; compare within one) |
+| `v2_barnegat` | archived, score-only | — | 5 rescored rows in `experiments/v2_barnegat/metrics.csv` |
 | `v3` | DONE 2026-09-24 | 3,412,470 / 4,108 / `1596ce1ecc71b374` | `naccs-premier`, engine `bin:v2.3.3-winddir-fix-1-gf11@673ee3bf` |
-| `v4` | frozen 2026-09-28, parked | 4,881,654 / 4,388 / `23ea65f8b81ee1bd` | none yet (waves-off gate arms only) |
-
-## v4 — live state
-
-**Decisions in force** (the why is in FINDINGS part 4 and §53): ring = Sandy + 3 m target,
-hand-edited CSV, audited; forced sea line replaces the isobath; far banks computed; river
-cuts where the +3 m water ends, walled, gauge flow scaled by drainage area; outflow walled
-within 500 m of every source and forced line; 16 px subgrid; score on the 3.125 m bed, NJ
-land only; infiltration on (v4 only); buildings burned (NJDEP only).
-
-**Known defects, not fixed** (all parked with the river decision): CUDEM ~0 m fill under
-lakes / non-tidal rivers (§54a); the Schuylkill backing up through Philadelphia (box-mean
-Manning, untested); creek channels missing at four Delaware-tributary gauges (§60g);
-Union / Sunset Lake dam crests unchecked; no bed above the Trenton falls (DRBC request out
-via the user's supervisor); the building cap (+4 m) is overtopped at +3 m SLR; 24.6 km² of
-footprints skipped as ground < 0 m (Meadowlands / Newark — look before a waves-on run);
-`passaic_charted` carve runs its MLLW tail past Dundee Dam.
-
-**User decisions that were pending on 09-29 (inland water), now parked:** (1) the clamp
-`bed = max(current bed, surface − depth)`; (2) exclude Christina at Newport and Big Timber
-Creek (tidal); (3) Manor Lake — tide-connected or closed?; (4) keep the other 45
-1.5–2.5 m-surface lakes. Tooling: `scripts/build_inland_water_v4.py`
-(fetch / depths / inventory / review → `data/elevation_v4/inland_water/`).
-
-**Unread:** why v4's waves-off run sits so far below v3's in the basins they share
-(Barnegat Bay −0.84 vs −0.38, Raritan Bay −0.42 vs −0.20). Candidates: rain + infiltration,
-the coarse shelf seaward of the drawn line, the drawn-line forcing, the CUDEM fills. A
-paired read on common marks is the first step if v4 continues.
-
-## Wave cost tests (Phase 3 of the plan) — cuts 1–4 and arms 5–7 RUN, read 10-01
-
-Question: the cheapest wave treatment that keeps most of v3's waves-on gain
-(ΔRMSE −0.064 m [−0.086, −0.042], FINDINGS §48). Levers ranked by the log's cost anatomy
-(§20): direction bins and wind growth dominate; an iteration cap does not.
-
-| # | arm | window | answers |
-|---|---|---|---|
-| 1 | control (premier inp) | 12 h cut, `engine_gate.py make` | baseline per-call cost |
-| 2 | `snapwave_dtheta` 10° (360° kept) | 12 h cut | cost ratio; hm0 on surf strip, shelf, bays |
-| 3 | `snapwave_crit` 0.01 | 12 h cut | do low-energy bay nodes freeze early? |
-| 4 | wind growth off | 12 h cut | cost; how much coast hm0 survives |
-| 5 | dtheta 10 + dtwave 3600 + IG off | full 73 h | the physics-preserving cheap config, scored |
-| 6 | wind off | full | what wind growth is worth on the fixed engine |
-| 7 | 5 + wind off | full | cheapest real solver, scored |
-| 8 | shoreline setup through the wavemaker `wstfile`, no SnapWave | full | the parameterised floor (last; needs a builder) |
-
-**📝 Pre-registration, arm 5b `wave-dt3600+wave-dtheta10+wave-wavemaker` (written 2026-10-01,
-before submission; user asked).** The cheap config's two real changes (60 min, 10°) on
-`wave-wavemaker` (IG on, same line, engine `v2.3.3-winddir-igk-fix-1-gf11`). Question: does
-the cheap setup still deliver the shoreline IG, so the memo's wave recommendation covers a
-model WITH beach IG? **Reads**, all paired against `wave-wavemaker` (same binary): (a) cost —
-`snapwave_cost.py` vs `wave-wavemaker` and vs the cheap arm; (b) the beach —
-`compare_usgs_transects.py wave-wavemaker <arm>` (restored today): Δ beach level on the
-with-line transects, level − USGS TWL, overwash POD/FAR vs Z_Max; the Sea Bright storm-tide
-peak (post-repair `wave-wavemaker` 3.35, premier 2.91, obs 3.47 m — 🔴 NOT §49's 3.30 / transect numbers, which are the PRE-09-22-repair `mask-drain-edge+` run; baseline re-read on the repaired runs: `logs/wave_cost_2026-10-01/transects_baseline_postrepair.txt`); (c) `paired_hwm_bootstrap.py <arm> wave-wavemaker
---by-basin`; (d) the NY-bay > 1 h motion as in `ig_seiche_check.py`. **What I expect, to
-check, not a rule:** solver ~10–12 h (cheap 9.3 h + the IG balance); beach level within a
-decimetre of `wave-wavemaker` at the median — the injected IG follows `hm0ig`, which is
-updated hourly instead of half-hourly and computed on 36 bins, so a lower or smoother
-shoreline signal is the risk; marks ~unchanged; NY-bay marks moved by a phase, either sign.
-**Post-repair beach baseline (read 2026-10-01, before the arm ran):** `wave-wavemaker` vs
-`naccs-premier`, all 2,348 transects: Δ beach level p50 **+0.63 m** (p10 0.00, p90 +1.95);
-level − USGS TWL p50 −1.45 → −0.66 m (n 1,356); overwash vs Z_Max POD 0.115 → 0.165, FAR
-0.348 → 0.239 (observed rate 0.49). The arm is read against THESE, not §49's pre-repair set.
-
-Not tested: a 180° sector (the SnapWave literature thread and Deltares' own practice say
-360° when wind is on).
-
-**📝 Pre-registration, cuts 1–4 (written 2026-09-30, before submission).** Four 12 h cuts
-of `experiments/v3/naccs-premier` (10-28 00:00 → 12:00, pre-storm; premier engine
-`bin:v2.3.3-winddir-fix-1-gf11`, 64 threads, emeraldrapids) under
-`/scratch/tpj8/engine_gate/wave_cost_2026-09-30/`, made by `engine_gate.py make --hours 12
-[--set …]`. **Reads:** (a) cost — `snapwave_cost.py` on each log: median and total call
-time, cap-hits, W, input time; each as a ratio to cut 1. (b) fields — `engine_gate.py
-compare <cut> c1_control`: zs, zsmax and hm0 differences on cells finite in both; hm0 by
-region (open-coast surf strip, shelf band, NJ back bays, NY bays) with
-`snapwave_bay_census.py` where it applies. **What I expect, to be checked, not a rule:**
-dtheta 10° ~2× cheaper per call with small hm0 changes on the open coast (Roelvink found
-height "little sensitive" to direction resolution — never tested against setup); crit 0.01
-cheaper, with the risk of low-energy bay cells freezing early (bay hm0 lower); wind off 3–5×
-cheaper with bay hm0 → ~0 and open-coast hm0 close to the control. These are pre-storm
-hours: they time cost and compare fields, they cannot score HWMs.
-
-**Results (2026-10-01; `logs/wave_cost_2026-10-01/`).** All on the premier binary, all hal
-(emeraldrapids), audit `output WHOLE`. Times are the solver's own `Total time` / `Time in
-SnapWave` (`snapwave_cost.py`, overflowed calls imputed); "input" (~84 min) is fixed.
-
-| run | window | solver total | SnapWave | median call | cap-hits |
-|---|---|---|---|---|---|
-| c1 control | 12 h | 5.85 h | 4.35 h | 477 s | 11/25 |
-| c2 dtheta 10° | 12 h | 4.53 h | 3.03 h (0.70×) | 295 s | 10/25 |
-| c3 crit 0.01 | 12 h | 4.11 h | 2.60 h (0.60×) | 392 s | 11/25 |
-| c4 wind off | 12 h | 2.19 h | 0.69 h (0.16×) | 92 s | 4/25 |
-| `naccs-premier` | 73 h | 25.5 h | 23.4 h | 453 s | 50/145 |
-| `wave-dt3600+wave-dtheta10+wave-noig` | 73 h | **9.26 h** | 7.13 h | 236 s | 35/73 |
-| `wave-nowind` | 73 h | 6.12 h | 3.99 h | 95 s | 17/145 |
-| `…+wave-nowind` (all four) | 73 h | 2.87 h | 0.75 h | 36 s | 7/73 |
-
-HWM median 50 m, n 94; paired ΔRMSE vs the premier and vs waves-off (`paired_hwm_bootstrap.py --by-basin`, B 200,000; `paired_<arm>__vs__<ref>.txt`):
-
-| arm | RMSE | bias | MOTF CSI | ΔRMSE vs premier | ΔRMSE vs waves-off |
-|---|---|---|---|---|---|
-| `naccs-premier` | 0.329 | −0.143 | 0.706 | — | (−0.064, §48) |
-| `wave-dt3600+wave-dtheta10+wave-noig` | **0.328** | −0.137 | 0.708 | −0.002 [−0.007, +0.003] | **−0.066 [−0.088, −0.044]** |
-| `wave-nowind` ⚠️ | 0.355 | −0.117 | 0.711 | +0.026 [+0.010, +0.044] | −0.038 [−0.062, −0.016] |
-| `…+wave-nowind` ⚠️ | 1.009 | +0.501 | 0.721 | +0.679 [+0.470, +0.879] | +0.615 [+0.402, +0.818] |
-| `naccs-nowaves` (not ranked) | 0.393 | −0.246 | 0.697 | | — |
-
-- **The physics-preserving cheap config costs 0.36× the premier's solve and keeps ALL of
-  the waves-on gain** (−0.066 vs waves-off, the premier's own −0.064). Paired vs `naccs-premier` (median, 50 m, n 94): ΔRMSE −0.0018 m [−0.0072,
-  +0.0027], P(A better) 0.77. By group: open coast −0.003 [−0.010, +0.003], NY bays −0.006
-  [−0.019, +0.003], NJ back bays −0.005 [−0.011, −0.000]; the INLETS move: marks 1 cm lower,
-  ΔRMSE +0.013 [+0.002, +0.021] (n 14). Blow-up faces 1,580 vs the premier's 1,511 (the
-  known boundary-point artefact, FINDINGS "Closed").
-- **The tie is not a seiche hiding lost open-coast setup** (user question; `ig_seiche_check.txt`).
-  IG off is a null by construction (§45: no wavemaker → IG never reaches the flow), so the
-  cheap config's changes are dtheta and dtwave. Where the premier's waves lift `zsmax` > 5 cm
-  (982k faces, boundary blow-ups dropped) the cheap config keeps, median: Monmouth 0.97,
-  Barnegat–LBI 0.99, AC–Cape May 1.12, NY bays 0.84 (p10 0.21 — small lifts, phase-sensitive).
-  Sea Bright storm-tide setup (vs waves-off) 0.137 → 0.166 m day-mean; AC pier 0.059 →
-  0.073. NY-bay > 1 h motion std is LOWER in the cheap run (Great Kills 0.076 → 0.057 m), so
-  hourly forcing does not ring the bay harder. Outlier: Cape May Harbor peak +0.11 m.
-  ⚠️ Open, and bigger than this question: waves ON ring the NY bays 3–5× more than waves-off
-  (> 1 h std 0.045–0.076 vs 0.012–0.021 m), the same size as the NY-bay waves-on gain
-  (Δ mean +0.063 m) — how much of that gain is `zsmax` sampling a wave-excited seiche is
-  unmeasured (§40: envelope robust, phase not).
-- 🔴 **Wind growth OFF makes SnapWave DIVERGE on this engine.** Faces whose hm0 is ever
-  `inf` or > 20 m: premier 1,511, cheap config 1,580, `wave-nowind` **34,845**, all-four
-  **83,273** (hm0max p99.9 73 m and 611 m). Brief sub-hourly spikes — the hourly zs matches
-  the healthy arm except the `inf` hour — but `zsmax` catches them: 294 m at a face near
-  Cape May, 22–48 m at Coney Island and Brigantine. The all-four arm's excess is northern
-  (Sandy Hook Bay +1.63 m bias, Raritan +1.32, Shrewsbury +0.98; southern bays within cm).
-  `wave-nowind`'s 0.355 is therefore NOT a clean "what wind growth is worth" number
-  (Lower Bay SI shore +0.36 vs −0.18). Its paired read shows the split: vs the premier the
-  typical mark moves ~1 cm DOWN in every group (Δ median −0.008 to −0.013 m), while the
-  means are pulled up by a few blown-up marks (open coast Δ mean +0.069, NY bays +0.027).
-  So the clean part of wind growth looks like ~1 cm at the marks; the +0.026 m ΔRMSE is
-  mostly the divergence. The 12 h wind-off cut already showed it: SnapWave's
-  error field `**********` and a 0.99989 oscillation with %ok = 100.
-  (`blowup_where.txt`, `hm0_blowup_census.txt`). Mechanism not read.
-- **Against the pre-registration:** dtheta 10° came in at 0.70× SnapWave time, not ~0.5×;
-  wind off at 0.16×, cheaper than the 3–5× guessed — but it is unusable as built. crit
-  0.01 is 0.60×; whether bay cells freeze early is still unread (`engine_gate.py compare`).
-- Still to read: `engine_gate.py compare` on cuts 2–4 vs c1 (hm0 by region).
+| `v4` | frozen 2026-09-28, superseded by the A+ variants | 4,881,654 / 4,388 / `23ea65f8b81ee1bd` | waves-off gate arms only |
+| `v4_hot` | A, record of the 10-02 cut memo | same / `446d671cd97037ee` | waves-off |
+| `v4_hot_plus` | A+ (dam-crest recut 10-05) | same / `e5e9d8668fe29292` (old: `207ae7f7f0b805ae`, runs in `_pre_damcrest/`) | waves-off; run A |
+| **`v4_hot_plus_walls`** | **THE re-frozen v4** (10-05) | same / `77b5eda1fcd51cf6` | run B (to be re-baselined) |
 
 ## Open questions (each with what would close it)
 
-- **Wind-off SnapWave diverges (above).** Close: where the first `inf` appears (boundary
-  points vs interior; Sandy Hook / Coney Island shoals) on c4, then decide whether "no wind
-  growth" is a config worth repairing for the memo or simply struck.
-
-- **Southern back-bay deficit (§57):** mechanism unknown. Close: pre-storm bay-minus-pier on
-  a fixed-engine run whose inlet setup lifts the bays; and the calm-month datum check of the
-  seven southern USGS stations against Atlantic City / Cape May NOAA.
+- **Southern back-bay deficit (§57):** mechanism unknown; the Great Egg inlet sill (FINDINGS
+  §54 h) is now a candidate share. Close: the v3 re-run's Great Egg / Ocean City pre-storm
+  bay-minus-pier; the calm-month datum check of the seven southern USGS stations.
 - **NY east bay ~0.2 m low after the repair (§50);** `lower_bay_si_shore` (n 3) keeps moving the
-  wrong way; the cross-Narrows tilt at `sss_narrows_bkln`. Close: per-mark and Narrows Q(t)
-  reads on the repaired premier.
+  wrong way; the cross-Narrows tilt at `sss_narrows_bkln`. Close: per-mark and Narrows Q(t).
 - **Great Kills sensor offset cause (§50).** Close: USGS STN deployment / survey records.
-- **12 USGS gauges empty over the storm day (§60f).** Close: NWISWeb 2012 or the USGS Sandy data
-  report.
-- **Atlantic City peak +0.47 m high on v4 waves-off** (+0.49 on the 08-27 v3 arms). Close: the
-  current v3 premier's AC `peak_err`, then NACCS at the nearest save point vs the gauge.
-- **IG on the premier costs ~4 h with no wavemaker (§45).** Close: user decision (drop IG from
-  the premier definition, a re-baseline; or keep it for `hm0ig` diagnostics).
-- **Buildings never re-run on the apex band (§55).** Close: `bed-nobuildings` on the current
-  premier, masked CSI.
+- **12 USGS gauges empty over the storm day (§60f).** Close: NWISWeb 2012 / the USGS Sandy report.
+- **Atlantic City peak +0.47 m high on v4 waves-off.** Close: the v3 premier's AC `peak_err`,
+  then NACCS at the nearest save point vs the gauge.
+- **IG on the premier costs ~4 h with no wavemaker (§45).** Close: user decision.
+- **Waves ON ring the NY bays 3–5× more than waves-off** (> 1 h std 0.045–0.076 vs 0.012–0.021
+  m; `logs/wave_cost_2026-10-01/ig_seiche_check.txt`) — how much of the NY-bay waves-on gain is
+  `zsmax` sampling a seiche is unmeasured (§40); hourly updates add +0.04 m there (§61a).
+- **Test 8 (setup-only wavemaker line):** evidence says don't run it as designed (FINDINGS §62,
+  `reports/literature_review_2026-10/B2_back_bay_setup_followup.md`); user's call. Optional
+  check: USGS doi:10.5066/P99K85SW (Defne & Ganju 2019) — server timed out 10-03.
+- **Buildings never re-run on the apex band (§55).** Close: `bed-nobuildings` on the premier.
 - **No model M2 test** of the interior amplification (FINDINGS part 2). Close: modelled M2 at
   Port Reading / Keasbey / South Amboy / Great Kills vs the NOAA harcon table.
-- **Flux cross-sections never read** (Narrows tidal prism, Rockaway throat). Close: read
+- **Flux cross-sections never read** (Narrows prism, Rockaway throat). Close: read
   `crosssection_discharge` from a finished run.
 - **Engine follow-ups:** the interior initial-guess remap and per-point boundary direction
   (§43/§44) never built; the dead-corner rule not reported upstream; PR #363 still open.
-- **`accept_domain.py` FAILS on v3** (15 inflows on dry ground, 1 inactive; pre-existing).
+- **`accept_domain.py` FAILS on v3** (15 inflows on dry ground, 1 inactive; pre-existing); on
+  A+ it needs `--mesh <template>` (the default reads v4's frozen mesh).
 - **v3 scorer does not flag HWM 6044** (49 m from the Absecon Creek source, §40).
-- **`plots.plot_hwm_residual_panels` peaks at 165 G for six arms** (112 G for one): it keeps
-  each arm's rasters. Close: release per arm; until then render at ≥ 200 G.
-- **`metrics.csv` last-digit drift:** the `float_precision="round_trip"` guard left with the
-  retired `stamp_metrics_epoch.py`; `run_experiments._write_outputs` read-merge-writes without
-  it. Close: read → write → byte-compare once; add the flag if anything moves.
+- **`plots.plot_hwm_residual_panels` peaks at 165 G for six arms.** Close: release per arm.
+- **`metrics.csv` last-digit drift** (no `round_trip` guard in `_write_outputs`). Close:
+  read → write → byte-compare once.
 - **`_drop_detached_active_islands`** logs "N BC cells" before the BC exists (always 0).
 - **Deliberately deferred by the user:** the dune-failure `bed-postsandy` lever; an ICW
-  (`bed-icw`) survey tier as its own arm; raising `bay_fringe` past zmax 2.0.
+  (`bed-icw`) survey tier; raising `bay_fringe` past zmax 2.0; §49's pre-repair beach numbers
+  (flagged in FINDINGS with the post-repair baseline beside them).
 
 ## Evidence index
 
 | topic | logs | scripts | FINDINGS |
 |---|---|---|---|
-| SnapWave cost anatomy | `wave_boundary_v4_2026-09-29/`, `snapwave_diag_scratch_2026-09-10/` | `snapwave_cost.py` | §20 |
+| SnapWave cost anatomy | `wave_boundary_v4_2026-09-29/`, `wave_cost_2026-10-0{1,2,3}/` | `snapwave_cost.py` | §20, §61 |
 | wind-direction bug + engine gates | `engine_gate_2026-09-11/`, `phase4_2026-09-13/`, `upstream_2026-09-14/` | `engine_gate.py`, `snapwave_direction_check.py` | §43, §44 |
-| IG / wavemaker | `engine_gate_2026-09-17/`, `wavemaker_reads_2026-09-20/` | `build_wavemaker_line.py`, `make_snapwave_reproducer.py` | §45, §47, §49 |
-| Sandy Hook shadow, D3/D4 | `phase4b_2026-09-17/` | `paired_hwm_bootstrap.py --bbox` | §48 |
-| buildings | `phase8_2026-09-17/` | `burn_building_footprints.py`, `check_buildings_adequacy.py` | §55 |
-| NY edge drain / mask repair | `great_kills_2026-09-21/`, `mask_repair_2026-09-22/`, `wind_x110_reads_2026-09-22/` | `restage_mask_repair.py`, `paired_hwm_bootstrap.py --by-basin` | §50 |
-| dune failure (parked) | `dune_lever_2026-09-23/` | — | Closed list |
-| v4 ring, line, rivers | `v4_design_2026-09-24` … `-28/`, `v4_freeze_2026-09-28/` | `audit_region_v4.py`, `audit_ocean_line_v4.py`, `build_river_table_v4.py`, `build_riverbeds_v4.py` | part 4, §53 |
-| v4 SLR gate | `v4_gate_2026-09-28/`, `v4_gate_2026-09-29/` | `overflow_check.py` | part 4 |
-| v4 inland water | `inland_water_v4_2026-09-29/` | `build_inland_water_v4.py` | §54 |
-| wave boundary for v4 | `wave_boundary_v4_2026-09-29/` | `wave_boundary_ring.py`, `wave_shelf_reference.py`, `check_snapwave_domain.py` | §52 |
+| IG / wavemaker / back-bay lift | `engine_gate_2026-09-17/`, `wavemaker_reads_2026-09-20/` | `build_wavemaker_line.py` | §45, §47, §49, §62 |
+| buildings | `phase8_2026-09-17/`, `refreeze_2026-10-05/buildings/` | `burn_building_footprints.py` | §55 |
+| NY edge drain / mask repair | `great_kills_2026-09-21/`, `mask_repair_2026-09-22/` | `restage_mask_repair.py`, `paired_hwm_bootstrap.py --by-basin` | §50 |
+| v4 ring, line, rivers | `v4_design_2026-09-24` … `-28/`, `v4_freeze_2026-09-28/` | `audit_region_v4.py`, `build_river_table_v4.py`, `build_riverbeds_v4.py` | part 4, §53 |
+| v4 SLR gate | `v4_gate_2026-09-28/`, `-29/` | `overflow_check.py` | part 4 |
+| head-of-tide variants, Union Lake dam | `v4_hot_2026-10-02/`, `-03/`, `union_lake_2026-10-05/`, `river_memo_2026-10-02/` | `setup_boundary_depth.py` | part 4 |
+| A+ pre-freeze audit | `audit_v4_hot_plus_2026-10-05/` (edge walk, blocked ground, channels + 3DEP, inflows, v4-vs-v3) | in-folder scripts | §54 (h)–(l), part 4 |
+| Raritan / harbour low | `raritan_2026-10-05/` (A/B tide axis, C kills bed, D drain census) | `kills_transects.py`, `drain_census.py` | part 4 (e) |
+| bed fixes + walls + inflows | `bedfix_2026-10-05/` (cohansey, gmrt_reaches, walls, inflows) | `build_usace_unpave_v4.py`, `build_riverbed_cohansey_v4.py`, `build_riverbeds_gmrt_v4.py`, `download_ehydro_v4.py` | part 4 |
+| inland water | `inland_water_v4_2026-09-29/`, `inland_water_2026-10-05/` (DECISIONS.md) | `build_inland_water_v4.py` | §54, part 4 |
+| wave boundary for v4 | `wave_boundary_v4_2026-09-29/`, `bedfix_2026-10-05/snapwave_preflight_n69_inf.txt` | `check_snapwave_domain.py` | §52 |
 | SLURM stdout | `logs/slurm/<yyyy-mm>/` | — | — |
 
 ## Disk and cluster
 
-- **Home** (`/cache/home`, GPFS): 100 G soft / 110 G hard; 90.6 G used on 2026-09-30. Ask
-  `/usr/lpp/mmfs/bin/mmlsquota -u $USER --block-size auto cache` (it lags ~10 min after a
-  hard-link dedupe).
-- **Scratch** (`/scratch/tpj8`): 1 T soft / 2 T hard, 324 G used. 🔴 **Not backed up, and
-  files not accessed for 90 days are deleted automatically** (OARC user guide). `experiments/`
-  lives here; the durable copy is the desktop pull (`scripts/desktop_pull_backup.sh`) — re-run
-  it whenever an arm is scored.
-- **Attic:** `/scratch/tpj8/nj_bight_attic_2026-09-30/` holds what the cleanup moved out of the
-  repo's untracked trees (manifest lists every file). It will purge itself after 90 days.
-- **Maintenance:** every hal/halk node, 10-13 08:00 → 10-14 23:59, then 11-10 and 12-15 — a
-  job whose limit overlaps it will not start.
-- Claude Code may run on a LOGIN node (`amarel*`): heavy work goes through `srun` on an
-  allocation (memory: shell gotchas).
+- **Home** (`/cache/home`, GPFS): 100 G soft / 110 G hard; **67 G on 2026-10-06** (after the partial data swap; 93.4 G on 10-05) after moving
+  the 10-05 audit intermediates to `/scratch/tpj8/nj_bight_sfincs/logs_offload/` (symlinked back);
+  the data swap (above) takes ~29 G more off. Ask `/usr/lpp/mmfs/bin/mmlsquota -u $USER
+  --block-size auto cache` (lags ~10 min).
+- **Scratch** (`/scratch/tpj8`): 1 T soft / 2 T hard. 🔴 **Not backed up; files not accessed for
+  90 days are deleted.** `experiments/` and now most of `data/` live here; the durable copy is
+  the desktop pull (`scripts/desktop_pull_backup.sh`) — re-run it whenever an arm is scored.
+- **Attic:** `/scratch/tpj8/nj_bight_attic_2026-09-30/` (manifest lists every file; purges
+  itself after 90 days).
+- **Maintenance:** every hal/halk node, 10-13 08:00 → 10-14 23:59, then 11-10 and 12-15.
+- Claude Code may run on a LOGIN node (`amarel*`): heavy work through `srun` on an allocation.
 
 ## Housekeeping
 
 - Last cleanup: 2026-09-30, `reports/cleanup/deletion_manifest_2026-09-30.md`.
 - Kept on purpose, user's call to remove: `data/NACCS/_originals_pending_delete/` (3.2 G — the
   only byte-reproducible source of v3's NACCS boundary, FINDINGS part 3);
-  `data/gtsm/retired_v1_monmouth/` (the record of the sealed v1 campaign); the v1.5 / v3
-  notebooks and the weekly reports (kept item by item on 09-21).
+  `data/gtsm/retired_v1_monmouth/`; the v1.5 / v3 notebooks and the weekly reports;
+  `logs/audit_v4_hot_plus_2026-10-05/v4_vs_v3_deficit/shadow_hp_norain/` (705 MB rebuildable
+  floodmap, on scratch; user 10-05: keep for now).
+- Candidates for the user (10-05, not deleted): `data/elevation_v4/inland_water/
+  inland_water_bed_v4_draft.tif` (byte-identical to the registered `inland_water_bed_v4.tif`);
+  `data/discharge_v4/usgs_sandy_discharge_v4_hot_plus.nc` will carry the 4 inflow moves after
+  job 62279940 (only a future A+ restage reads it).

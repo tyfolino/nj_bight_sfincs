@@ -904,6 +904,71 @@ CLAUDE.md §5.
     sandline, which no wave setting can reproduce. ⚠️ On the Sandy Hook spit (lat > 40.41) the
     premier's 4–6 m "beach levels" are the §44 limit-cycle spikes, not runup — exclude them from
     any beach read. STATUS 2026-09-20, `logs/wavemaker_reads_2026-09-20/`.
+    ⚠️ **§49's beach numbers predate the 2026-09-22 mask repair (§50).** The post-repair
+    baseline (`logs/wave_cost_2026-10-01/transects_baseline_postrepair.txt`; all 1,356
+    transects with USGS TWL, not §49's 1,007-with-a-line subset) reads level − TWL p50
+    **−1.45 → −0.66 m** (premier → wavemaker), overwash POD **0.115 → 0.165**, FAR
+    **0.348 → 0.239**, beach-level lift p50 +0.63 m over all 2,348 transects. The direction
+    and the 0.46×-Stockdon reading stand; quote these, not §49's, as a baseline.
+
+61. ⭐ **The cheap SnapWave settings, measured on v3 (2026-10-01 → 10-03): HOURLY wave updates
+    (`dtwave` 3600, 5° bins kept) halve the solve and change nothing at the marks; the 10°
+    bins cut another third but make an artefact in the Cape May jetty lee; a looser stop and
+    wind-off are not savings.** All on the premier binary (`bin:v2.3.3-winddir-fix-1-gf11`),
+    emeraldrapids, full 73 h, audit `output WHOLE`; marks median, 50 m, n 94, paired
+    (B 200 k). Times are the solver's own (§20's `snapwave_cost.py`).
+
+    | arm | solve (× premier) | ΔRMSE vs premier | ΔRMSE vs waves-off |
+    |---|---|---|---|
+    | `naccs-premier` | 25.5 h | — | −0.064 [−0.086, −0.042] |
+    | `wave-dt3600` | 13.6 h (0.53×) | +0.0003 [−0.004, +0.004] | −0.064 [−0.087, −0.041] |
+    | `wave-dt3600+wave-dtheta10+wave-noig` | 9.3 h (0.36×) | −0.002 [−0.007, +0.003] | −0.066 [−0.088, −0.044] |
+    | `wave-dt3600+wave-dtheta10+wave-wavemaker` | 10.6 h (0.41× its full-cost twin) | −0.004 [−0.016, +0.010] vs `wave-wavemaker` | −0.077 [−0.101, −0.053] |
+
+    (a) **`dtwave` 3600 is half the calls at the same per-call cost** (426 vs 453 s median).
+    Every NJ group moves 2–4 mm; the NY bays rise +0.040 m (Raritan +0.047, Sandy Hook Bay
+    +0.062; bias −0.125 → −0.084, ΔRMSE −0.003 [−0.015, +0.006]) — NY-bay `zsmax` depends on
+    the TIMING of the wave forcing at the 4 cm level, the phase sensitivity of §40; the 10°
+    bins undo most of it (+0.007 net). (b) 🔴 **`snapwave_dtheta` 10° makes a ~1 m set-up in
+    the lee of the Cape May Inlet south jetty**: 1,572 faces (−74.888…−74.863, 38.937…38.949,
+    zb p50 −3.5) stand 3.0–3.1 m against 2.0 m in every 5° arm for 3–4 h at the peak, sloping
+    back over ~500 m; not a sub-output spike, not an hm0 blow-up; present in both dtheta10
+    arms, absent (−0.01 m vs the premier, 0 faces > 0.5 m) with hourly updates alone. Read as
+    SnapWave's lack of diffraction: what reaches a jetty lee hangs on the bin layout. It
+    lifts the two Cape May marks +0.09 m and 35 Cape May transects; the harbor gauge (731 m,
+    behind the jetty) +0.12 m. A 10° arm needs that pocket flagged. (c) **`snapwave_crit`
+    0.01 leaves the field UNCONVERGED HIGH, not frozen low** (12 h cuts, per-cell hm0 ratio to
+    the control p50/p90: NY bays 1.23/2.70, NJ back bays 1.02/1.64; zs NY bays p50 +0.08 m), so
+    its 0.60× SnapWave time is not a clean saving. (d) 🔴 **Wind growth OFF diverges on this
+    engine**: faces with hm0 ever `inf` or > 20 m 1,511 (premier) → 34,845 (`wave-nowind`) →
+    83,273 (all four levers), brief sub-hourly spikes that `zsmax` catches (294 m near Cape
+    May; 22–48 m at Coney Island and Brigantine); the clean part of wind growth looks like
+    ~1 cm at the marks. Mechanism not read. (e) **IG off is a null** without a wavemaker
+    (§45), so it is free to drop. (f) **The wavemaker's gain survives the cheap settings**:
+    beach level p50 3.75 vs 3.80 m, ~0.92 of the wavemaker's per-transect lift (0.85
+    Ocean City–Brigantine … 0.95 Barnegat–Monmouth), but **Sea Bright keeps about half**
+    (storm-tide peak 3.16 vs 3.35; obs 3.47). ⚠️ Every 12 h cut ends before the Cape May
+    pocket forms, so short cuts cannot screen a bin change. STATUS 10-01 → 10-03;
+    `logs/wave_cost_2026-10-01/`, `-10-02/`, `-10-03/`.
+
+62. **The waves-on lift in the NJ back bays is OCEAN SWELL breaking between the MHW − 5 m line
+    and the bays, carried in through the inlets — not wind sea made inside the bays, and not
+    the lift on that line.** `naccs-premier` − `naccs-nowaves`, median over 10-29 18:00 →
+    10-30 03:00 (`logs/wave_setup_2026-10-03/`): on the 1,439 wavemaker-line vertices (zb p50
+    −5.0 m; hourly map) p10/p50/p90 **0.007 / 0.035 / 0.065 m**; at the in-bay gauges
+    0.06–0.22 m (Barnegat Light 0.22, Mantoloking 0.12, Ocean City 0.10, Ship Bottom 0.10,
+    Stone Harbor 0.07), **2–8× the line facing them**; the 7 m-deep Atlantic City pier
+    0.06 against 0.06 on its line (ratio 0.9). With wind growth off (`wave-nowind`: in-bay
+    hm0 0.00–0.03 m against 0.1–0.5 m) the bays keep **0.75–1.03** of the lift. So a level
+    imposed on that line can carry setup into the bays, but the value it needs is the setup
+    at the INLET MOUTHS — several times the line's own, and far below a shoreline formula's
+    maximum (Stockdon at the boundary lifts the bays ~0.25–0.3 m, §57). A setup-only line
+    (test 8) is therefore a per-inlet calibration, not a physics substitute. Median reads,
+    because `wave-nowind` diverges in spikes (§61d). Absecon Creek (−0.00) and Shark River
+    (+0.00) see none of it. The literature agrees on the mechanism (back-bay setup is made at
+    the inlet — ebb shoal and mouth — and sized by inlet geometry, a few % of offshore H at
+    jettied entrances; no setup-only nearshore forcing with back-bay skill is published):
+    `reports/literature_review_2026-10/B2_back_bay_setup_followup.md`, 2026-10-03.
 
 50. ⭐ **An outflow edge on HIGH GROUND is a drain too, once the surge tops it — v3's NY edge
     was leaking the Raritan / Lower Bay surge, and walling it closes about half of the
@@ -1071,6 +1136,31 @@ CLAUDE.md §5.
     API returns HTTP 412 on the tidal Delaware. **The defence is a POSITIVE check:** declared
     dry-land boxes whose bed must read above a stated elevation (`check_dry_land_boxes`) —
     and such a check must be SEEN to fail once, and an empty box is an error.
+    **The 2026-10-05 channel sweep** (every NCF channel in v4's A+ ring vs the eHydro survey
+    nearest Sandy, 10 m stations + 50 m transects; `logs/audit_v4_hot_plus_2026-10-05/
+    channels_and_3dep/`) adds four more fills and one reassurance. (h) **The 2010 USACE
+    topobathy lidar PAVES deep water where the laser missed the bottom** — a flat −0.4…+0.4 m
+    surface that outranks CUDEM: a 3.3 km × 300 m band at −0.41 m straight across the 8 m
+    **Great Egg Harbor Inlet** (Longport → Ocean City; soundings on it 9.2 m deeper), the
+    **Inside Thorofare** at Atlantic City (+0.1…+0.2 m vs −4 m; the USGS gauge's face reads
+    +3.47 m because of it), Compton Creek; ~15 smaller causeway-shaped patches Ocean City →
+    Wildwood unconfirmed. v3 carries the same tier and the same defect. (i) **3DEP's flat
+    water surface (−0.55…−1.13 m) becomes the bed wherever CUDEM 1/9″ is missing and the NJ
+    lidar is masked** — 4.1 km², all in the Raritan / Arthur Kill corner (South River keeps
+    35 % of its surveyed section); the catalog note that `dep3_v4` blanks tidal water was never
+    implemented, and CoNED is no independent help there (its source is the same topographic
+    lidar). (j) **CUDEM holds a ~0 m surface on small TIDAL rivers too** (the Cohansey for its
+    whole length, Tuckerton, Matawan, the Lewes canal), and where NO measured bed exists at all
+    (the Cohansey above its mouth: no eHydro, NOS stops at the mouth, ENC shows one 0–1.8 m
+    band) a stated depth below MLLW is the only material; VDatum's API returns HTTP 412 along
+    this whole coast, so MLLW comes from the CO-OPS stations that publish both datums.
+    (k) **CUDEM has none of the dredged harbour trench**: the Kill van Kull, Newark Bay and the
+    port channels read 4–16 m shallower than the 2012 surveys (~56 Mm³ of channel missing).
+    (l) **The main federal channels are fine**: the Delaware from the mouth to Trenton, the C&D,
+    Schuylkill, Raritan, Raritan Bay, Sandy Hook / Ambrose, the surveyed inlets and most of the
+    NJIWW sit within ±0.2 m of their surveys and keep 96–100 % of the section. **The fix route
+    for every one of these** is an overlay raster painted over the untouched merge
+    (`rebuild_subgrid.py --overlay`), never a tier inserted in the list (CLAUDE.md §5).
 
 55. **Buildings are subgrid POROSITY, and for Sandy they barely matter.** Decision in force
     (user + supervisor, 2026-09-03): footprints burned into the fine subgrid DEM (Building
@@ -1158,7 +1248,14 @@ CLAUDE.md §5.
     (the 5.79 m mark is q 3; q ≤ 2 tops out at 4.18 m on v1.5). (f) 🔶 12 USGS tidal gauges have
     NO data 2012-10-29 04:00 → 10-30 04:00 UTC in the published record (OGC `continuous`, all
     Approved) — likely a USGS day-block gap; `gauge_series_frame` now leaves gaps as NaN instead
-    of bridging them (`_in_obs_gap`). (g) A gauge on a dry bank or an un-carved creek reads a
+    of bridging them (`_in_obs_gap`). 🔴 **Seven of them carry NO `record_ends`, so their
+    `peak_err` is invalid on every arm, v3 and v4** (2026-10-06): Inside Thorofare, Tuckerton,
+    Absecon Creek and Avalon score the first post-gap sample (already falling, e.g. Inside
+    Thorofare 1.713 m at −0.37 m/h) as the peak; Ship Bottom, Sea Isle and Stone Harbor score a
+    pre-storm tide. Their "errors" (+0.2…+1.0 m) are artefacts. On the fixed bed Inside
+    Thorofare's falling limb fits (mean −0.004 / RMSE 0.12 m, v3 twin) and its three nearest
+    HWMs (6056 / 6054 / 6057: 2.35 / 2.23 / 2.10 vs model 2.15 / 2.15 / 2.10) say the model
+    crest is, if anything, LOW. `logs/morning_2026-10-06/per_mark/`. (g) A gauge on a dry bank or an un-carved creek reads a
     flat, smoothed series (v4: Sluice Creek, Cohansey at Greenwich, Murderkill at Frederica,
     Christina at Newport — the creek channels are not in the bed).
 
@@ -1184,14 +1281,28 @@ Each of these cost a campaign and is settled. The evidence is in the archive's
   wind-sea hm0 +8..+10 %, boundary hm0 unchanged) moves the Great Kills / Arthur Kill mouth
   peaks by **+0.017 / +0.021 m**, the NY-bay paired median by +0.012 [−0.003, +0.021] (n 38,
   50 m), the open coast by −0.002 (control): dη/dU in the bay is ~0.02 m per 10 % of wind,
-  an order of magnitude short of the −0.44 (pre-repair) / ~−0.25 m deficit. ERA5 as applied
-  (9 × 12-cell, ~25 km `netamuv` grid) is not low offshore — NDBC 44065 / 44025 22.3 / 22.2
-  m/s at 5 m against ERA5 24.8 / 25.1 at 10 m, ≈ 1.0 after the height correction — and ~10 %
-  low at the exposed coast (Robbins Reef 0.89, Cape May 0.90). Sheltered land stations
-  (Bergen Point 0.59×, Kings Point 0.43×) are not over-water winds. The E wind steepens the
-  along-bay tilt by ~0.04 m end to end (west +0.024, Sandy Hook pocket −0.019) and that is
-  all of it. So a better wind product (H*Wind / RAP / GAHM) is NOT a bay lever; the deficit
-  is supply-side (the edge drain — walled 2026-09-22, §50 — then the bay's wave/setup side). ⚠️ Read as a LOWER bound
+  an order of magnitude short of the −0.44 (pre-repair) / ~−0.25 m deficit. The ERA5 FILE
+  (9 × 12-cell, ~25 km `netamuv` grid), correctly interpolated, is not low offshore — NDBC
+  44065 / 44025 22.3 / 22.2 m/s at 5 m against ERA5 24.8 / 25.1 at 10 m, ≈ 1.0 after the
+  height correction — and ~10 % low at the exposed coast (Robbins Reef 0.89, Cape May 0.90).
+  Sheltered land stations (Bergen Point 0.59×, Kings Point 0.43×) are not over-water winds.
+  🔴 **But the ENGINE does not apply the file as written (2026-10-06):** its `netamuv` /
+  `netamp` reader takes the first x / y as a cell CORNER and adds half a cell
+  (`sfincs_ncinput.F90` l.493–497, `sfincs_meteo.f90` l.843–844), while hydromt writes cell
+  CENTRES — every point gets the wind (and pressure) from ~12.5 km W and ~12.5 km N. Probe
+  run: the engine samples at x −12,516 / y +12,518 m; a Python emulation matches its applied
+  wind to 0.001 m/s. Applied ÷ correct at the crest (10-29 18:00 → 10-30 03:00): speed 0.91–
+  0.93 in Raritan Bay, 0.86 at the Narrows, 0.88 at NDBC 44065; E–W stress 0.82–0.86 / 0.73 /
+  0.80. Every run, v1 → v4, carries it (`netampr` rain shifts only ~0.6 km on its ~830 m grid).
+  Every active face of v3 and v4 lies inside the band where the engine applies wind at all.
+  `logs/raritan_2026-10-06/wind_setup_toy/`. The engine itself reproduces analytical wind setup:
+  closed 20 × 5 km basin, depth 3 / 6.5 / 10 m, wind 10 / 17 / 25 m/s, regular or
+  quadtree + subgrid, `netamuv` or `wndfile` → 0.989–1.015 × the exact steady solution
+  (Raritan case 6.5 m / 17 m/s: 0.211 vs 0.212 m); Cd at 17 m/s is 0.00192 from the run's
+  `cdwnd / cdval` table. The ~0.04 m wind tilt above was measured on v3, whose west end is a
+  NACCS-FORCED `arthur_kill` arm — a fixed level at the downwind end absorbs wind setup, so
+  it understates what SFINCS builds; v4 (no such arm) builds ~0.18 m Narrows → South Amboy,
+  ≈ the toy's ~0.19 m for the applied wind (0.24 m with the wind correctly placed). ⚠️ Read as a LOWER bound
   on dη/dU: both arms carried the NY edge drain at the downwind end. ⚠️ NOT a null on the NJ
   back bays: Barnegat Bay is wind-TILTED — Mantoloking (north end) sits −0.25 m for hours
   under the N/NE wind — so a mark's Δ there is set by which end of the bay it is on.
@@ -1450,7 +1561,9 @@ Henlopen Atlantic beach, Darby Creek). Only waves-off runs exist.
 connected from the ocean;** the edge sits on ground ≥ that level + 2 m, ≥ 500 m from it, or on
 a declared line; rivers are cut where the +3 m water ENDS (walled, flow from the nearest
 gauge); the neighbour basins with their own inlets (NY Upper Bay / Hudson, Jamaica Bay,
-Rehoboth Bay, the Chesapeake) are shut off. Traced once into
+Rehoboth Bay, the Chesapeake) are shut off. ⚠️ Since 2026-10-05 the RIVERS follow A+ instead
+(cut at today's head of tide, the Cohansey and Neshaminy keeping the +3 m reach; decisions
+below); the +3 m containment rule applies within that ring. Traced once into
 `data/v4_design/region_v4_vertices.csv` (194 named vertices, 22,860 km²) and edited by hand
 since; `scripts/audit_region_v4.py` checks it (target land outside the ring 0.00 km²; MOTF
 land inside 1.000 of 1,582 km²; 166 of 193 HWMs inside). Two generators (a rule-driven draft
@@ -1488,7 +1601,8 @@ the validate needs ~200 G on the 3.125 m scoring bed. **The river reaches are ch
 time; their cost is bed data, mask patches and design effort** (§53, §54). Waves: the
 SnapWave domain is v3's area + Delaware Bay below the Liston Point – Hope Creek line, with a
 stepped band (`v4_shelf_steps`, 155,793 cells; 7 predicted dead corner cells) —
-3.39 M SnapWave nodes, projected ~30 h at the v3 premier's settings; never run.
+3.39 M SnapWave nodes, projected ~30 h at the v3 premier's settings (~half with hourly
+updates, §61); the first waves-on runs were launched 2026-10-05 (STATUS).
 
 **First waves-off look (validate 62039939, 2026-09-29; rain on, infiltration on;
 `extent_admissible=False`; before any inland-water fix):** HWM RMSE 0.577 / bias −0.408
@@ -1498,9 +1612,133 @@ vs −0.49) — different forcing, mesh and rain treatment, not yet paired or ex
 Delaware gauge peaks run 0.23–0.57 m low (Lewes −0.23 … Marcus Hook −0.57), Newark Bay
 −0.71, Christina at Wilmington −0.91.
 
-**Open inland-water defects** (parked 2026-09-30 pending the river-policy decision): the
-CUDEM ~0 m fill under lakes and non-tidal rivers (§54a); the Schuylkill backing up to
-7–10 m NAVD88 through Philadelphia, attributed to the box-MEAN Manning above `uv_zmax`
-(NLCD puts 29 % of its channel pixels in developed classes, n 0.10–0.13) — untested; creek
-channels missing from the bed at four Delaware-tributary gauges (§60g); Union / Sunset Lake
-dam crests unchecked; no measured bed above the Trenton falls (a DRBC request is out).
+**Decisions in force since 2026-10-05 (user):** rivers cut at today's head of tide with the
+Cohansey and Neshaminy keeping the +3 m reach (A+, `v4_hot_plus`) — upriver of a cut is out of
+scope by design; waves = SnapWave, 5° bins, hourly updates (§61); buildings burned at
+ground + **10 m** (at +3 m SLR 4.6 % of in-model buildings stood in water deeper than the old
+4 m cap); the frozen v4 is **`v4_hot_plus_walls`** = A+ + the leak walls below
+(`77b5eda1fcd51cf6`, same mesh). Bed fixes ride as overlays: the building burn, the §54
+inland lakes (user's four 10-05 calls: the clamp on; the tidal Christina at Newport, Big
+Timber, St Jones and four small items OUT; Manor Lake CLOSED — two NID earth dams — at 1.84 m;
+43 low-surface lakes kept; `logs/inland_water_2026-10-05/DECISIONS.md`), the 2010-lidar sills
+undone, the harbour and Raritan-corner creek surveys, and stated-depth beds (1.2 m below MLLW
+where no soundings reach) on the Cohansey and the four GMRT reaches. **ONE bed-source
+hierarchy for every channel (user, 2026-10-05 evening; consistency over a sensitivity test):
+USACE eHydro surveys → CUDEM where it is a real bed (not a water-surface fill) → NOAA charts /
+NOS surveys → a sloping-river approximation** (linear along the channel from the last
+downstream control to 1.2 m below MLLW at the head of tide; a shaped section, mean ≈ 0.6 of the
+centre depth, as natural sections here measure 0.55–0.65). **No measured bed exists above the
+Trenton falls** — DRBC confirmed 10-05 it has no charts there either; moot for A+, which cuts
+the Delaware at the falls.
+
+**The A+ pre-freeze audit (2026-10-05, `logs/audit_v4_hot_plus_2026-10-05/`):**
+(a) **Fine-bed edge walk** (3 m along all 1,280 km of ring; controls Darby Creek, the Cape May
+Canal and the dam crest pass): 306 low stretches, 229 declared; **6 real leaks** (≥ 10 cm on a
+free-outflow cell at +3 m: Breezy Point tip, which carries ~1,160 m³/s at +3 m; the Leipsic
+millpond and the Tuckahoe head, where a river INFLOW ponds and spills past its 500 m inflow
+wall even at +0 m; a Toms River tributary; a Raritan-side creek through a culvert; the
+Broadkill headwater) and 6 marginal (< 10 cm, incl. a 300 m gap between the two Cape Henlopen
+walls). A rule that compares edge ground with NACCS + 3 m + 2 m cannot see a level set by a
+RIVER (it read Tuckahoe and the Swimming River `land_ok`). All walled in `v4_hot_plus_walls`.
+(b) **GMRT fall-through is THE Maurice blockage**: no survey and no CUDEM 1/9″ tile
+(`n39x50_w075x00`, `n39x75_w074x75`, `n40x00_w075x00` are absent from NOAA's set), lidar ≤ 0.001
+masked as water, so four tidal channels take GMRT land heights — Maurice Mauricetown →
+Millville 3.9 km² at +3–5 m (GMRT 3.94 vs lidar −0.05 m at −74.991, 39.268), Mullica above
+~−74.46 5.1 km², Tuckahoe 0.7 km², Rancocas 1.0 km². v3 shares the Mullica and Tuckahoe holes.
+(c) **Inflow placement**: the 10-02 rule (lowest-bed wet face within 300 m) picks banks and
+islands wherever the bed is a flat fill — the Delaware at Trenton (808 m³/s) sat ON AN ISLAND
+(lidar 7.0 m), White Clay and Rahway on banks, Hackensack / Pascack 27 m off the channel, the
+Maurice on the dam abutment. Rule now: a face WET in the Sandy run, ≥ 40 m inside the ring,
+whose 3DEP ground is within 0.5 m of the lowest candidate, nearest the old point. A
+"ponding" screen (peak at the source vs the reach 0.3–1 km away) is NOT a defect signal: a
+river's head stands above its own downslope reach.
+(d) **The v4-vs-v3 waves-off gap in shared basins** (paired, median, 50 m, n 94): ~45 % is
+nine marks beside coastal lakes (Wreck Pond etc.) that v3 fills with RAIN — v3 has rain with
+no infiltration, its lakes keep rising for a day after the ocean falls; v4's curve-number
+infiltration fills them to 0.3–0.9 m. v3 is right there for the wrong reason. ~30 % is a real
+v4 low in Raritan Bay (−0.38 m, 16 of 19 marks); the rest 3–7 cm. Not the sea boundary: open
+gauges agree within 0–3 cm.
+(e) **The Raritan / harbour low, measured so far** (`logs/raritan_2026-10-05/`): the Raritan
+Bay tide is RIGHT (South Amboy range / Sandy Hook 1.06 model, 1.06 obs, timing ±8 min) but
+Newark Bay's is damped and late (0.70 vs 1.08; +124 vs +38 min), lost along the Kill van Kull;
+the storm deficit is ~0 at the Narrows and grows westward to −0.55 m at South Amboy; during the
+rise the Arthur Kill flows NORTH out of Raritan Bay at up to ~4,100 m³/s (~70 Mm³, the size of
+the western bay's shortfall); harbour edge drains are ~150× smaller than §50's (A+ Sandy
+235 m³/s); not wind. **The harbour trench test (`bed-harbour+naccs-nowaves`, A+ waves-off,
+10-06) fixes Newark Bay and NOT Raritan Bay:** Newark Bay peak 2.99 → 3.50 m (obs 3.70), tide
+range / Sandy Hook 0.68 → 1.04 (metrics window; obs 0.97), timing vs obs +67 → −6 min; Arthur
+Kill marks bias −0.58 → −0.25 m (n 3). The Arthur Kill REVERSES (net 10-29 12:00 → 10-30 06:00
++9.9 → −24.2 Mm³, now INTO Raritan Bay) — yet South Amboy moves 3.56 → 3.57 (obs 4.09) and the
+Raritan Bay marks −0.419 → −0.409 (median, 50 m, n 21). So the Arthur Kill drain is NOT the
+Raritan cause; the trench is right for Newark Bay and stays in the bed. Open coast, Narrows
+< 1 cm. `logs/raritan_2026-10-05/D_drain_census/kills_transects_harbour_2026-10-06.txt`.
+**v3's better Raritan score was partly BORROWED from NACCS:** v1.5 / v3 force a NACCS
+water level on the `arthur_kill` arm at the Arthur Kill MOUTH (Perth Amboy / Ward Point,
+~4.05 m at the peak), i.e. at the downwind end of Raritan Bay — NACCS's own wind + STWAVE
+setup entered there as a boundary value. v4 has no such arm (Narrows + `kvk_east` only), so
+its west end must be built by SFINCS's own wind and SnapWave forcing, and it builds ~0.18 of
+the observed ~0.67 m Narrows → South Amboy rise. The west-end deficit is in CALM-WATER
+level: the South Amboy gauge (4.09 obs) and indoor seed/mud-line HWMs (quality 1–2,
+3.9–4.15 m at Perth / South Amboy) agree, so it is not wave run-up at the marks.
+**What is missing is mostly WIND, then waves (2026-10-06, `logs/raritan_2026-10-06/`):** the
+engine builds analytical wind setup (0.99–1.02×, toy basin) and v4's ~0.18 m tilt ≈ what its
+applied wind can build. Along the bay axis at the peak ERA5 as forced is 0.63–0.72× the NACCS
+wind (17–21 vs 27–31 m/s); at Robbins Reef NACCS matches the observed wind (22.2 vs 21.9 m/s)
+while the forced ERA5 is 0.70–0.82× (the half-cell reader shift included). hydromt's ERA5 regrid
+is effectively NEAREST-neighbour (each written ~25 km cell copies one ERA5 cell up to 17 km away;
+origin set by the domain's bounding box): v3's file reads +0.52 m/s bias / 1.85 RMSE vs ERA5
+(1.2–1.8 m/s HIGH in Raritan / Lower Bay), v4's −0.06 / 1.11. Fixed 10-06:
+`nj_sfincs/meteo_grid.py` (origin rule `centre − signed_step/2`, applied in `finalize`; option
+`--era5-bilinear`: ERA5 bilinear in lon/lat onto a 5 km UTM grid, 0.05 m/s RMSE vs ERA5 on the
+active faces); the real engine then samples at +0.0 / −1.7 m (`logs/raritan_2026-10-06/meteo_fix/`). Wind stress NACCS ÷ v4: 2.9–3.4× (2.2–3.2× on a common
+drag law). Bay waves follow: SnapWave hm0 ≈ 0.65× STWAVE (117 matched points; Raritan W 0.60–0.64,
+Lower Bay ~0.5 where STWAVE carries 13–14 s swell in). SnapWave's own setup at South Amboy: crest
++0.15 m but +0.02 m averaged over the peak window — the rest is a ±0.15 m bay-wide swing that
+steps with the HOURLY wave update (untested: the wave force switches value each update). NACCS's
+western-bay excess over v4 waves-off is depth-uniform (+0.53 / +0.49 / +0.51 m in < 2 / 2–4 /
+≥ 4 m water) — a raised basin level, the shape of wind setup, not of breaking-wave setup.
+Estimated wave share +0.05–0.1 m; wind share +0.15–0.4 m (scaling, to be tested by a run).
+NACCS has no waves-off Sandy member; its STWAVE output (464 bay save points, 30 min) is in
+`data/NACCS/naccs_repack_STWAVE0*.zip`.
+**Wind products for Sandy, scored 2026-10-06** (`logs/wind_products_2026-10-06/`; peak window
+10-29 12:00 → 10-30 06:00, mean ÷ observed at 10 m): no gridded product adds wind over the bays —
+ERA5 (true positions) / RAP 13 km / NAM 12 km (3-hourly) / RTMA 2.5 km / CONUS404 4 km read 0.59–0.76
+at Robbins Reef and 0.68–0.95 at the Delaware Bay lights, fine offshore (buoys 0.95–1.08); they
+treat the narrow bays as land or rough ground (CONUS404 puts western Raritan and all of Barnegat Bay
+on land). NACCS's save-point wind (1,957 local points, 15 min; Oceanweather IOKA analysis — the
+gridded field is not on CHS) reads 0.99 at Robbins Reef (peak 28.2 vs obs 24.0 m/s), 1.08–1.12 at
+the Delaware Bay lights, ~1.25 at sheltered coastal anemometers; over Raritan Bay its E–W stress is
+2.06× ERA5's. Over Barnegat Bay NACCS's southward stress is 0.38× ERA5's (no over-water station
+there to judge). NAM 4 km nest and H*Wind for Sandy: not obtainable. RAP's SLP is 2–7 hPa high.
+(f) The dam-crest recut scores identically to the spliced cut (HWM bias Δ < 1e-6 m, worst gauge
+0.3 mm, CSI +0.0001).
+
+**Still open after the audit:** the Schuylkill backing up to 6.8 m BELOW the Fairmount Dam on a
+~0 m bed (no river cut removes it; the box-MEAN Manning above `uv_zmax` is the suspect —
+NLCD puts 29 % of its channel pixels in developed classes, n 0.10–0.13 — untested); the
+Christina inflow ponds +0.9 m in a ~20 m channel narrower than its face; no measured bed above
+the 2010-lidar back-bay candidates; Little Egg
+Harbor's 2024 survey reading 4–9 m deeper than the model (12 years post-Sandy; unresolved).
+
+**Head-of-tide variants on v4's mesh (`v4_hot` = A, `v4_hot_plus` = A+; mask-only, registered
+2026-10-02; read 2026-10-03, `logs/v4_hot_2026-10-03/`).** Marks identical to v4 (RMSE 0.577 /
+bias −0.407) — no mark or gauge lies in a trimmed reach; MOTF CSI 0.684 → 0.687 / 0.686;
+active cells −10,751 / −9,032; solve time unchanged. **Below every new cut the peak matches
+v4's** (whole-run zsmax, faces active in both and wet in v4, ≤ 1.5 km: p50 −0.01 … +0.07 m
+at +0/+2/+3 m, the soft-limit Cohansey −0.01 and Neshaminy 0.00 at +3 m): walling a soft
+tidal limit does not back the sea up below the wall. The exceptions are the two bed faults
+above (Schuylkill +0.1 m once the 725 m³/s inflow is moved to the dam; Maurice +1.2 m at
++0 m, +0.1 at +2/+3). The wall-cell rise in `overflow_check` (Hackensack 2.94, Cohansey 2.37,
+Neshaminy 2.24, Raritan 1.34, Trenton 0.61 m at +3 m) is the sea rising against the wall,
+as at any tidal cut; whether it would have gone past is read from v4 above the line.
+**The Union Lake dam holds at +3 m with metres to spare** (2026-10-05,
+`logs/union_lake_2026-10-05/`; NJ statewide lidar 2014–2019): lake surface flat at **7.6 m**
+NAVD88, embankment crest **~10 m** (9.3–10.8) on a diagonal from (−75.0555, 39.4004) to
+(−75.0500, 39.4043), spillway at its south end (~−75.0545, 39.4012) dropping straight to the
+tidal river (lidar −0.2 m at the toe); A+'s peak water within 600 m below it 1.93 / 2.51 /
+**3.91 m** at +0 / +2 / +3 m — ≥ 3.7 m under the spillway. ⚠️ The spliced cut (a straight
+line at lat 39.403) sits ~100 m INTO the lake: 61 active faces on the lake (lidar 7.56 m)
+carry v4's fake-pit bed (zb p50 −0.17 m) and fill from the river to its own level (1.98 /
+3.92 m) — negligible storage, wrong geometry. **A+'s ring follows the crest since 10-05**
+(`hot_maurice_dam_*` vertices; the lake strip's active faces 55 → 2, all 39 Maurice edge cells
+walled, the inflow 53 m below the spillway); `v4_hot` keeps the splice.

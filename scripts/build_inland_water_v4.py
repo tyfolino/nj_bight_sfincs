@@ -5,6 +5,7 @@
     python scripts/build_inland_water_v4.py depths      # network: USGS channel measurements
     python scripts/build_inland_water_v4.py inventory   # per-polygon stats + pit points
     python scripts/build_inland_water_v4.py review      # the list for the user (no network)
+    python scripts/build_inland_water_v4.py manning     # n = 0.02 raster (no network)
 
 WHY (STATUS 2026-09-29 EVENING, B + C).
   * CUDEM (and CoNED — checked 09-29, same fill) holds NON-TIDAL water as a flat ~0 m
@@ -31,6 +32,16 @@ THE RULE (user, 2026-09-29):
     surface is ≥ ``SURFACE_MIN`` (non-tidal) and the model bed sits near sea level under
     it (``inventory`` shows both, per water body, for review — edit ``OVERRIDES``).
 Datum m NAVD88. Outputs under data/elevation_v4/inland_water/.
+
+``manning`` (2026-10-05) builds the ROUGHNESS half of the rule: ``manning_water_v4.tif``,
+EPSG:32618, 3 m, n = 0.02 inside EVERY polygon of both NHD layers (all lake + river
+FTYPEs above, flagged or not, tidal or not) clipped to the A+ ring + 250 m (the widest
+face's uv pixel block reaches ~200 m past a face edge), NoData elsewhere. It reaches a
+run only through ``scripts/rebuild_subgrid.py --manning-overlay manning_water_v4``. On
+tidal water NLCD is already class 11 (n 0.020), so the paint is a no-op there except
+where NLCD's 30 m pixels put a channel in a land class — which is NLCD being wrong, the
+same fault as upstream. ``manning_water_v4.json`` beside it has the painted area by the
+NLCD class it overrides (and the old n), split by the polygon's lidar surface.
 """
 
 from __future__ import annotations
@@ -79,7 +90,9 @@ def _get(url: str, tries: int = 5, timeout: int = 180) -> bytes:
 
 def _atomic_write(path: Path, write) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    fd, tmp = tempfile.mkstemp(dir=path.parent, prefix=f".{path.name}.", suffix=path.suffix)
+    fd, tmp = tempfile.mkstemp(
+        dir=path.parent, prefix=f".{path.name}.", suffix=path.suffix
+    )
     os.close(fd)
     try:
         write(tmp)
@@ -160,22 +173,29 @@ def gauge_mean_depth(site: str, lo: float = 25, hi: float = 75) -> dict:
     """Median mean depth (channel_area / channel_width) of the USGS channel measurements
     at ``site`` whose flow lies in the site's own p``lo``-p``hi`` measured-flow band —
     the method behind the Trenton 1.20 m (STATUS 09-27, 296 measurements)."""
-    rows, url = [], (
-        f"{USGS}/channel-measurements/items?"
-        + urllib.parse.urlencode(
-            {"monitoring_location_id": f"USGS-{site}", "limit": 1000, "f": "json"}
-        )
+    rows, url = (
+        [],
+        (
+            f"{USGS}/channel-measurements/items?"
+            + urllib.parse.urlencode(
+                {"monitoring_location_id": f"USGS-{site}", "limit": 1000, "f": "json"}
+            )
+        ),
     )
     while url:
         d = json.loads(_get(url))
         rows += [f["properties"] for f in d.get("features", [])]
-        url = next((lk["href"] for lk in d.get("links", []) if lk.get("rel") == "next"),
-                   None)
+        url = next(
+            (lk["href"] for lk in d.get("links", []) if lk.get("rel") == "next"), None
+        )
     q, w, a = [], [], []
     for p in rows:
         try:
-            qq, ww, aa = (float(p["channel_flow"]), float(p["channel_width"]),
-                          float(p["channel_area"]))
+            qq, ww, aa = (
+                float(p["channel_flow"]),
+                float(p["channel_width"]),
+                float(p["channel_area"]),
+            )
         except (TypeError, ValueError):
             continue
         if ww > 0 and aa > 0 and qq > 0:
@@ -193,8 +213,10 @@ def gauge_mean_depth(site: str, lo: float = 25, hi: float = 75) -> dict:
         "depth_p10_m": round(float(np.percentile(dep, 10)), 2),
         "depth_p90_m": round(float(np.percentile(dep, 90)), 2),
         "width_m": round(float(np.median(w[band])) * 0.3048, 1),
-        "flow_band_cms": [round(float(np.percentile(q, lo)) * 0.0283168, 1),
-                          round(float(np.percentile(q, hi)) * 0.0283168, 1)],
+        "flow_band_cms": [
+            round(float(np.percentile(q, lo)) * 0.0283168, 1),
+            round(float(np.percentile(q, hi)) * 0.0283168, 1),
+        ],
     }
 
 
@@ -278,8 +300,10 @@ def inventory() -> None:
     for i, p in enumerate(polys.itertuples()):
         xs, ys = _sample_points(p.geometry)
         d, j = tree.query(np.c_[xs, ys])
-        inside = act[j] & (np.abs(fx[j] - xs) <= half[j] + 0.5) & (
-            np.abs(fy[j] - ys) <= half[j] + 0.5
+        inside = (
+            act[j]
+            & (np.abs(fx[j] - xs) <= half[j] + 0.5)
+            & (np.abs(fy[j] - ys) <= half[j] + 0.5)
         )
         if not inside.any():
             continue
@@ -288,26 +312,41 @@ def inventory() -> None:
         s = np.where(np.isfinite(s), s, dep3(xs, ys))
         b, n = bed(xs, ys), man(xs, ys)
         pit = (b <= PIT_BED_MAX) & (s - b >= PIT_DROP_MIN) & (s >= SURFACE_MIN)
-        rows.append({
-            "permanent_identifier": p.permanent_identifier,
-            "kind": p.kind,
-            "name": p.gnis_name or "",
-            "ftype": int(p.ftype),
-            "km2_in_model": round(p.geometry.area / 1e6 * inside.mean(), 4),
-            "surface_p50": round(float(np.nanmedian(s)), 2) if np.isfinite(s).any() else np.nan,
-            "bed_p50": round(float(np.nanmedian(b)), 2) if np.isfinite(b).any() else np.nan,
-            "pit_frac": round(float(pit.mean()), 3),
-            "n_p50": round(float(np.nanmedian(n)), 3) if np.isfinite(n).any() else np.nan,
-            "n_ge_0.07_frac": round(float(np.nanmean(n >= 0.07)), 3),
-            "x_utm": round(float(p.geometry.representative_point().x)),
-            "y_utm": round(float(p.geometry.representative_point().y)),
-        })
+        rows.append(
+            {
+                "permanent_identifier": p.permanent_identifier,
+                "kind": p.kind,
+                "name": p.gnis_name or "",
+                "ftype": int(p.ftype),
+                "km2_in_model": round(p.geometry.area / 1e6 * inside.mean(), 4),
+                "surface_p50": round(float(np.nanmedian(s)), 2)
+                if np.isfinite(s).any()
+                else np.nan,
+                "bed_p50": round(float(np.nanmedian(b)), 2)
+                if np.isfinite(b).any()
+                else np.nan,
+                "pit_frac": round(float(pit.mean()), 3),
+                "n_p50": round(float(np.nanmedian(n)), 3)
+                if np.isfinite(n).any()
+                else np.nan,
+                "n_ge_0.07_frac": round(float(np.nanmean(n >= 0.07)), 3),
+                "x_utm": round(float(p.geometry.representative_point().x)),
+                "y_utm": round(float(p.geometry.representative_point().y)),
+            }
+        )
         if pit.any():
-            pts.append(pd.DataFrame({
-                "permanent_identifier": p.permanent_identifier, "kind": p.kind,
-                "x": xs[pit].round(1), "y": ys[pit].round(1),
-                "surface": s[pit].round(2), "bed": b[pit].round(2),
-            }))
+            pts.append(
+                pd.DataFrame(
+                    {
+                        "permanent_identifier": p.permanent_identifier,
+                        "kind": p.kind,
+                        "x": xs[pit].round(1),
+                        "y": ys[pit].round(1),
+                        "surface": s[pit].round(2),
+                        "bed": b[pit].round(2),
+                    }
+                )
+            )
         if i % 500 == 0:
             print(f"  {i}/{len(polys)}", flush=True)
     df = pd.DataFrame(rows)
@@ -316,10 +355,14 @@ def inventory() -> None:
     _atomic_write(out, lambda p: df.to_csv(p, index=False))
     pp = pd.concat(pts) if pts else pd.DataFrame()
     _atomic_write(OUT / "pit_points_v4.csv", lambda p: pp.to_csv(p, index=False))
-    print(f"pit_points_v4.csv: {len(pp)} sample points ({SAMPLE_M:.0f} m grid) on fake pits")
-    print(f"{out.name}: {len(df)} polygons on active model cells, "
-          f"{int(df.flag_pit.sum())} flagged as fake pits "
-          f"({df.loc[df.flag_pit, 'km2_in_model'].sum():.2f} km2)")
+    print(
+        f"pit_points_v4.csv: {len(pp)} sample points ({SAMPLE_M:.0f} m grid) on fake pits"
+    )
+    print(
+        f"{out.name}: {len(df)} polygons on active model cells, "
+        f"{int(df.flag_pit.sum())} flagged as fake pits "
+        f"({df.loc[df.flag_pit, 'km2_in_model'].sum():.2f} km2)"
+    )
 
 
 # ── review list ───────────────────────────────────────────────────────────────
@@ -375,31 +418,219 @@ def review() -> None:
         d = np.hypot(s_x - cx, s_y - cy) / 1e3
         near = [i for i in np.argsort(d)[:6] if d[i] <= GAUGE_KM]
         lon, lat = tr.transform(cx, cy)
-        rows.append({
-            "stretch": int(c), "km2": round(km2, 3),
-            "lon": round(lon, 4), "lat": round(lat, 4),
-            "surface_min": round(g.surface.min(), 2), "surface_max": round(g.surface.max(), 2),
-            "bed_p50": round(g.bed.median(), 2),
-            "gauges_nearby": "; ".join(
-                f"{s_no[i]} {s_nm[i]} ({d[i]:.1f} km, DA {s_da[i]})" for i in near
-            ),
-        })
+        rows.append(
+            {
+                "stretch": int(c),
+                "km2": round(km2, 3),
+                "lon": round(lon, 4),
+                "lat": round(lat, 4),
+                "surface_min": round(g.surface.min(), 2),
+                "surface_max": round(g.surface.max(), 2),
+                "bed_p50": round(g.bed.median(), 2),
+                "gauges_nearby": "; ".join(
+                    f"{s_no[i]} {s_nm[i]} ({d[i]:.1f} km, DA {s_da[i]})" for i in near
+                ),
+            }
+        )
     rivers = pd.DataFrame(rows).sort_values("km2", ascending=False)
     OUT.mkdir(parents=True, exist_ok=True)
     _atomic_write(OUT / "review_lakes_v4.csv", lambda p: lakes.to_csv(p, index=False))
-    _atomic_write(OUT / "review_river_stretches_v4.csv",
-                  lambda p: rivers.to_csv(p, index=False))
-    print(f"lakes flagged: {len(lakes)} ({lakes.km2_in_model.sum():.2f} km2); "
-          f"river stretches: {len(rivers)} ({rivers.km2.sum():.2f} km2)")
+    _atomic_write(
+        OUT / "review_river_stretches_v4.csv", lambda p: rivers.to_csv(p, index=False)
+    )
+    print(
+        f"lakes flagged: {len(lakes)} ({lakes.km2_in_model.sum():.2f} km2); "
+        f"river stretches: {len(rivers)} ({rivers.km2.sum():.2f} km2)"
+    )
+
+
+# ── roughness ─────────────────────────────────────────────────────────────────
+N_WATER = 0.02  # NLCD 11 Open Water in data/roughness/NLCD_CONUS_mapping.csv
+MAN_RES = 3.0  # = inland_water_bed_v4.tif; nearest onto 1.6-12.5 m subgrid pixels
+MAN_NODATA = -9999.0
+MAN_TILE = 4096
+RING_BUFFER_M = 250.0
+
+
+def manning(ring_domain: str = "v4_hot_plus", force: bool = False) -> None:
+    """n = 0.02 on every NHD lake / river polygon inside the ring (see the docstring)."""
+    import geopandas as gpd
+    import pandas as pd
+    import rasterio
+    import shapely
+    from rasterio.features import rasterize
+    from rasterio.transform import from_origin
+    from rasterio.warp import Resampling, reproject
+    from rasterio.windows import Window
+    from rasterio.windows import transform as wtransform
+
+    from nj_sfincs import domain as _domain
+
+    out = OUT / "manning_water_v4.tif"
+    if out.exists() and not force:
+        raise SystemExit(f"{out} exists; pass --force to rebuild it")
+    ring = gpd.read_file(_domain.DOMAINS[ring_domain].region).to_crs(32618)
+    clip = ring.union_all().buffer(RING_BUFFER_M)
+    polys = pd.concat(
+        [gpd.read_file(OUT / f"nhd_{k}_v4.gpkg") for _, k, _ in LAYERS],
+        ignore_index=True,
+    ).to_crs(32618)
+    polys["geometry"] = polys.geometry.make_valid().intersection(clip)
+    polys = polys[~polys.geometry.is_empty & (polys.geometry.area > 0)]
+    polys = polys.reset_index(drop=True)
+    inv = pd.read_csv(
+        OUT / "inventory_polygons_v4.csv", dtype={"permanent_identifier": str}
+    )
+    surf = dict(zip(inv.permanent_identifier, inv.surface_p50))
+    polys["surface_p50"] = polys.permanent_identifier.astype(str).map(surf)
+    # tidal-looking: lidar surface below the non-tidal screen (or no inventory row)
+    polys["low_surface"] = ~(polys.surface_p50 >= SURFACE_MIN)
+    print(
+        f"{len(polys)} NHD polygons in the {ring_domain} ring + {RING_BUFFER_M:.0f} m "
+        f"({polys.geometry.area.sum() / 1e6:.2f} km2)",
+        flush=True,
+    )
+
+    b = polys.total_bounds
+    x0 = np.floor(b[0] / MAN_RES) * MAN_RES - 30
+    y1 = np.ceil(b[3] / MAN_RES) * MAN_RES + 30
+    x1 = np.ceil(b[2] / MAN_RES) * MAN_RES + 30
+    y0 = np.floor(b[1] / MAN_RES) * MAN_RES - 30
+    W, H = int(round((x1 - x0) / MAN_RES)), int(round((y1 - y0) / MAN_RES))
+    T = from_origin(x0, y1, MAN_RES, MAN_RES)
+    tree = shapely.STRtree(polys.geometry.values)
+    rt = pd.read_csv(ROOT / "data" / "roughness" / "NLCD_CONUS_mapping.csv")
+    n_of = dict(zip(rt.NLCD, rt.N))
+    nlcd = rasterio.open(ROOT / "data" / "roughness_v4" / "nlcd_2012_v4.tif")
+    low = polys.low_surface.values
+    cnt: dict = {}  # (class, low_surface) -> pixels
+
+    prof = dict(
+        driver="GTiff",
+        width=W,
+        height=H,
+        count=1,
+        dtype="float32",
+        crs="EPSG:32618",
+        transform=T,
+        nodata=MAN_NODATA,
+        tiled=True,
+        blockxsize=256,
+        blockysize=256,
+        compress="DEFLATE",
+        predictor=3,
+        BIGTIFF="YES",
+        SPARSE_OK="TRUE",
+    )
+
+    def write(tmp):
+        with rasterio.open(tmp, "w", **prof) as dst:
+            for r0 in range(0, H, MAN_TILE):
+                for c0 in range(0, W, MAN_TILE):
+                    win = Window(c0, r0, min(MAN_TILE, W - c0), min(MAN_TILE, H - r0))
+                    wt = wtransform(win, T)
+                    tb = shapely.box(
+                        wt.c,
+                        wt.f - win.height * MAN_RES,
+                        wt.c + win.width * MAN_RES,
+                        wt.f,
+                    )
+                    hit = tree.query(tb, predicate="intersects")
+                    if hit.size == 0:
+                        continue
+                    shp = (int(win.height), int(win.width))
+                    lab = rasterize(
+                        [(polys.geometry.values[i], int(i) + 1) for i in hit],
+                        out_shape=shp,
+                        transform=wt,
+                        fill=0,
+                        dtype="int32",
+                    )
+                    m = lab > 0
+                    if not m.any():
+                        continue
+                    a = np.full(shp, MAN_NODATA, dtype="float32")
+                    a[m] = N_WATER
+                    dst.write(a, 1, window=win)
+                    cls = np.zeros(shp, dtype="uint8")
+                    reproject(
+                        rasterio.band(nlcd, 1),
+                        cls,
+                        dst_transform=wt,
+                        dst_crs="EPSG:32618",
+                        resampling=Resampling.nearest,
+                    )
+                    lw = low[lab[m] - 1]
+                    for c, lo in zip(*np.unique(np.c_[cls[m], lw], axis=0).T):
+                        k = (int(c), bool(lo))
+                        sel = (cls[m] == c) & (lw == lo)
+                        cnt[k] = cnt.get(k, 0) + int(sel.sum())
+                    print(
+                        f"  tile r{r0} c{c0}: {m.sum() * MAN_RES**2 / 1e6:.3f} km2",
+                        flush=True,
+                    )
+
+    _atomic_write(out, write)
+    px = MAN_RES**2 / 1e6
+    rows = [
+        {
+            "nlcd": c,
+            "n_old": n_of.get(c, float("nan")),
+            "low_surface": lo,
+            "km2": round(v * px, 4),
+        }
+        for (c, lo), v in sorted(cnt.items())
+    ]
+    df = pd.DataFrame(rows)
+    changed = df[~np.isclose(df.n_old, N_WATER)]
+    summ = {
+        "built": time.strftime("%Y-%m-%dT%H:%M:%S"),
+        "ring": ring_domain,
+        "ring_buffer_m": RING_BUFFER_M,
+        "res_m": MAN_RES,
+        "n": N_WATER,
+        "polygons": int(len(polys)),
+        "polygons_lake": int((polys.kind == "lake").sum()),
+        "polygons_river": int((polys.kind == "river").sum()),
+        "painted_km2": round(df.km2.sum(), 3),
+        "n_changed_km2": round(changed.km2.sum(), 3),
+        "n_changed_km2_low_surface": round(changed[changed.low_surface].km2.sum(), 3),
+        "n_changed_km2_nontidal_surface": round(
+            changed[~changed.low_surface].km2.sum(), 3
+        ),
+        "note": "low_surface = polygon lidar surface_p50 < SURFACE_MIN (tidal-looking) "
+        "or no inventory row; nlcd 250 = NoData (hydromt fills by elevation)",
+        "by_class": rows,
+    }
+    _atomic_write(
+        out.with_suffix(".json"),
+        lambda p: Path(p).write_text(json.dumps(summ, indent=2)),
+    )
+    print(json.dumps({k: v for k, v in summ.items() if k != "by_class"}, indent=2))
+    print(df.to_string(index=False))
 
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    ap.add_argument("step", choices=("fetch", "depths", "inventory", "review"))
-    ap.add_argument("--site", action="append", default=[],
-                    help="depths: USGS site number(s) to measure")
+    ap.add_argument(
+        "step", choices=("fetch", "depths", "inventory", "review", "manning")
+    )
+    ap.add_argument(
+        "--site",
+        action="append",
+        default=[],
+        help="depths: USGS site number(s) to measure",
+    )
+    ap.add_argument(
+        "--ring",
+        default="v4_hot_plus",
+        help="manning: the domain whose region ring clips the polygons",
+    )
+    ap.add_argument("--force", action="store_true", help="manning: rebuild the raster")
     a = ap.parse_args()
-    if a.step == "fetch":
+    if a.step == "manning":
+        manning(a.ring, a.force)
+    elif a.step == "fetch":
         fetch()
     elif a.step == "depths":
         for s in a.site:

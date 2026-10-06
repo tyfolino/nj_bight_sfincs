@@ -168,6 +168,26 @@ _V4: dict[str, Experiment] = {
         for m in (0, 2, 3)
     },
 }
+# A+ (v4_hot_plus, user's pick 2026-10-05) = v4's arms + bed tests on its own mesh.
+_V4_HOT_PLUS: dict[str, Experiment] = {
+    **_V4,
+    # 2026-10-05 (STATUS "Raritan Bay / harbour low in v4", Step 2): CUDEM has none of the
+    # dredged harbour trench (Kill van Kull -0.2..-4 m vs a 50 ft project, Newark Bay
+    # -0.6..-3.4 vs -13..-18), and the Kill van Kull is Newark Bay's only modelled inlet —
+    # the Step-1 chain: choked KvK -> low, late Newark Bay -> the Arthur Kill drains western
+    # Raritan Bay. The USACE eHydro surveys painted OVER the unchanged merge
+    # (`rebuild_subgrid.py --overlay ehydro_harbour_v4`); paired against naccs-nowaves.
+    "bed-harbour+naccs-nowaves": Experiment(
+        "bed-harbour+naccs-nowaves",
+        WaveConfig(use_waves=False),
+        "naccs-nowaves with the surveyed harbour channels (Kill van Kull, Newark Bay, the "
+        "port channels, the Arthur Kill) carved into the subgrid by overlay. The test of "
+        "the Step-1 chain: Newark Bay's tide and peak should recover and western Raritan "
+        "Bay rise toward the observed 4.09 m at South Amboy.",
+        subgrid_from="_subgrid_kills",
+        **_V4_WL,
+    ),
+}
 
 
 #: ``domain name -> {arm name -> Experiment}``.
@@ -388,6 +408,40 @@ _V3: dict[str, Experiment] = {
         **_V3_BUILDINGS,
         **_V3_WL,
     ),
+    "wave-dt3600": Experiment(
+        "wave-dt3600",
+        replace(_V3_PREMIER_WAVES, dtwave=3600.0),
+        "Premier with ONE change: SnapWave every 60 min instead of 30 (5° bins and IG "
+        "kept). Isolates the Cape May jetty pocket (STATUS 10-02): both dt3600+dtheta10 "
+        "arms hold the water west of the Cape May Inlet south jetty ~1 m above the "
+        "full-cost arms for 3-4 h at the peak. Pocket here = the update interval; "
+        "absent = the 10° bins.",
+        **_V3_BUILDINGS,
+        **_V3_WL,
+    ),
+    # 2026-10-05 (user): v3 re-run with the beds fixed on v4 the same day that fall inside
+    # v3 — the §54 inland lakes (its 9 rain-pond lake marks), the 2010 lidar's sills undone
+    # (Great Egg Harbor Inlet, Inside Thorofare, Compton Ck), the harbour + Raritan-corner
+    # creek surveys, the Mullica / Tuckahoe GMRT holes carved (Cohansey rule) — overlaid
+    # after v3's own building burn (`_subgrid_v4fixes`). Hourly SnapWave like v4. Paired
+    # against wave-dt3600 (the bed alone) and its twin against naccs-nowaves.
+    "bed-v4fixes+wave-dt3600": Experiment(
+        "bed-v4fixes+wave-dt3600",
+        replace(_V3_PREMIER_WAVES, dtwave=3600.0),
+        "wave-dt3600 on v3's buildings bed plus the 10-05 v4 bed fixes inside v3: inland "
+        "lakes, the 2010-lidar sills undone, harbour and creek surveys, the Mullica and "
+        "Tuckahoe GMRT holes carved. Paired against wave-dt3600, it reads the beds alone.",
+        subgrid_from="_subgrid_v4fixes",
+        **_V3_WL,
+    ),
+    "bed-v4fixes+naccs-nowaves": Experiment(
+        "bed-v4fixes+naccs-nowaves",
+        WaveConfig(use_waves=False),
+        "naccs-nowaves on the bed of bed-v4fixes+wave-dt3600 (v3 buildings + the 10-05 v4 "
+        "bed fixes inside v3). Paired against naccs-nowaves: the beds alone, waves off.",
+        subgrid_from="_subgrid_v4fixes",
+        **_V3_WL,
+    ),
     "wave-dt3600+wave-dtheta10+wave-wavemaker": Experiment(
         "wave-dt3600+wave-dtheta10+wave-wavemaker",
         replace(
@@ -447,6 +501,78 @@ _V3: dict[str, Experiment] = {
 }
 
 
+# ── A+ (v4_hot_plus): the first waves-on v4 run, 2026-10-05 ───────────────────
+# The v3 premier's wave physics (wind ON, IG ON, fw 0.01, 5° bins) with the user's cheap
+# setting (10-05: HOURLY updates, dtwave 3600 — FINDINGS §61: half the solve, nothing at
+# the marks) on v4's own band (`v4_shelf_steps`, carried south across the Delaware mouth),
+# CORA at 69 support points (~4.6 km, v3's spacing; preflight
+# logs/audit_v4_hot_plus_2026-10-05/snapwave_domain.txt) and no demotion north of Sandy
+# Hook (the band's leg runs to Long Island, as v3's apex). Bed `_subgrid_premier`
+# (logs/bedfix_2026-10-05/): the NJDEP building burn (ground + 4 m), then the 10-05
+# channel fixes — the 2010 lidar's sills undone, the harbour and Raritan-corner creek
+# surveys, the Cohansey at a stated depth. Named `bed-…` because A+'s own premier (the bed
+# every non-bed arm shares, tests/test_bed_arms.py) is still the template's until the
+# re-freeze. Paired: its waves-off twin (one flag), and naccs-nowaves (bed + waves).
+_V4_CORA = DATA / "waves_v4" / "cora_waves_v4.nc"
+_V4_PREMIER_WAVES = replace(
+    _V3_PREMIER_WAVES,
+    wave_point_dataset=_V4_CORA,
+    snapwave_domain="v4_shelf_steps",
+    wave_n_support=69,
+    dtwave=3600.0,
+)
+_V4_HOT_PLUS.update(
+    {
+        "bed-buildings+bed-channels+naccs-premier": Experiment(
+            "bed-buildings+bed-channels+naccs-premier",
+            _V4_PREMIER_WAVES,
+            "THE first waves-on v4 (A+) run: the v3 premier's wave physics with hourly "
+            "SnapWave updates on v4's shelf-steps band, CORA at 69 points; NACCS on the "
+            "drawn line; rain + infiltration; the building burn and the 10-05 channel "
+            "fixes in the subgrid. Imperfect by design (mask leaks, GMRT reaches, inland "
+            "lakes still open — reports/v4_refreeze_list_2026-10-05.md).",
+            subgrid_from="_subgrid_premier",
+            **_V4_WL,
+        ),
+        "bed-buildings+bed-channels+naccs-nowaves": Experiment(
+            "bed-buildings+bed-channels+naccs-nowaves",
+            WaveConfig(use_waves=False),
+            "The waves-on run's waves-off twin (one flag): the same building + channel "
+            "subgrid, SnapWave off. Against naccs-nowaves it reads the bed changes alone.",
+            subgrid_from="_subgrid_premier",
+            **_V4_WL,
+        ),
+    }
+)
+
+
+# ── v4_hot_plus_walls (run B, 2026-10-05): A+ + the edge audit's leak walls + four
+# inflows in their channels; its OWN premier carries the whole 10-05 bed (`_subgrid_premier`
+# on this domain: buildings, the 2010-lidar sills undone, harbour + Raritan-corner creek
+# surveys, the Cohansey and the four GMRT reaches at a stated depth) + the §54 inland
+# lakes (bed only; user 10-05, DECISIONS.md). Deferred: the building cap, lake n 0.02.
+_V4_HOT_PLUS_WALLS: dict[str, Experiment] = {
+    "naccs-premier": Experiment(
+        "naccs-premier",
+        _V4_PREMIER_WAVES,
+        "Run B: the first waves-on v4 run with every 10-05 fix the user approved — A+ "
+        "with the leak walls, the four inflows in their channels, and the full channel / "
+        "river bed (buildings, the 2010-lidar sills undone, harbour and Raritan-corner "
+        "surveys, the Cohansey and the four GMRT reaches). Waves as A+'s run A.",
+        subgrid_from="_subgrid_premier",
+        **_V4_WL,
+    ),
+    "naccs-nowaves": Experiment(
+        "naccs-nowaves",
+        WaveConfig(use_waves=False),
+        "Run B's waves-off twin (one flag), on the same bed: SnapWave off, NACCS on the "
+        "drawn line, so waves-on minus this reads the wave contribution alone.",
+        subgrid_from="_subgrid_premier",
+        **_V4_WL,
+    ),
+}
+
+
 EXPERIMENTS_BY_DOMAIN: dict[str, dict[str, Experiment]] = {
     "v1_monmouth": {},
     "v1_5_raritan": _V1_5_RARITAN,
@@ -458,6 +584,11 @@ EXPERIMENTS_BY_DOMAIN: dict[str, dict[str, Experiment]] = {
     "v3": _V3,
     # FROZEN 2026-09-28; waves-off design-gate arms only, no waves-on premier yet.
     "v4": _V4,
+    # 2026-10-02: the head-of-tide variants of v4 (A / A+, the river-cut memo) run v4's
+    # own arms, so each pairs against v4 and against the other run for run.
+    "v4_hot": _V4,
+    "v4_hot_plus": _V4_HOT_PLUS,
+    "v4_hot_plus_walls": _V4_HOT_PLUS_WALLS,
 }
 
 

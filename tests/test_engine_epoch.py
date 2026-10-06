@@ -71,6 +71,8 @@ class TestPremierConstant(unittest.TestCase):
                 "wave_igwaves",
             },
             "wave-nowind": {"wave_wind", "snapwave_sector"},
+            # 2026-10-02: isolates the Cape May jetty pocket (update interval alone).
+            "wave-dt3600": {"dtwave"},
             "wave-dt3600+wave-dtheta10+wave-noig+wave-nowind": {
                 "dtwave",
                 "snapwave_dtheta",

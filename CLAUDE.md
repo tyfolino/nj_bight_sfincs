@@ -17,11 +17,12 @@ frozen and read-only — see [ARCHIVE.md](ARCHIVE.md). What is believed true *no
 A Sandy compound-flood hindcast of the New Jersey coast that holds up against the gauges,
 the marks and the MOTF extent, built domain by domain (§2). **v3** (Cape May → the Narrows)
 is DONE and is the reference. **v4** (v3 + Delaware Bay and river, the Raritan to Manville,
-Newark Bay; the far banks computed) is frozen but PARKED while two things are re-decided
-(user, 2026-09-30): **where rivers are cut** (today's head of tide, the gauge, the Sandy
-+3 m rule, or whole watersheds) and **how waves are represented** (SnapWave is ~97 % of the
-wall time, FINDINGS §20). STATUS has the plan; nothing about the domain changes until the
-user picks from the decision memo.
+Newark Bay; the far banks computed) was PARKED 09-30 on two questions the user decided on
+2026-10-05: **rivers are cut at today's head of tide (A+** — the Cohansey and Neshaminy keep
+the +3 m reach; upriver of a cut is out of scope by design, the +3 m containment rule applies
+within that ring**)** and **waves = SnapWave with 5° bins and HOURLY updates** (`dtwave` 3600,
+FINDINGS §61). The re-freeze is `v4_hot_plus_walls` (A+ + the 10-05 edge audit's leak walls);
+its bed fixes ride as subgrid overlays (`reports/v4_refreeze_list_2026-10-05.md`, STATUS).
 
 **The lineage's founding argument, still the rule for how to argue a boundary:** the
 predecessors ran the water-level boundary *through the middle of Raritan Bay*, forced by a
@@ -47,6 +48,8 @@ to run until it is set; tests that need *a* domain declare the `v1_monmouth` fix
 | `v1_5_raritan` | boundary relocated to the Narrows + Arthur Kill | **FROZEN 2026-08-14** — `faces=696230 boundary_edges=1652 sha=2a23667dd16e449c`, three arms run + scored (see STATUS) |
 | `v3` | full NJ ocean coast, Cape May → the Narrows, NACCS boundary | **DONE 2026-09-24** — `faces=3412470 boundary_edges=4108 sha=1596ce1ecc71b374` (mask repaired 09-22); reference = `naccs-premier` (FINDINGS §50) |
 | `v4` | v3 + Delaware Bay and river to where Sandy +3 m ends (Washington Crossing; forced at the mouth) + the Raritan to Manville + the Arthur Kill shore **and Newark Bay**; **far banks (DE/PA/Staten Island) COMPUTED, not walled**; Track C coarse shelf | **FROZEN 2026-09-28, PARKED 2026-09-30** — `faces=4881654 boundary_edges=4388 sha=23ea65f8b81ee1bd` (after the freeze, on the same mesh: 4 Elizabeth-crossing faces walled, then 193 forced-line-end + Henlopen-Atlantic outflow faces, then 5 Darby Creek faces; FINDINGS part 4); the forced boundary is the DRAWN line `data/v4_design/waterlevel_line_v4.csv` (7 arms, NACCS 241 points), the ring `data/v4_design/region_v4_vertices.csv` (194 named vertices; edit by hand, check with `scripts/audit_region_v4.py --ring <csv>`); first runs = the design gate, waves-off Sandy at +0/+2/+3 m (`naccs-nowaves+rain-off+slr-*`, read with `scripts/overflow_check.py … --compare`) — STATUS |
+| `v4_hot` / `v4_hot_plus` | v4's mesh, river arms cut at today's head of tide (A) / A with the Cohansey + Neshaminy +3 m reaches kept (A+, user's pick 10-05; Maurice cut on the Union Lake dam crest) | STAGED 10-02 / RE-STAGED 10-05 — mask-only variants via `scripts/setup_boundary_depth.py`, `sha=446d671cd97037ee` / `e5e9d8668fe29292` |
+| `v4_hot_plus_walls` | A+ + 11 leak walls + the Cape Henlopen gap closed + 4 inflows moved into their channels — **THE re-frozen v4** (user 10-05) | STAGED 10-05, `sha=77b5eda1fcd51cf6`; first waves-on run (run B) 10-05 |
 
 **The same experiment name exists on every domain and means a different model each time.**
 That is why runs live at `experiments/<domain>/<arm>`, why `EXPERIMENTS` is keyed by domain
@@ -86,7 +89,8 @@ run_experiments.py  the sweep driver (stage → run → validate → aggregate)
 scripts/            flat, indexed in scripts/README.md (a hygiene test keeps them in step)
 experiments/<domain>/<arm>/     run dirs (gitignored; SYMLINK → /scratch/tpj8 — NOT backed up,
                                  files unread for 90 days are purged; STATUS "Disk")
-data/               per-subdir symlinks into the archive for bulk; NACCS/ gtsm/ quadtree/ local
+data/               per-subdir symlinks for bulk: into the archive, and (2026-10-05) into
+                    /scratch/tpj8/nj_bight_sfincs_data/ (elevation_v3/, frozen_mesh_v3/, NACCS/, …)
 docs/FINDINGS.md    ⭐ what is believed true NOW. No history, no retractions.
 docs/STATUS.md      ⭐ the live campaign state (≤ ~300 lines; the old log is git history).
 logs/               gitignored; dated campaign dirs + logs/slurm/<yyyy-mm>/ for job stdout
@@ -166,6 +170,22 @@ not trip that guard. Do not run the sweep driver to "just rebuild" a template.
   boxes and discharge list: v3 also silently lost v1.5's always-active / dry-land /
   no-water-level boxes, its Raritan sources and `open_coast_max_y` (FINDINGS §58i). Also: staging's transient is ~3
   full template copies BEFORE `dedupe_experiment_inputs` runs — budget ~25 G free.
+- 🔴 **Arm staging COPIES the template — its forcing included.** A discharge-file edit (an
+  inflow moved) reaches no run until the TEMPLATE is re-staged (`setup_boundary_depth.py` for a
+  mask variant); `prepare_experiment` copytrees `_template_sealed` and re-adds nothing but an
+  arm's declared overrides. On 2026-10-05 run A kept the old inflow points this way.
+- 🔴 **`EXPECT_MD5` is checked when a job STARTS, so editing a guarded file while it is QUEUED
+  kills it** ("STALE FILES — refusing"), and every `afterok` job behind it then sits in
+  `DependencyNeverSatisfied` forever. Either leave the guarded files alone until the job starts,
+  or re-write its md5 file deliberately right after the edit. A watcher must treat
+  `DependencyNeverSatisfied` as terminal. Likewise an `afterany` job (a data move, a cleanup)
+  knows nothing of jobs submitted after it — re-check its dependency list before submitting
+  new readers.
+- 🔴 **`data/elevation_v3/cudem_nj_v3.vrt` reads its tiles through `../elevation/…`
+  (relativeToVRT).** Since 2026-10-05 `elevation_v3/` is a symlink into
+  `/scratch/tpj8/nj_bight_sfincs_data/`, and `..` resolves PHYSICALLY — so that scratch dir
+  carries an `elevation` symlink back to the archive. Moving any data dir: grep its VRTs for
+  `relativeToVRT="1">../` first.
 - **A roughness or elevation change needs a SUBGRID rebuild on the frozen mesh.**
   `build_static` copies the frozen mesh and returns early, so it will silently produce a
   no-op template. A *mask* change is the opposite: no subgrid rebuild, but the fingerprint
@@ -240,6 +260,11 @@ not trip that guard. Do not run the sweep driver to "just rebuild" a template.
   and the job before it ran the pre-edit version. Submit with a checksum:
   `md5sum <files> > logs/<job>_expected.md5; EXPECT_MD5=logs/<job>_expected.md5 sbatch …`
   (`hpc/build_coarse_bed.slurm`, `hpc/clip_nj_dem.slurm` honour it), or wait a few minutes.
+- 🔴 **A write into a HARD-LINKED input writes through to every run sharing it.** Staging
+  hard-links `sfincs_subgrid.nc` from the `subgrid_from` source; `finalize()`'s `sf.write()` once
+  rewrote it THROUGH the link into the premier's and 15 other runs' tables (2026-10-01; harmless
+  that time, bit-identical). `model.break_hardlinks()` runs before every write; `TestBreakHardlinks`
+  pins it. Any new writer into a staged dir needs the same.
 - **Disk quota exhaustion never says "quota".** It SIGSEGVs jobs or silently truncates
   output maps while `sacct` reports COMPLETED. Home is **GPFS, 100 G soft / 110 G hard**, and
   `quota -s` prints nothing — ask `mmlsquota -u $USER --block-size auto cache`
@@ -257,6 +282,8 @@ not trip that guard. Do not run the sweep driver to "just rebuild" a template.
 - **`sacct MaxRSS` is a 30 s sample and under-reads a fast OOM** (a render killed at 100 G
   read 32 G). Scorer rasters ACCUMULATE across arms in one process: three v3 arms OOM at
   128 G where one fits; the v3 HWM panel figure peaks at 165 G for six arms.
+  `scripts/paired_hwm_bootstrap.py` peaks ~85–90 G per process on v3: run pairs SERIALLY
+  (three in parallel on a 188 G node lost two to the OOM killer, 2026-10-03).
 - **A truncated floodmap cache reads back clean and scores bone-dry.** Writes are atomic
   now; do not weaken that.
 - **SnapWave is ~97% of runtime** (FINDINGS §20; `scripts/snapwave_cost.py` reads it off a
@@ -277,6 +304,13 @@ not trip that guard. Do not run the sweep driver to "just rebuild" a template.
   and a job whose time limit overlaps it will not START (`Reserved for maintenance`) —
   ~1.5× the measured pace is enough, and users may shorten a queued job's limit with
   `scontrol update JobId=<id> TimeLimit=<h>:00:00` (only an increase is refused).
+- 🔴 **Gridded meteo files are written in the ENGINE's corner convention (2026-10-06).** Our
+  SFINCS reads the first x / y of `netamuv` / `netamp` / `netampr` as a cell CORNER; hydromt writes
+  CENTRES, so every run before 10-06 sampled wind and pressure ~12.5 km W + 12.5 km N of each point
+  (FINDINGS part 4 (e)). `finalize` now rewrites the coordinates (`nj_sfincs/meteo_grid.py`,
+  marker attribute, idempotent; `scripts/fix_meteo_grid_origin.py --check <dir>`). Reading a FIXED
+  file with `xr.interp` is now half a cell off the other way — use `meteo_grid.true_centres`. Any
+  arm staged after 10-06 on an old template differs from its premier in wind: re-baseline, not delta.
 - **`zb` is NaN on SFINCS-inactive faces**, so any hm0 comparison must restrict to faces
   active in *both* runs.
 - 🔴 **`da_dep` is valid on ground the model never simulated**, so `dep > 0` is NOT a

@@ -169,6 +169,21 @@ V3 = DomainFingerprint(3412470, 4108, "1596ce1ecc71b374")
 V4_PRE_FLANKWALL = DomainFingerprint(4881654, 4388, "231f92a24c972daf")
 V4_PRE_DARBY = DomainFingerprint(4881654, 4388, "c5d8c8d7837b8461")
 V4 = DomainFingerprint(4881654, 4388, "23ea65f8b81ee1bd")
+#: v4_hot / v4_hot_plus STAGED 2026-10-02 (jobs 62158162 / 62158163, setup_boundary_depth.py
+#: on data/frozen_mesh_v4 — no rebuild): v4 with its river arms trimmed at today's head of
+#: tide (A), or all but the Cohansey and Neshaminy (A+). Same mesh and counts as V4, the sha
+#: is the only tell. Active 3,974,165 → 3,963,414 (−10,751) / 3,965,133 (−9,032).
+V4_HOT = DomainFingerprint(4881654, 4388, "446d671cd97037ee")
+#: 🔴 v4_hot_plus RE-STAGED 2026-10-05 (job 62265873; user chose A+ the same day): the Maurice
+#: cut moved from the spliced line at lat 39.403 (~100 m INTO Union Lake, 61 faces of fake-pit
+#: bed) onto the dam crest, wall box `_V4_HOT_PLUS_RECUT`, the Maurice inflow 53 m below the
+#: spillway. Active 3,965,133 → 3,965,068. Runs on the old mask: experiments/v4_hot_plus/_pre_damcrest/.
+V4_HOT_PLUS_PRE_DAMCREST = DomainFingerprint(4881654, 4388, "207ae7f7f0b805ae")
+V4_HOT_PLUS = DomainFingerprint(4881654, 4388, "e5e9d8668fe29292")
+#: v4_hot_plus_walls STAGED 2026-10-05 (job 62280421, setup_boundary_depth.py; run B): A+ with
+#: the 10-05 edge audit's 11 leak walls (A1–A6, B1–B5; 47 outflow faces → active) and the
+#: Cape Henlopen gap B6 closed. Same mesh and counts; active 3,965,068 (as A+).
+V4_HOT_PLUS_WALLS = DomainFingerprint(4881654, 4388, "77b5eda1fcd51cf6")
 
 EXPECTED: dict[str, DomainFingerprint] = {
     "v1_monmouth": V1_MONMOUTH,
@@ -176,6 +191,9 @@ EXPECTED: dict[str, DomainFingerprint] = {
     "v2_barnegat": V2_BARNEGAT,
     "v3": V3,
     "v4": V4,
+    "v4_hot": V4_HOT,
+    "v4_hot_plus": V4_HOT_PLUS,
+    "v4_hot_plus_walls": V4_HOT_PLUS_WALLS,
 }
 
 KNOWN = {
@@ -192,6 +210,18 @@ KNOWN = {
     "shore, NACCS 224-point boundary (sha16 19f53cfd4cb804fb), 4 arms",
     V4: "v4 FROZEN 2026-09-28 — NJ coast + Delaware Bay/river + Raritan + Newark Bay, "
     "drawn water-level line, NACCS 241-point boundary (sha16 4f020321d32076d7)",
+    V4_HOT: "v4_hot STAGED 2026-10-02 — v4 with 8 river arms trimmed at today's head of "
+    "tide (A, the river-cut memo); same mesh as v4",
+    V4_HOT_PLUS_PRE_DAMCREST: (
+        "v4_hot_plus as STAGED 2026-10-02, BEFORE the 10-05 dam-crest cut (61 Union Lake "
+        "faces inside the ring) — superseded"
+    ),
+    V4_HOT_PLUS_WALLS: (
+        "v4_hot_plus_walls STAGED 2026-10-05 — A+ + the edge audit's leak walls (run B)"
+    ),
+    V4_HOT_PLUS: "v4_hot_plus RE-STAGED 2026-10-05 (Maurice cut on the Union Lake dam crest)"
+    " — v4_hot but the Cohansey and Neshaminy "
+    "keep v4's +3 m reach (A+); same mesh as v4",
     V4_PRE_DARBY: (
         "v4 BEFORE the 2026-09-29 Darby Creek wall (the creek drained the +2 / +3 m "
         "water out at pa_delco_04) — the flank-walled gate runs; superseded"

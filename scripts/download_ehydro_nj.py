@@ -182,11 +182,12 @@ def read_xyz(path: Path) -> np.ndarray:
     """Soundings from an eHydro XYZ, skipping its NOTES/BENCHMARKS/PROJECT_NAME header.
 
     Older surveys ship a bare x/y/z triple per line; newer ones prepend a metadata block,
-    so `np.loadtxt` cannot be used directly.
+    so `np.loadtxt` cannot be used directly. Some are COMMA-delimited (NJ_06_KVK 2012-12,
+    2026-10-05), so commas are read as separators too.
     """
     rows = []
     for ln in path.read_text(errors="replace").splitlines():
-        f = ln.split()
+        f = ln.replace(",", " ").split()
         if len(f) < 3:
             continue
         try:
@@ -213,7 +214,9 @@ def stated_offset_m(path: Path) -> float | None:
     """
     txt = path.read_text(errors="replace")[:8000]
     m = re.search(
-        r"PLANE OF [A-Z. ]*?MEAN LOW(?:ER LOW)? WATER (?:IS|WAS)[^0-9]*"
+        # "OF" optional: NJ_06_KVK 2012-12 states it as "THE PLANE C.O.E. MEAN LOW WATER IS
+        # 3.4 FEET BELOW NAVD1988" (2026-10-05; the "PLANE OF ..." line there has no number).
+        r"PLANE (?:OF )?[A-Z. ]*?MEAN LOW(?:ER LOW)? WATER (?:IS|WAS)[^0-9]*"
         r"([0-9]+(?:\.[0-9]+)?)(?:\s*-\s*([0-9]+(?:\.[0-9]+)?))?\s*FEET\s+(BELOW|ABOVE)",
         txt, re.I)
     if not m:

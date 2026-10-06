@@ -23,8 +23,9 @@ Every script reads `NJ_DOMAIN` unless its row names a domain. Run from the repo 
 | `accept_domain.py` | One read-only command: is this domain fit to run? | live |
 | `freeze_mesh.py` | Build the static mesh once and freeze it (via `hpc/freeze_mesh.slurm`) | live |
 | `probe_mesh_size.py` | Cell counts per size before paying for the subgrid | live |
-| `rebuild_subgrid.py` | Rebuild only the subgrid on a frozen mesh; `--overlay` for burn rasters (CLAUDE.md §5) | live |
-| `setup_boundary_depth.py` | Stage a boundary-depth domain from its `mesh_key` sibling | live |
+| `rebuild_subgrid.py` | Rebuild only the subgrid on a frozen mesh; `--overlay` for burn rasters (CLAUDE.md §5), `--manning-overlay` paints a Manning-n raster over the NLCD reclass the same way | live |
+| `fix_meteo_grid_origin.py` | Rewrite a template's / staged dir's `netamuv`/`netamp`/`netampr` x, y to the engine's corner convention (centre − signed step/2; data untouched, idempotent); `--check` read-only, `--era5-bilinear` re-samples wind + pressure from native ERA5 (2026-10-06, `nj_sfincs/meteo_grid.py`) | live |
+| `setup_boundary_depth.py` | Stage a mask-variant domain (boundary depth, trimmed ring) from its frozen mesh | live |
 | `restage_mask_repair.py` | Stage a mask repair from the frozen mesh and show the diff | live |
 | `sync_obs_points.py` | Rewrite `sfincs.obs` from the registry without a rebuild | live |
 | `sfincs_restart.py` | Resume / stitch a preempted solve (called by `hpc/sfincs_run.slurm`) | live |
@@ -42,6 +43,7 @@ Every script reads `NJ_DOMAIN` unless its row names a domain. Run from the repo 
 | script | what it does | status |
 |---|---|---|
 | `paired_hwm_bootstrap.py` | Paired HWM comparison of two arms; `--bbox` zone and `--by-basin` groups | live |
+| `v4_first_results.py` | The first waves-on v4 read in one command: setup, scores, paired marks (incl. v4 vs v3), gauge/HWM/zsmax figures, summary skeleton; `submit --preset wednesday` | live |
 | `overflow_check.py` | Where the peak water reaches the model edge; `--compare` for the SLR ladder | live |
 | `source_proximity.py` | Which marks and gauges sit close enough to a river inflow to read it | live |
 | `compare_usgs_transects.py` | Model beach runup level vs USGS Sandy transects (TWL, dune crest, sandline washover) — the read where IG shows | live (restored 2026-10-01) |
@@ -94,7 +96,15 @@ Every script reads `NJ_DOMAIN` unless its row names a domain. Run from the repo 
 | `build_cn_nj.py` | Curve Number raster for infiltration | live |
 | `build_refinement_v4.py` | v4 quadtree refinement polygons from a readable recipe; diffs names vs v3 | live |
 | `build_riverbeds_v4.py` | v4 river beds where no survey reaches, one carving raster per reach | live |
-| `build_inland_water_v4.py` | v4 inland water: CUDEM's 0 m fill under lakes and rivers, channel roughness | live |
+| `build_usace_unpave_v4.py` | CUDEM painted back where the 2010 USACE lidar paves deep water (3 boxes), an overlay tier | live |
+| `build_usace_unpave_backbay_v4.py` | The same un-paving in 10 back-bay channel / basin boxes (Ocean City → Wildwood, LBI, Atlantic City, Keansburg), a second overlay tier | live |
+| `build_riverbed_sayreville_v4.py` | The Raritan's side channels and bank margins at Sayreville from the 2012 survey, NOS H05647 and ENC soundings (was 3DEP's water surface), an overlay tier | live |
+| `build_littleegg_channel_v4.py` | Little Egg Inlet's flood channels + the NJIWW behind Holgate from NOS H12597 (2014) and eHydro IW_08 (2024): an OPTIONAL post-Sandy overlay tier | live |
+| `build_riverbed_cohansey_v4.py` | The tidal Cohansey at a stated depth below MLLW (no measured bed), an overlay tier | live |
+| `build_riverbeds_gmrt_v4.py` | The four A+ tidal rivers whose bed falls through to GMRT (Maurice, Mullica, Tuckahoe, Rancocas): soundings, else a stated depth below MLLW, one overlay VRT | live |
+| `build_riverbeds_tidal_v4.py` | The tidal Christina, Big Timber Creek and St Jones (NOS soundings, else 1.2 m below MLLW), one overlay VRT; `--section shaped` = a measured parabolic-type section option for these, the GMRT reaches and the Cohansey; `evidence` / `conveyance` tables | live |
+| `build_riverbeds_hierarchy_v4.py` | ONE bed-source hierarchy (eHydro → real CUDEM → chart/NOS → sloping river, shaped section) for 18 tidal reaches incl. the Cohansey / GMRT / tidal ones it REPLACES; fill test, provenance raster, domain-wide fill screen, premier-tier consistency report; one overlay VRT | live |
+| `build_inland_water_v4.py` | v4 inland water: CUDEM's 0 m fill under lakes and rivers, channel roughness (`manning` step → `manning_water_v4.tif`, n = 0.02 on every NHD lake/river polygon in the A+ ring) | live |
 | `build_river_table_v4.py` | v4 river-inflow decision table: gauge flow vs flow at the model edge | live |
 | `build_v3_coarse_bed.sh` | The v3 coarse bed as actually built (its tier order differs from `domain.py`) | provenance |
 | `build_coned_sw_raritan.py` | CoNED topobathy tier for the SW Raritan box (in the frozen v1.5 bed) | provenance |

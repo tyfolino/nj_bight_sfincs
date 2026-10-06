@@ -1114,6 +1114,54 @@ usgs_sandy_discharge_v4:
       ratio <= 1.5 as is, above it ratio^0.8, dams and near-crossing area disagreements 1.0);
       the factor is the area_scale(index) coordinate, gauge flow = discharge / area_scale.
 
+usgs_sandy_discharge_v4_hot:
+  data_type: GeoDataset
+  uri: discharge_v4/usgs_sandy_discharge_v4_hot.nc
+  driver:
+    name: geodataset_xarray
+    options: {}
+  metadata:
+    category: hydro
+    crs: 4326
+    unit: m3/s
+    source: >-
+      usgs_sandy_discharge_v4 with the inflows of every trimmed river (8) MOVED onto their head-of-tide cut
+      (2026-10-02, logs/v4_hot_2026-10-02/splice_ring.py: the lowest-bed wet face of v4's +3 m
+      run where that river's channel meets the new edge). Discharge and area_scale UNCHANGED
+      from v4, so the v4_hot domain differs from v4 in geometry only.
+
+usgs_sandy_discharge_v4_hot_plus_walls:
+  data_type: GeoDataset
+  uri: discharge_v4/usgs_sandy_discharge_v4_hot_plus_walls.nc
+  driver:
+    name: geodataset_xarray
+    options: {}
+  metadata:
+    category: hydro
+    crs: 4326
+    unit: m3/s
+    source: >-
+      usgs_sandy_discharge_v4_hot_plus (Maurice below the Union Lake spillway) with four more
+      inflows moved off banks / an island into their channels (2026-10-05, re-freeze list
+      §1): Delaware at Trenton 01463500, White Clay 01479000, Rahway 01395000, Hackensack +
+      Pascack 01377000/01377500. logs/bedfix_2026-10-05/walls/move_inflows_walls.py.
+
+usgs_sandy_discharge_v4_hot_plus:
+  data_type: GeoDataset
+  uri: discharge_v4/usgs_sandy_discharge_v4_hot_plus.nc
+  driver:
+    name: geodataset_xarray
+    options: {}
+  metadata:
+    category: hydro
+    crs: 4326
+    unit: m3/s
+    source: >-
+      usgs_sandy_discharge_v4 with the inflows of the trimmed rivers except the Cohansey and Neshaminy (6) MOVED onto their head-of-tide cut
+      (2026-10-02, logs/v4_hot_2026-10-02/splice_ring.py: the lowest-bed wet face of v4's +3 m
+      run where that river's channel meets the new edge). Discharge and area_scale UNCHANGED
+      from v4, so the v4_hot_plus domain differs from v4 in geometry only.
+
 aorc_sandy_v4:
   data_type: RasterDataset
   uri: precip_v4/aorc_sandy_v4.nc
@@ -1187,6 +1235,287 @@ ehydro_hackensack_v4:
       USACE eHydro New York district NJ_17_HAC_20181022, to lat 40.751. 5 m carving tier,
       survey-footprint masked, water < -1 m only. CUDEM reads +8.5 m high here (the surface).
       scripts/download_ehydro_v4.py --set hackensack
+
+ehydro_harbour_v4:
+  data_type: RasterDataset
+  uri: elevation_v4/ehydro/ehydro_harbour_v4.tif
+  driver:
+    name: rasterio
+    options: {}
+  metadata:
+    category: topography
+    crs: 32618
+    nodata: -9999.0
+    unit: m+NAVD88
+    source: >-
+      USACE eHydro New York district, the dredged harbour channels: Kill van Kull
+      NJ_06_KVK 2012-12-27, Newark Bay / Port Elizabeth NB_03_PEL 2012-12-17 (= NB_02 / NB_05),
+      Port Newark NB_04_PNE 2012-06-05, Arthur Kill NJ_04_AKS 2012-06-20, filled by NJ_05_AKN
+      2014-03-07 and NB_01_MAI 2014-09-24 where 2012 does not reach. 5 m carving tier, survey-
+      footprint masked, water < -1 m only. CUDEM reads 3-14 m shallow in the Kill van Kull and
+      Newark Bay (no dredged trench; 2026-10-05, logs/raritan_2026-10-05/C_kills_bed/).
+      scripts/download_ehydro_v4.py --set harbour
+
+ehydro_refreeze_cenan_v4:
+  data_type: RasterDataset
+  uri: elevation_v4/ehydro/ehydro_refreeze_cenan_v4.tif
+  driver:
+    name: rasterio
+    options: {}
+  metadata:
+    category: topography
+    crs: 32618
+    nodata: -9999.0
+    unit: m+NAVD88
+    source: >-
+      USACE eHydro New York district, federal creek channels whose bed is a lidar water
+      surface in the merged stack: South River + Washington Canal NJ_21_WSR 2015-04-24,
+      Woodbridge Creek NJ_20_WBC 2015-04-24, Cheesequake Creek NJ_19_CQC 2015-06-04 (3DEP's
+      flat -0.6..-1.1 m; no CUDEM 1/9" tile there), Shoal Harbor / Compton Creek NJ_15_SHC
+      2015-06-11 (the 2010 USACE lidar's +0.4 m), plus South of Shooters Island NJ_07_SSI
+      2014-12-29 (CUDEM ~6 m shallow; missing from the harbour set). 5 m carving tier,
+      survey-footprint masked, water < -1 m only. 2026-10-05,
+      logs/audit_v4_hot_plus_2026-10-05/channels_and_3dep/.
+      scripts/download_ehydro_v4.py --set refreeze_cenan
+
+usace_unpave_backbay_v4:
+  data_type: RasterDataset
+  uri: elevation_v4/usace_unpave_backbay/usace_unpave_backbay_v4.vrt
+  driver:
+    name: rasterio
+    options: {}
+  metadata:
+    category: topography
+    crs: 4326
+    nodata: -9999.0
+    unit: m+NAVD88
+    source: >-
+      CUDEM 1/9" painted back where usace_nj_2010_v3 paves back-bay channels (2010 lidar
+      > -0.8 m over CUDEM < -1 m, by > 1 m; usace_unpave_v4's rule), in ten declared boxes:
+      Grassy Sound, Sea Isle S, Townsends W, Strathmere, Corson's Inlet, Little Egg N,
+      an Atlantic City canal, Beach Haven marinas, Waackaack Ck, Pews Ck (0.40 km2). Not
+      bridges: no cluster centred on an NBI bridge; flat water-level returns. Beach, inlet
+      shoals and spits keep the pre-Sandy 2010 bed. 2026-10-05,
+      logs/refreeze_2026-10-05/bed_candidates/. scripts/build_usace_unpave_backbay_v4.py
+
+riverbed_sayreville_v4:
+  data_type: RasterDataset
+  uri: elevation_v4/riverbed_margins/riverbed_sayreville_v4.tif
+  driver:
+    name: rasterio
+    options: {}
+  metadata:
+    category: topography
+    crs: 32618
+    nodata: -9999.0
+    unit: m+NAVD88
+    source: >-
+      The Raritan's side channels and bank margins at Sayreville / Edison where 3DEP's
+      -0.6 m low-tide water surface was the bed (no higher tier): IDW of eHydro
+      RR_01_RAR_20120726 (pre-Sandy; alone within 30 m), NOS H05647 1934 and ENC
+      US5NYCAB/AC/BC soundings, painted only where > 0.1 m below 3DEP (0.565 km2,
+      p50 -2.95 m; vs the 2012 survey -0.04 m). 2026-10-05,
+      logs/refreeze_2026-10-05/bed_candidates/. scripts/build_riverbed_sayreville_v4.py
+
+littleegg_channel_v4:
+  data_type: RasterDataset
+  uri: elevation_v4/littleegg_channel/littleegg_channel_v4.tif
+  driver:
+    name: rasterio
+    options: {}
+  metadata:
+    category: topography
+    crs: 32618
+    nodata: -9999.0
+    unit: m+NAVD88
+    source: >-
+      OPTIONAL, POST-SANDY material. Little Egg Inlet's flood channels + the NJIWW behind
+      Holgate (IW_08_104), where CUDEM is a smooth ~-2 m: NOS H12597 2014 multibeam
+      (5 m medians), else IDW of eHydro IW_08_104_20240812_XC (MLLW -0.797 m, Atlantic
+      City), painted only where > 1 m deeper than CUDEM (4.51 km2, p50 -6.29 m). H12597
+      agrees with 2024 to +0.35 m; 1954 H08220/H08219 show the channel deep before Sandy.
+      2026-10-05, logs/refreeze_2026-10-05/bed_candidates/.
+      scripts/build_littleegg_channel_v4.py
+
+usace_unpave_v4:
+  data_type: RasterDataset
+  uri: elevation_v4/usace_unpave/usace_unpave_v4.vrt
+  driver:
+    name: rasterio
+    options: {}
+  metadata:
+    category: topography
+    crs: 4326
+    nodata: -9999.0
+    unit: m+NAVD88
+    source: >-
+      CUDEM 1/9" painted back where usace_nj_2010_v3 paves deep water (2010 lidar > -0.8 m
+      over CUDEM < -1 m, by > 1 m), inside three declared boxes only: Great Egg Harbor Inlet
+      (1.08 km2, a -0.41 m band across the 8 m channel), Inside Thorofare (0.24 km2, the
+      gauge's face), Compton Creek (0.04 km2). Overlay tier; the open beach keeps its
+      pre-Sandy 2010 bed. 2026-10-05, logs/bedfix_2026-10-05/.
+      scripts/build_usace_unpave_v4.py
+
+# n = 0.02 on every NHD lake / river polygon in the A+ ring (+250 m): the ROUGHNESS half
+# of the 09-29 inland-water rule (FINDINGS §54). Painted over the NLCD reclass by
+# scripts/rebuild_subgrid.py --manning-overlay (nearest, where valid). 580.7 km² painted,
+# n changes on 152.3 km² (82.6 marsh 95, 38.2 developed, 22.8 woody wetland 90); a no-op
+# where NLCD is already Open Water. logs/refreeze_2026-10-05/roughness/.
+manning_water_v4:
+  data_type: RasterDataset
+  uri: elevation_v4/inland_water/manning_water_v4.tif
+  driver:
+    name: rasterio
+    options: {}
+  metadata:
+    category: roughness
+    crs: 32618
+    nodata: -9999.0
+    unit: s m-1/3
+    source: NHD HR Area (460/336/431) + Waterbody (390/436), scripts/build_inland_water_v4.py manning
+
+inland_water_bed_v4:
+  data_type: RasterDataset
+  uri: elevation_v4/inland_water/inland_water_bed_v4.tif
+  driver:
+    name: rasterio
+    options: {}
+  metadata:
+    category: topography
+    crs: 32618
+    nodata: -9999.0
+    unit: m+NAVD88
+    source: >-
+      §54 inland water (user rule 2026-09-29; the four edge cases decided 2026-10-05 as
+      recommended in logs/inland_water_2026-10-05/DECISIONS.md: clamp ON, tidal items OUT —
+      Christina at Newport, Big Timber, St Jones, Delaware at Trenton, L05, L18, R59 —, Manor
+      Lake CLOSED at 1.84 m, 43 low-surface lakes KEPT): LAKE bed = its polygon-median lidar
+      surface, RIVER bed = whole-polygon median lidar surface minus the USGS gauge mean depth,
+      painted only where above the premier merged bed (fills, never digs). 85 lakes + 2 river
+      stretches, 5.16 km2, -11.3 Mm3 of fake storage. BED ONLY: the rule's n = 0.02 has no
+      overlay route yet. logs/inland_water_2026-10-05/draft_overlay.py (= its _draft.tif).
+
+riverbeds_tidal_v4:
+  data_type: RasterDataset
+  uri: elevation_v4/riverbeds/riverbeds_tidal_v4.vrt
+  driver:
+    name: rasterio
+    options: {}
+  metadata:
+    category: topography
+    crs: 32618
+    nodata: -9999.0
+    unit: m+NAVD88
+    source: >-
+      Three tidal reaches the §54 inland-water review excluded as TIDAL, where the A+ bed
+      is CUDEM's flat ~0 m water surface; the Cohansey/GMRT rule (user 2026-10-05):
+      soundings as a 1-D along-channel running median, else 1.2 m below MLLW (CO-OPS
+      MLLW-NAVD88), flat across the NHD StreamRiver polygon (<= 300 m from the flowline),
+      only where the A+ merged bed is shallower. CHRISTINA (lon -75.561 -> Christiana):
+      NOS H10042 (1982, MLLW) to Newport, then -2.11 m (Reedy Pt / Marcus Hook -0.907);
+      1.17 km2. BIG TIMBER (mouth survey end -> fork, + N/S branches 4 km): NOS H09886
+      (1980, MLW, epoch-corrected) on the main stem, branches -2.17 m (Philadelphia
+      -0.966); 1.26 km2. ST JONES (Bowers -> Silver Lake dam): -2.09 m (Mahon River entr.
+      via Fortescue -0.890); 1.56 km2. scripts/build_riverbeds_tidal_v4.py build
+riverbeds_tidal_shaped_v4:        # OPTION: same reaches, shaped section
+  data_type: RasterDataset
+  uri: elevation_v4/riverbeds/riverbeds_tidal_shaped_v4.vrt
+  driver: {name: rasterio, options: {}}
+  metadata: {category: topography, crs: 32618, nodata: -9999.0, unit: m+NAVD88,
+    source: "riverbeds_tidal_v4 with depth below MLLW = d_c*(1-(1-xi)^1.5), xi = distance
+      to bank / local half-width; thalweg soundings -> d_c, stated depth = section mean.
+      scripts/build_riverbeds_tidal_v4.py build --section shaped"}
+riverbeds_gmrt_shaped_v4:         # OPTION: replaces riverbeds_gmrt_v4, never alongside it
+  data_type: RasterDataset
+  uri: elevation_v4/riverbeds/riverbeds_gmrt_shaped_v4.vrt
+  driver: {name: rasterio, options: {}}
+  metadata: {category: topography, crs: 32618, nodata: -9999.0, unit: m+NAVD88,
+    source: "riverbeds_gmrt_v4 (same profiles, spans, MLLW) with the shaped section
+      (P = 1.5): chart soundings (Maurice/Mullica/Rancocas) = axis depth, Tuckahoe NOS =
+      section median; Maurice area below MLLW -33 %.
+      scripts/build_riverbeds_tidal_v4.py build --section shaped --existing"}
+riverbed_cohansey_shaped_v4:      # OPTION: replaces riverbed_cohansey_v4
+  data_type: RasterDataset
+  uri: elevation_v4/riverbeds/riverbed_cohansey_shaped_v4.tif
+  driver: {name: rasterio, options: {}}
+  metadata: {category: topography, crs: 32618, nodata: -9999.0, unit: m+NAVD88,
+    source: "riverbed_cohansey_v4 with the shaped section: same section-mean 1.2 m below
+      MLLW (same area), axis ~-3 m, MLLW at the bank; deepen-only vs CUDEM as the original.
+      scripts/build_riverbeds_tidal_v4.py build --section shaped --existing"}
+
+riverbeds_hierarchy_v4:
+  data_type: RasterDataset
+  uri: elevation_v4/riverbeds/riverbeds_hierarchy_v4.vrt
+  driver:
+    name: rasterio
+    options: {}
+  metadata:
+    category: topography
+    crs: 32618
+    nodata: -9999.0
+    unit: m+NAVD88
+    source: >-
+      ONE bed-source hierarchy for 18 tidal channel reaches (user 2026-10-05): eHydro survey
+      nearest Sandy (house conventions; the existing refreeze/harbour/premier eHydro tiers
+      count) > CUDEM 1/9" where it is a real bed (fill test: p5 of the +-50 m channel slice
+      at least 0.5 m below MLLW) > NOS H-survey nearest Sandy, older ones, ENC SOUNDG (1-D
+      running median) > the sloping river (section-mean depth linear from the last
+      downstream control to 1.2 m below MLLW at the head of tide); shaped section
+      d_c*(1-(1-xi)^1.5); MLLW from CO-OPS stations publishing both datums (on the reach,
+      else the two nearest the mouth). Painted only where it differs from the re-freeze
+      bed by > 0.1 m; never over the survey/lake overlays or riverbeds_v4. REPLACES
+      riverbed_cohansey_v4, riverbeds_gmrt_v4, riverbeds_tidal_v4 and their _shaped keys.
+      Reaches: Cohansey, Maurice, Mullica, Tuckahoe, Rancocas, Christina, Big Timber,
+      St Jones, Tuckerton, Matawan, Lewes canal, Little River DE, South River, Woodbridge,
+      Cheesequake, Compton, Rahway, Schuylkill below Fairmount. 29.55 km2. Provenance:
+      riverbeds_hierarchy_tier_v4.vrt (1 eHydro / 2 CUDEM / 3 chart-NOS / 4 slope; not a
+      bed: never an overlay). logs/refreeze_2026-10-05/bed_hierarchy/.
+      scripts/build_riverbeds_hierarchy_v4.py build
+
+riverbed_cohansey_v4:
+  data_type: RasterDataset
+  uri: elevation_v4/riverbeds/riverbed_cohansey_v4.tif
+  driver:
+    name: rasterio
+    options: {}
+  metadata:
+    category: topography
+    crs: 32618
+    nodata: -9999.0
+    unit: m+NAVD88
+    source: >-
+      The tidal Cohansey, mouth to Bridgeton, at a STATED depth (user 2026-10-05): 1.2 m below
+      MLLW = -2.14 m NAVD88 (MLLW-NAVD88 -0.94, CO-OPS Fortescue Creek / Reedy Point; VDatum
+      fails here), flat across the NHD StreamRiver polygon (<= 300 m from a centreline traced
+      through it), painted only where CUDEM is shallower (6.49 km2; CUDEM there ~0 m water
+      surface). No measured bed exists above the mouth (logs/bedfix_2026-10-05/cohansey/).
+      NOT part of riverbeds_v4.vrt. scripts/build_riverbed_cohansey_v4.py
+
+riverbeds_gmrt_v4:
+  data_type: RasterDataset
+  uri: elevation_v4/riverbeds/riverbeds_gmrt_v4.vrt
+  driver:
+    name: rasterio
+    options: {}
+  metadata:
+    category: topography
+    crs: 32618
+    nodata: -9999.0
+    unit: m+NAVD88
+    source: >-
+      The four A+ tidal rivers whose bed fell through to GMRT (land heights / a flat 0 m),
+      the Cohansey rule (user 2026-10-05): soundings as a 1-D along-channel running median,
+      else 1.2 m below MLLW (CO-OPS MLLW-NAVD88; VDatum fails here), flat across the NHD
+      StreamRiver polygon (<= 300 m from the NHD flowline), painted only where the A+
+      merged bed is shallower. MAURICE: ENC SOUNDG (1:90k) Mauricetown -> lat 39.32, then
+      -2.24 m (Bivalve -1.04) to Millville over CUDEM's ~0 m surface; 6.74 km2. MULLICA:
+      ENC SOUNDG (1:12k) to lon -74.498, then -1.72 m (Chestnut Neck -0.52) to Batsto;
+      6.76 km2. TUCKAHOE: NOS H06254 + H06218 (1937 lead line, MLW, epoch-corrected) to
+      lon -74.758, then -1.88 m (River Bend / Middle Thorofare -0.68); 1.31 km2. RANCOCAS:
+      ENC SOUNDG (1:12k) on the main stem to the fork, both branches -2.10 m (Assiscunk /
+      Pompeston -0.90); 3.56 km2. No eHydro survey reaches any of them.
+      logs/bedfix_2026-10-05/gmrt_reaches/. NOT part of riverbeds_v4.vrt.
+      scripts/build_riverbeds_gmrt_v4.py
 
 cudem_delaware_v4:
   data_type: RasterDataset
@@ -1268,6 +1597,23 @@ gmrt_v4:
     source: GMRT GridServer ~100 m, the v4 ring bbox + 0.1° (lon -75.83..-73.45, lat 38.62-41.09) —
       the bottom tier; the only one on the outer shelf and south of the Delaware mouth (38.725).
       scripts/download_gmrt.py under NJ_DOMAIN=v4
+
+bed_buildings_v4_cap10:
+  data_type: RasterDataset
+  uri: elevation_v4/bed_buildings_v4_cap10.tif
+  driver:
+    name: rasterio
+    options: {}
+  metadata:
+    category: topography
+    crs: 32618
+    unit: m+NAVD88
+    source: >-
+      bed_buildings_v4 re-burned at local ground + 10 m (user 2026-10-05, the re-freeze: at
+      +3 m SLR 4.6 % of in-model buildings stood in water deeper than the 4 m cap). Same
+      footprints (NJDEP, NJ-only), same 3.125 m lattice, ground = the v4_hot_plus_walls
+      template's merged bed (v4's mesh and bed). OVERLAY tier only. File on scratch, symlinked.
+      hpc/burn_buildings.slurm --height 10 (job 62282126).
 
 bed_buildings_v4:
   data_type: RasterDataset

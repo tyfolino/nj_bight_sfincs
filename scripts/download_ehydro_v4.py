@@ -133,6 +133,48 @@ PRESETS: dict[str, tuple[str, float, list[str], list[str]]] = {
         ["NJ_17_HAC_20181022_CS_4758_20"],
         ["Hackensack River"],
     ),
+    # 2026-10-05 (logs/raritan_2026-10-05/C_kills_bed/): CUDEM has none of the dredged
+    # harbour trench — the Kill van Kull at Port Richmond reads -0.2..-4 m against a 50 ft
+    # project, Newark Bay's channels -0.6..-3.4 m against -13..-18 m. Later surveys paint
+    # over earlier ones, so the 2014 ones come FIRST and the Sandy-nearest 2012 ones win
+    # where they overlap. NB_02_SEL / NB_03_PEL / NB_05_PHD 2012-12-17 carry identical
+    # soundings: NB_03_PEL stands for all three.
+    "harbour": (
+        "CENAN",
+        1.0,
+        [
+            "NB_01_MAI_20140924_CS_4193_30X",  # Newark Bay main channel    +695 d
+            "NJ_05_AKN_20140307_CS_4103_30X",  # Arthur Kill north          +494 d
+            "NB_04_PNE_20120605_CS_3834_15X",  # Port Newark Elizabeth      -146 d
+            "NJ_04_AKS_20120620_CS_3825_15X",  # Arthur Kill south          -131 d
+            "NB_03_PEL_20121217_CS_3908_15X",  # Newark Bay / Port Elizabeth +49 d
+            "NJ_06_KVK_20121227_CS_3916_15X",  # Kill van Kull               +59 d
+        ],
+        ["Kill van Kull", "Newark Bay", "Arthur Kill", "Port Newark", "Port Elizabeth"],
+    ),
+    # 2026-10-05 (logs/audit_v4_hot_plus_2026-10-05/channels_and_3dep/): the federal creek
+    # channels whose bed is a lidar WATER SURFACE — 3DEP's flat -0.6..-1.1 m in the Raritan
+    # corner (no CUDEM 1/9" tile; CoNED there is topographic lidar too, so widening its clip
+    # does not help), the 2010 USACE lidar's +0.4 m on Compton Creek — plus the harbour
+    # reach the `harbour` preset missed. None overlap; the nearest-Sandy survey of each.
+    "refreeze_cenan": (
+        "CENAN",
+        1.0,
+        [
+            "NJ_07_SSI_20141229_CS_4243_25X",  # South of Shooters Island   +791 d
+            "NJ_21_WSR_20150424_CS_4303_15",  # South River + Washington Canal +907 d
+            "NJ_20_WBC_20150424_CS_4307_10",  # Woodbridge Creek           +907 d
+            "NJ_19_CQC_20150604_CS_4328_10",  # Cheesequake Creek          +948 d
+            "NJ_15_SHC_20150611_CS_4363_10",  # Shoal Harbor / Compton Ck  +955 d
+        ],
+        [
+            "Shooters Island",
+            "South River",
+            "Woodbridge Creek",
+            "Cheesequake Creek",
+            "Shoal Harbor",
+        ],
+    ),
     "delaware": (
         "CENAP",
         -1.0,

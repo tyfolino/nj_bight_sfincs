@@ -29,7 +29,7 @@ from shapely.geometry import Point
 from hydromt_sfincs import SfincsModel
 
 from . import domain as _domain
-from . import sea_level, snapwave_domain
+from . import meteo_grid, sea_level, snapwave_domain
 from .config import ROOT, BaseConfig, WaveConfig
 
 # HDF5/netCDF file locking off before any netCDF-backed write on /cache (a failed lock
@@ -1858,7 +1858,7 @@ def _infiltration_keys(text: str, model_dir: Path, on: bool) -> str:
     return "\n".join(lines) + "\n"
 
 
-def break_hardlinks(model_dir: Path) -> list[str]:
+def break_hardlinks(model_dir: Path, names=None) -> list[str]:
     """Give every hard-linked file at the top of ``model_dir`` its own inode.
 
     ``sf.write()`` rewrites ``sfincs_subgrid.nc`` (and the rest) IN PLACE, so a file
@@ -1867,9 +1867,15 @@ def break_hardlinks(model_dir: Path) -> list[str]:
     links (same bytes that time, only the netCDF version stamp moved; STATUS 10-01).
     A copy, not an unlink: files the writer does not re-emit must survive.
     ``dedupe_experiment_inputs`` re-links identical bytes afterwards.
+
+    ``names``: only these file names (a writer that touches a few small files need not
+    copy the GB-sized tables).
     """
     broken = []
+    keep = None if names is None else set(names)
     for f in sorted(Path(model_dir).iterdir()):
+        if keep is not None and f.name not in keep:
+            continue
         if f.is_symlink() or not f.is_file() or f.stat().st_nlink < 2:
             continue
         tmp = f.with_name(f".{f.name}.private")
@@ -1962,7 +1968,21 @@ def finalize(
     broken = break_hardlinks(model_dir)
     if broken:
         print(f"[write] private copies before write: {', '.join(broken)}", flush=True)
+    _meteo_marked = meteo_grid.marked_in_memory(sf)
     sf.write()
+
+    # 🔴 (2026-10-06) the engine of record reads the first x / y of every gridded meteo
+    # file as a cell CORNER; hydromt just wrote CENTRES, so every point would sample
+    # wind / pressure / rain half a cell W and N of itself (12.5 km + 12.5 km on ERA5).
+    # Rewrite the coordinates to the engine's convention. Idempotent: a file read back
+    # from an already-fixed template keeps its marker through hydromt's round trip.
+    _meteo = meteo_grid.fix_meteo_grid_origin(model_dir, expect_fixed=_meteo_marked)
+    if _meteo:
+        print(
+            "[meteo] grid origin (engine corner convention): "
+            + ", ".join(f"{s['file']} {s['action']}" for s in _meteo),
+            flush=True,
+        )
 
     inp = model_dir / "sfincs.inp"
     text = inp.read_text()

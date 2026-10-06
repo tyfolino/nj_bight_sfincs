@@ -1,5 +1,11 @@
 #!/usr/bin/env python
-"""Stage a BOUNDARY-DEPTH domain from its `mesh_key` sibling. No rebuild.
+"""Stage a MASK-VARIANT domain (a boundary depth, a trimmed ring) from its frozen mesh.
+
+Written for boundary-depth domains; since 2026-10-02 it also stages ring variants
+(`v4_hot` / `v4_hot_plus`: v4 with its river arms trimmed at the head of tide). Any
+domain whose ``frozen_mesh_dir()`` is another registered domain's and whose MASK-DEFINING
+fields (``mask_zmin``, ``region``, ``mask_overrides``, ``no_waterlevel_boxes``,
+``discharge_geodataset``) differ from it is staged the same way. No rebuild.
 
     NJ_DOMAIN=<deep domain> python scripts/setup_boundary_depth.py [template_dir]
 
@@ -77,15 +83,26 @@ def main(argv: list[str] | None = None) -> int:
     siblings = [
         d
         for d in _domain.DOMAINS.values()
-        if d.mesh_key == dom.mesh_key and d.name != dom.name
+        if d.frozen_mesh_dir() == dom.frozen_mesh_dir() and d.name != dom.name
     ]
     if not siblings:
-        sys.exit(f"no other domain shares mesh_key {dom.mesh_key!r}.")
-    if any(s.mask_zmin == dom.mask_zmin for s in siblings):
+        sys.exit(f"no other domain shares the mesh {dom.frozen_mesh_dir()}.")
+
+    def _mask_key(d):
+        return (
+            d.mask_zmin,
+            d.region,
+            d.mask_overrides,
+            d.no_waterlevel_boxes,
+            d.discharge_geodataset,
+        )
+
+    same = [s.name for s in siblings if _mask_key(s) == _mask_key(dom)]
+    if same:
         sys.exit(
-            f"a domain sharing mesh_key {dom.mesh_key!r} has the SAME mask_zmin "
-            f"({dom.mask_zmin}). Sharing a mesh is only legitimate when the mask differs; "
-            "otherwise the two are the same domain under two names."
+            f"{same} share this mesh AND every mask-defining field with {dom.name!r}. "
+            "Sharing a mesh is only legitimate when the mask differs; otherwise the two "
+            "are the same domain under two names."
         )
 
     frozen = dom.frozen_mesh_dir()
@@ -101,6 +118,15 @@ def main(argv: list[str] | None = None) -> int:
     # Waves come from the arms' shared config; every arm on a boundary-depth domain is the
     # same physics at a different boundary, so take the premier's.
     wcfg = arms[premier.PREMIER_NAME].waves if premier.PREMIER_NAME in arms else None
+    if (
+        wcfg is None
+        and "naccs-nowaves" in arms
+        and not any(a.waves.use_waves for a in arms.values())
+    ):
+        # A waves-off-only domain (v4 and its variants): the template carries no SnapWave
+        # inputs, exactly as v4's own template.
+        wcfg = arms["naccs-nowaves"].waves
+        print("[stage] no premier arm and no wave arm: template staged waves-off")
     if wcfg is None:
         sys.exit(
             f"domain {dom.name!r} has no arm named {premier.PREMIER_NAME!r}; the template "
@@ -110,10 +136,9 @@ def main(argv: list[str] | None = None) -> int:
     if dst.exists():
         print(f"[stage] removing {dst}")
         shutil.rmtree(dst)
-    sibling_zmin = ", ".join(f"{s.name}={s.mask_zmin:+.0f}" for s in siblings)
     print(
-        f"[stage] re-deriving mask/boundary at mask_zmin={dom.mask_zmin:+.1f} m "
-        f"(siblings: {sibling_zmin})"
+        f"[stage] re-deriving mask/boundary for {dom.name} on {dom.frozen_mesh_dir()} "
+        f"(siblings: {', '.join(s.name for s in siblings)})"
     )
     model.restage_from_frozen_mesh(base, wcfg, dst, frozen)
 

@@ -306,35 +306,78 @@ class TestFingerprints(_DomainEnv):
 
 
 class TestMeshKeySharing(_DomainEnv):
-    """A shared ``mesh_key`` is for the boundary-depth pair ONLY.
+    """A shared frozen mesh is for MASK VARIANTS only.
 
     Replaces the previous repo's ``test_frozen_mesh_declared_per_domain``. Two domains may
-    share a mesh precisely when they differ in ``mask_zmin`` and in nothing else that the
-    mesh determines; anything looser turns ``mesh_key`` into a general escape hatch for
-    "run this arm on that mesh", which is how a sweep ends up on the wrong domain.
+    share a mesh when everything the MESH determines is identical and something the MASK
+    is made from differs. Until 2026-10-02 that meant the boundary-depth pair only
+    (``mask_zmin``); the user then asked for v4's head-of-tide variants (``v4_hot``,
+    ``v4_hot_plus``: the same mesh, a trimmed ring), so a smaller ring INSIDE the mesh's
+    own ring now qualifies too. Anything looser turns a shared mesh into a general escape
+    hatch for "run this arm on that mesh", which is how a sweep ends up on the wrong
+    domain — hence the mesh-determining fields below must match exactly.
     """
 
-    def test_mesh_key_siblings_differ_in_mask_zmin(self):
-        by_key: dict[str, list] = {}
+    MESH_FIELDS = (
+        "epsg",
+        "refinement",
+        "nr_subgrid_pixels",
+        "elevation_list",
+        "coarse_elevation_list",
+        "latitude",
+    )
+    MASK_FIELDS = (
+        "mask_zmin",
+        "region",
+        "mask_overrides",
+        "no_waterlevel_boxes",
+        "discharge_geodataset",
+    )
+
+    def _groups(self):
+        by_mesh: dict[str, list] = {}
         for dom in domain.DOMAINS.values():
-            by_key.setdefault(dom.mesh_key or dom.name, []).append(dom)
-        for key, doms in by_key.items():
-            if len(doms) < 2:
-                continue
-            zmins = [d.mask_zmin for d in doms]
+            by_mesh.setdefault(str(dom.frozen_mesh_dir()), []).append(dom)
+        return {k: v for k, v in by_mesh.items() if len(v) > 1}
+
+    def test_mesh_siblings_share_the_mesh_inputs(self):
+        for key, doms in self._groups().items():
+            for f in self.MESH_FIELDS:
+                vals = {repr(getattr(d, f)) for d in doms}
+                self.assertEqual(
+                    len(vals),
+                    1,
+                    f"domains sharing {key} differ in {f} — a mesh-determining field; "
+                    "they cannot share one frozen mesh",
+                )
+
+    def test_mesh_siblings_differ_in_the_mask(self):
+        for key, doms in self._groups().items():
+            masks = [tuple(repr(getattr(d, f)) for f in self.MASK_FIELDS) for d in doms]
             self.assertEqual(
-                len(set(zmins)),
-                len(zmins),
-                f"domains sharing mesh_key {key!r} have the same mask_zmin {zmins} — "
-                "then they are the same domain under two names",
+                len(set(masks)),
+                len(masks),
+                f"domains sharing {key} have identical mask-defining fields "
+                f"{[d.name for d in doms]} — then they are the same domain under two names",
             )
-            regions = {str(d.region) for d in doms}
-            self.assertEqual(
-                len(regions),
-                1,
-                f"domains sharing mesh_key {key!r} have different regions {regions} — "
-                "a shared mesh means a shared region polygon",
-            )
+
+    def test_a_trimmed_ring_lies_inside_the_mesh_ring(self):
+        import geopandas as gpd
+
+        for key, doms in self._groups().items():
+            owner = [d for d in doms if d.frozen_mesh_dir().name.endswith(d.name)]
+            self.assertEqual(len(owner), 1, f"{key}: no single domain owns the mesh")
+            outer = gpd.read_file(owner[0].region).to_crs(owner[0].epsg).union_all()
+            for d in doms:
+                if d.region == owner[0].region:
+                    continue
+                inner = gpd.read_file(d.region).to_crs(d.epsg).union_all()
+                self.assertLess(
+                    inner.difference(outer.buffer(1.0)).area,
+                    1.0,
+                    f"{d.name}'s ring reaches outside {owner[0].name}'s — the mesh has "
+                    "no refinement or subgrid built for it there",
+                )
 
     def test_frozen_mesh_dir_is_keyed(self):
         for name, dom in domain.DOMAINS.items():
@@ -468,6 +511,12 @@ class TestWaterlevelSupportOverride(_DomainEnv):
             # The BASE selection on v4, measured on the frozen mesh 2026-09-28: the
             # same three (100 km buffer). The v4 arms force from the NACCS 241.
             "v4": 3,
+            # The head-of-tide variants of v4 (2026-10-02): same mesh, same water-level
+            # line, so the same BASE selection; arms force from the NACCS 241.
+            "v4_hot": 3,
+            "v4_hot_plus": 3,
+            # A+ with the 10-05 leak walls (run B): same mesh and line.
+            "v4_hot_plus_walls": 3,
         }
         self.assertEqual(
             set(PINNED),
@@ -1384,7 +1433,9 @@ class TestV4Crossings(unittest.TestCase):
             span_m=(0.0, 1000.0),
             corridor_m=300.0,
         )
-        got = arm.contains(np.array([500.0, -100, 1100, 500]), np.array([0.0, 0, 0, 400]))
+        got = arm.contains(
+            np.array([500.0, -100, 1100, 500]), np.array([0.0, 0, 0, 400])
+        )
         self.assertEqual(got.tolist(), [True, False, False, False])
 
     def test_sea_polygon_splits_the_ring(self):

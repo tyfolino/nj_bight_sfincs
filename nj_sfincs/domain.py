@@ -28,7 +28,7 @@ TWO INVARIANTS THIS FILE ENFORCES BY CONSTRUCTION
 from __future__ import annotations
 
 import os
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from functools import lru_cache
 from pathlib import Path
 
@@ -2655,7 +2655,9 @@ V4 = Domain(
     cn_dataset="cn_v4",  # built 09-28 (build_cn_nj.py); SSURGO × NLCD 2012 v4
     landcover="nlcd_2012_v4",  # C1V1 on the v4 bbox; = nlcd_2012 where both valid
     infiltration=True,  # user 09-28; water CN 100, storecumprcp = 1 (model.py)
-    cora_waves=DATA / "waves_v4" / "cora_waves_v4.nc",  # built 09-29 (build_cora_waves.py)
+    cora_waves=DATA
+    / "waves_v4"
+    / "cora_waves_v4.nc",  # built 09-29 (build_cora_waves.py)
     discharge_geodataset="usgs_sandy_discharge_v4",
     # v3's 25 (all on active v4 faces, 3–23 m) + the 23 above. The frozen mesh was
     # built with the 25; `scripts/sync_obs_points.py --apply` adds the rest to it —
@@ -2699,8 +2701,215 @@ V4 = Domain(
     plot_window=(437_000, 626_000, 4_286_000, 4_539_000),
 )
 
+# ── v4_hot / v4_hot_plus — 2026-10-02 (user: build A and A+ on v4's mesh) ─────────────
+# The river-cut decision memo (reports/river_cut_memo_2026-10-02.html): v4 with its river
+# arms trimmed at TODAY'S HEAD OF TIDE (the 09-25 lines). v4_hot_plus (A+) keeps v4's
+# +3 m reaches on the two soft tidal limits, the Cohansey and the Neshaminy, where v4's
+# +3 m run rises 2.2-2.4 m above the line; at the dams and falls it rises 0-0.11 m.
+# Raritan at Bound Brook (where Sandy's marks end), Maurice at the Union Lake dam (user
+# 10-02). Rahway, Passaic, Brandywine, Darby and Red Clay keep v4's cut (nothing to gain).
+# MASK-ONLY variants of v4's frozen mesh (same faces, same subgrid, new sha), staged with
+# `scripts/setup_boundary_depth.py`. Rings: `data/v4_design/region_v4_hot[_plus]_vertices.csv`,
+# spliced from v4's by `logs/v4_hot_2026-10-02/splice_ring.py` (hot_<river>_N vertices).
+# Inflows: the same 61 v4 flows, the trimmed rivers' points moved onto the new cut.
+_V4_HOT_CUTS: dict[str, tuple[Box, str, tuple[str, ...]]] = {
+    # name: (wall box = the new edge + 150 m, why, v4 cuts it replaces)
+    "delaware_trenton": (
+        (513_400, 4_454_000, 520_000, 4_454_400),
+        "Delaware at the Trenton falls (head of tide); Q = Trenton 01463500, 1.8 km below.",
+        ("delaware_washington_crossing",),
+    ),
+    "raritan_bound_brook": (
+        (540_500, 4_486_500, 540_800, 4_491_200),
+        "Raritan at Bound Brook (lon -74.52), where Sandy's marks end; Q = Manville "
+        "01400500 + Blackwells Mills 01402000 + Middle Brook 01403150, all placed here.",
+        ("millstone_blackwells_mills", "raritan_manville"),
+    ),
+    "schuylkill_fairmount": (
+        (481_000, 4_424_500, 485_800, 4_424_800),
+        "Schuylkill at the Fairmount Dam = Philadelphia gauge 01474500.",
+        ("schuylkill_manayunk",),
+    ),
+    "christina_white_clay": (
+        (440_700, 4_387_600, 443_400, 4_397_000),
+        "The bent 09-25 line across the Christina and White Clay Creek (head of tide); "
+        "Q = 01478000 + 01479000 at their own crossings.",
+        ("white_clay", "christina_coochs"),
+    ),
+    "maurice_millville": (
+        (493_200, 4_361_300, 497_700, 4_361_700),
+        "Maurice at the Union Lake dam, Millville (Union Lake and its fake-pit bed OUT).",
+        ("maurice_above_union_lake",),
+    ),
+    "hackensack_new_milford": (
+        (580_000, 4_533_400, 585_500, 4_533_700),
+        "Hackensack below the Oradell dam (head of tide); Q = Rivervale 01377000 + "
+        "Westwood 01377500 (Pascack) placed here.",
+        ("hackensack_rivervale", "pascack"),
+    ),
+    # Soft tidal limits: in v4_hot only (v4_hot_plus keeps v4's reach).
+    "neshaminy_hot": (
+        (505_500, 4_440_000, 510_400, 4_440_300),
+        "Neshaminy head of tide below Langhorne (soft limit: +3 m rises past it).",
+        ("neshaminy",),
+    ),
+    "cohansey_bridgeton": (
+        (477_900, 4_365_500, 481_600, 4_365_800),
+        "Cohansey head of tide at Bridgeton (soft limit: +3 m rises past it).",
+        ("cohansey_above_sunset_lake",),
+    ),
+}
+_V4_HOT_SOFT = ("neshaminy_hot", "cohansey_bridgeton")
+# v4_hot_plus only (user 2026-10-05, A+ chosen): the Maurice cut follows the Union Lake dam
+# CREST (ring vertices hot_maurice_dam_* / _spillway_*; lidar crest ~10 m, lake 7.6 m) instead
+# of the spliced straight line at lat 39.403, which sat ~100 m into the lake and kept 61 faces
+# of its fake-pit bed (FINDINGS part 4). The wall box drops to cover the spillway.
+# `v4_hot` keeps the 10-02 cut: its runs are the A-vs-A+ record.
+_V4_HOT_PLUS_RECUT: dict[str, tuple[Box, str, tuple[str, ...]]] = {
+    "maurice_millville": (
+        (493_100, 4_361_000, 497_700, 4_361_850),
+        "Maurice at the Union Lake dam crest, Millville (lake and its fake-pit bed OUT; "
+        "Q placed in the channel 53 m below the spillway).",
+        ("maurice_above_union_lake",),
+    ),
+}
+
+
+def _v4_hot(name: str, keep_soft_reaches: bool, recut: dict | None = None) -> Domain:
+    new = {
+        k: v
+        for k, v in {**_V4_HOT_CUTS, **(recut or {})}.items()
+        if not (keep_soft_reaches and k in _V4_HOT_SOFT)
+    }
+    gone = {old for _, _, olds in new.values() for old in olds}
+    cuts = tuple((n, b, w) for n, b, w in _V4_RIVER_CUTS if n not in gone) + tuple(
+        (n, b, w) for n, (b, w, _) in new.items()
+    )
+    v4_walls = {f"wall_{n}" for n, _, _ in _V4_RIVER_CUTS}
+    others = tuple(o for o in V4.mask_overrides if o.name not in v4_walls)
+    return replace(
+        V4,
+        name=name,
+        region=DATA / f"region_{name}.geojson",
+        region_source=DATA / "v4_design" / f"region_{name}_vertices.csv",
+        mesh_key="v4",  # = data/frozen_mesh_v4, v4's own mesh (V4 resolves it by name)
+        mask_overrides=tuple(
+            MaskOverride(
+                f"wall_{n}", frm=3, to=1, box=b, why=f"Walls river cut {n}: {w}"
+            )
+            for n, b, w in cuts
+        )
+        + others,
+        no_waterlevel_boxes=tuple(
+            NoWaterLevelBox(n, b, why="River head of tide: " + w) for n, b, w in cuts
+        ),
+        discharge_geodataset=f"usgs_sandy_discharge_{name}",
+    )
+
+
+V4_HOT = _v4_hot("v4_hot", keep_soft_reaches=False)
+V4_HOT_PLUS = _v4_hot("v4_hot_plus", keep_soft_reaches=True, recut=_V4_HOT_PLUS_RECUT)
+
+# ── v4_hot_plus_walls — 2026-10-05 (user: fold the day's fixes into a second run) ──────
+# A+ with the pre-freeze edge audit's leaks walled (logs/audit_v4_hot_plus_2026-10-05/
+# edge_crossings/README.md §A real leaks A1–A6, §B marginal B1–B5) and the Cape Henlopen
+# gap B6 closed (wall_henlopen_atlantic's y0 4,287,000 → 4,286,700, onto
+# wall_cape_henlopen's top). Each box = the template's OUTFLOW edge cells at the site + 60 m
+# (logs/bedfix_2026-10-05/walls/wall_boxes.py). Walls act on mask 3 only (frm=3 → to=1).
+# MASK-ONLY variant of v4's frozen mesh like A+ (setup_boundary_depth.py; subgrid tables
+# are mask-independent). A separate DOMAIN so A+'s template and runs stay untouched.
+_V4_HOT_PLUS_LEAK_WALLS: tuple[tuple[str, Box, str], ...] = (
+    (
+        "breezy_point_tip",
+        (592_263, 4_490_321, 592_436, 4_490_641),
+        "A1: overtopped dry tip, 5 outflow cells wet at +0/+2/+3",
+    ),
+    (
+        "leipsic_millpond",
+        (451_929, 4_337_863, 452_254, 4_338_280),
+        "A2: river inflow ponds and spills, wet at all levels",
+    ),
+    (
+        "tuckahoe_head",
+        (519_054, 4_373_860, 519_882, 4_374_470),
+        "A3: river inflow ponds past its inflow wall, wet at all levels",
+    ),
+    (
+        "toms_tributary",
+        (563_652, 4_424_177, 563_875, 4_424_597),
+        "A4: creek at nj_atlantic_n_05, wet at +3",
+    ),
+    (
+        "raritan_mile_run",
+        (543_433, 4_484_206, 543_553, 4_484_326),
+        "A5: creek (culvert) on the Raritan side, wet at +2/+3",
+    ),
+    (
+        "broadkill_headwater",
+        (470_179, 4_291_452, 470_506, 4_291_969),
+        "A6: Broadkill headwater creek, wet at +3",
+    ),
+    (
+        "silver_lake_dover",
+        (453_348, 4_330_482, 453_567, 4_331_004),
+        "B1: lake straddles the ring, holds 3 cm",
+    ),
+    (
+        "pennsauken_branch",
+        (511_560, 4_423_434, 512_080, 4_423_560),
+        "B2: creek branch, holds 2-5 cm",
+    ),
+    (
+        "creek_burlington_09",
+        (503_900, 4_420_910, 504_217, 4_421_233),
+        "B3: creek at nj_burlington_09, holds 2.7 cm",
+    ),
+    (
+        "bergen_rail_cut",
+        (579_015, 4_510_184, 579_139, 4_510_504),
+        "B4: rail cut to the tunnel portal, holds 8.7 cm",
+    ),
+    (
+        "swimming_river_pond",
+        (574_181, 4_462_507, 574_708, 4_463_020),
+        "B5: inflow pond past the inflow wall, holds 2 cm",
+    ),
+)
+
+
+def _henlopen_gap_closed(o: MaskOverride) -> MaskOverride:
+    if o.name != "wall_henlopen_atlantic":
+        return o
+    x0, _, x1, y1 = o.box
+    return replace(
+        o, box=(x0, 4_286_700, x1, y1), why=o.why + " y0 4,286,700: B6 (10-05)."
+    )
+
+
+V4_HOT_PLUS_WALLS = replace(
+    V4_HOT_PLUS,
+    name="v4_hot_plus_walls",
+    # + the four inflows moved into their channels (re-freeze list §1)
+    discharge_geodataset="usgs_sandy_discharge_v4_hot_plus_walls",
+    mask_overrides=tuple(_henlopen_gap_closed(o) for o in V4_HOT_PLUS.mask_overrides)
+    + tuple(
+        MaskOverride(f"wall_leak_{n}", frm=3, to=1, box=b, why=f"Leak wall {n}: {w}")
+        for n, b, w in _V4_HOT_PLUS_LEAK_WALLS
+    ),
+)
+
 DOMAINS: dict[str, Domain] = {
-    d.name: d for d in (V1_MONMOUTH, V1_5_RARITAN, V2_BARNEGAT, V3, V4)
+    d.name: d
+    for d in (
+        V1_MONMOUTH,
+        V1_5_RARITAN,
+        V2_BARNEGAT,
+        V3,
+        V4,
+        V4_HOT,
+        V4_HOT_PLUS,
+        V4_HOT_PLUS_WALLS,
+    )
 }
 
 
