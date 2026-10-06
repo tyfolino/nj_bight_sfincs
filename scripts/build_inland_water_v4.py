@@ -34,14 +34,18 @@ THE RULE (user, 2026-09-29):
 Datum m NAVD88. Outputs under data/elevation_v4/inland_water/.
 
 ``manning`` (2026-10-05) builds the ROUGHNESS half of the rule: ``manning_water_v4.tif``,
-EPSG:32618, 3 m, n = 0.02 inside EVERY polygon of both NHD layers (all lake + river
-FTYPEs above, flagged or not, tidal or not) clipped to the A+ ring + 250 m (the widest
-face's uv pixel block reaches ~200 m past a face edge), NoData elsewhere. It reaches a
-run only through ``scripts/rebuild_subgrid.py --manning-overlay manning_water_v4``. On
-tidal water NLCD is already class 11 (n 0.020), so the paint is a no-op there except
-where NLCD's 30 m pixels put a channel in a land class — which is NLCD being wrong, the
-same fault as upstream. ``manning_water_v4.json`` beside it has the painted area by the
-NLCD class it overrides (and the old n), split by the polygon's lidar surface.
+EPSG:32618, 3 m, n = 0.02 inside every polygon of both NHD layers (all lake + river
+FTYPEs above, flagged or not) clipped to the A+ ring + 250 m (the widest face's uv
+pixel block reaches ~200 m past a face edge), NoData elsewhere — EXCEPT the NLCD
+wetland classes ``MARSH_CLASSES`` (90 woody, 95 emergent) inside TIDAL-looking polygons
+(``low_surface``: lidar surface p50 < ``SURFACE_MIN`` or no inventory row), which stay
+NoData so the NLCD marsh n survives there (user decision 2026-10-06: a tidal creek
+polygon's 30 m wetland pixels are the marsh banks Sandy submerged, where marsh friction
+is the physics; creek conveyance is the bed's job). It reaches a run only through
+``scripts/rebuild_subgrid.py --manning-overlay manning_water_v4``. On tidal water NLCD
+is mostly class 11 already (n 0.020), a no-op. ``manning_water_v4.json`` beside it has
+the polygon area by the NLCD class under it (and the old n), split by the polygon's
+lidar surface and layer, painted or kept.
 """
 
 from __future__ import annotations
@@ -450,10 +454,12 @@ MAN_RES = 3.0  # = inland_water_bed_v4.tif; nearest onto 1.6-12.5 m subgrid pixe
 MAN_NODATA = -9999.0
 MAN_TILE = 4096
 RING_BUFFER_M = 250.0
+#: NLCD wetland classes NOT painted inside tidal-looking polygons (user 2026-10-06)
+MARSH_CLASSES = (90, 95)
 
 
 def manning(ring_domain: str = "v4_hot_plus", force: bool = False) -> None:
-    """n = 0.02 on every NHD lake / river polygon inside the ring (see the docstring)."""
+    """n = 0.02 on the NHD lake / river polygons inside the ring (see the docstring)."""
     import geopandas as gpd
     import pandas as pd
     import rasterio
@@ -503,7 +509,8 @@ def manning(ring_domain: str = "v4_hot_plus", force: bool = False) -> None:
     n_of = dict(zip(rt.NLCD, rt.N))
     nlcd = rasterio.open(ROOT / "data" / "roughness_v4" / "nlcd_2012_v4.tif")
     low = polys.low_surface.values
-    cnt: dict = {}  # (class, low_surface) -> pixels
+    isriver = (polys.kind == "river").values
+    cnt: dict = {}  # (class, low_surface, river, painted) -> pixels
 
     prof = dict(
         driver="GTiff",
@@ -549,9 +556,6 @@ def manning(ring_domain: str = "v4_hot_plus", force: bool = False) -> None:
                     m = lab > 0
                     if not m.any():
                         continue
-                    a = np.full(shp, MAN_NODATA, dtype="float32")
-                    a[m] = N_WATER
-                    dst.write(a, 1, window=win)
                     cls = np.zeros(shp, dtype="uint8")
                     reproject(
                         rasterio.band(nlcd, 1),
@@ -560,13 +564,21 @@ def manning(ring_domain: str = "v4_hot_plus", force: bool = False) -> None:
                         dst_crs="EPSG:32618",
                         resampling=Resampling.nearest,
                     )
-                    lw = low[lab[m] - 1]
-                    for c, lo in zip(*np.unique(np.c_[cls[m], lw], axis=0).T):
-                        k = (int(c), bool(lo))
-                        sel = (cls[m] == c) & (lw == lo)
-                        cnt[k] = cnt.get(k, 0) + int(sel.sum())
+                    lw = np.zeros(shp, dtype=bool)
+                    lw[m] = low[lab[m] - 1]
+                    keep = lw & np.isin(cls, MARSH_CLASSES)  # marsh n survives
+                    paint = m & ~keep
+                    a = np.full(shp, MAN_NODATA, dtype="float32")
+                    a[paint] = N_WATER
+                    dst.write(a, 1, window=win)
+                    key = np.c_[cls[m], lw[m], isriver[lab[m] - 1], paint[m]]
+                    u, n = np.unique(key, axis=0, return_counts=True)
+                    for (c, lo, rv, pt), v in zip(u, n):
+                        k = (int(c), bool(lo), bool(rv), bool(pt))
+                        cnt[k] = cnt.get(k, 0) + int(v)
                     print(
-                        f"  tile r{r0} c{c0}: {m.sum() * MAN_RES**2 / 1e6:.3f} km2",
+                        f"  tile r{r0} c{c0}: {m.sum() * MAN_RES**2 / 1e6:.3f} km2 "
+                        f"in polygons, {paint.sum() * MAN_RES**2 / 1e6:.3f} painted",
                         flush=True,
                     )
 
@@ -577,29 +589,38 @@ def manning(ring_domain: str = "v4_hot_plus", force: bool = False) -> None:
             "nlcd": c,
             "n_old": n_of.get(c, float("nan")),
             "low_surface": lo,
+            "layer": "river" if rv else "lake",
+            "painted": pt,
             "km2": round(v * px, 4),
         }
-        for (c, lo), v in sorted(cnt.items())
+        for (c, lo, rv, pt), v in sorted(cnt.items())
     ]
     df = pd.DataFrame(rows)
-    changed = df[~np.isclose(df.n_old, N_WATER)]
+    kept = df[~df.painted]
+    df_p = df[df.painted]
+    changed = df_p[~np.isclose(df_p.n_old, N_WATER)]
     summ = {
         "built": time.strftime("%Y-%m-%dT%H:%M:%S"),
         "ring": ring_domain,
         "ring_buffer_m": RING_BUFFER_M,
         "res_m": MAN_RES,
         "n": N_WATER,
+        "marsh_classes_kept_on_low_surface": list(MARSH_CLASSES),
         "polygons": int(len(polys)),
         "polygons_lake": int((polys.kind == "lake").sum()),
         "polygons_river": int((polys.kind == "river").sum()),
-        "painted_km2": round(df.km2.sum(), 3),
+        "polygon_km2": round(df.km2.sum(), 3),
+        "painted_km2": round(df_p.km2.sum(), 3),
+        "marsh_kept_km2": round(kept.km2.sum(), 3),
         "n_changed_km2": round(changed.km2.sum(), 3),
         "n_changed_km2_low_surface": round(changed[changed.low_surface].km2.sum(), 3),
         "n_changed_km2_nontidal_surface": round(
             changed[~changed.low_surface].km2.sum(), 3
         ),
         "note": "low_surface = polygon lidar surface_p50 < SURFACE_MIN (tidal-looking) "
-        "or no inventory row; nlcd 250 = NoData (hydromt fills by elevation)",
+        "or no inventory row; painted = False: NLCD 90/95 inside a low_surface "
+        "polygon, left NoData so the marsh n survives (user 2026-10-06); "
+        "nlcd 250 = NoData (hydromt fills by elevation)",
         "by_class": rows,
     }
     _atomic_write(

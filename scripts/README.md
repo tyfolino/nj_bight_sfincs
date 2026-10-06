@@ -25,6 +25,7 @@ Every script reads `NJ_DOMAIN` unless its row names a domain. Run from the repo 
 | `probe_mesh_size.py` | Cell counts per size before paying for the subgrid | live |
 | `rebuild_subgrid.py` | Rebuild only the subgrid on a frozen mesh; `--overlay` for burn rasters (CLAUDE.md §5), `--manning-overlay` paints a Manning-n raster over the NLCD reclass the same way | live |
 | `fix_meteo_grid_origin.py` | Rewrite a template's / staged dir's `netamuv`/`netamp`/`netampr` x, y to the engine's corner convention (centre − signed step/2; data untouched, idempotent); `--check` read-only, `--era5-bilinear` re-samples wind + pressure from native ERA5 (2026-10-06, `nj_sfincs/meteo_grid.py`) | live |
+| `build_wind_naccs_blend.py` | NACCS ADCIRC save-point wind + pressure (Delaunay on u, v, p; long / land triangles dropped) blended into ERA5 bilinear over a 15 km taper, on a 500 m UTM grid covering every active + SnapWave face; writes `sfincs_netamuv.nc` / `sfincs_netamp.nc` with the engine corner convention + marker to `data/wind_v4/naccs_blend/` (`--extra-dir` adds CHS save points; 2026-10-06, `nj_sfincs/meteo_blend.py`, `logs/wind_naccs_blend_2026-10-06/`) | live |
 | `setup_boundary_depth.py` | Stage a mask-variant domain (boundary depth, trimmed ring) from its frozen mesh | live |
 | `restage_mask_repair.py` | Stage a mask repair from the frozen mesh and show the diff | live |
 | `sync_obs_points.py` | Rewrite `sfincs.obs` from the registry without a rebuild | live |

@@ -41,7 +41,10 @@ approximation." Consistency is the point, not perfection. Per pixel of a reach's
      below MLLW runs LINEARLY along the centreline from the last downstream control (the
      median section-mean depth of the bed the model will see over the 10 stations = 250 m
      below the gap) to ``DEPTH_HEAD_M`` = 1.2 m below MLLW at the head of tide (or to the
-     next control upstream); across the channel the SHAPED section
+     next control upstream), FLOORED at ``DEPTH_FLOOR_M`` = 1.2 m (user, 2026-10-06: a
+     guessed section is never shallower; tiers 1-3 keep their values, a measured bar stays
+     a bar) on runs that END AT A HEAD OF TIDE (a gap between two measured stretches is
+     plain linear interpolation); across the channel the SHAPED section
      ``depth = d_c * (1 - (1 - xi)^1.5)`` (xi = 0 bank, 1 centreline; mean = 0.6 d_c),
      d_c = section mean / the station's mean shape factor (10-05 evidence: natural sections
      here average 0.55-0.65 of their deepest depth).
@@ -74,7 +77,10 @@ shallower than the bed is painted too (and counted, ``raised_km2``).
 REPLACES ``riverbed_cohansey_v4``, ``riverbeds_gmrt_v4``, ``riverbeds_tidal_v4`` and their
 ``_shaped`` options (same reaches and spans, re-derived under the hierarchy), and adds the
 creeks with 2019-25 eHydro surveys, the Raritan-corner creek heads, the Rahway and the
-Schuylkill below the Fairmount Dam. 🔴 NEW FILES ONLY (``_out`` refuses every older name).
+Schuylkill below the Fairmount Dam; and (2026-10-06) the screen's damped fill-bed tidal creeks
+(Murderkill, Wading, Bass, Alloway, Stow, Dividing, Cedar, Great Egg Harbor River, Broadkill,
+Overpeck below its tidal dam, Appoquinimink, Blackbird, Smyrna, Leipsic). Nothing is painted outside the A+ ring
+(``RING``) or over an earlier reach's pixels. 🔴 NEW FILES ONLY (``_out`` refuses every older name).
 Outputs in data/elevation_v4/riverbeds/ (EPSG:32618, 5 m, NoData -9999, m NAVD88):
   riverbed_hier_<reach>_v4.tif + riverbeds_hierarchy_v4.vrt       the overlay
   riverbed_hier_<reach>_tier_v4.tif + riverbeds_hierarchy_tier_v4.vrt  provenance (uint8:
@@ -158,6 +164,8 @@ PREMIER_EHYDRO = (
     ("shrewsbury_ehydro_2015", DATA / "elevation/shrewsbury_ehydro_2015.tif"),
 )
 RIVERBEDS_V4 = DATA / "elevation_v4/riverbeds/riverbeds_v4.vrt"
+#: the A+ ring (v4_hot_plus / v4_hot_plus_walls): nothing is painted outside it
+RING = DATA / "region_v4_hot_plus.geojson"
 #: survey/chart overlays painted pixel by pixel: never painted over
 PROTECT = (
     "inland_water_bed_v4",  # the decided non-tidal lake / river beds
@@ -199,6 +207,7 @@ EPSG = rb.EPSG
 FT = dl.FT
 P_SHAPE = td.P_DEFAULT  # 1.5
 DEPTH_HEAD_M = 1.2  # section-mean depth below MLLW at a head of tide
+DEPTH_FLOOR_M = 1.2  # tier 4 only: the guessed section mean is never shallower (10-06)
 FILL_BELOW_MLLW_M = 0.5
 FILL_MIN_PX = 8
 STATION_M = 25.0
@@ -407,6 +416,161 @@ REACHES: tuple[HReach, ...] = (
         ),
         nos=(Nos("H09942", "H08001-H10000", 1981, "MLW"),),
     ),
+    # ── 2026-10-06: the damped fill-bed tidal creeks of the domain-wide screen ───────
+    HReach(
+        "murderkill",
+        "Murderkill, Bowers -> Frederica -> head of tide (+ Spring Creek, Browns Br.)",
+        box=(-75.5200, 38.9620, -75.3850, 39.0680),
+        branches=(
+            TBranch("Murderkill River", (-75.3985, 39.0585), (-75.5095, 38.9905)),
+            TBranch("Spring Creek", (-75.4700, 39.0220), (-75.5030, 39.0340)),
+            TBranch("Browns Branch", (-75.4740, 38.9830), (-75.4910, 38.9680)),
+        ),
+        halfwidth_m=100.0,
+        ehydro=(Ehydro("MU_01_MUR_20220329_CS", "CENAP"),),
+        nos=(Nos("H10079", "H10001-H12000", 1983, "MLLW"),),
+    ),
+    HReach(
+        "wading",
+        "Wading River, the Mullica -> head of tide",
+        box=(-74.5350, 39.5500, -74.4650, 39.6680),
+        branches=(TBranch("Wading River", (-74.4775, 39.5585), (-74.5265, 39.6620)),),
+        halfwidth_m=100.0,
+        nos=(
+            Nos("H05894", "H04001-H06000", 1935, "MLW"),
+            Nos("H05893", "H04001-H06000", 1935, "MLW"),
+        ),
+    ),
+    HReach(
+        "bass",
+        "Bass River, the Mullica -> New Gretna -> head of tide",
+        box=(-74.4650, 39.5480, -74.4300, 39.6300),
+        branches=(TBranch("Bass River", (-74.4555, 39.5560), (-74.4425, 39.6225)),),
+        halfwidth_m=100.0,
+        nos=(
+            Nos("H05894", "H04001-H06000", 1935, "MLW"),
+            Nos("H05893", "H04001-H06000", 1935, "MLW"),
+        ),
+    ),
+    HReach(
+        "alloway",
+        "Alloway Creek, Delaware -> Alloway (screen's 'Salem River at Salem')",
+        box=(-75.5450, 39.4450, -75.3550, 39.5750),
+        branches=(TBranch("Alloway Creek", (-75.5410, 39.4970), (-75.3615, 39.5675)),),
+        halfwidth_m=100.0,
+        nos=(
+            Nos("H10200", "H10001-H12000", 1986, "MLLW"),
+            Nos("H10112", "H10001-H12000", 1983, "MLLW"),
+        ),
+    ),
+    HReach(
+        "stow",
+        "Stow Creek, Delaware -> head of tide (screen's 'Alloway Creek')",
+        box=(-75.4950, 39.3750, -75.3550, 39.4900),
+        branches=(TBranch("Stow Creek", (-75.4170, 39.3810), (-75.3645, 39.4660)),),
+        halfwidth_m=100.0,
+        nos=(
+            Nos("H10200", "H10001-H12000", 1986, "MLLW"),
+            Nos("H10217", "H10001-H12000", 1986, "MLLW"),
+        ),
+    ),
+    HReach(
+        "dividing",
+        "Dividing Creek, Delaware Bay -> head of tide",
+        box=(-75.1350, 39.2050, -75.0550, 39.2920),
+        branches=(TBranch("Dividing Creek", (-75.1125, 39.2120), (-75.0650, 39.2870)),),
+        halfwidth_m=100.0,
+        nos=(
+            Nos("F00290", "F00001-F02000", 1987, "MLLW"),
+            Nos("H10167", "H10001-H12000", 1984, "MLLW"),
+        ),
+    ),
+    HReach(
+        "cedar_nj",
+        "Cedar Creek (Cumberland), Delaware Bay -> the Cedarville dam",
+        box=(-75.2450, 39.2720, -75.1500, 39.3180),
+        branches=(TBranch("Cedar Creek", (-75.2378, 39.2825), (-75.1580, 39.3115)),),
+        halfwidth_m=100.0,
+        nos=(Nos("D00081", "D00001-D02000", 1987, "MLLW"),),
+    ),
+    HReach(
+        "greategg",
+        "Great Egg Harbor River, the bay -> Mays Landing (Lake Lenape dam)",
+        box=(-74.7650, 39.2250, -74.6850, 39.4580),
+        branches=(
+            TBranch("Great Egg Harbor River", (-74.6820, 39.3260), (-74.7270, 39.4500)),
+        ),
+        halfwidth_m=120.0,
+        nos=(
+            Nos("H06217", "H06001-H08000", 1937, "MLW"),
+            Nos("H06218", "H06001-H08000", 1937, "MLW"),
+            Nos("H06254", "H06001-H08000", 1937, "MLW"),
+        ),
+    ),
+    HReach(
+        "broadkill",
+        "Broadkill River, Roosevelt Inlet -> Milton (the Lake Milton dam)",
+        box=(-75.3300, 38.7650, -75.1500, 38.8500),
+        branches=(
+            TBranch("Broadkill River", (-75.1660, 38.7920), (-75.3130, 38.7765)),
+        ),
+        halfwidth_m=100.0,
+        ehydro=(Ehydro("LR_01_LRC_20210909_CS", "CENAP"),),
+        nos=(
+            Nos("H09202", "H08001-H10000", 1971, "MLW"),
+            Nos("H09203", "H08001-H10000", 1971, "MLW"),
+            Nos("H07034", "H06001-H08000", 1945, "MLW"),
+        ),
+    ),
+    HReach(
+        "overpeck",
+        "Overpeck Creek, the Hackensack -> the Overpeck Tidal Dam (Turnpike, Ridgefield)",
+        box=(-74.0400, 40.8320, -73.9800, 40.9000),
+        # CUT AT THE OVERPECK TIDAL DAM (NJ00799, Bergen County; 1950 plans, rebuilt 1977;
+        # 2 bascule + 4 tainter gates + 7 stoplog bays under the NJ Turnpike northbound
+        # bridge, N40 50.4' W74 01.1'; built "to prevent tidal flow into Overpeck Creek";
+        # NJSEA 2016 inspection: fully functional). Its sill is the CUDEM ridge at
+        # stations 1775-1925 of this trace; the head sits at 1650 so the 80 m channel
+        # buffer stops short of it: nothing is painted on or above the dam.
+        branches=(TBranch("Overpeck Creek", (-74.0300, 40.8420), (-74.0217, 40.8399)),),
+        halfwidth_m=80.0,
+    ),
+    HReach(
+        "appoquinimink",
+        "Appoquinimink River, Delaware -> Odessa -> below the Noxontown Pond dam",
+        box=(-75.7000, 39.4250, -75.5700, 39.4900),
+        branches=(
+            TBranch("Appoquinimink River", (-75.5785, 39.4490), (-75.6920, 39.4405)),
+        ),
+        halfwidth_m=100.0,
+        nos=(Nos("H10200", "H10001-H12000", 1986, "MLLW"),),
+    ),
+    HReach(
+        "blackbird",
+        "Blackbird Creek, Delaware -> head of tide",
+        box=(-75.6600, 39.3700, -75.5650, 39.4460),
+        branches=(
+            TBranch("Blackbird Creek", (-75.5735, 39.4405), (-75.6510, 39.3765)),
+        ),
+        halfwidth_m=100.0,
+        nos=(Nos("H10200", "H10001-H12000", 1986, "MLLW"),),
+    ),
+    HReach(
+        "smyrna",
+        "Smyrna River, Delaware Bay -> Smyrna (below Lake Como)",
+        box=(-75.6000, 39.2950, -75.5000, 39.3720),
+        branches=(TBranch("Smyrna River", (-75.5120, 39.3660), (-75.5880, 39.3030)),),
+        halfwidth_m=100.0,
+        nos=(Nos("D00081", "D00001-D02000", 1987, "MLLW"),),
+    ),
+    HReach(
+        "leipsic",
+        "Leipsic River, Delaware Bay -> Leipsic -> head of tide (never the millpond, A2)",
+        box=(-75.6000, 39.2000, -75.3950, 39.2700),
+        branches=(TBranch("Leipsic River", (-75.4050, 39.2520), (-75.5880, 39.2420)),),
+        halfwidth_m=100.0,
+        nos=(Nos("H10255", "H10001-H12000", 1987, "MLLW"),),
+    ),
 )
 BY_NAME = {r.name: r for r in REACHES}
 
@@ -455,11 +619,19 @@ def _to_ll(x, y):
 
 
 # ── CO-OPS datums: the one MLLW rule ──────────────────────────────────────────────
+#: stations on ANOTHER estuary's tide, never a reach's datum (2026-10-06): Chesapeake
+#: City sits on the C&D canal (Chesapeake-side range, MLLW -0.487 vs Reedy Point's -0.905)
+#: yet is among the "two nearest" to the Alloway / Appoquinimink mouths
+NOT_THIS_ESTUARY = {"8573927": "Chesapeake City, C&D canal"}
+
+
 def _stations() -> dict[str, tuple[str, float, float, dict]]:
     """id -> (name, lat, lon, datums) for every cached station publishing MLLW + NAVD88."""
     meta = json.loads((SRC / "coops" / "stations_bbox.json").read_text())
     out = {}
     for sid, (name, lat, lon) in meta.items():
+        if sid in NOT_THIS_ESTUARY:
+            continue
         p = SRC / "coops" / f"datums_{sid}.json"
         if not p.exists():
             continue
@@ -539,7 +711,12 @@ def fetch() -> None:
     cells = (
         "US4NJ1FE US5NYCAD US4NY1AP US5NYCBB US5NYCBC US4NJ1FF US5NJ1UM US5NYCAE US5NYCAF "
         "US5NYCCD US5PHLCD US4DE1CB US5NYCAC US4NJ1CE US4NJ1DE US5NJ1JI US5NJ1JJ "
-        "US5NJ1KJ US4DE1AC US4DE1BC US5DE1DF US5DE1DG US5DE1EF US5DE1EG"
+        "US5NJ1KJ US4DE1AC US4DE1BC US5DE1DF US5DE1DG US5DE1EF US5DE1EG "
+        # 2026-10-06 reaches (NOAA ENCProdCat_19115 polygons over each reach box)
+        "US4DE1BB US4DE1DB US4DE1DA US5ILGAE US5ILGAF US5ILGAG US5ILGBE US5ILGBF "
+        "US5ILGCE US5ILGCF US5DE1KE US5DE1DE US5DE1EE US5DE1KC US5DE1LB US5DE1LC "
+        "US4NJ1BD US5NJ1FE US5NJ1GE US5NJ1HD US4NY1AQ US4NY1BP US4NY1BQ US5NYCEG "
+        "US5NYCFG"
     ).split()
     for c in cells:
         if (SRC / "enc" / "ENC_ROOT" / c).exists():
@@ -1059,6 +1236,12 @@ def evaluate(r: HReach) -> Result:
     # the premier's own river-bed tier (riverbeds_v4) is left as it is here: its
     # consistency with the hierarchy is reported by ``premier``, not patched piecemeal
     protect |= np.isfinite(warp(RIVERBEDS_V4, g))
+    # earlier reaches of this overlay own their pixels (no two reach rasters overlap)
+    for q in REACHES[: [x.name for x in REACHES].index(r.name)]:
+        f = OUT / f"riverbed_hier_{q.name}_v4.tif"
+        if f.exists():
+            protect |= np.isfinite(warp(f, g))
+    inring = _ring_mask(g)
     cud = warp(CUDEM[0], g)
     cud2 = warp(CUDEM[1], g)
     cud = np.where(np.isfinite(cud), cud, cud2)
@@ -1189,11 +1372,26 @@ def evaluate(r: HReach) -> Result:
             if not np.isfinite(D_dn):
                 D_dn, how_dn = D_up, "none"
             ss = b.grid[i : j + 1]
-            D4[i : j + 1] = D_dn + (D_up - D_dn) * np.clip(
+            lin = D_dn + (D_up - D_dn) * np.clip(
                 (ss - s_dn) / max(s_up - s_dn, 1.0), 0, 1
             )
+            # THE FLOOR (user, 2026-10-06): a GUESSED section is never shallower than
+            # DEPTH_FLOOR_M below MLLW; measured tiers keep their values (a bar stays a bar)
+            # SCOPE (user, 2026-10-06, second decision): only runs that END AT A HEAD OF
+            # TIDE (nothing measured upstream); a gap with a measured bed on BOTH sides
+            # is plain linear interpolation between the two measurements
+            floor = how_up == "head"
+            D4[i : j + 1] = np.maximum(lin, DEPTH_FLOOR_M) if floor else lin
             b.extra.setdefault("runs", []).append(
-                (b.grid[i], b.grid[j], D_dn, how_dn, D_up, how_up)
+                (
+                    b.grid[i],
+                    b.grid[j],
+                    D_dn,
+                    how_dn,
+                    D_up,
+                    how_up,
+                    float(np.mean(lin < DEPTH_FLOOR_M)) if floor else 0.0,
+                )
             )
         s4 = (tz == 0) & np.isfinite(D4[k])
         dc4 = D4 / np.clip(mg, 0.4, 1.0)
@@ -1230,8 +1428,12 @@ def evaluate(r: HReach) -> Result:
         tier[rr[take], cc[take]] = tz[take]
         pin = (st >= b.plo) & (st <= b.phi)
         inspan[rr[pin], cc[pin]] = True
+    out_ring = int((inspan & np.isfinite(val) & ~inring).sum())
+    if out_ring:
+        notes.append(f"⚠️ {out_ring} evaluated px outside the A+ ring: never painted")
     paint = (
         inspan
+        & inring
         & np.isfinite(val)
         & (tier > 0)
         & ~protect
@@ -1239,6 +1441,15 @@ def evaluate(r: HReach) -> Result:
         & ((tier != 2) | (val < dat.mllw))  # CUDEM banks / marsh keep the merge
     )
     return Result(r, g, dat, brs, ref, val, tier, paint, inspan, tables, notes, cud, t1)
+
+
+def _ring_mask(g: RGrid) -> np.ndarray:
+    """True inside the A+ region ring (rivers cut at today's head of tide)."""
+    import geopandas as gpd
+    from rasterio.features import geometry_mask
+
+    ring = gpd.read_file(RING).to_crs(EPSG)
+    return geometry_mask(ring.geometry, (g.h, g.w), g.T, invert=True)
 
 
 def _head_by_mhhw(b: Br, st, zref, mhhw: float, skip_m: float = 500.0):
@@ -1415,9 +1626,10 @@ def build(names: list[str] | None) -> None:
         notes.append(f"## {r.name}\n" + "\n".join(f"- {x}" for x in res.notes))
         for br in res.brs:
             for x in br.extra.get("runs", []):
+                fl = f", floored on {x[6]:.0%}" if x[6] > 0 else ""
                 notes.append(
                     f"- {br.name}: slope {x[0]:.0f}..{x[1]:.0f} m, section mean "
-                    f"{x[2]:.2f} m ({x[3]}) -> {x[4]:.2f} m ({x[5]}) below MLLW"
+                    f"{x[2]:.2f} m ({x[3]}) -> {x[4]:.2f} m ({x[5]}) below MLLW{fl}"
                 )
         for tb in res.stations:
             df = pd.DataFrame({k: v for k, v in tb.items() if k != "branch"})
