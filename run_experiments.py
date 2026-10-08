@@ -274,6 +274,8 @@ def prepare_experiment(name: str, base: BaseConfig) -> Path:
         rain=exp.rain,
         wind_scale=exp.wind_scale,
         sea_level_offset_m=exp.sea_level_offset_m,
+        meteo_from=exp.meteo_from,
+        infiltration=exp.infiltration,
     )
     # hydromt's writer drops crsfile/storevel; put them back so a staged arm carries the
     # flux cross-sections — which on a relocated-boundary domain are the headline result,

@@ -2898,6 +2898,83 @@ V4_HOT_PLUS_WALLS = replace(
     ),
 )
 
+# ── v4_refreeze — 2026-10-06 (user: THE re-frozen v4) ─────────────────────────────────
+# = v4_hot_plus_walls + the Lewes ring edit (logs/refreeze_2026-10-05/lewes/; bed_candidates
+# 4e): the sea closure's last leg ran INSIDE the Lewes–Rehoboth Canal (x ≈ 492.5 km) and
+# cut 0.92 km² of canal-fed ground off at +3 m, so the edge moves ~250 m east onto the
+# canal's east bank (two closure vertices) and `wall_henlopen_atlantic` widens with it
+# (x1 492,700 → 493,050; y0 stays B6's 4,286,700). A MASK change on the same mesh: same faces
+# and boundary edges, a new sha (test staging 62283012: active 3,965,068 → 3,965,303).
+# Its OWN premier bed is `_subgrid_refreeze` (no `bed-` prefix: THE bed of this domain).
+# Separate DOMAIN so run B (`v4_hot_plus_walls`) keeps its template and fingerprint.
+# Also here, domain-level only (v3 / v4 / the other v4 variants keep their gauge objects):
+#   * the seven USGS gauges with the crest HOLE (FINDINGS §60f; per-gauge last sample read
+#     from gtsm/usgs_sandy_tidal_v3.nc) carry `record_ends` + survives_crest False;
+#   * `usgs_tidal_absecon_creek` moves off its +2.92 m bank face into the creek channel.
+_V4_REFREEZE_HOLE_ENDS = {
+    # name: last good sample before the hole (the hole runs to 10-30 04:00 unless noted)
+    "usgs_tidal_inside_thorofare": "2012-10-29 03:54",
+    "usgs_tidal_tuckerton": "2012-10-29 03:54",
+    "usgs_tidal_absecon_creek": "2012-10-29 03:54",
+    "usgs_tidal_avalon": "2012-10-28 03:54",  # its hole starts a DAY earlier
+    "usgs_tidal_ship_bottom": "2012-10-29 03:54",  # hole to 10-31 04:00
+    "usgs_tidal_sea_isle": "2012-10-29 03:54",
+    "usgs_tidal_stone_harbor": "2012-10-29 03:54",
+}
+#: (lon, lat) of the nudged Absecon Creek point: the published point sits on a 25 m bank /
+#: bridge face (z_zmin +2.4, z_level +5.4, zmax +12.8 — the US-9 crossing); this is the
+#: centre of the nearest active face below MLLW, 66 m ENE (z_zmin -1.09 on the re-freeze
+#: bed; logs/refreeze_2026-10-06/v4_refreeze/absecon_obs_face.py).
+_V4_REFREEZE_ABSECON_CREEK = (-74.49926, 39.42294)
+
+
+def _refreeze_gauge(g: ObsGauge) -> ObsGauge:
+    if g.name in _V4_REFREEZE_HOLE_ENDS:
+        end = _V4_REFREEZE_HOLE_ENDS[g.name]
+        g = replace(
+            g,
+            survives_crest=False,
+            record_ends=end,
+            note=g.note + f" v4_refreeze: crest in the record HOLE — record_ends {end}.",
+        )
+    if g.name == "usgs_tidal_absecon_creek":
+        lon, lat = _V4_REFREEZE_ABSECON_CREEK
+        g = replace(
+            g,
+            lon=lon,
+            lat=lat,
+            note=g.note + " v4_refreeze: NUDGED off the +2.92 m bank face "
+            "(published -74.5000, 39.4231) into the creek channel.",
+        )
+    return g
+
+
+def _lewes_wall(o: MaskOverride) -> MaskOverride:
+    if o.name != "wall_henlopen_atlantic":
+        return o
+    x0, y0, x1, y1 = o.box
+    assert (x0, x1) == (491_500, 492_700), o.box  # the Lewes edit moves THIS box
+    return replace(
+        o,
+        box=(x0, y0, 493_050, y1),
+        why=o.why + " x1 493,050: the Lewes edge on the canal's east bank (10-06).",
+    )
+
+
+V4_REFREEZE = replace(
+    V4_HOT_PLUS_WALLS,
+    name="v4_refreeze",
+    mask_overrides=tuple(_lewes_wall(o) for o in V4_HOT_PLUS_WALLS.mask_overrides),
+    waterlevel_line_sea_closure_ll=V4_HOT_PLUS_WALLS.waterlevel_line_sea_closure_ll
+    + (
+        # 2026-10-05 re-freeze (bed_candidates 4e): from henlopen_beach_s the leg to
+        # cape_henlopen ran INSIDE the Lewes–Rehoboth Canal; edge moved ~250 m east.
+        ("lewes_canal_e_s", -75.0822, 38.715),
+        ("lewes_canal_e_n", -75.0848, 38.750),
+    ),
+    obs_gauges=tuple(_refreeze_gauge(g) for g in V4_HOT_PLUS_WALLS.obs_gauges),
+)
+
 DOMAINS: dict[str, Domain] = {
     d.name: d
     for d in (
@@ -2909,6 +2986,7 @@ DOMAINS: dict[str, Domain] = {
         V4_HOT,
         V4_HOT_PLUS,
         V4_HOT_PLUS_WALLS,
+        V4_REFREEZE,
     )
 }
 

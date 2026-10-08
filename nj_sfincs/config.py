@@ -333,6 +333,15 @@ class Experiment:
     #: false-alarm area was rain the reference structurally cannot contain.
     rain: bool = True
 
+    #: Infiltration ON by default (where the DOMAIN has it, ``Domain.infiltration``).
+    #: ``False`` stages the arm with rain but WITHOUT the curve-number infiltration keys
+    #: (``model._infiltration_keys(on=False)``), so every drop of rain runs off — v3's
+    #: configuration (no infiltration). Rain-off arms carry no infiltration either way.
+    #: Written on the staged copy like ``rain``: the template has it ON, so "not adding"
+    #: it would inherit it. ``rain-noinfil`` arms (2026-10-08, the v4-vs-v3 rain-pond
+    #: marks, FINDINGS part 4 (d)).
+    infiltration: bool = True
+
     #: ``bed-*`` ARMS ONLY. Name of a dir under ``experiments/<domain>/`` (convention
     #: ``_subgrid_<what>``, made by ``scripts/rebuild_subgrid.py``) whose
     #: ``sfincs_subgrid.nc`` and ``subgrid/`` REPLACE the sealed template's after staging.
@@ -351,6 +360,14 @@ class Experiment:
     #: the metrics row carries the MEASURED staged/template ratio
     #: (``provenance.wind_scale_label``), never this number.
     wind_scale: float = 1.0
+
+    #: ``wind-*`` ARMS ONLY. A directory holding a complete engine-ready pair
+    #: ``sfincs_netamuv.nc`` + ``sfincs_netamp.nc`` (``scripts/build_wind_naccs_blend.py``)
+    #: that REPLACES the staged copy's after ``sf.write()`` (``model.finalize``), byte for
+    #: byte, as fresh inodes. The files must carry the engine corner-convention marker
+    #: and cover every active face; finalize refuses otherwise. Not combinable with
+    #: ``wind_scale``. The template keeps its own meteo, so the pair differs only here.
+    meteo_from: Path | None = None
 
     #: ``slr-*`` ARMS ONLY. Metres added to the boundary water level on the STAGED copy
     #: (``model.finalize``), with a matching start: the offset on every cell the sea

@@ -1776,6 +1776,32 @@ def restore_diagnostics(model_dir: Path) -> None:
     set_inp_keys(model_dir / "sfincs.inp", kv)
 
 
+def _read_weir(model_dir: Path) -> bytes | None:
+    f = Path(model_dir) / "sfincs.weir"
+    return f.read_bytes() if f.is_file() else None
+
+
+def restore_weir(model_dir: Path, data: bytes | None) -> bool:
+    """Put back the ``sfincs.weir`` bytes read before ``sf.write()``.
+
+    🔴 (2026-10-07) hydromt re-emits the weir file through float32 at one decimal: crests
+    move by up to 5 cm (the Overpeck dam 1.74 → 1.70 m on every point) and northings by up
+    to 0.5 m. Every staged arm since v3 carried the rounded file; v4_refreeze's staged check
+    (`cmp` against `data/structures_v4/sfincs.weir`) caught it. Written as a NEW inode
+    (temp + ``os.replace``) so a dedupe-shared file is never written through. Returns
+    True when the file was rewritten.
+    """
+    if data is None:
+        return False
+    f = Path(model_dir) / "sfincs.weir"
+    if f.is_file() and f.read_bytes() == data:
+        return False
+    tmp = f.with_name(".sfincs.weir.restore")
+    tmp.write_bytes(data)
+    os.replace(tmp, f)
+    return True
+
+
 def _ensure_weirfile_key(text: str, model_dir: Path) -> str:
     """Re-add ``weirfile = sfincs.weir`` when the staged file exists but the key dropped.
 
@@ -1885,6 +1911,45 @@ def break_hardlinks(model_dir: Path, names=None) -> list[str]:
     return broken
 
 
+#: The pair ``Experiment.meteo_from`` replaces (rain stays the template's).
+METEO_FROM_FILES = ("sfincs_netamuv.nc", "sfincs_netamp.nc")
+
+
+def replace_meteo_from(model_dir: Path, src: Path | str) -> None:
+    """Copy ``METEO_FROM_FILES`` from ``src`` over the staged dir's, then verify them.
+
+    Checks the SOURCE's presence and corner marker first, so those refusals leave the
+    staged files alone; the coverage check on this dir's active faces runs AFTER the copy
+    (a refusal there still stops staging). Copies to a temp name and ``os.replace``s, so
+    the target gets a fresh inode whatever was linked there before.
+    """
+    model_dir, src = Path(model_dir), Path(src)
+    missing = [f for f in METEO_FROM_FILES if not (src / f).is_file()]
+    if missing:
+        raise SystemExit(f"meteo_from {src}: missing {missing}")
+    for f in METEO_FROM_FILES:
+        if not meteo_grid.file_state(src / f)["fixed"]:
+            raise SystemExit(
+                f"meteo_from {src / f}: no engine corner-convention marker "
+                f"({meteo_grid.ORIGIN_ATTR}) — its coordinates would be read half a cell off"
+            )
+    for f in METEO_FROM_FILES:
+        tmp = model_dir / f".{f}.meteo_from"
+        shutil.copyfile(src / f, tmp)
+        os.replace(tmp, model_dir / f)
+    st = meteo_grid.fix_meteo_grid_origin(model_dir, check=True, files=METEO_FROM_FILES)
+    if len(st) != len(METEO_FROM_FILES) or any(s["action"] != "already" for s in st):
+        raise SystemExit(f"meteo_from {src}: staged copies lost the marker: {st}")
+    out = meteo_grid.active_faces_outside_band(model_dir, METEO_FROM_FILES)
+    bad = {f: n for f, (n, _) in out.items() if n}
+    if bad:
+        raise SystemExit(
+            f"meteo_from {src}: active faces outside the meteo grid (engine zeroes them): "
+            f"{bad}"
+        )
+    print(f"[meteo] wind + pressure replaced from {src}", flush=True)
+
+
 def finalize(
     wcfg: WaveConfig,
     base: BaseConfig,
@@ -1894,6 +1959,8 @@ def finalize(
     rain: bool = True,
     wind_scale: float = 1.0,
     sea_level_offset_m: float | None = None,
+    meteo_from: Path | str | None = None,
+    infiltration: bool = True,
 ) -> None:
     """Release handles, write, patch sfincs.inp, write the SnapWave ASCII forcing.
 
@@ -1905,8 +1972,16 @@ def finalize(
     ``sfincs_netampr.nc`` is unlinked. Done on the written text, like the waves-off
     branch below, because the template every arm is copied from has rain ON — "not
     adding" rain would silently inherit it, exactly the shape of the snapwave bug.
+
+    ``infiltration=False`` (``Experiment.infiltration``) keeps the rain but writes no
+    infiltration keys, on a domain that otherwise has them (step b).
     """
     model_dir = Path(model_dir)
+    if meteo_from is not None and wind_scale != 1.0:
+        raise SystemExit(
+            "meteo_from and wind_scale are exclusive: a scale applies to the template's "
+            "ERA5 in memory, meteo_from replaces the files after the write"
+        )
 
     # Materialize forcing in memory, drop xarray's open-file cache, so every handle closes
     # before write (avoids Errno 13 on /cache when re-writing a file this kernel still
@@ -1969,7 +2044,10 @@ def finalize(
     if broken:
         print(f"[write] private copies before write: {', '.join(broken)}", flush=True)
     _meteo_marked = meteo_grid.marked_in_memory(sf)
+    _weir_bytes = _read_weir(model_dir)
     sf.write()
+    if restore_weir(model_dir, _weir_bytes):
+        print("[weir] sfincs.weir restored byte for byte after the write", flush=True)
 
     # 🔴 (2026-10-06) the engine of record reads the first x / y of every gridded meteo
     # file as a cell CORNER; hydromt just wrote CENTRES, so every point would sample
@@ -1983,6 +2061,13 @@ def finalize(
             + ", ".join(f"{s['file']} {s['action']}" for s in _meteo),
             flush=True,
         )
+
+    # ``Experiment.meteo_from`` (wind-* arms, 2026-10-06): REPLACE wind + pressure with a
+    # pre-built engine-ready pair, byte for byte, as NEW inodes (a hard-linked target must
+    # never be written through — CLAUDE.md §5). Refused unless both files carry the corner
+    # marker and the engine would zero no active face. Rain (netampr) is untouched.
+    if meteo_from is not None:
+        replace_meteo_from(model_dir, meteo_from)
 
     inp = model_dir / "sfincs.inp"
     text = inp.read_text()
@@ -2004,9 +2089,10 @@ def finalize(
 
     # (b) infiltration: strip hydromt's orphan keys (it names ``infiltration.nc`` but
     # writes ``scs`` into the qtrfile), then re-add them correctly on a domain that has
-    # it ON. Rain-off arms get none — SFINCS infiltration only acts on rainfall.
+    # it ON. Rain-off arms get none — SFINCS infiltration only acts on rainfall — and
+    # neither do ``infiltration=False`` arms (rain on, every drop runs off; v3's setup).
     text = _infiltration_keys(
-        text, model_dir, on=_domain.active().infiltration and rain
+        text, model_dir, on=_domain.active().infiltration and rain and infiltration
     )
 
     # (b2) sea-level offset: start at the offset where the sea connects, dry elsewhere.

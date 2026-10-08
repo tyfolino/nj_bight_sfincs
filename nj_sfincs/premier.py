@@ -184,6 +184,12 @@ V4_HOT_PLUS = DomainFingerprint(4881654, 4388, "e5e9d8668fe29292")
 #: the 10-05 edge audit's 11 leak walls (A1–A6, B1–B5; 47 outflow faces → active) and the
 #: Cape Henlopen gap B6 closed. Same mesh and counts; active 3,965,068 (as A+).
 V4_HOT_PLUS_WALLS = DomainFingerprint(4881654, 4388, "77b5eda1fcd51cf6")
+#: v4_refreeze — THE re-frozen v4 (user 2026-10-06): v4_hot_plus_walls + the Lewes ring edit
+#: (the edge ~250 m east onto the Lewes–Rehoboth Canal's east bank; wall_henlopen_atlantic
+#: x1 → 493,050). Same mesh and counts, the sha is the only tell. Predicted by the Lewes
+#: test staging 62283012 (active 3,965,068 → 3,965,303, +235); CONFIRMED by the template
+#: staging 62312113 (same sha, active 3,965,303, 61 sources; logs/refreeze_2026-10-06/v4_refreeze/).
+V4_REFREEZE = DomainFingerprint(4881654, 4388, "378014e154b4ff41")
 
 EXPECTED: dict[str, DomainFingerprint] = {
     "v1_monmouth": V1_MONMOUTH,
@@ -194,6 +200,7 @@ EXPECTED: dict[str, DomainFingerprint] = {
     "v4_hot": V4_HOT,
     "v4_hot_plus": V4_HOT_PLUS,
     "v4_hot_plus_walls": V4_HOT_PLUS_WALLS,
+    "v4_refreeze": V4_REFREEZE,
 }
 
 KNOWN = {
@@ -218,6 +225,10 @@ KNOWN = {
     ),
     V4_HOT_PLUS_WALLS: (
         "v4_hot_plus_walls STAGED 2026-10-05 — A+ + the edge audit's leak walls (run B)"
+    ),
+    V4_REFREEZE: (
+        "v4_refreeze STAGED 2026-10-06 — THE re-frozen v4: v4_hot_plus_walls + the Lewes "
+        "ring edit; bed _subgrid_refreeze, Keansburg + Overpeck weirs, Overpeck pool start"
     ),
     V4_HOT_PLUS: "v4_hot_plus RE-STAGED 2026-10-05 (Maurice cut on the Union Lake dam crest)"
     " — v4_hot but the Cohansey and Neshaminy "

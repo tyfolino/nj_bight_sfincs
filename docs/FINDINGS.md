@@ -442,6 +442,13 @@ CLAUDE.md §5.
       (Keansburg byte-identical + the OVERPECK TIDAL DAM, crest 1.74 m NAVD88 = 6.7 ft NGVD29 via
       VDatum, Cd 0.6) copied into `data/frozen_mesh_v4/`; the engine keeps 212 + 4 crossings
       (`logs/refreeze_2026-10-06/structures/`). Not a fingerprint change (z, mask only).
+    - 🔴 **Staging ROUNDED the weir (found 2026-10-07; every staged arm on every domain before
+      it).** `finalize`'s `sf.write()` re-emits `sfincs.weir` through float32 at one decimal:
+      crests ±0.05 m (Keansburg mean −0.001 m; the Overpeck dam 1.74 → 1.70 m on all 4 points),
+      northings ≤ 0.5 m; the same three structures and point counts. v3's premier carries the
+      rounded file. `model.restore_weir` now puts the pre-write bytes back
+      (`tests/test_weir_restore.py`); the 7 `v4_refreeze` arms were restored by hand before
+      their solves. A v3 arm staged after 10-07 differs from the premier by this rounding.
     The nowaves weir run scores HWM RMSE 0.3867 (`extent_admissible=False`). The weir
     lives in the TEMPLATE, not in the premier alone, because a premier-only weir would
     confound premier-vs-nowaves forever.

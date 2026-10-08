@@ -6,7 +6,7 @@ running, what is next, what is open. When an item closes, its durable fact goes 
 Git has the history. The campaign log this file grew into until 2026-09-29 (6,767 lines) is
 `git show d70dd1e:docs/STATUS.md`; FINDINGS cites it as "STATUS <date>".
 
-Last updated: **2026-10-06 16:30 (end of day)** — overnight read: the harbour trench fixes Newark Bay but not
+Last updated: **2026-10-07 12:30** (queue cleanup; was 2026-10-06 16:30) — overnight read: the harbour trench fixes Newark Bay but not
 Raritan Bay (the Arthur Kill drain is ruled out); runs A / B solving ~3× faster than planned, both
 validated tonight; the v3 re-run's Great Egg inlet fix restores the southern back-bay tide.
 
@@ -26,9 +26,20 @@ validated tonight; the v3 re-run's Great Egg inlet fix restores the southern bac
 
 ## ☀️ PICK UP (Wednesday 10-07 morning)
 
-1. `squeue -u tpj8` + `sacct -S 2026-10-06T16:00 -X`: rebuild 62308704 → the `v4_refreeze` stagings
-   and solves (ids in `logs/refreeze_2026-10-06/v4_refreeze/README.md`); run B validate 62291413;
-   the Wednesday read (report 62305023). `DependencyNeverSatisfied` = something upstream failed.
+0. **`v4_refreeze` RESUBMITTED 10-07 ~12:35.** The overnight staging (62312205) failed every arm on
+   "sfincs.weir differs": hydromt's write had ROUNDED the weir (crests ±5 cm, Overpeck dam 1.74 →
+   1.70; FINDINGS §38). Fixed in `finalize` (`model.restore_weir`, suite 291 OK), the exact file
+   restored in the 7 staged arms, stage_all's `verify_arm` re-run: 7/7 pass
+   (`logs/refreeze_2026-10-06/v4_refreeze/reverify_weir.sh`, CHECKS.txt). Jobs (`jobs.txt`):
+   premier solves **62328437–38** (emeraldrapids, 40 h) → validate **62328444**; nowaves + SLR
+   solves **62328439–43** (12 h) → validate **62328445**. Each validate runs the old log check
+   inline and validates only arms whose output is WHOLE (`validate_group.slurm`).
+   Template sha `378014e154b4ff41` untouched. Avalon's `record_ends` is 10-28 03:54; v3 / v4 still
+   lack these record_ends.
+1. **The Wednesday read is ONE job now: 62328289** (`reports/v4_first_results_2026-10-07/jobs/combined.sh`,
+   400 G / 8 h, serial): run B validate → 11 residuals → 10 zsmax pairs → report; a failed step is
+   logged and skipped. It replaced 62291413 + 62305002–62305023 (cancelled 10-07). Keep jobs few:
+   chain steps inside one script rather than fanning out dependents.
 2. `v4_refreeze` checks in each arm's `sfincs.log`: "221 structure u/v points found"; the binary
    ini line (premier / nowaves); `fix_meteo_grid_origin.py --check` says fixed; fingerprint as
    registered; the `wind-naccs` arms' `sfincs_netamuv.nc` = `data/wind_v4/naccs_blend/`'s.
@@ -36,11 +47,34 @@ validated tonight; the v3 re-run's Great Egg inlet fix restores the southern bac
    shared marks). Flag the Keansburg pocket marks (6133/6155/6156: runs A/B had no levee) and the
    7 crest-hole gauges. Then the `v4_refreeze` scores: new reference + the NACCS-wind pair (Raritan:
    South Amboy obs 4.09; Barnegat — NACCS pushes south 0.38× ERA5, unrefereed).
-4. Stage the `v4_refreeze` subagent's code once its suite is green (domain / experiments / premier /
-   config / model / provenance / run_experiments / tests) — review the diff for any change to
-   EXISTING domains first. Republish the brief (same file) with the morning's scores.
-5. Next tests: the hourly-wave ±0.15 m swing (short window, finer `dtwave`); NACCS vs ERA5 pressure
-   (`--pressure era5`); record the meteo convention in metrics/provenance.
+4. ✅ `v4_refreeze` code REVIEWED + `git add`-ed 10-07 (no change to existing domains but the intended
+   weir restore; + `wind_scale` now reads `replaced:naccs_blend` for the wind-naccs arms). USER: commit.
+   Republish the brief (same file) with the morning's scores.
+5. Next tests: record the meteo convention in metrics/provenance.
+   🔶 HOURLY-WAVE SWING (10-07, `logs/waves_swing_2026-10-07/`, from existing his files): NOT a step
+   at each wave update — a NY-harbour basin SEICHE (~2.3–2.6 h v3, ~3.0 h v4), present waves-off
+   (σ 0.08–0.10 m), amplified by waves (+30% at dtwave 1800, +30–35% run A at 3600, 2.4× v3 at
+   3600). NJ back bays / open coast: none. Run A's crest "wave lift" in the NY bays is ~all seiche
+   PHASE (South Amboy +0.151 = mean set-up −0.002 + oscillation +0.153; Keansburg, AK mouth alike);
+   Waretown +0.21 / Atlantic City +0.06 are real set-up. ⚠️ Read NY-bay waves-on crests ±0.1–0.15 m.
+   Decisive test SUBMITTED (user OK 10-07): **62328665** (`logs/waves_swing_2026-10-07/swing_test.slurm`),
+   `after:62328437+300` = starts 5 h after the premier solve starts, waits ≤ 2.5 h for its
+   `sfincs.20121029.180000.rst`, copies it to `/scratch/tpj8/engine_gate/swing_rst/`, then runs
+   10-29 18:00 → 10-30 06:00 at dtwave 3600 then 600 in `/scratch/tpj8/engine_gate/swing_{3600,600}/`
+   (~8 h). Exit 4 = no restart in time (solve preempted/slow) → resubmit. Read: zs std about its 3 h
+   mean at the NY gauges (vs waves-off 0.08–0.10) + paired zsmax at South Amboy / Keansburg / marks.
+   🔶 PACKING TEST SUBMITTED (user OK 10-07): **62329398** (`logs/pack_test_2026-10-07/pack_test.slurm`,
+   nice 10, one exclusive emeraldrapids node): run B cut to 3 h, 1×64 threads vs 4×16 vs 8×8 copies
+   pinned per socket. If each packed copy keeps ~P1's pace, waves-on arms can share nodes (SnapWave's
+   sweep is serial, §20). Also checks packed results = P1 (`engine_gate compare`).
+   (User 10-07 asked: SnapWave boundary ON the water-level line? Already tested on v3 = `wave-coupled`,
+   §52: lost ΔRMSE +0.028 m [+0.015, +0.044] — a diagonal boundary kills ~40 % of its cells (corner
+   rule). v4's stepped band is only 155,793 of 3.39 M SnapWave nodes, so removing it saves ≤ ~5 %.)
+   ✅ NACCS vs ERA5 PRESSURE (10-07, `logs/pressure_2026-10-07/`): ERA5 is closer to the barometers
+   (MAE 0.5–1.8 vs blend 1.6–3.8 hPa; the blend's low is 4.9–6.9 hPa high at the obs minimum time),
+   and better on bay-minus-mouth gradients in 5 of 6 pairs — but with `baro=1, pavbnd=0` only the
+   GRADIENT moves water: switching is < 1 cm in Raritan Bay, ≤ 3–4 cm in Great Bay / upper
+   Delaware. No extra arm; rebuild the blend with `--pressure era5` next time it is rebuilt.
 
 ## Tuesday 10-06 — the overnight read (10:45) and the day's list
 

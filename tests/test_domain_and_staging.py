@@ -517,6 +517,8 @@ class TestWaterlevelSupportOverride(_DomainEnv):
             "v4_hot_plus": 3,
             # A+ with the 10-05 leak walls (run B): same mesh and line.
             "v4_hot_plus_walls": 3,
+            # THE re-frozen v4 (10-06): run B's domain + the Lewes edge; same line.
+            "v4_refreeze": 3,
         }
         self.assertEqual(
             set(PINNED),
@@ -759,6 +761,76 @@ class TestRainOffIsWrittenNotMerelyNotWritten(_DomainEnv):
                 )
         if checked == 0:
             self.skipTest("no rain-off arms staged on any domain")
+
+
+class TestNoInfiltrationIsWrittenNotMerelyNotWritten(_DomainEnv):
+    """Same shape again: the template has infiltration ON, so ``Experiment.infiltration
+    = False`` must reach ``finalize`` and strip the keys on the staged copy — and a
+    ``rain-noinfil`` arm must be its waves-off twin in every other respect.
+    """
+
+    def test_infiltration_defaults_on(self):
+        from nj_sfincs.config import Experiment, WaveConfig
+
+        self.assertTrue(Experiment("x", WaveConfig(use_waves=False)).infiltration)
+
+    def test_noinfil_arms_differ_from_their_twin_only_in_infiltration(self):
+        import dataclasses
+
+        seen = 0
+        for dname, arms in EXPERIMENTS_BY_DOMAIN.items():
+            for name, exp in arms.items():
+                if "rain-noinfil" not in name:
+                    self.assertTrue(exp.infiltration, f"{dname}/{name}")
+                    continue
+                seen += 1
+                self.assertFalse(exp.infiltration, f"{dname}/{name}")
+                self.assertTrue(exp.rain, f"{dname}/{name}: noinfil needs rain ON")
+                twin = arms[name.replace("+rain-noinfil", "")]
+                diff = {
+                    f.name
+                    for f in dataclasses.fields(exp)
+                    if getattr(exp, f.name) != getattr(twin, f.name)
+                }
+                self.assertEqual(diff, {"name", "description", "infiltration"}, name)
+        self.assertGreaterEqual(seen, 1)
+
+    def test_finalize_passes_the_flag_to_the_key_patcher(self):
+        import inspect
+
+        from nj_sfincs import model
+
+        src = inspect.getsource(model.finalize)
+        self.assertIn("infiltration: bool = True", src)
+        self.assertIn("and rain and infiltration", src)
+        drv = (Path(__file__).resolve().parents[1] / "run_experiments.py").read_text()
+        self.assertIn("infiltration=exp.infiltration", drv)
+
+    def test_staged_noinfil_arms_have_rain_and_no_infiltration(self):
+        """Read-only; skips arms not currently staged (clean clone)."""
+        checked = 0
+        for dname in domain.DOMAINS:
+            os.environ["NJ_DOMAIN"] = dname
+            root = exp_root()
+            for name, exp in experiments(dname).items():
+                if exp.infiltration:
+                    continue
+                inp = root / name / "sfincs.inp"
+                if not inp.exists():
+                    continue
+                checked += 1
+                keys = {
+                    ln.split("=")[0].strip()
+                    for ln in inp.read_text().splitlines()
+                    if "=" in ln
+                }
+                self.assertIn("netamprfile", keys, f"{inp}: rain missing")
+                self.assertFalse(
+                    keys & {"infiltration_file", "infiltration_type", "scsfile"},
+                    f"{inp} carries infiltration keys but '{name}' has it OFF",
+                )
+        if checked == 0:
+            self.skipTest("no noinfil arms staged on any domain")
 
 
 @_on_fixture
@@ -1538,3 +1610,139 @@ class TestBreakHardlinks(unittest.TestCase):
         self.assertLess(
             src.index("break_hardlinks(model_dir)"), src.index("\n    sf.write()\n")
         )
+
+
+class TestV4Refreeze(unittest.TestCase):
+    """``v4_refreeze`` (user 2026-10-06) = ``v4_hot_plus_walls`` + the Lewes ring edit, its
+    own bed, and two domain-level obs fixes. Pins that the new domain differs from run B's
+    in EXACTLY those fields, and that run B's domain (and v3/v4) did not move."""
+
+    RF = domain.DOMAINS["v4_refreeze"]
+    WALLS = domain.DOMAINS["v4_hot_plus_walls"]
+    HOLE = {
+        "usgs_tidal_inside_thorofare": "2012-10-29 03:54",
+        "usgs_tidal_tuckerton": "2012-10-29 03:54",
+        "usgs_tidal_absecon_creek": "2012-10-29 03:54",
+        "usgs_tidal_avalon": "2012-10-28 03:54",
+        "usgs_tidal_ship_bottom": "2012-10-29 03:54",
+        "usgs_tidal_sea_isle": "2012-10-29 03:54",
+        "usgs_tidal_stone_harbor": "2012-10-29 03:54",
+    }
+
+    def test_only_the_intended_fields_differ_from_run_b(self):
+        import dataclasses
+
+        diff = {
+            f.name
+            for f in dataclasses.fields(self.RF)
+            if getattr(self.RF, f.name) != getattr(self.WALLS, f.name)
+        }
+        self.assertEqual(
+            diff,
+            {"name", "mask_overrides", "waterlevel_line_sea_closure_ll", "obs_gauges"},
+        )
+        self.assertEqual(self.RF.mesh_key, "v4")
+
+    def test_lewes_wall_box(self):
+        rf = {o.name: o for o in self.RF.mask_overrides}
+        wl = {o.name: o for o in self.WALLS.mask_overrides}
+        self.assertEqual(list(rf), list(wl))
+        changed = [n for n in rf if rf[n] != wl[n]]
+        self.assertEqual(changed, ["wall_henlopen_atlantic"])
+        self.assertEqual(
+            rf["wall_henlopen_atlantic"].box, (491_500, 4_286_700, 493_050, 4_294_500)
+        )
+
+    def test_lewes_closure_vertices(self):
+        self.assertEqual(
+            self.RF.waterlevel_line_sea_closure_ll,
+            self.WALLS.waterlevel_line_sea_closure_ll
+            + (
+                ("lewes_canal_e_s", -75.0822, 38.715),
+                ("lewes_canal_e_n", -75.0848, 38.750),
+            ),
+        )
+
+    def test_run_b_and_its_siblings_are_unchanged(self):
+        """The edit is v4_refreeze's ONLY (run B's comparison jobs read its domain)."""
+        for name in ("v4", "v4_hot", "v4_hot_plus", "v4_hot_plus_walls"):
+            d = domain.DOMAINS[name]
+            self.assertEqual(len(d.waterlevel_line_sea_closure_ll), 4, name)
+            box = {o.name: o.box for o in d.mask_overrides}["wall_henlopen_atlantic"]
+            self.assertEqual(box[2], 492_700, name)
+            self.assertEqual(d.obs_gauges, domain.V4.obs_gauges, name)
+        for g in domain.V3.obs_gauges:
+            if g.name in self.HOLE:
+                self.assertIsNone(g.record_ends, g.name)
+
+    def test_hole_gauges_carry_record_ends(self):
+        rf = {g.name: g for g in self.RF.obs_gauges}
+        for name, end in self.HOLE.items():
+            self.assertEqual(rf[name].record_ends, end, name)
+            self.assertFalse(rf[name].survives_crest, name)
+        for g, w in zip(self.RF.obs_gauges, self.WALLS.obs_gauges):
+            self.assertEqual(g.name, w.name)
+            if g.name not in self.HOLE:
+                self.assertEqual(g, w, g.name)
+
+    def test_absecon_creek_is_nudged_not_moved(self):
+        from pyproj import Transformer
+
+        t = Transformer.from_crs(4326, 32618, always_xy=True)
+        rf = {g.name: g for g in self.RF.obs_gauges}["usgs_tidal_absecon_creek"]
+        wl = {g.name: g for g in self.WALLS.obs_gauges}["usgs_tidal_absecon_creek"]
+        (x0, y0), (x1, y1) = t.transform(wl.lon, wl.lat), t.transform(rf.lon, rf.lat)
+        d = ((x1 - x0) ** 2 + (y1 - y0) ** 2) ** 0.5
+        self.assertGreater(d, 1.0)
+        self.assertLess(d, 130.0, "a nudge, not a different station (v4's ~130 m rule)")
+        self.assertEqual(rf.obs_station, wl.obs_station)
+
+    def test_arms(self):
+        import dataclasses
+
+        arms = EXPERIMENTS_BY_DOMAIN["v4_refreeze"]
+        walls = EXPERIMENTS_BY_DOMAIN["v4_hot_plus_walls"]
+        v4 = EXPERIMENTS_BY_DOMAIN["v4"]
+        self.assertEqual(
+            set(arms),
+            {
+                "naccs-premier",
+                "naccs-nowaves",
+                "naccs-nowaves+rain-off+slr-0m",
+                "naccs-nowaves+rain-off+slr-2m",
+                "naccs-nowaves+rain-off+slr-3m",
+                "wind-naccs+naccs-premier",
+                "wind-naccs+naccs-nowaves",
+            },
+        )
+        for name, exp in arms.items():
+            self.assertEqual(exp.subgrid_from, "_subgrid_refreeze", name)
+            self.assertEqual(exp.meteo_from is not None, name.startswith("wind-"), name)
+        for n in ("naccs-premier", "naccs-nowaves"):
+            w = arms[f"wind-naccs+{n}"]
+            self.assertEqual(w.meteo_from, domain.DATA / "wind_v4" / "naccs_blend")
+            self.assertEqual(w.wind_scale, 1.0)
+            self.assertEqual(
+                dataclasses.replace(w, name=n, description="", meteo_from=None),
+                dataclasses.replace(arms[n], description=""),
+            )
+        self.assertEqual(arms["naccs-premier"].waves, walls["naccs-premier"].waves)
+        self.assertEqual(arms["naccs-premier"].waves.dtwave, 3600.0)
+        self.assertFalse(arms["naccs-nowaves"].waves.use_waves)
+        for m in (0, 2, 3):
+            n = f"naccs-nowaves+rain-off+slr-{m}m"
+            self.assertEqual(dataclasses.replace(arms[n], subgrid_from=None), v4[n])
+        for name in ("naccs-premier", "naccs-nowaves"):
+            a, w = arms[name], walls[name]
+            self.assertEqual(
+                dataclasses.replace(a, description="", subgrid_from=None),
+                dataclasses.replace(w, description="", subgrid_from=None),
+                name,
+            )
+
+    def test_fingerprint_shares_counts_with_run_b(self):
+        rf, wl = premier.EXPECTED["v4_refreeze"], premier.EXPECTED["v4_hot_plus_walls"]
+        self.assertEqual(
+            (rf.n_faces, rf.n_boundary_edges), (wl.n_faces, wl.n_boundary_edges)
+        )
+        self.assertNotEqual(rf.sha_z_mask, wl.sha_z_mask)

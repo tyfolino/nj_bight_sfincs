@@ -98,6 +98,20 @@ def _forcing_rows():
     return [(f, d, k if k is not None else key) for f, d, k in _FORCING]
 
 
+def _meteo_source_key(path: Path, default: str) -> str:
+    """``naccs_blend`` for a ``meteo_from`` NACCS blend file (its global
+    ``nj_sfincs_meteo_blend`` attribute), else ``default``. Never raises."""
+    try:
+        import netCDF4
+
+        with netCDF4.Dataset(path) as nc:
+            if "nj_sfincs_meteo_blend" in nc.ncattrs():
+                return "naccs_blend (data/wind_v4/naccs_blend)"
+    except Exception:  # noqa: BLE001
+        pass
+    return default
+
+
 def _validation_rows():
     """`_VALIDATION` with the domain-dependent HWM file filled in."""
     from . import domain as _domain
@@ -417,8 +431,11 @@ def manifest(model_dir: Path | str, data_dir: Path = DATA) -> pd.DataFrame:
         add("elevation", "stack", f"unavailable ({e})", "")
 
     # ── forcing actually present on disk ──────────────────────────────────────
-    for fname, what, key in _forcing_rows():
+    for fname, what, row_key in _forcing_rows():
         p = model_dir / fname
+        key = row_key
+        if p.exists() and fname in ("sfincs_netamuv.nc", "sfincs_netamp.nc"):
+            key = _meteo_source_key(p, row_key)
         if p.exists():
             add(
                 "forcing",
@@ -498,6 +515,9 @@ def wind_scale_label(model_dir: Path | str) -> str:
     f = model_dir / "sfincs_netamuv.nc"
     if not f.is_file():
         return "none"
+    # A ``meteo_from`` blend REPLACES the wind; a speed ratio to ERA5 would read as a scale.
+    if _meteo_source_key(f, "").startswith("naccs_blend"):
+        return "replaced:naccs_blend"
     try:
         from nj_sfincs.config import exp_root
 

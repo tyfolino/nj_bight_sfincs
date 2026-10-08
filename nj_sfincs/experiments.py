@@ -573,6 +573,76 @@ _V4_HOT_PLUS_WALLS: dict[str, Experiment] = {
 }
 
 
+# ── v4_refreeze (2026-10-06, user): THE re-frozen v4 = v4_hot_plus_walls + the Lewes ring
+# edit, on the re-freeze bed `_subgrid_refreeze` (buildings cap 10 → lakes → unpave →
+# harbour / Raritan-corner surveys → back-bay unpave → Sayreville → Little Egg → the
+# bed-source hierarchy LAST; n 0.02 on non-marsh NHD water; job 62308704). Every arm runs
+# on that bed — it is this domain's premier bed, so no `bed-` prefix. The template carries
+# the Keansburg + Overpeck weirs, the Overpeck pool start (−1.005 m, regional inifile) and
+# the ERA5-bilinear meteo on the engine's corner convention; arms inherit all three by
+# copytree (the SLR arms replace the start with their own connected one).
+_REFREEZE_BED = "_subgrid_refreeze"
+_V4_REFREEZE: dict[str, Experiment] = {
+    "naccs-premier": Experiment(
+        "naccs-premier",
+        _V4_PREMIER_WAVES,
+        "THE re-frozen v4: run B's waves (SnapWave 5°, hourly dtwave 3600, CORA at 69 "
+        "points on v4_shelf_steps) and NACCS on the drawn line, with the Lewes edge, the "
+        "re-freeze bed, the Keansburg + Overpeck weirs, the Overpeck pool start and the "
+        "ERA5-bilinear corner-convention meteo; rain + infiltration.",
+        subgrid_from=_REFREEZE_BED,
+        **_V4_WL,
+    ),
+    "naccs-nowaves": Experiment(
+        "naccs-nowaves",
+        WaveConfig(use_waves=False),
+        "The re-frozen premier's waves-off twin (one flag): same bed, structures, start "
+        "and meteo, SnapWave off.",
+        subgrid_from=_REFREEZE_BED,
+        **_V4_WL,
+    ),
+    **{
+        f"naccs-nowaves+rain-off+slr-{m}m": replace(
+            _V4[f"naccs-nowaves+rain-off+slr-{m}m"], subgrid_from=_REFREEZE_BED
+        )
+        for m in (0, 2, 3)
+    },
+}
+# The NACCS-blend wind pair (user 10-06: "NACCS-blend wind pair if ready";
+# logs/wind_naccs_blend_2026-10-06/README.md). Wind + pressure REPLACED after the write by
+# the engine-ready blend (`Experiment.meteo_from`); the template keeps the ERA5-bilinear
+# file, so each pair (wind-naccs+X vs X) differs ONLY in wind + pressure. Blend pressure
+# (the file's default; `--pressure era5` rebuilds it with ERA5 pressure).
+_NACCS_BLEND = DATA / "wind_v4" / "naccs_blend"
+_V4_REFREEZE.update(
+    {
+        f"wind-naccs+{n}": replace(
+            _V4_REFREEZE[n],
+            name=f"wind-naccs+{n}",
+            description=f"{n} with the 10 m wind + MSL pressure replaced by the NACCS "
+            "save-point field blended into ERA5 bilinear (data/wind_v4/naccs_blend: "
+            "linear Delaunay, long/land triangles dropped, 15 km harmonic taper, 500 m, "
+            f"30 min). Pair: {n} (ERA5 bilinear). Over-water lights 0.71 -> 1.06x "
+            "observed; Raritan E-W stress 2.05x; Barnegat N-S 0.38x.",
+            meteo_from=_NACCS_BLEND,
+        )
+        for n in ("naccs-premier", "naccs-nowaves")
+    }
+)
+# 2026-10-08 (user): v4 trails v3 on the shared marks mostly at five coastal-lake marks
+# (6130 by Wreck Pond, 6121, 6122, 6124, 6129) that v3 fills with rain it never lets soak
+# in (FINDINGS part 4 (d); reports/v4_first_results_2026-10-07). One flag off the
+# waves-off twin: rain kept, curve-number infiltration OFF, as in v3.
+_V4_REFREEZE["naccs-nowaves+rain-noinfil"] = replace(
+    _V4_REFREEZE["naccs-nowaves"],
+    name="naccs-nowaves+rain-noinfil",
+    description="naccs-nowaves with the curve-number infiltration OFF (rain kept, every "
+    "drop runs off — v3's setup). Pair: naccs-nowaves. Tests whether infiltration is "
+    "what separates v4 from v3 at the coastal-lake rain-pond marks.",
+    infiltration=False,
+)
+
+
 EXPERIMENTS_BY_DOMAIN: dict[str, dict[str, Experiment]] = {
     "v1_monmouth": {},
     "v1_5_raritan": _V1_5_RARITAN,
@@ -589,6 +659,7 @@ EXPERIMENTS_BY_DOMAIN: dict[str, dict[str, Experiment]] = {
     "v4_hot": _V4,
     "v4_hot_plus": _V4_HOT_PLUS,
     "v4_hot_plus_walls": _V4_HOT_PLUS_WALLS,
+    "v4_refreeze": _V4_REFREEZE,
 }
 
 
