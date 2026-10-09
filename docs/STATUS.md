@@ -6,7 +6,7 @@ running, what is next, what is open. When an item closes, its durable fact goes 
 Git has the history. The campaign log this file grew into until 2026-09-29 (6,767 lines) is
 `git show d70dd1e:docs/STATUS.md`; FINDINGS cites it as "STATUS <date>".
 
-Last updated: **2026-10-07 12:30** (queue cleanup; was 2026-10-06 16:30) — overnight read: the harbour trench fixes Newark Bay but not
+Last updated: **2026-10-09 12:00** (solves done, noinfil resubmitted; was 2026-10-07 12:30) — overnight read: the harbour trench fixes Newark Bay but not
 Raritan Bay (the Arthur Kill drain is ruled out); runs A / B solving ~3× faster than planned, both
 validated tonight; the v3 re-run's Great Egg inlet fix restores the southern back-bay tide.
 
@@ -34,7 +34,26 @@ validated tonight; the v3 re-run's Great Egg inlet fix restores the southern bac
    premier solves **62328437–38** (emeraldrapids, 40 h) → validate **62328444**; nowaves + SLR
    solves **62328439–43** (12 h) → validate **62328445**. Each validate runs the old log check
    inline and validates only arms whose output is WHOLE (`validate_group.slurm`).
-   Template sha `378014e154b4ff41` untouched. Avalon's `record_ends` is 10-28 03:54; v3 / v4 still
+   10-08 15:20: the 5 nowaves/SLR solves EXCEPT slr-2m are DONE (221 structure points each);
+   62328442 (slr-2m) was preempted at 14 min and requeued. Premier solves pended ~27 h on full
+   emeraldrapids + fairshare 8 → user cut limits (run B measured 9.4 h): 437/438 → 18 h,
+   442 → 4 h. 10-09: ALL solves DONE; 437 was preempted at 5.6 h and RESUMED from the 10-29 12:00
+   restart (finished 09:50) — ⚠️ the CN soil state is not in the restart file, so its infiltration
+   RESET at 10-29 12:00 (over-infiltrates later rain; `restart_history.txt`). 438 ran uninterrupted.
+   Validate 62328445 (nowaves + SLR) done; 62328444 (premiers) running. Contingency (a TIMEOUT is NOT auto-requeued): `resume_if_cut.slurm` watchers
+   62360157 (→437) / 62360158 (→438) resubmit a cut-short solve ONCE from its newest 6-hourly
+   restart (+ one validate); a second cut is manual. 438 started 10-08 15:29 on hal0395.
+   🔶 NO-INFILTRATION TEST (user 10-08): new arm `naccs-nowaves+rain-noinfil` (`Experiment.infiltration`
+   = False: rain kept, CN keys stripped, v3's setup). Staging job **62417062** (10-09; the first,
+   62360884, refused at its suite gate on `TestV4Refreeze.test_arms`'s exact arm-set pin — now a
+   "core arms present" check) (`logs/noinfil_2026-10-08/stage_noinfil.slurm`): suite → --check → stage → solve (4 h) → verify vs
+   naccs-nowaves (only the infiltration lines may differ) → validate. ⚠️ EXPECT_MD5 guards config.py,
+   model.py, experiments.py, run_experiments.py, the staging test file — do not edit them until it
+   starts. Read: paired naccs-nowaves+rain-noinfil vs naccs-nowaves at 6130/6121/6122/6124/6129.
+   Template sha `378014e154b4ff41` untouched.
+   📊 10-09 READ JOB **62418378** (`reports/v4_first_results_2026-10-09/jobs/combined.sh`, after
+   62328444): residuals rf_on/rf_off/rfw_on/rfw_off + 5 zsmax pairs + report (`--preset refreeze`:
+   waves, NACCS wind on/off, re-freeze vs run B, vs v3fix) + `overflow_check` slr-2/3 m vs 0 m. Avalon's `record_ends` is 10-28 03:54; v3 / v4 still
    lack these record_ends.
 1. **The Wednesday read is ONE job now: 62328289** (`reports/v4_first_results_2026-10-07/jobs/combined.sh`,
    400 G / 8 h, serial): run B validate → 11 residuals → 10 zsmax pairs → report; a failed step is
@@ -49,7 +68,7 @@ validated tonight; the v3 re-run's Great Egg inlet fix restores the southern bac
    South Amboy obs 4.09; Barnegat — NACCS pushes south 0.38× ERA5, unrefereed).
 4. ✅ `v4_refreeze` code REVIEWED + `git add`-ed 10-07 (no change to existing domains but the intended
    weir restore; + `wind_scale` now reads `replaced:naccs_blend` for the wind-naccs arms). USER: commit.
-   Republish the brief (same file) with the morning's scores.
+   ✅ Brief republished 10-08 (same file + URL; `logs/weekly_2026-10-06/build_brief.py`): Wednesday read, gap breakdown (5 rain-pond marks ~75 %, Keansburg 6155 ~13 %).
 5. Next tests: record the meteo convention in metrics/provenance.
    🔶 HOURLY-WAVE SWING (10-07, `logs/waves_swing_2026-10-07/`, from existing his files): NOT a step
    at each wave update — a NY-harbour basin SEICHE (~2.3–2.6 h v3, ~3.0 h v4), present waves-off
@@ -63,7 +82,17 @@ validated tonight; the v3 re-run's Great Egg inlet fix restores the southern bac
    10-29 18:00 → 10-30 06:00 at dtwave 3600 then 600 in `/scratch/tpj8/engine_gate/swing_{3600,600}/`
    (~8 h). Exit 4 = no restart in time (solve preempted/slow) → resubmit. Read: zs std about its 3 h
    mean at the NY gauges (vs waves-off 0.08–0.10) + paired zsmax at South Amboy / Keansburg / marks.
-   🔶 PACKING TEST SUBMITTED (user OK 10-07): **62329398** (`logs/pack_test_2026-10-07/pack_test.slurm`,
+   ✅ PACKING TEST READ (10-09; `logs/pack_test_2026-10-07/compare/`): PACE packs — 1×64 56 min,
+   4×16 58–60 min each, 8×8 65–72 min each (3 h cut; input is ~half its wall, so a full run may
+   gain less). The "FAIL" is NOT packing: identical 16-thread copies differ from each other as
+   much as from the 64-thread copy — 🔴 v4 waves-on is NOT run-to-run deterministic (FINDINGS
+   §44; NY-bay gauges up to 0.4 m in 3 h). Determinism test SUBMITTED (user OK
+   10-09): **62418789** (`logs/det_test_2026-10-09/det_test.slurm`, one exclusive emeraldrapids
+   node, ≤ 9 h): two LONE 64-thread copies back to back (+ vs the 10-08 lone p1_0), then two
+   1-THREAD copies (no OpenMP). Lone copies identical ⇒ v4 repeats when run normally (the spread
+   needs co-tenancy); 1-thread identical but 64 not ⇒ a threading race. Read the swing test's
+   NY-bay Δ against it.
+   (was:) PACKING TEST SUBMITTED (user OK 10-07): **62329398** (`logs/pack_test_2026-10-07/pack_test.slurm`,
    nice 10, one exclusive emeraldrapids node): run B cut to 3 h, 1×64 threads vs 4×16 vs 8×8 copies
    pinned per socket. If each packed copy keeps ~P1's pace, waves-on arms can share nodes (SnapWave's
    sweep is serial, §20). Also checks packed results = P1 (`engine_gate compare`).

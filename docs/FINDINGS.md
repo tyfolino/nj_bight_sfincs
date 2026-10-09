@@ -719,7 +719,7 @@ CLAUDE.md §5.
     removes a real process: every back-bay gauge reads hm0 0.00–0.07 m against 0.2–0.5 m
     with wind (Sandy raised ~0.5 m fetch waves in Barnegat Bay).
 
-44. 🔴 **The patched wind-on solve is DETERMINISTIC; the unpatched container-vs-native
+44. 🔴 **The patched wind-on solve is DETERMINISTIC on v3 (NOT on v4 — below); the unpatched container-vs-native
     disagreement is compiler rounding amplified by the SnapWave limit cycle, not run-to-run
     noise.** `G3_patched_rep` (same binary, hal0384) vs `G3_patched` (hal0386), the 12-hour
     v3 wind-on cut: every field bit-identical — zs, zsmax, hm0, tp, hm0ig, wavdir max |Δ| 0
@@ -737,6 +737,17 @@ CLAUDE.md §5.
     lever `snapwave_sigmax` (2 s and 3 s cuts) does not remove it, it relocates the
     blow-ups onto the open shelf; the engine-side interior initial-guess remap is the open
     follow-up.
+    🔴 **ON v4 THE SAME BINARY DOES NOT REPEAT ITSELF (2026-10-09).** The packing test
+    (`logs/pack_test_2026-10-07/`, run B cut to 10-28 00:00–03:00, `bin:v2.3.3-winddir-fix-1-gf11`)
+    staged 13 copies with byte-identical inputs; four 16-thread copies run side by side on one
+    emeraldrapids node differ from EACH OTHER as much as from the 64-thread copy: SnapWave
+    iteration counts by up to 41, point hm0 already at the FIRST wave solve (t = 0; Sea Bright
+    1.7 m, Ship John Shoal 1.0 m, Narrows SI 0.44 m), point zs from the first 10 min. Over the
+    3 h, max over 6 copy pairs: zs Keansburg 0.41, Sandy Hook 0.40, Great Kills 0.36, Arthur
+    Kill mouth 0.25, South Amboy 0.17 m; 10 of 48 gauges > 5 cm, 6 exactly 0. Map: zsmax p90
+    ~1 cm, p99 ~3 cm. NOT tested: two LONE 64-thread solves (§44's v3 STRICT setup) — whether
+    v4's spread needs co-tenancy or a v4 setting (5° bins, hourly waves) is open. Until then
+    a waves-on v4 paired Δ in the NY bays carries run-to-run noise of up to a few dm.
 
     **The native build reproduces the container** (2026-09-11, `scripts/engine_gate.py`):
     G1 (hydromt `sfincs_compound` example, no SnapWave) is STRICT — zs / zsmax / h max|Δ| 0

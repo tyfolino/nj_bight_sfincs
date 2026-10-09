@@ -150,6 +150,63 @@ PRESETS: dict[str, dict] = {
             ("B_off", "v3fix_off", "v4 (B) vs v3, both on the shared fixes, waves off"),
         ],
     ),
+    # 2026-10-09: the re-frozen v4 (v4_refreeze) — its first scores, the NACCS-wind pairs,
+    # and what the re-freeze changed against run B. B_* / v3fix_* marks are copied from
+    # the 10-07 read (same runs, unchanged), not recomputed.
+    "refreeze": dict(
+        date="2026-10-09",
+        runs=[
+            (
+                "rf_on",
+                "experiments/v4_refreeze/naccs-premier",
+                "v4 re-freeze, waves ON",
+            ),
+            (
+                "rf_off",
+                "experiments/v4_refreeze/naccs-nowaves",
+                "v4 re-freeze, waves-off twin",
+            ),
+            (
+                "rfw_on",
+                "experiments/v4_refreeze/wind-naccs+naccs-premier",
+                "v4 re-freeze, NACCS-blend wind, waves ON",
+            ),
+            (
+                "rfw_off",
+                "experiments/v4_refreeze/wind-naccs+naccs-nowaves",
+                "v4 re-freeze, NACCS-blend wind, waves off",
+            ),
+            ("B_on", "experiments/v4_hot_plus_walls/naccs-premier", "run B, waves ON"),
+            (
+                "B_off",
+                "experiments/v4_hot_plus_walls/naccs-nowaves",
+                "run B's waves-off twin",
+            ),
+            (
+                "v3fix_on",
+                "experiments/v3/bed-v4fixes+wave-dt3600",
+                "v3 re-run: the shared bed fixes, hourly waves",
+            ),
+            (
+                "v3fix_off",
+                "experiments/v3/bed-v4fixes+naccs-nowaves",
+                "v3 re-run's waves-off twin",
+            ),
+        ],
+        pairs=[
+            ("rf_on", "rf_off", "wave contribution, re-freeze"),
+            ("rfw_off", "rf_off", "NACCS-blend wind vs ERA5, waves off"),
+            ("rfw_on", "rf_on", "NACCS-blend wind vs ERA5, waves on"),
+            (
+                "rf_on",
+                "B_on",
+                "re-freeze vs run B, waves on (weir, meteo corner, Lewes)",
+            ),
+            ("rf_off", "B_off", "re-freeze vs run B, waves off"),
+            ("rf_on", "v3fix_on", "v4 re-freeze vs v3, shared fixes, hourly waves"),
+            ("rf_off", "v3fix_off", "v4 re-freeze vs v3, shared fixes, waves off"),
+        ],
+    ),
     "test": dict(
         date="test",
         runs=[

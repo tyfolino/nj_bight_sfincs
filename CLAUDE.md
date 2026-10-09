@@ -266,6 +266,13 @@ not trip that guard. Do not run the sweep driver to "just rebuild" a template.
   and the job before it ran the pre-edit version. Submit with a checksum:
   `md5sum <files> > logs/<job>_expected.md5; EXPECT_MD5=logs/<job>_expected.md5 sbatch …`
   (`hpc/build_coarse_bed.slurm`, `hpc/clip_nj_dem.slurm` honour it), or wait a few minutes.
+- 🔴 **A preempted rain-on run RESUMES WITH DRY SOIL.** Restart files do not carry `cna`'s
+  `cumprcp` / `cuminf`, so after a resume the curve-number method starts again from an empty
+  soil and soaks up rain that should have run off (FINDINGS §59). The resume warns but does
+  not stop the run, and the scores look normal. It hit v4_refreeze `naccs-premier` on 10-09:
+  preempted at 5.6 h, resumed from 10-29 12:00, in the middle of Sandy's rain. Before you
+  read rain-driven marks (the rain-pond lakes, inland ponding), check `restart_history.txt`
+  for "soil state RESET"; for a clean answer, compare against an uninterrupted twin or re-run.
 - 🔴 **A write into a HARD-LINKED input writes through to every run sharing it.** Staging
   hard-links `sfincs_subgrid.nc` from the `subgrid_from` source; `finalize()`'s `sf.write()` once
   rewrote it THROUGH the link into the premier's and 15 other runs' tables (2026-10-01; harmless
