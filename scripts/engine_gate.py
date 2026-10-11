@@ -66,6 +66,7 @@ INPUT_GLOBS = (
     "sfincs.obs",
     "sfincs.weir",
     "sfincs.crs",
+    "sfincs_ini*",  # inifile (sea_level.py binary start); missed until 2026-10-11
     "sfincs.thd",
     "sfincs.drn",
     # regular-grid (binary-input) models, e.g. the hydromt example
@@ -204,6 +205,20 @@ def make(
         if k not in keys:
             out.append(f"{k:<20} = {v}")
     (dst / "sfincs.inp").write_text("\n".join(out) + "\n")
+    # Every input the inp NAMES must be in the gate dir — a missing inifile once went
+    # unstaged silently (2026-10-11), and SFINCS would start from zsini instead.
+    final = dict(
+        (ln.partition("=")[0].strip(), ln.partition("=")[2].strip())
+        for ln in out
+        if "=" in ln
+    )
+    missing = [
+        f"{k}={v}"
+        for k, v in final.items()
+        if k.endswith("file") and v and not (dst / v).exists()
+    ]
+    if missing:
+        raise SystemExit(f"{dst}: inp names inputs that were not staged: {missing}")
     changed = " ".join(
         f"{k}={keys.get(k, '(absent)')}->{v}" for k, v in overrides.items()
     )

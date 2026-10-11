@@ -39,10 +39,11 @@ submitting the v3-reference job. Scratch cleaned 10-11 (was over its soft quota)
 
 ## Running
 
+- **62561797** `inflow_move` (10-11 evening, 32 c / 128 G / 6 h): the moved-inflow test (PICK UP 1b).
 - **62561016** `motf_gap_rescore` (submitted 2026-10-11 evening, 400 G, 12 h; `logs/motf_gap_2026-10-11/`):
   rebuilds `sandy_motf_valid_nj_v4.tif` with `Domain.motf_gap_boxes_xy` (checks it changed ONLY
   inside the box, 1 → 0), freezes `metrics_2026-10-11_pre_motf_gap.csv`, then `--validate-only` the
-  five v4_refreeze arms serially (~1.5 h each). Then: re-render the status notebook (fig. 4).
+  five v4_refreeze arms serially (~1.5 h each). Then: re-render the status notebook (PICK UP 1a).
 - **62551000** `premier_candidates` (submitted 2026-10-11 ~14:00; one exclusive emeraldrapids node,
   23 h, `--requeue`; `logs/premier_2026-10-11/`): v3 `bed-v4fixes+wave-dt3600+wind-naccs` + twin
   (the matching v3 reference) and v4 `naccs-premier+rain-noinfil` + twin (like-for-like, v3 has no
@@ -74,11 +75,26 @@ submitting the v3-reference job. Scratch cleaned 10-11 (was over its soft quota)
    recovery` on the quadtree (needs a ksat layer — SSURGO), `effective` ≈ 1.5 (log-S interpolation
    AMC II → I by the wetness anomaly) with brackets 1.0 / 2.38; `_infiltration_keys` for the cnb
    keys; `restart.py`'s soil-RESET warning only for `cna`; a toy resume test. Then re-baseline.
-1b. **Inflow pile-ups (Open questions) — proposed 10-11, awaiting the user:** screen all 61
-   sources (source-face size > 50 m AND rain-off peak − bed > 1 m, falling > 1 m within 2 km), move
-   each flagged source DOWN the creek onto the first ≤ 50 m wet face (forcing only → template
-   re-stage, no new mesh), re-check on a short `engine_gate.py` cut, and ship it inside the `cnb`
-   re-baseline. A refinement band along the creeks (a new mesh = a new domain) only if moving fails.
+1a. **Status notebook, fig. 2 (peak map) → "rise above normal water" (user 10-11).** A level in
+   m NAVD88 reads a river flowing on a 7 m bed as deep water. Plot instead, per face: normally-wet
+   faces → peak − the pre-storm high water; normally-dry faces → depth. Baseline = max of the
+   premier's own early 6-h `zsmax` blocks; first run `logs/notebook_qc_2026-10-11/baseline_check.py`
+   (surge already in by 10-28 evening? river reaches filled by then?) to pick the blocks. Re-render
+   together with fig. 4 once 62561016 has re-scored. The notebook holds all its code (edit in place).
+1b. **Inflow pile-ups — user approved 10-11; screen DONE, test RUNNING (62561797).**
+   `scripts/relocate_coarse_inflows.py screen` (coarse face > 50 m, depth at the source > 2 m,
+   peak falls > 1 m within 4 km): 12 of 61 — NJ: Salem R. 01482500, 01475001, Crosswicks 01464500,
+   Assunpink 01464000; PA/DE: Chester, Ridley, Frankford, Pennypack, Poquessing, White Clay, Red
+   Clay, Brandywine (`logs/notebook_qc_2026-10-11/relocate_screen.txt`); every unflagged source
+   stands 0.3–1.9 m deep. Each moves 1.1–4.2 km down its creek to the first ≤ 50 m channel face.
+   🔴 `discharge_geodataset` is MASK-DEFINING (the 500 m inflow walls are built from it), so the
+   walls must stay on the OLD points: a registry change needs a separate wall-points source, or
+   the mask, fingerprint and old crossings all move. Test: full-window copy of the rain-off arm
+   with only `sfincs_netsrcdisfile.nc` changed (`/scratch/tpj8/engine_gate/inflow_move_2026-10-11/`),
+   `logs/inflow_move_2026-10-11/compare.txt`. Then: ship in the `cnb` re-baseline.
+   **Next mesh (user 10-11: OK to refine around problem rivers):** a 25–50 m refinement band along
+   the 12 flagged creeks (and the Christina, 25 m but still +0.9 m) — a new mesh is a new domain
+   freeze, so it waits for the next one; the source moves are the fix until then.
 2. ✅ **v4 premier DECLARED (user 10-11): `naccs-premier` on `v4_refreeze` = the NACCS-blend pair**
    (was `wind-naccs+naccs-premier`, uninterrupted; RMSE 0.436 / bias −0.110 / CSI 0.728). Re-baseline
    done: rows frozen (`metrics_2026-10-11_pre_rebaseline.csv`), the ERA5 pair + ERA5 noinfil parked

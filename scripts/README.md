@@ -47,6 +47,7 @@ Every script reads `NJ_DOMAIN` unless its row names a domain. Run from the repo 
 | `v4_first_results.py` | The first waves-on v4 read in one command: setup, scores, paired marks (incl. v4 vs v3), gauge/HWM/zsmax figures, summary skeleton; `submit --preset wednesday` | live |
 | `overflow_check.py` | Where the peak water reaches the model edge; `--compare` for the SLR ladder | live |
 | `source_proximity.py` | Which marks and gauges sit close enough to a river inflow to read it | live |
+| `relocate_coarse_inflows.py` | Flag inflows piling up on a coarse face; move them down the creek (screen / write / apply) | live |
 | `compare_usgs_transects.py` | Model beach runup level vs USGS Sandy transects (TWL, dune crest, sandline washover) — the read where IG shows | live (restored 2026-10-01) |
 | `stockdon_envelope.py` | Stockdon (2006) runup envelope on a still-water run (diagnostic) | live |
 | `diagnose_bay_seiche.py` | Raritan Bay sub-hourly motion: coherent seiche or chatter (v1.5) | frozen |
