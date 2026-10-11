@@ -53,9 +53,8 @@ GUARDS
 
 Usage::
 
-    # Wednesday (or tonight, chained behind the validate jobs):
-    python scripts/v4_first_results.py plan   --preset wednesday
-    python scripts/v4_first_results.py submit --preset wednesday [--after 6228xxxx,...]
+    python scripts/v4_first_results.py plan   --preset refreeze
+    python scripts/v4_first_results.py submit --preset refreeze [--after 6228xxxx,...]
     # the test on the runs that exist now:
     python scripts/v4_first_results.py submit --preset test
 """
@@ -85,74 +84,10 @@ SEED, N_BOOT = 20261007, 200_000  # = paired_hwm_bootstrap.py defaults
 
 #: label -> path (repo-relative). ``role`` is free text for the setup table.
 PRESETS: dict[str, dict] = {
-    "wednesday": dict(
-        date="2026-10-07",
-        runs=[
-            (
-                "A_on",
-                "experiments/v4_hot_plus/bed-buildings+bed-channels+naccs-premier",
-                "run A, waves ON",
-            ),
-            (
-                "A_off",
-                "experiments/v4_hot_plus/bed-buildings+bed-channels+naccs-nowaves",
-                "run A's waves-off twin",
-            ),
-            ("B_on", "experiments/v4_hot_plus_walls/naccs-premier", "run B, waves ON"),
-            (
-                "B_off",
-                "experiments/v4_hot_plus_walls/naccs-nowaves",
-                "run B's waves-off twin",
-            ),
-            (
-                "Aplus_base",
-                "experiments/v4_hot_plus/naccs-nowaves",
-                "A+ waves-off on the template bed (dam crest)",
-            ),
-            (
-                "harbour",
-                "experiments/v4_hot_plus/bed-harbour+naccs-nowaves",
-                "A+ waves-off + the harbour trench surveys only",
-            ),
-            ("v3", "experiments/v3/naccs-premier", "v3 reference (FINDINGS §50)"),
-            ("v3_off", "experiments/v3/naccs-nowaves", "v3 waves-off"),
-            ("v3_dt3600", "experiments/v3/wave-dt3600", "v3 hourly waves, old bed"),
-            (
-                "v3fix_on",
-                "experiments/v3/bed-v4fixes+wave-dt3600",
-                "v3 re-run: the shared bed fixes, hourly waves",
-            ),
-            (
-                "v3fix_off",
-                "experiments/v3/bed-v4fixes+naccs-nowaves",
-                "v3 re-run's waves-off twin",
-            ),
-        ],
-        pairs=[
-            ("A_on", "A_off", "wave contribution, run A"),
-            ("B_on", "B_off", "wave contribution, run B"),
-            ("B_on", "A_on", "run B vs run A, waves on (walls + inflows + full bed)"),
-            ("B_off", "A_off", "run B vs run A, waves off"),
-            ("A_off", "Aplus_base", "the 10-05 bed alone (waves off)"),
-            ("A_on", "v3", "v4 (A) vs v3 premier, shared marks"),
-            ("B_on", "v3", "v4 (B) vs v3 premier, shared marks"),
-            ("v3", "v3_off", "v3's own wave contribution (reference)"),
-            ("harbour", "Aplus_base", "the harbour trench alone (waves off)"),
-            ("harbour", "v3_off", "v4 harbour test vs v3, waves off (the Raritan gap)"),
-            ("v3fix_on", "v3_dt3600", "the shared bed fixes on v3, hourly waves"),
-            ("v3fix_off", "v3_off", "the shared bed fixes on v3, waves off"),
-            ("v3fix_on", "v3fix_off", "v3 wave contribution on the fixed bed"),
-            (
-                "B_on",
-                "v3fix_on",
-                "v4 (B) vs v3, both on the shared fixes, hourly waves",
-            ),
-            ("B_off", "v3fix_off", "v4 (B) vs v3, both on the shared fixes, waves off"),
-        ],
-    ),
+    # (the 10-07 `wednesday` preset, runs A / B: retired 2026-10-11, in git history)
     # 2026-10-09: the re-frozen v4 (v4_refreeze) — its first scores, the NACCS-wind pairs,
-    # and what the re-freeze changed against run B. B_* / v3fix_* marks are copied from
-    # the 10-07 read (same runs, unchanged), not recomputed.
+    # and what the re-freeze changed against run B. B_* / v3fix_* marks were copied from
+    # the 10-07 read (same runs, unchanged; that report retired 10-11, in git history).
     # Paths updated 2026-10-11 for the re-baseline (the runs moved, not changed): the ERA5
     # pair is parked in _pre_rebaseline_2026-10-11/, the NACCS pair renamed into place.
     "refreeze": dict(
