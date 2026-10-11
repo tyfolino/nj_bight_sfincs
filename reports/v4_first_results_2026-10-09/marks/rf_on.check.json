@@ -1,0 +1,12 @@
+{
+ "label": "rf_on",
+ "n": 110,
+ "rmse": 0.47872873551652134,
+ "bias": -0.17433629949092866,
+ "metrics_n": 110,
+ "metrics_rmse": 0.4787287355165213,
+ "metrics_bias": -0.1743362994909286,
+ "metrics_estimator": "median",
+ "metrics_radius": 50.0,
+ "reproduces_metrics_4dp": true
+}

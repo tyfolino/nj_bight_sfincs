@@ -1,0 +1,12 @@
+{
+ "label": "v3_dt3600",
+ "n": 94,
+ "rmse": 0.32966767724433593,
+ "bias": -0.12872594640610063,
+ "metrics_n": 94,
+ "metrics_rmse": 0.3296676772443359,
+ "metrics_bias": -0.1287259464061006,
+ "metrics_estimator": "median",
+ "metrics_radius": 50.0,
+ "reproduces_metrics_4dp": true
+}

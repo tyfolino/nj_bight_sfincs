@@ -745,9 +745,20 @@ CLAUDE.md §5.
     1.7 m, Ship John Shoal 1.0 m, Narrows SI 0.44 m), point zs from the first 10 min. Over the
     3 h, max over 6 copy pairs: zs Keansburg 0.41, Sandy Hook 0.40, Great Kills 0.36, Arthur
     Kill mouth 0.25, South Amboy 0.17 m; 10 of 48 gauges > 5 cm, 6 exactly 0. Map: zsmax p90
-    ~1 cm, p99 ~3 cm. NOT tested: two LONE 64-thread solves (§44's v3 STRICT setup) — whether
-    v4's spread needs co-tenancy or a v4 setting (5° bins, hourly waves) is open. Until then
-    a waves-on v4 paired Δ in the NY bays carries run-to-run noise of up to a few dm.
+    ~1 cm, p99 ~3 cm. **Co-tenancy is NOT the cause** (`logs/det_test_2026-10-09/`, job
+    62418789, one exclusive emeraldrapids node): two LONE 64-thread copies run back to back
+    differ too — iteration counts 13/9/9/30 vs 10/9/19/50, zsmax p90 9 mm / p99 2.4 cm (max
+    3.25 m at a few wetting cells), point zs Sea Bright 0.11 m and 15 of 48 gauges > 1 cm by
+    3 h, point hm0 up to 0.75 m. Two 1-THREAD copies were cut by their 5 h timeout before the
+    end, but differ already at the first SnapWave call (9 vs 14 iterations from identical
+    inputs) — if that holds the cause is not an OpenMP race but something order- or
+    memory-dependent in the SnapWave solve on this domain (uninitialised state is the
+    suspect; not localised). A waves-on v4 paired Δ in the NY bays therefore carries
+    run-to-run noise of cm (map) to dm (single gauges); waves-off v4 is untested but §44's G1
+    says the hydrodynamics alone repeat exactly. The same packing test measured PACE (3 h cut of run B, one emeraldrapids node):
+    1×64 threads 56 min, 4×16 copies 58–60 min each, 8×8 65–72 min each — waves-on arms can
+    share a node at little cost (input is ~half of a 3 h cut's wall, so a full run may gain
+    less); `logs/pack_test_2026-10-07/compare/`.
 
     **The native build reproduces the container** (2026-09-11, `scripts/engine_gate.py`):
     G1 (hydromt `sfincs_compound` example, no SnapWave) is STRICT — zs / zsmax / h max|Δ| 0
@@ -976,6 +987,18 @@ CLAUDE.md §5.
     (storm-tide peak 3.16 vs 3.35; obs 3.47). ⚠️ Every 12 h cut ends before the Cape May
     pocket forms, so short cuts cannot screen a bin change. STATUS 10-01 → 10-03;
     `logs/wave_cost_2026-10-01/`, `-10-02/`, `-10-03/`.
+    (g) **The NY-bay waves-on "swing" is the harbour basin's own seiche, pumped by coarse wave
+    updates — not a step at each update** (2026-10-07, `logs/waves_swing_2026-10-07/README.md`,
+    from his files): period ~2.3–2.6 h (v3) / ~3.0 h (v4, Newark Bay and the Kills computed);
+    it rings waves-OFF too (zs std about its 3 h mean 0.08–0.10 m at the NY gauges); waves add
+    +25–35 % at dtwave 1800 (v3) and 3600 (v4 run A), ×2.3–2.5 at 3600 on v3. NJ back bays and
+    the open coast: none. At the crest the NY-bay waves-on `zsmax` lift is ~all seiche PHASE
+    (v4 run A, South Amboy +0.151 = slow set-up −0.002 + oscillation +0.153; Keansburg and the
+    Arthur Kill mouth alike), whereas Waretown +0.21 and Atlantic City +0.06 are real set-up.
+    Read NY-bay waves-on crests ±0.1–0.15 m. The decisive restart test (10-29 18:00 → 10-30
+    06:00 at dtwave 3600 vs 600, job 62328665) finished only the 3600 leg — the 600 leg is 6×
+    the wave calls and hit 14 h; and §44's run-to-run noise now has to be subtracted from any
+    such pair.
 
 62. **The waves-on lift in the NJ back bays is OCEAN SWELL breaking between the MHW − 5 m line
     and the bays, carried in through the inlets — not wind sea made inside the bays, and not
@@ -1170,7 +1193,14 @@ CLAUDE.md §5.
     **Great Egg Harbor Inlet** (Longport → Ocean City; soundings on it 9.2 m deeper), the
     **Inside Thorofare** at Atlantic City (+0.1…+0.2 m vs −4 m; the USGS gauge's face reads
     +3.47 m because of it), Compton Creek; ~15 smaller causeway-shaped patches Ocean City →
-    Wildwood unconfirmed. v3 carries the same tier and the same defect. (i) **3DEP's flat
+    Wildwood unconfirmed. v3 carries the same tier and the same defect; un-paving the Great
+    Egg inlet on v3 (`bed-v4fixes`, waves off, 10-06) restores the southern back-bay tide —
+    Great Egg range 0.70 → 1.31 m (obs 1.23), Ocean City 0.74 → 1.34 (obs 1.13), their peaks
+    −0.34 / −0.41 → −0.13 / −0.14 m — and makes Inside Thorofare tidal (range 0.12 → 1.42, obs
+    1.22); HWM RMSE 0.393 → 0.382 (median, 50 m, n 94). Its `great_bay_mullica` −0.08 → −0.25
+    is TWO marks (6066 +0.75 → −0.19, 6053 +0.13 → −0.48): the `riverbeds_gmrt_v4` carve removed
+    a +2.8…+3.9 m GMRT plug behind which v3's no-infiltration rain ponded — −0.25 is the honest
+    number (§57's deficit). (i) **3DEP's flat
     water surface (−0.55…−1.13 m) becomes the bed wherever CUDEM 1/9″ is missing and the NJ
     lidar is masked** — 4.1 km², all in the Raritan / Arthur Kill corner (South River keeps
     35 % of its surveyed section); the catalog note that `dep3_v4` blanks tidal water was never
@@ -1278,7 +1308,9 @@ CLAUDE.md §5.
     `peak_err` is invalid on every arm, v3 and v4** (2026-10-06): Inside Thorofare, Tuckerton,
     Absecon Creek and Avalon score the first post-gap sample (already falling, e.g. Inside
     Thorofare 1.713 m at −0.37 m/h) as the peak; Ship Bottom, Sea Isle and Stone Harbor score a
-    pre-storm tide. Their "errors" (+0.2…+1.0 m) are artefacts. On the fixed bed Inside
+    pre-storm tide. Their "errors" (+0.2…+1.0 m) are artefacts. Only `v4_refreeze` (2026-10-06) gives them
+    `record_ends` (`_V4_REFREEZE_HOLE_ENDS`, domain-level); every other domain's rows keep the
+    artefact, so a re-freeze − run B or − v3 gauge delta there (−1.1…−1.6 m) is the scoring. On the fixed bed Inside
     Thorofare's falling limb fits (mean −0.004 / RMSE 0.12 m, v3 twin) and its three nearest
     HWMs (6056 / 6054 / 6057: 2.35 / 2.23 / 2.10 vs model 2.15 / 2.15 / 2.10) say the model
     crest is, if anything, LOW. `logs/morning_2026-10-06/per_mark/`. (g) A gauge on a dry bank or an un-carved creek reads a
@@ -1738,6 +1770,37 @@ the Delaware Bay lights, ~1.25 at sheltered coastal anemometers; over Raritan Ba
 there to judge). NAM 4 km nest and H*Wind for Sandy: not obtainable. RAP's SLP is 2–7 hPa high.
 (f) The dam-crest recut scores identically to the spliced cut (HWM bias Δ < 1e-6 m, worst gauge
 0.3 mm, CSI +0.0001).
+(g) **First `v4_refreeze` results (2026-10-09; `reports/v4_first_results_2026-10-09/summary.md`;
+median, 50 m, n 110; engine `bin:v2.3.3-winddir-fix-1-gf11@673ee3bf`; paired bootstrap B 200 000):**
+`naccs-premier` (waves on, ERA5) RMSE 0.479 / bias −0.174 / CSI 0.713; its waves-off twin 0.539 /
+−0.361 / 0.698; `wind-naccs+naccs-premier` 0.436 / −0.110 / 0.728; `wind-naccs+naccs-nowaves` 0.490
+/ −0.240 / 0.718. **Wave lift** ΔRMSE −0.060 [−0.115, −0.019] (v3's §48: −0.064), modelled level
++0.11…+0.26 m in every basin group, the fit gain mostly NY bays (−0.148; seiche-phase and §44
+noise included). **NACCS-blend wind vs ERA5** (waves off, both uninterrupted) −0.049 [−0.084,
+−0.023]: NY bays −0.118, rivers / Newark Bay −0.182, open coast 0; Delaware gauge peaks +0.16…+0.27
+m (Philadelphia −0.43 → −0.14 m vs obs). **Re-freeze vs run B** (levee, meteo corner, Lewes, bed
+overlays): waves off −0.028 [−0.064, −0.002]; waves on −0.019 [−0.074, +0.029], NY bays −0.128,
+rivers −0.127. **v4 vs v3 on the 94 shared marks** (v3 = `bed-v4fixes` re-run): +0.181 waves on
+[+0.005, +0.343] and off [+0.047, +0.327] — from the open coast and the NJ back bays (`south_coast`,
+`barnegat_bay`, `shark_river`), i.e. the rain-pond basins of (d). ⚠️ The `naccs-premier` solve was
+preempted and resumed at 10-29 12:00 with the CN soil state RESET (§59): it reads `south_coast`
+−1.335 against its waves-off twin's −1.308, where the uninterrupted NACCS pair shows waves +0.30 m
+— the reset costs ~0.3 m there and enters every pair that uses it on rain-pond marks.
+**Infiltration is most of the v4 − v3 rain-pond gap** (`naccs-nowaves+rain-noinfil`: rain kept,
+CN keys stripped = v3's setup; vs `naccs-nowaves`, waves off): RMSE 0.539 → 0.407, bias −0.361 →
+−0.294; `barnegat_bay` (n 6) 1.123 → 0.502, `south_coast` (n 4) 1.469 → 0.759, `shark_river` (n 2)
+0.598 → 0.461, `great_bay_mullica` 0.484 → 0.411, every other basin +1…+3 cm; the price is extent —
+CSI 0.698 → 0.689, FAR 0.144 → 0.186 (more inland rain ponding). With no infiltration v4's bias there
+closes most of the way to v3's waves-off twin: `barnegat_bay` −0.43 vs −0.38, `south_coast` −0.58
+vs −0.49, `shark_river` −0.46 vs −0.31 (from −0.81 / −1.31 / −0.59). Whether CN over-infiltrates or v3 is "right
+for the wrong reason" ((d): its lakes keep rising a day after the ocean falls) is not separated by
+the marks alone. **The Raritan Bay low of (e) is mostly closed on the re-freeze:** `raritan_bay`
+bias (n 21) run B waves-off −0.409 → re-freeze waves-on +0.011 (NACCS wind +0.054), South Amboy
+peak −0.52 → −0.03 m (obs 4.09) — the re-freeze's NY-bay change appears only with waves on and
+the waves-on crest there carries the §61 (g) seiche phase and §44 noise, so the mechanism split
+(levee / meteo corner / waves / phase) is not measured. **SLR design gate on the re-freeze** (`overflow_check`, rain off, +0/+2/+3 m): no
+outflow edge cell gets wet at any level (max rise 0.006 m); the rise stacks against the walls as
+designed (Bayonne 4.2, Cape Henlopen / Henlopen–Atlantic 3.5, Maurice 3.2, Hackensack 3.1 m at +3 m).
 
 **Still open after the audit:** the Schuylkill backing up to 6.8 m BELOW the Fairmount Dam on a
 ~0 m bed (no river cut removes it; the box-MEAN Manning above `uv_zmax` is the suspect —

@@ -44,6 +44,8 @@ reports/figures/
 reports/**/animations/
 # SnapWave band GeoJSONs are regenerated from the table by scripts/check_snapwave_domain.py
 reports/snapwave_domain_*.geojson
+# SLURM stdout of a report's read jobs: a log, like logs/ (the job scripts themselves stay)
+reports/**/jobs/*.out
 
 # Toolchain — symlinks into ~/nj_sandy_sfincs (see CLAUDE.md). No trailing slash:
 # a `dir/` pattern does not match a symlink, so the trailing-slash form would leave

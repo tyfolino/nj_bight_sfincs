@@ -1,0 +1,12 @@
+{
+ "label": "harbour",
+ "n": 110,
+ "rmse": 0.5666008897230914,
+ "bias": -0.39270756643035204,
+ "metrics_n": 110,
+ "metrics_rmse": 0.5666008897230914,
+ "metrics_bias": -0.392707566430352,
+ "metrics_estimator": "median",
+ "metrics_radius": 50.0,
+ "reproduces_metrics_4dp": true
+}
