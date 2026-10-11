@@ -24,18 +24,30 @@ submitting the v3-reference job. Scratch cleaned 10-11 (was over its soft quota)
   (`v4_hot_plus_walls`) stays in its own domain as the pre-re-freeze record.
 - **10-09 scores** (median, 50 m, n 110; FINDINGS part 4 (g)):
 
-  | arm | RMSE | bias | CSI | note |
+  | arm (names since the 10-11 re-baseline) | RMSE | bias | CSI | note |
   |---|---|---|---|---|
-  | `naccs-premier` | 0.479 | −0.174 | 0.713 | ⚠️ resumed 10-29 12:00 with the CN soil RESET (§59) |
-  | `naccs-nowaves` | 0.539 | −0.361 | 0.698 | |
-  | `wind-naccs+naccs-premier` | **0.436** | −0.110 | 0.728 | uninterrupted |
-  | `wind-naccs+naccs-nowaves` | 0.490 | −0.240 | 0.718 | |
-  | `naccs-nowaves+rain-noinfil` | 0.407 | −0.294 | 0.689 | FAR 0.144 → 0.186 |
+  | **`naccs-premier`** (NACCS wind) | **0.436** | −0.110 | 0.728 | THE premier; uninterrupted |
+  | `naccs-nowaves` (NACCS wind) | 0.490 | −0.240 | 0.718 | its twin |
+  | parked: ERA5 `naccs-premier` | 0.479 | −0.174 | 0.713 | ⚠️ soil RESET at resume (§59) |
+  | parked: ERA5 `naccs-nowaves` | 0.539 | −0.361 | 0.698 | |
+  | parked: ERA5 `naccs-nowaves+rain-noinfil` | 0.407 | −0.294 | 0.689 | FAR 0.144 → 0.186 |
 
   Wave lift −0.060 [−0.115, −0.019]; NACCS wind (waves off) −0.049 [−0.084, −0.023]; v4 trails v3
   by +0.18 on the 94 shared marks — mostly the rain-pond basins, and switching infiltration off
   closes most of it. The Raritan Bay low is mostly gone waves-on (`raritan_bay` bias +0.01, South
   Amboy −0.03 m; seiche-phase caveat). SLR gate +0/+2/+3 m: no outflow edge wets.
+
+## Running
+
+- **62551000** `premier_candidates` (submitted 2026-10-11 ~14:00; one exclusive emeraldrapids node,
+  23 h, `--requeue`; `logs/premier_2026-10-11/`): v3 `bed-v4fixes+wave-dt3600+wind-naccs` + twin
+  (the matching v3 reference) and v4 `naccs-premier+rain-noinfil` + twin (like-for-like, v3 has no
+  infiltration): suite → stage both domains → verify each vs its pair → 4 solves side by side →
+  validate → paired reads. Progress: `CHECKS.txt`; per-step markers in `state/`. 🔴 EXPECT_MD5
+  guards experiments.py, model.py, premier.py, run_experiments.py, sfincs_run.slurm,
+  sfincs_restart.py and the script — do NOT edit them until it STARTS. Must start by ~Mon 09:00 or
+  it waits for maintenance (10-13 08:00 → 10-14 23:59). Read: v3 meteo pair (old ERA5 vs NACCS),
+  v3 wave lift, v4 premier vs v3 reference on shared marks (`v4_first_results.py`, new preset).
 
 ## ☀️ PICK UP (Monday 10-12)
 
@@ -52,13 +64,14 @@ submitting the v3-reference job. Scratch cleaned 10-11 (was over its soft quota)
    recovery` on the quadtree (needs a ksat layer — SSURGO), `effective` ≈ 1.5 (log-S interpolation
    AMC II → I by the wetness anomaly) with brackets 1.0 / 2.38; `_infiltration_keys` for the cnb
    keys; `restart.py`'s soil-RESET warning only for `cna`; a toy resume test. Then re-baseline.
-2. **The v4 premier, interim:** `wind-naccs+naccs-premier` (NACCS-blend wind, CN AMC II, waves
-   on; RMSE 0.436, uninterrupted) is the cleanest run in hand; `naccs-premier` carries the soil
-   reset. ❓ USER: declare it now (freeze rows, park the reset run, rename deliberately) or wait for
-   the `cnb` premier. The v3 matching reference + its like-for-like v4 counterpart (infiltration off,
-   v3 has none) are drafted as ONE job: `logs/premier_2026-10-11/premier_candidates.slurm` (not
-   submitted; ~20 h, must start by Mon ~09:00). Blend pressure: rebuild with `--pressure era5` with
-   the `cnb` round (< 1–4 cm, 10-07).
+2. ✅ **v4 premier DECLARED (user 10-11): `naccs-premier` on `v4_refreeze` = the NACCS-blend pair**
+   (was `wind-naccs+naccs-premier`, uninterrupted; RMSE 0.436 / bias −0.110 / CSI 0.728). Re-baseline
+   done: rows frozen (`metrics_2026-10-11_pre_rebaseline.csv`), the ERA5 pair + ERA5 noinfil parked
+   in `_pre_rebaseline_2026-10-11/`, NACCS pair renamed into place, registry + tests + the 10-09
+   preset paths updated, audit 7/7. The next re-baseline is the `cnb` premier (item 1). Blend
+   pressure: rebuild with `--pressure era5` in that round (< 1–4 cm, 10-07).
+   **v3 matching reference job SUBMITTED** (62551000, "Running" above); when it is read, re-baseline v3's
+   `naccs-premier` the same way onto `bed-v4fixes+wave-dt3600+wind-naccs`.
 3. **Run-to-run noise (FINDINGS §44).** Lone 64-thread copies differ; the 1-thread pair was cut
    by its 5 h limit but differs from the first SnapWave call. Next, cheapest first: run the
    1-thread pair to the end of a 1 h window (the first call already decides it); if 1-thread
@@ -106,7 +119,7 @@ heads may still be tidal (unpainted). Paerdegat: leave it (user).
 | `v4_hot` | A, record of the 10-02 cut memo | same / `446d671cd97037ee` | waves-off |
 | `v4_hot_plus` | A+ (dam-crest recut 10-05) | same / `e5e9d8668fe29292` (old: `207ae7f7f0b805ae`; its runs deleted 10-11, rows in metrics.csv) | waves-off; run A |
 | `v4_hot_plus_walls` | A+ + walls (10-05) — run B, the pre-re-freeze record | same / `77b5eda1fcd51cf6` | run B |
-| **`v4_refreeze`** | **THE re-frozen v4** (10-06) = above + Lewes | same / `378014e154b4ff41` | `naccs-premier` (⚠️ soil reset; PICK UP 2) |
+| **`v4_refreeze`** | **THE re-frozen v4** (10-06) = above + Lewes | same / `378014e154b4ff41` | `naccs-premier` = NACCS-blend wind (re-baselined 10-11) |
 
 ## Open questions (each with what would close it)
 

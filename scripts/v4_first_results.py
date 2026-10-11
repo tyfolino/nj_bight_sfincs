@@ -153,27 +153,29 @@ PRESETS: dict[str, dict] = {
     # 2026-10-09: the re-frozen v4 (v4_refreeze) — its first scores, the NACCS-wind pairs,
     # and what the re-freeze changed against run B. B_* / v3fix_* marks are copied from
     # the 10-07 read (same runs, unchanged), not recomputed.
+    # Paths updated 2026-10-11 for the re-baseline (the runs moved, not changed): the ERA5
+    # pair is parked in _pre_rebaseline_2026-10-11/, the NACCS pair renamed into place.
     "refreeze": dict(
         date="2026-10-09",
         runs=[
             (
                 "rf_on",
-                "experiments/v4_refreeze/naccs-premier",
+                "experiments/v4_refreeze/_pre_rebaseline_2026-10-11/naccs-premier",
                 "v4 re-freeze, waves ON",
             ),
             (
                 "rf_off",
-                "experiments/v4_refreeze/naccs-nowaves",
+                "experiments/v4_refreeze/_pre_rebaseline_2026-10-11/naccs-nowaves",
                 "v4 re-freeze, waves-off twin",
             ),
             (
                 "rfw_on",
-                "experiments/v4_refreeze/wind-naccs+naccs-premier",
+                "experiments/v4_refreeze/naccs-premier",
                 "v4 re-freeze, NACCS-blend wind, waves ON",
             ),
             (
                 "rfw_off",
-                "experiments/v4_refreeze/wind-naccs+naccs-nowaves",
+                "experiments/v4_refreeze/naccs-nowaves",
                 "v4 re-freeze, NACCS-blend wind, waves off",
             ),
             ("B_on", "experiments/v4_hot_plus_walls/naccs-premier", "run B, waves ON"),

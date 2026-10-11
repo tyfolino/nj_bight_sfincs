@@ -1713,32 +1713,32 @@ class TestV4Refreeze(unittest.TestCase):
                 "naccs-nowaves+rain-off+slr-0m",
                 "naccs-nowaves+rain-off+slr-2m",
                 "naccs-nowaves+rain-off+slr-3m",
-                "wind-naccs+naccs-premier",
-                "wind-naccs+naccs-nowaves",
             },
             set(arms),
         )
+        # RE-BASELINED 2026-10-11 (user): the premier pair carries the NACCS-blend wind +
+        # pressure; the SLR gate arms keep the template's ERA5-bilinear meteo.
+        blend = domain.DATA / "wind_v4" / "naccs_blend"
         for name, exp in arms.items():
             self.assertEqual(exp.subgrid_from, "_subgrid_refreeze", name)
-            self.assertEqual(exp.meteo_from is not None, name.startswith("wind-"), name)
-        for n in ("naccs-premier", "naccs-nowaves"):
-            w = arms[f"wind-naccs+{n}"]
-            self.assertEqual(w.meteo_from, domain.DATA / "wind_v4" / "naccs_blend")
-            self.assertEqual(w.wind_scale, 1.0)
-            self.assertEqual(
-                dataclasses.replace(w, name=n, description="", meteo_from=None),
-                dataclasses.replace(arms[n], description=""),
-            )
+            self.assertEqual(exp.meteo_from, None if "slr-" in name else blend, name)
+            self.assertEqual(exp.wind_scale, 1.0, name)
+        self.assertFalse(
+            any(n.startswith("wind-") for n in arms), "pre-rebaseline names"
+        )
         self.assertEqual(arms["naccs-premier"].waves, walls["naccs-premier"].waves)
         self.assertEqual(arms["naccs-premier"].waves.dtwave, 3600.0)
         self.assertFalse(arms["naccs-nowaves"].waves.use_waves)
         for m in (0, 2, 3):
             n = f"naccs-nowaves+rain-off+slr-{m}m"
             self.assertEqual(dataclasses.replace(arms[n], subgrid_from=None), v4[n])
+        # ... and is otherwise run B's arm: only the bed and the meteo differ.
         for name in ("naccs-premier", "naccs-nowaves"):
             a, w = arms[name], walls[name]
             self.assertEqual(
-                dataclasses.replace(a, description="", subgrid_from=None),
+                dataclasses.replace(
+                    a, description="", subgrid_from=None, meteo_from=None
+                ),
                 dataclasses.replace(w, description="", subgrid_from=None),
                 name,
             )

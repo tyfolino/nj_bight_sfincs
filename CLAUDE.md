@@ -21,8 +21,10 @@ Newark Bay; the far banks computed) was PARKED 09-30 on two questions the user d
 2026-10-05: **rivers are cut at today's head of tide (A+** — the Cohansey and Neshaminy keep
 the +3 m reach; upriver of a cut is out of scope by design, the +3 m containment rule applies
 within that ring**)** and **waves = SnapWave with 5° bins and HOURLY updates** (`dtwave` 3600,
-FINDINGS §61). The re-freeze is `v4_hot_plus_walls` (A+ + the 10-05 edge audit's leak walls);
-its bed fixes ride as subgrid overlays (`reports/v4_refreeze_list_2026-10-05.md`, STATUS).
+FINDINGS §61). **THE v4 is `v4_refreeze`** (`v4_hot_plus_walls` + the Lewes edge, its own bed
+`_subgrid_refreeze`, the Keansburg + Overpeck weirs); its **premier `naccs-premier` was
+RE-BASELINED 2026-10-11 to the NACCS-blend wind** (the ERA5 pair is parked in
+`experiments/v4_refreeze/_pre_rebaseline_2026-10-11/`, rows frozen beside it; FINDINGS part 4 (g)).
 
 **The lineage's founding argument, still the rule for how to argue a boundary:** the
 predecessors ran the water-level boundary *through the middle of Raritan Bay*, forced by a
@@ -49,7 +51,8 @@ to run until it is set; tests that need *a* domain declare the `v1_monmouth` fix
 | `v3` | full NJ ocean coast, Cape May → the Narrows, NACCS boundary | **DONE 2026-09-24** — `faces=3412470 boundary_edges=4108 sha=1596ce1ecc71b374` (mask repaired 09-22); reference = `naccs-premier` (FINDINGS §50) |
 | `v4` | v3 + Delaware Bay and river to where Sandy +3 m ends (Washington Crossing; forced at the mouth) + the Raritan to Manville + the Arthur Kill shore **and Newark Bay**; **far banks (DE/PA/Staten Island) COMPUTED, not walled**; Track C coarse shelf | **FROZEN 2026-09-28, PARKED 2026-09-30** — `faces=4881654 boundary_edges=4388 sha=23ea65f8b81ee1bd` (after the freeze, on the same mesh: 4 Elizabeth-crossing faces walled, then 193 forced-line-end + Henlopen-Atlantic outflow faces, then 5 Darby Creek faces; FINDINGS part 4); the forced boundary is the DRAWN line `data/v4_design/waterlevel_line_v4.csv` (7 arms, NACCS 241 points), the ring `data/v4_design/region_v4_vertices.csv` (194 named vertices; edit by hand, check with `scripts/audit_region_v4.py --ring <csv>`); first runs = the design gate, waves-off Sandy at +0/+2/+3 m (`naccs-nowaves+rain-off+slr-*`, read with `scripts/overflow_check.py … --compare`) — STATUS |
 | `v4_hot` / `v4_hot_plus` | v4's mesh, river arms cut at today's head of tide (A) / A with the Cohansey + Neshaminy +3 m reaches kept (A+, user's pick 10-05; Maurice cut on the Union Lake dam crest) | STAGED 10-02 / RE-STAGED 10-05 — mask-only variants via `scripts/setup_boundary_depth.py`, `sha=446d671cd97037ee` / `e5e9d8668fe29292` |
-| `v4_hot_plus_walls` | A+ + 11 leak walls + the Cape Henlopen gap closed + 4 inflows moved into their channels — **THE re-frozen v4** (user 10-05) | STAGED 10-05, `sha=77b5eda1fcd51cf6`; first waves-on run (run B) 10-05 |
+| `v4_hot_plus_walls` | A+ + 11 leak walls + the Cape Henlopen gap closed + 4 inflows moved into their channels — run B's domain, the pre-re-freeze record | STAGED 10-05, `sha=77b5eda1fcd51cf6`; run B 10-05 |
+| `v4_refreeze` | `v4_hot_plus_walls` + the Lewes edge, bed `_subgrid_refreeze`, Keansburg + Overpeck weirs, ERA5-bilinear template meteo — **THE v4** (user 10-06) | STAGED 10-06, `sha=378014e154b4ff41`; **premier = NACCS-blend wind, CN infiltration (re-baselined 10-11)**; `cnb` infiltration next |
 
 **The same experiment name exists on every domain and means a different model each time.**
 That is why runs live at `experiments/<domain>/<arm>`, why `EXPERIMENTS` is keyed by domain

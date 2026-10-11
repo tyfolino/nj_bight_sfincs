@@ -1770,7 +1770,11 @@ the Delaware Bay lights, ~1.25 at sheltered coastal anemometers; over Raritan Ba
 there to judge). NAM 4 km nest and H*Wind for Sandy: not obtainable. RAP's SLP is 2–7 hPa high.
 (f) The dam-crest recut scores identically to the spliced cut (HWM bias Δ < 1e-6 m, worst gauge
 0.3 mm, CSI +0.0001).
-(g) **First `v4_refreeze` results (2026-10-09; `reports/v4_first_results_2026-10-09/summary.md`;
+(g) 🔴 **Names (re-baselined 2026-10-11, user):** `naccs-premier` / `naccs-nowaves` on `v4_refreeze` now
+ARE the NACCS-blend pair below (`wind-naccs+…`, renamed into place); the ERA5 pair below
+(`naccs-premier` with the soil reset, `naccs-nowaves`, `naccs-nowaves+rain-noinfil`) is parked in
+`experiments/v4_refreeze/_pre_rebaseline_2026-10-11/`, its rows in `metrics_2026-10-11_pre_rebaseline.csv`.
+The names in this paragraph are the 10-09 ones. **First `v4_refreeze` results (2026-10-09; `reports/v4_first_results_2026-10-09/summary.md`;
 median, 50 m, n 110; engine `bin:v2.3.3-winddir-fix-1-gf11@673ee3bf`; paired bootstrap B 200 000):**
 `naccs-premier` (waves on, ERA5) RMSE 0.479 / bias −0.174 / CSI 0.713; its waves-off twin 0.539 /
 −0.361 / 0.698; `wind-naccs+naccs-premier` 0.436 / −0.110 / 0.728; `wind-naccs+naccs-nowaves` 0.490
