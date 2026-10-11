@@ -9,6 +9,7 @@ has data, the discriminator v1.5's boxes were validated with, used directly.
 
 Output: uint8 on exactly the ``Domain.motf_tif`` grid, 1 = valid (the source has data
 there), 0 = not. ``validate.metrics.motf_invalid_mask`` refuses one on another grid.
+``Domain.motf_gap_boxes_xy`` (holes in the sheet itself, 2026-10-11) are written as 0.
 
     NJ_DOMAIN=v4 PYTHONPATH=$PWD python scripts/build_motf_valid_mask.py \
         --source data/elevation_v4/nj_10ft_dem_v4.tif
@@ -31,6 +32,7 @@ from rasterio.warp import Resampling, reproject  # noqa: E402
 
 import nj_sfincs  # noqa: F401,E402 — pyproj before hydromt
 from nj_sfincs import domain as _domain  # noqa: E402
+from nj_sfincs.validate.metrics import motf_gap_mask  # noqa: E402
 
 
 def main() -> None:
@@ -64,6 +66,14 @@ def main() -> None:
         )
     valid = np.isfinite(has).astype("uint8")
     km2 = abs(T.a * T.e) / 1e6
+    # Holes in the sheet itself (Domain.motf_gap_boxes_xy): a DEM's extent cannot see them.
+    gap = motf_gap_mask(shape, T, dom.motf_gap_boxes_xy)
+    for name, *_ in dom.motf_gap_boxes_xy:
+        print(f"gap box {name}")
+    print(
+        f"gap boxes: {(gap & (valid == 1)).sum() * km2:,.1f} km² of valid ground set to 0"
+    )
+    valid[gap] = 0
     print(
         f"{dom.name}: {valid.sum() * km2:,.0f} km² valid of "
         f"{valid.size * km2:,.0f} km² on the MOTF grid ({shape[1]} x {shape[0]})"

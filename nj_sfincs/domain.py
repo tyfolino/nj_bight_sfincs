@@ -479,6 +479,12 @@ class Domain:
     #: 10 ft DEM has data, built by ``scripts/build_motf_valid_mask.py``. None = no screen.
     #: ``motf_km2_excluded_invalid`` reports what it removed.
     motf_valid_tif: Path | None = None
+    #: (name, (xmin, ymin, xmax, ymax), why) in the MOTF render's CRS (``motf_tif``) — HOLES
+    #: IN THE SHEET ITSELF, where it reads 0 over ground that flooded. The validity raster
+    #: comes from a DEM's data extent and cannot see them, so ``build_motf_valid_mask.py``
+    #: writes these boxes as 0 too (they reach the score only through that raster). Axis-
+    #: aligned in the render CRS because the holes are: straight seams on the render grid.
+    motf_gap_boxes_xy: tuple[tuple[str, tuple[float, float, float, float], str], ...] = ()
     #: The subgrid level whose LATTICE ``subgrid/dep_subgrid_merged.tif`` (the scoring
     #: bed) is written on — ``scripts/build_merged_subgrid_dep.py --base-level``. 3 = the
     #: finest, as v1.5–v3 (3.125 m). v4 = 2 (2026-09-29): its 16 px lev3 is 1.56 m, a
@@ -2672,6 +2678,16 @@ V4 = Domain(
     # two NY boxes v4 inherited from v3 (they are NY land, so the raster covers them).
     motf_tif=DATA / "validation_v4" / "sandy_motf_extent_v4.tif",
     motf_valid_tif=DATA / "validation_v4" / "sandy_motf_valid_nj_v4.tif",
+    # Found 2026-10-11 (status notebook): rectangular holes with 1.4 km straight seams over
+    # the Salem County marshes; a seam scan finds no other on v4 (FINDINGS §37).
+    motf_gap_boxes_xy=(
+        (
+            "salem_marshes",
+            (445_000.0, 4_356_500.0, 466_300.0, 4_399_000.0),
+            "Mad Horse Creek / Hancocks Bridge / Artificial Island: the sheet has "
+            "rectangular holes here, marsh that flooded reads 0.",
+        ),
+    ),
     merged_dep_base_level=2,  # the 3.125 m scoring bed (1.56 m lev3 OOMs the scorer)
     # Where waves are computed (user 09-29): 3.23 M of the 3.97 M active faces — v3's
     # 1.90 M + the bay's 1.33 M (0.77 M wet bed, 0.56 M land). A +5 m cap on the bay's

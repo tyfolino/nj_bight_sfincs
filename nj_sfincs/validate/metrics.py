@@ -452,6 +452,22 @@ def motf_invalid_mask(shape, transform):
         return r.read(1) != 1
 
 
+def motf_gap_mask(shape, transform, boxes) -> np.ndarray:
+    """True on MOTF cells whose CENTRE lies in a ``Domain.motf_gap_boxes_xy`` box.
+
+    ``boxes`` are in the raster's own CRS, so this is pure index arithmetic on
+    ``transform`` (north-up, as every MOTF render is)."""
+    h, w = shape
+    xc = transform.c + (np.arange(w) + 0.5) * transform.a
+    yc = transform.f + (np.arange(h) + 0.5) * transform.e
+    out = np.zeros(shape, dtype=bool)
+    for _name, (x0, y0, x1, y1), _why in boxes:
+        cols = (xc >= x0) & (xc <= x1)
+        rows = (yc >= y0) & (yc <= y1)
+        out[np.ix_(rows, cols)] = True
+    return out
+
+
 def motf_exclude_mask(shape, transform, crs_epsg: int | None = None):
     """Boolean mask over a MOTF-grid raster: True where the sheet is invalid — inside a
     domain exclude box (``Domain.motf_exclude_boxes_ll``) OR off the domain's validity

@@ -373,6 +373,20 @@ CLAUDE.md §5.
    raster where the NJ-only DEM has data (`Domain.motf_valid_tif`), because a box staircase
    cannot follow the DE/PA river border — the inherited `staten_island` box held 41 km² of NJ
    land on v4.
+   🔴 **The validity raster does not see HOLES in the sheet itself.** Over the Salem County
+   marshes (Mad Horse Creek, Hancocks Bridge, Artificial Island; UTM 18N x 445–466 km,
+   y 4356–4399 km) the MOTF render has rectangular, straight-edged gaps (a 1.4 km vertical seam
+   at x 463.2 km) where marsh that certainly flooded reads 0 — on the v4_refreeze premier 108 of
+   the 236 km² false alarm (104 of 156 km² sea-connected) and CSI 0.728 vs 0.780 with that box
+   out (2026-10-11, `logs/notebook_qc_2026-10-11/`). A seam scan (MOTF 1|0 edge ≥ 900 m straight,
+   model wet both sides) finds no other on v4. **The holes are FEMA's, not our render's:** the
+   original MOTF NJ 3 m depth grid (`nj3m0214c`, ArcGIS item 3cc3b170…) is NoData there and
+   matches our render at CSI 0.992 in the box; every other copy online (FEMA tile cache and final
+   vector tiles, both Rutgers services) has the same holes, and `data.femadata.com/MOTF` is gone
+   (410). Their edges fall on the NJ State Plane 5,000 ft grid (the NJ lidar tile index): whole
+   DEM tiles were missing when FEMA differenced its surface, so the sheet there is UNKNOWN, not
+   dry. Screened since 2026-10-11 by `Domain.motf_gap_boxes_xy` → the validity raster
+   (`logs/motf_gap_2026-10-11/README.md`).
 
 38. **The Keansburg overshoot is MISSING FLOOD PROTECTION, not bad elevation data — and
     MOTF makes the same error, so it cannot arbitrate it.** Diagnosed 2026-08-20,
@@ -737,6 +751,16 @@ CLAUDE.md §5.
     lever `snapwave_sigmax` (2 s and 3 s cuts) does not remove it, it relocates the
     blow-ups onto the open shelf; the engine-side interior initial-guess remap is the open
     follow-up.
+    🔴 **On v4 a capped SnapWave call puts a ~1 m pulse into the Delaware River (2026-10-11).**
+    In the premier (`v4_refreeze/naccs-premier`, NACCS wind) the 10-29 18:00 call ENDED at the
+    50-iteration cap (error 0.88, %ok 96.1; 606 s vs ~300) and its field held for the hour:
+    hm0 up to 11.3 m, 50,730 faces > 3 m within 40–50 km of Reedy Point (17:00 / 19:00: max
+    2.5–2.8 m); 20:00 capped again (error 0.32; max 6.6 m). The water answers with a long wave
+    that starts at Reedy Point / Delaware City at ~19:30 (+0.8…+1.3 m in an hour) and reaches
+    Philadelphia at ~21:30–22:00 (~8 m/s); the waves-OFF twin with the same wind falls smoothly
+    through it, and observations show nothing. The ERA5 waves-on run has a smaller one at ~00:30.
+    It rides the ebb 0.3–0.5 m under the crest at these gauges, so their PEAKS are unaffected;
+    elsewhere unchecked. `notebooks/v4/sandy-v4-status-2026-10-11.ipynb` (Delaware panel).
     🔴 **ON v4 THE SAME BINARY DOES NOT REPEAT ITSELF (2026-10-09).** The packing test
     (`logs/pack_test_2026-10-07/`, run B cut to 10-28 00:00–03:00, `bin:v2.3.3-winddir-fix-1-gf11`)
     staged 13 copies with byte-identical inputs; four 16-thread copies run side by side on one
@@ -1818,7 +1842,11 @@ designed (Bayonne 4.2, Cape Henlopen / Henlopen–Atlantic 3.5, Maurice 3.2, Hac
 **Still open after the audit:** the Schuylkill backing up to 6.8 m BELOW the Fairmount Dam on a
 ~0 m bed (no river cut removes it; the box-MEAN Manning above `uv_zmax` is the suspect —
 NLCD puts 29 % of its channel pixels in developed classes, n 0.10–0.13 — untested); the
-Christina inflow ponds +0.9 m in a ~20 m channel narrower than its face; no measured bed above
+Christina inflow ponds +0.9 m in a ~20 m channel narrower than its face; on the 10-11 premier six
+more sources stand metres above a ~0 m bed (peak / bed at the source: Ridley 5.98 / 0.27, Chester
+5.51 / 0.04, Red Clay 5.40 / −0.02, White Clay 4.62 / −0.16, Salem R. at Woodstown 4.38 / 0.01,
+Frankford 6.70 / 2.56), while most high river heads are stage on a 4–8 m bed (depth 0.3–1.5 m;
+the v3-inherited southern cuts sit at the gauges, above today's head of tide); no measured bed above
 the 2010-lidar back-bay candidates; Little Egg
 Harbor's 2024 survey reading 4–9 m deeper than the model (12 years post-Sandy; unresolved).
 

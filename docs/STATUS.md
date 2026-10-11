@@ -39,6 +39,10 @@ submitting the v3-reference job. Scratch cleaned 10-11 (was over its soft quota)
 
 ## Running
 
+- **62561016** `motf_gap_rescore` (submitted 2026-10-11 evening, 400 G, 12 h; `logs/motf_gap_2026-10-11/`):
+  rebuilds `sandy_motf_valid_nj_v4.tif` with `Domain.motf_gap_boxes_xy` (checks it changed ONLY
+  inside the box, 1 → 0), freezes `metrics_2026-10-11_pre_motf_gap.csv`, then `--validate-only` the
+  five v4_refreeze arms serially (~1.5 h each). Then: re-render the status notebook (fig. 4).
 - **62551000** `premier_candidates` (submitted 2026-10-11 ~14:00; one exclusive emeraldrapids node,
   23 h, `--requeue`; `logs/premier_2026-10-11/`): v3 `bed-v4fixes+wave-dt3600+wind-naccs` + twin
   (the matching v3 reference) and v4 `naccs-premier+rain-noinfil` + twin (like-for-like, v3 has no
@@ -48,6 +52,12 @@ submitting the v3-reference job. Scratch cleaned 10-11 (was over its soft quota)
   sfincs_restart.py and the script — do NOT edit them until it STARTS. Must start by ~Mon 09:00 or
   it waits for maintenance (10-13 08:00 → 10-14 23:59). Read: v3 meteo pair (old ERA5 vs NACCS),
   v3 wave lift, v4 premier vs v3 reference on shared marks (`v4_first_results.py`, new preset).
+- **62554764** `premier_v3` (13:41, emeraldrapids, 32 cores, 23 h): THE V3 HALF of 62551000,
+  re-launched — 62551000's verify refused the v3 arms because their `sfincs.weir` is the EXACT
+  frozen-mesh file while the 10-05 pair carries the hydromt-rounded one (crests ±5 cm, the 10-07
+  `restore_weir` fix); this copy accepts the frozen-mesh file. So the v3 pair (new vs 10-05)
+  differs in meteo AND the levee crests' rounding. Solves started 13:42, 214 weir points.
+  62551000 will end non-zero (its v3 pipeline exit) even when its v4 half is fine — read CHECKS.txt.
 
 ## ☀️ PICK UP (Monday 10-12)
 
@@ -64,6 +74,11 @@ submitting the v3-reference job. Scratch cleaned 10-11 (was over its soft quota)
    recovery` on the quadtree (needs a ksat layer — SSURGO), `effective` ≈ 1.5 (log-S interpolation
    AMC II → I by the wetness anomaly) with brackets 1.0 / 2.38; `_infiltration_keys` for the cnb
    keys; `restart.py`'s soil-RESET warning only for `cna`; a toy resume test. Then re-baseline.
+1b. **Inflow pile-ups (Open questions) — proposed 10-11, awaiting the user:** screen all 61
+   sources (source-face size > 50 m AND rain-off peak − bed > 1 m, falling > 1 m within 2 km), move
+   each flagged source DOWN the creek onto the first ≤ 50 m wet face (forcing only → template
+   re-stage, no new mesh), re-check on a short `engine_gate.py` cut, and ship it inside the `cnb`
+   re-baseline. A refinement band along the creeks (a new mesh = a new domain) only if moving fails.
 2. ✅ **v4 premier DECLARED (user 10-11): `naccs-premier` on `v4_refreeze` = the NACCS-blend pair**
    (was `wind-naccs+naccs-premier`, uninterrupted; RMSE 0.436 / bias −0.110 / CSI 0.728). Re-baseline
    done: rows frozen (`metrics_2026-10-11_pre_rebaseline.csv`), the ERA5 pair + ERA5 noinfil parked
@@ -123,6 +138,18 @@ heads may still be tidal (unpainted). Paerdegat: leave it (user).
 
 ## Open questions (each with what would close it)
 
+- **River inflows that pile up on a ~0 m bed (FINDINGS part 4, "Still open"):** peak at the
+  source vs bed — Ridley Ck 5.98 / 0.27, Chester Ck 5.51 / 0.04, Frankford Ck 6.70 / 2.56,
+  Red Clay 5.40 / −0.02, White Clay 4.62 / −0.16, Christina 3.83 / −0.05 (PA/DE, unscored), and
+  **Salem R. at Woodstown 4.38 / 0.01 (NJ)** (`logs/notebook_qc_2026-10-11/river_heads.py`).
+  Most other "high water at river heads" on the peak map is the river's own stage on a 4–8 m
+  bed (depth 0.3–1.5 m): the v3-inherited southern cuts sit at the gauges, above today's head
+  of tide (the Great Egg reach above Mays Landing). **Mechanism (10-11):** every
+  one sits on a COARSE face (100–200 m; Christina 25 m) over a narrow creek valley (`z_zmax`
+  10–33 m) and steps down 2–3.5 m in 2 km on rain-off alone; the Maurice on a 25 m wet face is
+  flat (`logs/notebook_qc_2026-10-11/inflow_pileups.py`). Close: see PICK UP (folds into the `cnb`
+  re-baseline after maintenance).
+
 - **Southern back-bay deficit (§57):** mechanism unknown; the Great Egg inlet sill (FINDINGS
   §54 h) is now a candidate share. Close: the v3 re-run's Great Egg / Ocean City pre-storm
   bay-minus-pier; the calm-month datum check of the seven southern USGS stations.
@@ -136,6 +163,11 @@ heads may still be tidal (unpainted). Paerdegat: leave it (user).
 - **NY-bay waves-on crest = seiche phase** (FINDINGS §61 (g)): how much of the NY-bay wave gain
   survives a fine `dtwave` is unmeasured. Close: PICK UP 4.
 - **v4 waves-on is not repeatable run to run (§44).** Close: PICK UP 3.
+- **Capped SnapWave calls inject river pulses on v4 (§44, 10-11):** the premier's 10-29 18:00 and
+  20:00 calls ended at the 50-iteration cap; hm0 to 11 m in the upper Delaware Bay for an hour and a
+  ~1 m long wave up the river (waves-off twin clean). Close: count capped calls in every v4 log;
+  test a higher cap / `snapwave_crit` on a restart cut from 10-29 17:00 (`engine_gate.py make`);
+  check whether any face's `zsmax` is set inside a capped hour.
 - **Infiltration vs the rain-pond marks** (part 4 (d), (g)). Close: user call + the lakes' timing.
 - **Unread from the 10-05 pre-registration:** do the Maurice / Mullica / Tuckahoe / Rancocas reaches
   wet on the re-freeze; hm0 vs depth at the SnapWave band's 53 boundary cells shallower than −20 m

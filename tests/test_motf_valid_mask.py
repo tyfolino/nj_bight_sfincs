@@ -96,3 +96,23 @@ class TestMotfValidMask(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestMotfGapMask(unittest.TestCase):
+    """``Domain.motf_gap_boxes_xy``: holes in the sheet, in the render CRS, by cell centre."""
+
+    def test_box_marks_cells_whose_centre_it_contains(self):
+        # cell centres x 500_007.5 + 15 i, y 4_399_992.5 − 15 j; box spans columns 1–2, rows 0–1
+        box = (("hole", (500_015.0, 4_399_970.0, 500_045.0, 4_400_000.0), "test"),)
+        g = metrics.motf_gap_mask((6, 8), T, box)
+        want = np.zeros((6, 8), dtype=bool)
+        want[0:2, 1:3] = True
+        np.testing.assert_array_equal(g, want)
+
+    def test_no_boxes_is_empty(self):
+        self.assertFalse(metrics.motf_gap_mask((6, 8), T, ()).any())
+
+    def test_v4_family_declares_the_salem_gap(self):
+        for name in ("v4", "v4_refreeze"):
+            names = [b[0] for b in domain.DOMAINS[name].motf_gap_boxes_xy]
+            self.assertIn("salem_marshes", names, name)

@@ -712,7 +712,7 @@ def plot_waterlevel_boundary_panels(runs, root=None, region=None, ncol=2, pad=30
 # ── gauges ───────────────────────────────────────────────────────────────────
 
 
-def plot_gauge_verification(runs, root=None, data_dir=DATA, ncol=2):
+def plot_gauge_verification(runs, root=None, data_dir=DATA, ncol=2, names=None):
     """Observed vs modelled water level at every scoreable gauge on the ACTIVE domain.
 
     One panel per ``Domain.obs_gauges`` entry that has an observation source, driven off
@@ -734,6 +734,9 @@ def plot_gauge_verification(runs, root=None, data_dir=DATA, ncol=2):
     ⚠️ A gauge whose ``series_source`` is ``"map"`` is drawn from wet channel cells, not the
     SFINCS observation point, because that point snapped to a dry bank. It is hourly, so
     its crest is aliased slightly low.
+
+    ``names`` — draw only these gauges, in this order (default: every scoreable gauge). A
+    name the domain does not declare raises, so a typo cannot silently drop a panel.
     """
     import matplotlib.pyplot as plt
 
@@ -745,6 +748,12 @@ def plot_gauge_verification(runs, root=None, data_dir=DATA, ncol=2):
     gauges = [g for g in dom.obs_gauges if g.obs_file and g.obs_station is not None]
     if not gauges:
         raise SystemExit(f"domain {dom.name!r} declares no scoreable gauges")
+    if names is not None:
+        by_name = {g.name: g for g in gauges}
+        unknown = [n for n in names if n not in by_name]
+        if unknown:
+            raise SystemExit(f"not scoreable gauges on {dom.name!r}: {unknown}")
+        gauges = [by_name[n] for n in names]
 
     n = len(gauges)
     ncol = min(ncol, n)
