@@ -207,21 +207,17 @@ PRESETS: dict[str, dict] = {
             ("rf_off", "v3fix_off", "v4 re-freeze vs v3, shared fixes, waves off"),
         ],
     ),
+    # (the `_pre_damcrest` run this preset also paired was deleted 2026-10-11 —
+    # reports/cleanup/deletion_manifest_2026-10-11.md; its row stays in metrics.csv)
     "test": dict(
         date="test",
         runs=[
             ("hp", "experiments/v4_hot_plus/naccs-nowaves", "A+ waves-off, dam crest"),
-            (
-                "hp_pre",
-                "experiments/v4_hot_plus/_pre_damcrest/naccs-nowaves",
-                "A+ waves-off, before the dam-crest cut",
-            ),
             ("v4", "experiments/v4/naccs-nowaves", "v4 waves-off"),
             ("v3", "experiments/v3/naccs-premier", "v3 reference (FINDINGS §50)"),
             ("v3_off", "experiments/v3/naccs-nowaves", "v3 waves-off"),
         ],
         pairs=[
-            ("hp", "hp_pre", "dam-crest mask vs before (expect ~0)"),
             ("hp", "v4", "A+ vs v4 (head-of-tide trim)"),
             ("hp", "v3", "v4 family vs v3 premier, shared marks"),
             ("v3", "v3_off", "v3's wave contribution (tests the twin path)"),

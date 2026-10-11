@@ -1,0 +1,40 @@
+nj_bight_sfincs/experiments/v3/wave-nowind/snapwave.upw
+nj_bight_sfincs/experiments/v4_refreeze/wind-naccs+naccs-premier/snapwave.upw
+nj_bight_sfincs/experiments/v4_refreeze/naccs-premier/snapwave.upw
+nj_bight_sfincs/experiments/v3/wave-dt3600+wave-dtheta10+wave-wavemaker/snapwave.upw
+nj_bight_sfincs/experiments/v3/wave-dt3600/snapwave.upw
+nj_bight_sfincs/experiments/v3/naccs-premier/snapwave.upw
+nj_bight_sfincs/experiments/v3/wave-coupled/snapwave.upw
+nj_bight_sfincs/experiments/v3/wave-dt3600+wave-dtheta10+wave-noig+wave-nowind/snapwave.upw
+nj_bight_sfincs/experiments/v3/mask-drain-edge+wave-wavemaker+wind-x110/snapwave.upw
+nj_bight_sfincs/experiments/v3/mask-drain-edge+wave-wavemaker/snapwave.upw
+nj_bight_sfincs/experiments/v3/wave-wavemaker/snapwave.upw
+nj_bight_sfincs/experiments/v3/mask-drain-edge+naccs-premier/snapwave.upw
+nj_bight_sfincs/experiments/v3/wave-dt3600+wave-dtheta10+wave-noig/snapwave.upw
+nj_bight_sfincs/experiments/v3/bed-v4fixes+wave-dt3600/snapwave.upw
+nj_bight_sfincs/experiments/v4_hot_plus/bed-buildings+bed-channels+naccs-premier/snapwave.upw
+nj_bight_sfincs/experiments/v4_hot_plus_walls/naccs-premier/snapwave.upw
+nj_bight_sfincs/experiments/v4_hot_plus/bed-buildings+bed-channels+naccs-nowaves/floodmap_hmax_lev3.tif
+nj_bight_sfincs/experiments/v4_hot/floodmaps/naccs-nowaves_hmax_lev3.tif
+nj_bight_sfincs/experiments/v4_hot/naccs-nowaves/floodmap_hmax_lev3.tif
+nj_bight_sfincs/experiments/v4/floodmaps/naccs-nowaves_hmax_lev3.tif
+nj_bight_sfincs/experiments/v4/naccs-nowaves/floodmap_hmax_lev3.tif
+nj_bight_sfincs/experiments/v4_hot_plus/_pre_damcrest/floodmaps/naccs-nowaves_hmax_lev3.tif
+nj_bight_sfincs/experiments/v4_hot_plus/_pre_damcrest/naccs-nowaves/floodmap_hmax_lev3.tif
+nj_bight_sfincs/experiments/v4_hot_plus/floodmaps/bed-harbour+naccs-nowaves_hmax_lev3.tif
+nj_bight_sfincs/experiments/v4_hot_plus/floodmaps/bed-buildings+bed-channels+naccs-nowaves_hmax_lev3.tif
+nj_bight_sfincs/experiments/v4_hot_plus/floodmaps/bed-buildings+bed-channels+naccs-premier_hmax_lev3.tif
+nj_bight_sfincs/experiments/v4_hot_plus/floodmaps/naccs-nowaves_hmax_lev3.tif
+nj_bight_sfincs/experiments/v4_hot_plus/bed-buildings+bed-channels+naccs-premier/floodmap_hmax_lev3.tif
+nj_bight_sfincs/experiments/v4_hot_plus/bed-harbour+naccs-nowaves/floodmap_hmax_lev3.tif
+nj_bight_sfincs/experiments/v4_hot_plus/naccs-nowaves/floodmap_hmax_lev3.tif
+nj_bight_sfincs/experiments/v4/_pre_darby/naccs-nowaves/floodmap_hmax_lev3.tif
+DIR engine_gate/det_test
+DIR engine_gate/pack_test
+DIR engine_gate/wave_cost_2026-09-30
+DIR engine_gate/swing_600
+DIR lewes_test_2026-10-05
+DIR nj_bight_sfincs_data/v4_trial_build_2026-09-27
+DIR nj_bight_sfincs/experiments/v4/_pre_darby
+DIR nj_bight_sfincs/experiments/v4/_pre_flankwall
+DIR nj_bight_sfincs/experiments/v4_hot_plus/_pre_damcrest

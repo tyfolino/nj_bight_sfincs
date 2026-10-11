@@ -162,7 +162,8 @@ V3 = DomainFingerprint(3412470, 4108, "1596ce1ecc71b374")
 #: a forced line (`Domain.wall_outflow_near_forced_m`: Narrows ×2, Rockaway corner, KvK east,
 #: C&D, Henlopen end) and Cape Henlopen's Atlantic side (`wall_henlopen_atlantic`). Open,
 #: the flanks drained forced water at every level and the cape drained the +2 / +3 m bay.
-#: The gate runs on the earlier mask are in experiments/v4/_pre_flankwall/.
+#: The gate runs on the earlier mask (experiments/v4/_pre_flankwall/) were deleted 2026-10-11;
+#: their rows stay in metrics.csv (reports/cleanup/deletion_manifest_2026-10-11.md).
 #: 🔴 DARBY CREEK WALLED 2026-09-29 (user, after the flank-walled gate read; same counts,
 #: the sha is the only tell): 5 outflow faces → wall in `wall_darby_creek`, one of them on
 #: the creek's CUDEM channel (z_zmin 0.53) — open, it drained the +2 / +3 m water.
@@ -177,7 +178,8 @@ V4_HOT = DomainFingerprint(4881654, 4388, "446d671cd97037ee")
 #: 🔴 v4_hot_plus RE-STAGED 2026-10-05 (job 62265873; user chose A+ the same day): the Maurice
 #: cut moved from the spliced line at lat 39.403 (~100 m INTO Union Lake, 61 faces of fake-pit
 #: bed) onto the dam crest, wall box `_V4_HOT_PLUS_RECUT`, the Maurice inflow 53 m below the
-#: spillway. Active 3,965,133 → 3,965,068. Runs on the old mask: experiments/v4_hot_plus/_pre_damcrest/.
+#: spillway. Active 3,965,133 → 3,965,068. Runs on the old mask (`_pre_damcrest/`) deleted 2026-10-11;
+#: rows in metrics.csv.
 V4_HOT_PLUS_PRE_DAMCREST = DomainFingerprint(4881654, 4388, "207ae7f7f0b805ae")
 V4_HOT_PLUS = DomainFingerprint(4881654, 4388, "e5e9d8668fe29292")
 #: v4_hot_plus_walls STAGED 2026-10-05 (job 62280421, setup_boundary_depth.py; run B): A+ with

@@ -1794,7 +1794,16 @@ CSI 0.698 → 0.689, FAR 0.144 → 0.186 (more inland rain ponding). With no inf
 closes most of the way to v3's waves-off twin: `barnegat_bay` −0.43 vs −0.38, `south_coast` −0.58
 vs −0.49, `shark_river` −0.46 vs −0.31 (from −0.81 / −1.31 / −0.59). Whether CN over-infiltrates or v3 is "right
 for the wrong reason" ((d): its lakes keep rising a day after the ocean falls) is not separated by
-the marks alone. **The Raritan Bay low of (e) is mostly closed on the re-freeze:** `raritan_bay`
+the marks alone — **but the lake timelines do** (`logs/infiltration_2026-10-11/lake_timelines.txt`;
+hourly zs at the lowest wet face within 150 m, waves off): with infiltration off the coastal
+lakes fill with RAIN and are still rising at tstop (Wreck Pond by 6130: 0.05 → 2.38 m from 10-29
+12:00 to 10-31 00:00, peak at the last step; Deal Lake 6122 0.37 → 1.79; 6124 0.36 → 2.97; Shark
+River 6129 rises only after 10-30 06:00), whereas the sea NEVER enters Wreck Pond in either arm
+(0.01–0.28 m with the curve number). Sandy's rain there is 5–12 cm in the forcing; USGS files all
+these marks as `Coastal`. So the no-infiltration gain is closed-basin rain ponding (window-
+dependent: a later tstop scores them higher still), not surge — the real defect is the sea–lake
+connection (outfalls, overwash, dune failure: the deferred `bed-postsandy` lever). 6123 / 6188 /
+6127 do not move with infiltration. **The Raritan Bay low of (e) is mostly closed on the re-freeze:** `raritan_bay`
 bias (n 21) run B waves-off −0.409 → re-freeze waves-on +0.011 (NACCS wind +0.054), South Amboy
 peak −0.52 → −0.03 m (obs 4.09) — the re-freeze's NY-bay change appears only with waves on and
 the waves-on crest there carries the §61 (g) seiche phase and §44 noise, so the mechanism split

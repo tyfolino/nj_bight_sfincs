@@ -8,7 +8,8 @@ Git has the history. The campaign log this file grew into until 2026-09-29 (6,76
 
 Last updated: **2026-10-11** (every 10-09 job read; was 2026-10-09 12:00). The re-frozen v4 is
 solved, scored and written up: `reports/v4_first_results_2026-10-09/summary.md`, FINDINGS part 4 (g).
-Nothing is running. Two calls are the user's: **infiltration** and **which arm is the v4 reference**.
+Infiltration decided (stays on; `cnb` with ERA5-Land soil state next). Open: declaring the v4 premier,
+submitting the v3-reference job. Scratch cleaned 10-11 (was over its soft quota).
 
 ---
 
@@ -40,17 +41,24 @@ Nothing is running. Two calls are the user's: **infiltration** and **which arm i
 
 0. ⚠️ **Maintenance 10-13 08:00 → 10-14 23:59 takes every hal node.** A waves-on v4 solve is
    10–11 h on emeraldrapids; anything submitted after ~Mon 18:00 will not start until 10-15.
-1. ❓ **USER: infiltration.** Curve number (v4 now) vs none (v3) — none fits the marks
-   (−0.13 m RMSE, Barnegat Bay 1.12 → 0.50, south coast 1.47 → 0.76) and costs extent (FAR +0.04,
-   more inland ponding). A middle option is a CN arm with wetter antecedent soil. The marks alone do
-   not tell "CN over-infiltrates" from "v3 right for the wrong reason" (FINDINGS part 4 (d), (g));
-   the rain-pond lakes' timing would (v3's keep rising a day after the ocean falls).
-2. ❓ **USER: the v4 reference arm.** `naccs-premier` carries the soil reset (~0.3 m low at the
-   `south_coast` marks), so as it stands it is not a clean reference. Rec.: make the NACCS-blend
-   wind the default (`wind-naccs` is better on both twins, uninterrupted) and re-run the reference
-   once the infiltration call is made — one solve, before the maintenance if the call comes early.
-   Rebuild the blend with `--pressure era5` when it is next rebuilt (ERA5 is closer to the
-   barometers; < 1–4 cm effect, 10-07).
+1. ✅ **Infiltration stays ON (user 10-11); next run uses `cnb` with data (after maintenance).**
+   The no-infiltration HWM gain is closed-basin rain ponding still rising at tstop, and the sea
+   never enters Wreck Pond in either arm (FINDINGS part 4 (g); `logs/infiltration_2026-10-11/`).
+   Soil on 10-28 (`logs/soil_moisture_2026-10-11/README.md`): ERA5-Land relative wetness 0.73–0.78
+   on the coastal plain (3rd driest Oct-28 of 2002–16), AORC 0.3 mm in the 5 days before (AMC I),
+   no drought (USDM 10-23) — DRIER than the AMC II we assume, so the curve number errs toward too
+   LITTLE infiltration, not too much. `cnb` = CN with recovery: `smax` / `seff` / `ks`; its soil
+   state IS in the restart file (type 4, `scs_Se`), unlike `cna` (§59). To build: `create_cn_with_
+   recovery` on the quadtree (needs a ksat layer — SSURGO), `effective` ≈ 1.5 (log-S interpolation
+   AMC II → I by the wetness anomaly) with brackets 1.0 / 2.38; `_infiltration_keys` for the cnb
+   keys; `restart.py`'s soil-RESET warning only for `cna`; a toy resume test. Then re-baseline.
+2. **The v4 premier, interim:** `wind-naccs+naccs-premier` (NACCS-blend wind, CN AMC II, waves
+   on; RMSE 0.436, uninterrupted) is the cleanest run in hand; `naccs-premier` carries the soil
+   reset. ❓ USER: declare it now (freeze rows, park the reset run, rename deliberately) or wait for
+   the `cnb` premier. The v3 matching reference + its like-for-like v4 counterpart (infiltration off,
+   v3 has none) are drafted as ONE job: `logs/premier_2026-10-11/premier_candidates.slurm` (not
+   submitted; ~20 h, must start by Mon ~09:00). Blend pressure: rebuild with `--pressure era5` with
+   the `cnb` round (< 1–4 cm, 10-07).
 3. **Run-to-run noise (FINDINGS §44).** Lone 64-thread copies differ; the 1-thread pair was cut
    by its 5 h limit but differs from the first SnapWave call. Next, cheapest first: run the
    1-thread pair to the end of a 1 h window (the first call already decides it); if 1-thread
@@ -58,8 +66,8 @@ Nothing is running. Two calls are the user's: **infiltration** and **which arm i
    and look for the uninitialised field. Until then: a few cm at an NY-bay gauge between two
    waves-on arms is noise.
 4. **Hourly-wave swing test (FINDINGS §61 (g))**: only the dtwave 3600 leg finished
-   (`/scratch/tpj8/engine_gate/swing_3600/`); the 600 leg was killed at 14 h (partial output in
-   `swing_600/`). Re-run 600 alone with ~20 h, and a SECOND 3600 copy so §44's noise can be
+   (`/scratch/tpj8/engine_gate/swing_3600/`); the 600 leg was killed at 14 h (its partial output was
+   deleted 10-11). Re-run 600 alone with ~20 h, and a SECOND 3600 copy so §44's noise can be
    subtracted. Low priority unless the NY-bay crest matters for a decision.
 5. Small: record the meteo convention in `metrics.csv` / `provenance.txt` (like
    `snapwave_direction`); re-run `scripts/desktop_pull_backup.sh` (the 10-09 arms are scored and live
@@ -96,7 +104,7 @@ heads may still be tidal (unpainted). Paerdegat: leave it (user).
 | `v3` | DONE 2026-09-24 | 3,412,470 / 4,108 / `1596ce1ecc71b374` | `naccs-premier`, engine `bin:v2.3.3-winddir-fix-1-gf11@673ee3bf` |
 | `v4` | frozen 2026-09-28, superseded by the A+ variants | 4,881,654 / 4,388 / `23ea65f8b81ee1bd` | waves-off gate arms only |
 | `v4_hot` | A, record of the 10-02 cut memo | same / `446d671cd97037ee` | waves-off |
-| `v4_hot_plus` | A+ (dam-crest recut 10-05) | same / `e5e9d8668fe29292` (old: `207ae7f7f0b805ae`, runs in `_pre_damcrest/`) | waves-off; run A |
+| `v4_hot_plus` | A+ (dam-crest recut 10-05) | same / `e5e9d8668fe29292` (old: `207ae7f7f0b805ae`; its runs deleted 10-11, rows in metrics.csv) | waves-off; run A |
 | `v4_hot_plus_walls` | A+ + walls (10-05) — run B, the pre-re-freeze record | same / `77b5eda1fcd51cf6` | run B |
 | **`v4_refreeze`** | **THE re-frozen v4** (10-06) = above + Lewes | same / `378014e154b4ff41` | `naccs-premier` (⚠️ soil reset; PICK UP 2) |
 
@@ -180,7 +188,9 @@ heads may still be tidal (unpainted). Paerdegat: leave it (user).
 
 ## Housekeeping
 
-- Last cleanup: 2026-09-30, `reports/cleanup/deletion_manifest_2026-09-30.md`. 2026-10-11:
+- Last cleanup: **2026-10-11 scratch**, `reports/cleanup/deletion_manifest_2026-10-11.md` (~374 G: finished
+  engine_gate tests, the Lewes test, the v4 trial build, every `snapwave.upw`, the superseded v4 /
+  v4_hot / v4_hot_plus floodmaps, the `_pre_darby` / `_pre_flankwall` / `_pre_damcrest` runs). Also 10-11:
   removed `reports/v4_first_results_test/` (a trial run of the report script); report job stdout
   (`reports/**/jobs/*.out`) is gitignored like `logs/`.
 - Kept on purpose, user's call to remove: `data/NACCS/_originals_pending_delete/` (3.2 G — the

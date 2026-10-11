@@ -641,6 +641,44 @@ _V4_REFREEZE["naccs-nowaves+rain-noinfil"] = replace(
     "what separates v4 from v3 at the coastal-lake rain-pond marks.",
     infiltration=False,
 )
+# 2026-10-11: the LIKE-FOR-LIKE v4 counterpart of the v3 reference below — the NACCS-blend
+# wind pair with the curve-number infiltration OFF (v3 has none). Each is one flag off its
+# `wind-naccs+X` twin (uninterrupted 10-09). NOT a premier candidate: the no-infiltration
+# gain at the coastal-lake marks is closed-basin rain ponding (FINDINGS part 4 (g)).
+# Named in this domain's pinned style (`wind-naccs+X`, a noinfil arm = its twin + `+rain-noinfil`;
+# TestV4Refreeze, TestNoInfiltrationIsWrittenNotMerelyNotWritten); v3 below is alphabetical.
+_V4_REFREEZE.update(
+    {
+        f"wind-naccs+{n}+rain-noinfil": replace(
+            _V4_REFREEZE[f"wind-naccs+{n}"],
+            name=f"wind-naccs+{n}+rain-noinfil",
+            description=f"wind-naccs+{n} with the curve-number infiltration OFF (rain "
+            f"kept, every drop runs off — v3's setup). Pair: wind-naccs+{n}. Like-for-"
+            "like counterpart of v3's NACCS-wind reference (2026-10-11).",
+            infiltration=False,
+        )
+        for n in ("naccs-premier", "naccs-nowaves")
+    }
+)
+# 2026-10-11 (user): the v3 reference re-run to MATCH v4 — the shared-bed-fix pair on v4's
+# exact wind + pressure (the same NACCS-blend files, staged by `meteo_from`, which refuses
+# if any v3 active face falls outside the blend grid). The 10-05 `bed-v4fixes` runs carry
+# the pre-10-06 meteo (ERA5 sampled half a cell off, FINDINGS part 4 (e)); a run staged
+# now also gets the corner-fixed AORC rain. v3 has no infiltration (Domain), as above.
+_V3.update(
+    {
+        f"{n}+wind-naccs": replace(
+            _V3[n],
+            name=f"{n}+wind-naccs",
+            description=f"{n} with the 10 m wind + MSL pressure replaced by v4's "
+            "NACCS-blend field (data/wind_v4/naccs_blend). Pair: "
+            f"{n} (pre-10-06 ERA5). Candidate v3 reference matching the v4 candidate "
+            "(user 2026-10-11).",
+            meteo_from=_NACCS_BLEND,
+        )
+        for n in ("bed-v4fixes+wave-dt3600", "bed-v4fixes+naccs-nowaves")
+    }
+)
 
 
 EXPERIMENTS_BY_DOMAIN: dict[str, dict[str, Experiment]] = {
