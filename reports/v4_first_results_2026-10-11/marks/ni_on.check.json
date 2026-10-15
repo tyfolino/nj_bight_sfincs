@@ -1,0 +1,12 @@
+{
+ "label": "ni_on",
+ "n": 110,
+ "rmse": 0.3069795664726786,
+ "bias": -0.0342381132472645,
+ "metrics_n": 110,
+ "metrics_rmse": 0.3069795664726786,
+ "metrics_bias": -0.0342381132472645,
+ "metrics_estimator": "median",
+ "metrics_radius": 50.0,
+ "reproduces_metrics_4dp": true
+}

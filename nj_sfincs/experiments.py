@@ -667,7 +667,7 @@ EXPERIMENTS_BY_DOMAIN: dict[str, dict[str, Experiment]] = {
     "v1_monmouth": {},
     "v1_5_raritan": _V1_5_RARITAN,
     "v1_5_raritan_z15": _V1_5_RARITAN,
-    # Frozen archive fixture, score-only (scripts/score_v2_barnegat.py): its five
+    # Frozen archive fixture, score-only (scripts/score_v2_barnegat.py, retired 2026-10-15, in git history): its five
     # archived runs are RESCORED in place, never staged from a config.
     "v2_barnegat": {},
     # DONE 2026-09-24; reference = naccs-premier on the repaired mask (FINDINGS §50).

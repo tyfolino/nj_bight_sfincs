@@ -1169,8 +1169,8 @@ def build_static(
     if skip_subgrid:
         # Domain-geometry dry run: everything the invariants need (grid, elevation, mask,
         # boundaries) is already built, and the subgrid is by far the most expensive step.
-        # Used by scripts/validate_domain.py to PROVE a region/elevation change is right
-        # BEFORE paying for a full rebuild.
+        # Use it to PROVE a region/elevation change is right BEFORE paying for a full
+        # rebuild (scripts/validate_domain.py did this for v1; retired 2026-10-15, in git history).
         print(
             "[build_static] skip_subgrid=True — stopping after mask/boundary (no subgrid)"
         )

@@ -530,7 +530,7 @@ CLAUDE.md §5.
 40. ⭐ **The Raritan Bay sub-hourly motion is a REAL, COHERENT basin oscillation — not
     numerical chatter. `zsmax` scoring in the bay STANDS; what is fragile is its PHASE
     between arms, not its envelope.** Measured 2026-08-21,
-    `scripts/diagnose_bay_seiche.py`, pre-registered at
+    `scripts/diagnose_bay_seiche.py` (retired 2026-10-15, in git history), pre-registered at
     `reports/seiche/preregistration_bay_seiche.md` (written before any number) →
     `reports/seiche/bay_seiche_{stations,pairs,windows}.csv`,
     `reports/figures/bay_seiche_diagnostic.png`. Read off `diag-nowaves-fasthis`

@@ -6,7 +6,8 @@ running, what is next, what is open. When an item closes, its durable fact goes 
 Git has the history. The campaign log this file grew into until 2026-09-29 (6,767 lines) is
 `git show d70dd1e:docs/STATUS.md`; FINDINGS cites it as "STATUS <date>".
 
-Last updated: **2026-10-11** (every 10-09 job read; was 2026-10-09 12:00). The re-frozen v4 is
+Last updated: **2026-10-15** (the four pre-maintenance jobs read — "Read 10-15" below; the
+readiness audit for experiments is in progress). Before: 2026-10-11 (every 10-09 job read). The re-frozen v4 is
 solved, scored and written up: `reports/v4_first_results_2026-10-09/summary.md`, FINDINGS part 4 (g).
 Infiltration decided (stays on; `cnb` with ERA5-Land soil state next). Open: declaring the v4 premier,
 submitting the v3-reference job. Scratch cleaned 10-11 (was over its soft quota).
@@ -39,83 +40,117 @@ submitting the v3-reference job. Scratch cleaned 10-11 (was over its soft quota)
 
 ## Running
 
-- **62561797** `inflow_move` (10-11 evening, 32 c / 128 G / 6 h): the moved-inflow test (PICK UP 1b).
-- **62561016** `motf_gap_rescore` (submitted 2026-10-11 evening, 400 G, 12 h; `logs/motf_gap_2026-10-11/`):
-  rebuilds `sandy_motf_valid_nj_v4.tif` with `Domain.motf_gap_boxes_xy` (checks it changed ONLY
-  inside the box, 1 → 0), freezes `metrics_2026-10-11_pre_motf_gap.csv`, then `--validate-only` the
-  five v4_refreeze arms serially (~1.5 h each). Then: re-render the status notebook (PICK UP 1a).
-- **62551000** `premier_candidates` (submitted 2026-10-11 ~14:00; one exclusive emeraldrapids node,
-  23 h, `--requeue`; `logs/premier_2026-10-11/`): v3 `bed-v4fixes+wave-dt3600+wind-naccs` + twin
-  (the matching v3 reference) and v4 `naccs-premier+rain-noinfil` + twin (like-for-like, v3 has no
-  infiltration): suite → stage both domains → verify each vs its pair → 4 solves side by side →
-  validate → paired reads. Progress: `CHECKS.txt`; per-step markers in `state/`. 🔴 EXPECT_MD5
-  guards experiments.py, model.py, premier.py, run_experiments.py, sfincs_run.slurm,
-  sfincs_restart.py and the script — do NOT edit them until it STARTS. Must start by ~Mon 09:00 or
-  it waits for maintenance (10-13 08:00 → 10-14 23:59). Read: v3 meteo pair (old ERA5 vs NACCS),
-  v3 wave lift, v4 premier vs v3 reference on shared marks (`v4_first_results.py`, new preset).
-- **62554764** `premier_v3` (13:41, emeraldrapids, 32 cores, 23 h): THE V3 HALF of 62551000,
-  re-launched — 62551000's verify refused the v3 arms because their `sfincs.weir` is the EXACT
-  frozen-mesh file while the 10-05 pair carries the hydromt-rounded one (crests ±5 cm, the 10-07
-  `restore_weir` fix); this copy accepts the frozen-mesh file. So the v3 pair (new vs 10-05)
-  differs in meteo AND the levee crests' rounding. Solves started 13:42, 214 weir points.
-  62551000 will end non-zero (its v3 pipeline exit) even when its v4 half is fine — read CHECKS.txt.
+- **62626713** `igseed_sens` (10-15, one exclusive emeraldrapids node, 6 h cut of the premier;
+  `logs/ig_det_2026-10-15/igseed_sens.slurm`): the SEEDED engine — repeat (SEED_a vs SEED_b,
+  predicted STRICT) AND sensitivity to a null perturbation (`rhoa` 1.25 → 1.2501, waves on and
+  waves off), plus seeded vs unseeded (one IG sample vs another). Repeating is necessary but not
+  sufficient: if capped calls amplify tiny input differences, two ARMS still diverge in the bays.
+  Supersedes 62625419 (cancelled) and 62626666.
 
-## ☀️ PICK UP (Monday 10-12)
+## Read 10-15 — v4 vs v3, like for like (`reports/v4_first_results_2026-10-11/`, job 62625293)
 
-0. ⚠️ **Maintenance 10-13 08:00 → 10-14 23:59 takes every hal node.** A waves-on v4 solve is
-   10–11 h on emeraldrapids; anything submitted after ~Mon 18:00 will not start until 10-15.
-1. ✅ **Infiltration stays ON (user 10-11); next run uses `cnb` with data (after maintenance).**
-   The no-infiltration HWM gain is closed-basin rain ponding still rising at tstop, and the sea
-   never enters Wreck Pond in either arm (FINDINGS part 4 (g); `logs/infiltration_2026-10-11/`).
-   Soil on 10-28 (`logs/soil_moisture_2026-10-11/README.md`): ERA5-Land relative wetness 0.73–0.78
-   on the coastal plain (3rd driest Oct-28 of 2002–16), AORC 0.3 mm in the 5 days before (AMC I),
-   no drought (USDM 10-23) — DRIER than the AMC II we assume, so the curve number errs toward too
-   LITTLE infiltration, not too much. `cnb` = CN with recovery: `smax` / `seff` / `ks`; its soil
-   state IS in the restart file (type 4, `scs_Se`), unlike `cna` (§59). To build: `create_cn_with_
-   recovery` on the quadtree (needs a ksat layer — SSURGO), `effective` ≈ 1.5 (log-S interpolation
-   AMC II → I by the wetness anomaly) with brackets 1.0 / 2.38; `_infiltration_keys` for the cnb
-   keys; `restart.py`'s soil-RESET warning only for `cna`; a toy resume test. Then re-baseline.
-1a. **Status notebook, fig. 2 (peak map) → "rise above normal water" (user 10-11).** A level in
-   m NAVD88 reads a river flowing on a 7 m bed as deep water. Plot instead, per face: normally-wet
-   faces → peak − the pre-storm high water; normally-dry faces → depth. Baseline = max of the
-   premier's own early 6-h `zsmax` blocks; first run `logs/notebook_qc_2026-10-11/baseline_check.py`
-   (surge already in by 10-28 evening? river reaches filled by then?) to pick the blocks. Re-render
-   together with fig. 4 once 62561016 has re-scored. The notebook holds all its code (edit in place).
-1b. **Inflow pile-ups — user approved 10-11; screen DONE, test RUNNING (62561797).**
-   `scripts/relocate_coarse_inflows.py screen` (coarse face > 50 m, depth at the source > 2 m,
-   peak falls > 1 m within 4 km): 12 of 61 — NJ: Salem R. 01482500, 01475001, Crosswicks 01464500,
-   Assunpink 01464000; PA/DE: Chester, Ridley, Frankford, Pennypack, Poquessing, White Clay, Red
-   Clay, Brandywine (`logs/notebook_qc_2026-10-11/relocate_screen.txt`); every unflagged source
-   stands 0.3–1.9 m deep. Each moves 1.1–4.2 km down its creek to the first ≤ 50 m channel face.
-   🔴 `discharge_geodataset` is MASK-DEFINING (the 500 m inflow walls are built from it), so the
-   walls must stay on the OLD points: a registry change needs a separate wall-points source, or
-   the mask, fingerprint and old crossings all move. Test: full-window copy of the rain-off arm
-   with only `sfincs_netsrcdisfile.nc` changed (`/scratch/tpj8/engine_gate/inflow_move_2026-10-11/`),
-   `logs/inflow_move_2026-10-11/compare.txt`. Then: ship in the `cnb` re-baseline.
-   **Next mesh (user 10-11: OK to refine around problem rivers):** a 25–50 m refinement band along
-   the 12 flagged creeks (and the Christina, 25 m but still +0.9 m) — a new mesh is a new domain
-   freeze, so it waits for the next one; the source moves are the fix until then.
-2. ✅ **v4 premier DECLARED (user 10-11): `naccs-premier` on `v4_refreeze` = the NACCS-blend pair**
-   (was `wind-naccs+naccs-premier`, uninterrupted; RMSE 0.436 / bias −0.110 / CSI 0.728). Re-baseline
-   done: rows frozen (`metrics_2026-10-11_pre_rebaseline.csv`), the ERA5 pair + ERA5 noinfil parked
-   in `_pre_rebaseline_2026-10-11/`, NACCS pair renamed into place, registry + tests + the 10-09
-   preset paths updated, audit 7/7. The next re-baseline is the `cnb` premier (item 1). Blend
-   pressure: rebuild with `--pressure era5` in that round (< 1–4 cm, 10-07).
-   **v3 matching reference job SUBMITTED** (62551000, "Running" above); when it is read, re-baseline v3's
-   `naccs-premier` the same way onto `bed-v4fixes+wave-dt3600+wind-naccs`.
-3. **Run-to-run noise (FINDINGS §44).** Lone 64-thread copies differ; the 1-thread pair was cut
-   by its 5 h limit but differs from the first SnapWave call. Next, cheapest first: run the
-   1-thread pair to the end of a 1 h window (the first call already decides it); if 1-thread
-   repeats, it is a threading race; if not, build with `-finit-real=snan -finit-integer=-999999`
-   and look for the uninitialised field. Until then: a few cm at an NY-bay gauge between two
-   waves-on arms is noise.
-4. **Hourly-wave swing test (FINDINGS §61 (g))**: only the dtwave 3600 leg finished
-   (`/scratch/tpj8/engine_gate/swing_3600/`); the 600 leg was killed at 14 h (its partial output was
-   deleted 10-11). Re-run 600 alone with ~20 h, and a SECOND 3600 copy so §44's noise can be
-   subtracted. Low priority unless the NY-bay crest matters for a decision.
-5. Small: record the meteo convention in `metrics.csv` / `provenance.txt` (like
-   `snapwave_direction`); re-run `scripts/desktop_pull_backup.sh` (the 10-09 arms are scored and live
-   only on scratch until it runs); finish the data swap (below); USER: commit (reports + docs `git add`-ed 10-11).
+- ⭐ **On the 94 shared marks, v4 = v3 once the rain is treated alike** (v4 `+rain-noinfil` vs the
+  NACCS-wind v3; median, 50 m): waves off ΔRMSE **−0.001 [−0.037, +0.035]**, every group within
+  ±0.02; waves on +0.017 [−0.031, +0.057] (NY bays +0.027, v4 bias +0.05 vs v3 −0.05 — the
+  waves-on crest, see the noise below). The 10-09 "+0.18" was all infiltration.
+- **The premier's RMSE is two marks:** 6122 (Deal Lake, `south_coast`) and 6130 (Wreck Pond,
+  `barnegat_bay`) read −2.37 / −2.34 m; without them 0.436 → 0.301 (n 108). The sea never enters
+  either lake in the model (part 4 (g)).
+- **Waves-on noise reaches the zsmax MAP:** infiltration off − on, median zsmax per basin, waves
+  on vs waves off: Delaware Bay NJ shore +0.139 vs +0.003, DE +0.067 vs +0.005, Raritan Bay
+  +0.050 vs +0.001 → ~5–14 cm of the waves-on Δ is run-to-run noise (`zsmax/*_stats.csv`).
+
+## Read 10-15 — the four jobs that finished before maintenance (all audited `output WHOLE`, uninterrupted, one engine)
+
+- **62551000 / 62554764 (premier candidates)** — median, 50 m, paired B 200 k
+  (`logs/premier_2026-10-11/paired_*.txt`):
+  v3 `bed-v4fixes+wave-dt3600+wind-naccs` **0.300 / −0.097** (n 94) vs the ERA5 twin 0.323 / −0.157:
+  ΔRMSE −0.023 [−0.066, +0.014] (meteo AND the weir-crest rounding differ); bias moves +0.08 in NY
+  bays and the NJ back bays, 0 on the open coast. v3 wave lift with NACCS wind −0.057 [−0.088, −0.028].
+  v4 `naccs-premier+rain-noinfil` **0.307 / −0.034** (n 110), CSI 0.763 (FAR 0.143) vs the premier
+  0.436 / −0.110, CSI 0.780: ΔRMSE −0.129 [−0.260, −0.010] — `south_coast` / `barnegat_bay` rain
+  ponds as on 10-09. v4 wave lift (no infiltration) −0.037 [−0.074, −0.004].
+- **62561016 (MOTF gap box `salem_marshes`)**: 418 km² of valid ground → 0, nothing outside the box.
+  CSI +0.05 on every arm (premier 0.728 → **0.780**, FAR 0.162 → 0.098); HWM unchanged.
+- **62561797 (inflow move, rain-off waves-off copy)**: the 12 moved sources drop the old-face peak
+  1–10 m (e.g. idx 46 11.70 → 2.93 within 3 km); > 10 km away p99 0.2 mm; obs points ≤ 1.3 cm
+  except `sss_great_kills` 7.6 cm (dry-bank sensor, §60). Ready to ship — needs the walls kept on the
+  OLD points (`model.py:987` builds them from `discharge_geodataset`).
+- 🔴 **§44 confirmed on FULL runs:** `naccs-premier` vs `+rain-noinfil` (waves on) differ by 0.12 m
+  at Keansburg in the FIRST HOUR (rain 0.008 mm/h; the waves-off pair: 0.2 mm), 0.54 m at the
+  Narrows by 12 h; the Delaware River pulse (Delaware City +1.4 m at 10-29 20:00) is in the
+  premier and NOT in its twin. Capped SnapWave calls: v4 18 / 21 of 73, v3 23 / 27 of 73, on
+  different hours in twins. At the marks the noise is a COHERENT NY-bay shift (+0.037 m, 44 of 46
+  marks one sign) that the paired bootstrap reads as significant (CI [+0.028, +0.044]).
+- 🔴 **Suspected cause (10-15, source read + a 3-line test; RUN 62625419 decides):** SnapWave's
+  Herbers IG boundary draws `RANDOM_NUMBER` for 400 wave components every call
+  (`snapwave_infragravity.f90:285`) and nothing seeds it; the engine's libgfortran seeds from the
+  OS, so every run draws differently. The IG source is subtracted from the INCIDENT energy
+  (`snapwave_solver.f90:664`, `snapwave_shinc2ig` reader default **1.0** — the solver comment
+  saying 0 is stale), so it reaches breaking, the wave force and zs. Every bit-identical repeat
+  on record (G1, G3_patched_rep = the F.4 cut) was IG OFF; every non-repeating one (pack test,
+  det test, the 10-11 pair) IG ON. ⇒ §44's "v3 is deterministic" holds for IG off only, and
+  §45's "IG does nothing to water levels" is wrong as mechanism (its measured null at the marks
+  stands). Test: job 62626713 (Running).
+  ✅ **User 10-15: IG STAYS ON in the premier; fix by SEEDING, not by switching IG off.** Engine
+  variant `v2.3.3-winddir-igseed-1-gf11` = the premier's source (diff sha `02aa32005413ad5c`, same
+  compiler / flags) + a fixed `random_seed(put=…)` before the 400 draws in `compute_herbers`,
+  re-set on EVERY call (same sample at every point and call — independent of restarts, `dtwave`
+  and boundary count). Source `/scratch/tpj8/sfincs-build/src-igseed-1` (`git diff 091f531`).
+  A new binary is a new engine label: every arm after the switch is re-baselined, never Δ'd
+  against a pre-seed run.
+
+## ⭐ FINAL AUDIT → "the v4 premier is ready" (plan approved 10-15)
+
+Plan: `~/.claude/plans/i-think-i-m-ready-warm-trinket.md`. User decisions 10-15: lakes = rule-based
+flag + a documented-site breach SENSITIVITY arm (not in the premier); IG stays on, seeded; v3
+reference re-run on the seeded engine; retired domains keep their registry entries (labelled), their
+scripts go; scratch tiers A + B of `reports/cleanup/deletion_manifest_2026-10-15.md` approved.
+
+- **Phase 0 ✅ (10-15):** seed patch + Deltares issue draft (`docs/upstream/snapwave_igseed*`; the
+  bug is on upstream `main` too); NACCS originals copied to `~/nj_bight_durable/` (md5-verified);
+  deletion manifest drafted (A + B = **271.9 G** freed by nlink). 🔴 USER: run
+  `scripts/desktop_pull_backup.sh` — it gates every scratch deletion.
+- **Phase 1 (repo part ✅ 10-15):** 8 frozen-domain scripts retired (`git rm`, citations say
+  "retired 2026-10-15"); 4 v4 overlay builders relabelled provenance; 70 job stdout files filed into
+  `logs/slurm/<yyyy-mm>/`; caches, 3 orphan log files, 4 tracked + 11 untracked obsolete report
+  files, 2 data leftovers removed; suite 299 OK. KEPT (evidence, cited now in the index below):
+  `pressure_2026-10-07`, `dune_lever_2026-09-23`, `weekly_2026-10-06` (the brief builder),
+  `data_move_2026-10-05` (the swap script), `wind_x110_reads_2026-09-22`, `naccs_chs_2026-10-06`; both
+  09-09 weeklies (plain + technical versions). KEPT scripts the plan listed: `plot_waterlevel_boundary`
+  (`accept_domain.py` runs it), `stockdon_envelope` (run-up — the Deal Lake question), two downloaders
+  (catalog provenance). **Pending the backup:** scratch tiers A + B, the `premier.py` "retired" labels
+  and the `test` preset (same pass), NACCS scratch dir → symlink to home; home: `micromamba clean -a`,
+  finish the elevation_v4 swap (copy 4 home-only `inland_water` files first), caches; env lock file.
+- **Phase 2:** read 62626713 → A (clean) / B (noise band + cap test) / C (snan build); FINDINGS
+  §44/§45 rewrite; CLAUDE.md §5 RNG trap.
+- **Phase 3 (code, no solves):** `cnb` (SSURGO ksat → `create_cn_with_recovery`, `effective` 1.5,
+  brackets 1.0 / 2.38; soil-RESET warning `cna`-only; toy resume test — soil on 10-28 was DRIER than
+  AMC II, so expect MORE infiltration); inflow moves with a separate wall-points field (walls on the
+  OLD points; `discharge_geodataset` is mask-defining — restaged sha must stay `378014e154b4ff41`);
+  `--pressure era5` blend; `_subgrid_breach` (post-storm CZMIL / EAARL in hand-drawn polygons at
+  Wreck Pond outlet, Deal Lake flume / Ocean Ave, Mantoloking / Bay Head; `logs/dune_lever_2026-09-23/`);
+  `lake_outlet_blocked` scorer flag (headline with and without; never dropped); fixes (provenance
+  NACCS label, meteo / infiltration / engine_seed columns, metrics round-trip, refuse an unset engine,
+  HWM 6044 flag, islands log, `README.md`); desk checks (Atlantic City datum, paved channels).
+  Pre-register in `logs/rebaseline_2026-10-xx/PREREG.md`.
+- **Phase 4:** ONE 2-node job on the seeded engine: new premier + repeat + `bed-breach` + waves-off
+  + `cnb` 1.0 / 2.38 + `bed-nobuildings` (node 1); v3 reference pair (node 2); validate; paired reads.
+  Must end before maintenance 11-10 08:00.
+- **Phase 5–6:** reads (new preset) → frozen premier (engine `…igseed-1…@2e4e9645`, user tags git),
+  `docs/MODEL.md` model card (processes in / out with literature, patches, cost, reproducibility,
+  data attribution, "how to start an experiment"), validation summary, research-group brief,
+  docs refresh, backup, user commits.
+- **Status notebook fig. 2** ("rise above normal water", user 10-11) goes into the brief: normally-wet
+  faces → peak − pre-storm high water; normally-dry → depth; baseline from the premier's early 6-h
+  `zsmax` blocks (`logs/notebook_qc_2026-10-11/baseline_check.py` picks them).
+- **The lakes (10-15):** Sandy breached the dune at Wreck Pond beside the outfall pipe and reopened a
+  natural inlet (NJDEP Wreck Pond EA; closed in ~2 weeks; the expanded gated culvert is 2016 —
+  present-day, not 2012); the ocean overwashed Ocean Ave into Deal Lake at the flume (Asbury Park Sun,
+  2012). Model: lowest ocean–lake connection 3.10 m (Wreck Pond) / 3.62 m (Deal) vs a sea-side peak of
+  2.81–3.01 m; post-storm lidar crest at the Wreck Pond outlet 1.65–2.49 m (was 4.89). Deal Lake's
+  mark (3.14) stands ABOVE the modelled sea → needs run-up, which a fixed-bed SFINCS without a
+  wavemaker lacks. Not done: the 12-creek refinement band (next mesh); the dtwave-600 swing leg.
 
 ## Re-freeze bed — notes that still apply
 
@@ -175,7 +210,6 @@ heads may still be tidal (unpainted). Paerdegat: leave it (user).
 - **12 USGS gauges empty over the storm day (§60f).** Close: NWISWeb 2012 / the USGS Sandy report.
 - **Atlantic City peak ~+0.5 m high on every run, v3 and v4, waves on and off** (+0.47…+0.55).
   Close: NACCS at the nearest save point vs the gauge; the gauge's datum.
-- **IG on the premier costs ~4 h with no wavemaker (§45).** Close: user decision.
 - **NY-bay waves-on crest = seiche phase** (FINDINGS §61 (g)): how much of the NY-bay wave gain
   survives a fine `dtwave` is unmeasured. Close: PICK UP 4.
 - **v4 waves-on is not repeatable run to run (§44).** Close: PICK UP 3.
@@ -230,7 +264,9 @@ heads may still be tidal (unpainted). Paerdegat: leave it (user).
 | no-infiltration test | `logs/noinfil_2026-10-08/` | — | part 4 (g) |
 | determinism + packing | `logs/det_test_2026-10-09/`, `logs/pack_test_2026-10-07/` | `engine_gate.py` | §44 |
 | hourly-wave swing | `logs/waves_swing_2026-10-07/` | in-folder scripts | §61 (g) |
-| SLURM stdout | `logs/slurm/<yyyy-mm>/` | — | — |
+| meteo, dunes, briefs, data moves | `pressure_2026-10-07/` (blend pressure < 1–4 cm), `wind_x110_reads_2026-09-22/`, `naccs_chs_2026-10-06/`, `dune_lever_2026-09-23/` (pre/post-Sandy crests — the breach arm), `weekly_2026-10-06/build_brief.py`, `data_move_2026-10-05/swap.sh` | in-folder | part 4 (e), §38 |
+| v4 vs v3 like for like; IG seed | `premier_2026-10-11/`, `ig_det_2026-10-15/`, `reports/v4_first_results_2026-10-11/` | `v4_first_results.py --preset premier`, `engine_gate.py` | §44, part 4 |
+| SLURM stdout | `logs/slurm/<yyyy-mm>/` (filed by month; batch scripts write to `logs/`) | — | — |
 
 ## Disk and cluster
 
@@ -249,17 +285,14 @@ heads may still be tidal (unpainted). Paerdegat: leave it (user).
 
 ## Housekeeping
 
-- Last cleanup: **2026-10-11 scratch**, `reports/cleanup/deletion_manifest_2026-10-11.md` (~374 G: finished
-  engine_gate tests, the Lewes test, the v4 trial build, every `snapwave.upw`, the superseded v4 /
-  v4_hot / v4_hot_plus floodmaps, the `_pre_darby` / `_pre_flankwall` / `_pre_damcrest` runs). Also 10-11:
-  removed `reports/v4_first_results_test/` (a trial run of the report script); report job stdout
-  (`reports/**/jobs/*.out`) is gitignored like `logs/`.
+- Last cleanup: **2026-10-15 repo** (FINAL AUDIT Phase 1 above); scratch + home pass pending the
+  backup — `reports/cleanup/deletion_manifest_2026-10-15.md`. Before: 2026-10-11 scratch (~374 G,
+  `deletion_manifest_2026-10-11.md`). Report job stdout (`reports/**/jobs/*.out`) is gitignored.
 - Kept on purpose, user's call to remove: `data/NACCS/_originals_pending_delete/` (3.2 G — the
-  only byte-reproducible source of v3's NACCS boundary, FINDINGS part 3);
+  only byte-reproducible source of v3's NACCS boundary, FINDINGS part 3; durable copy since 10-15 in
+  `~/nj_bight_durable/NACCS_originals_pending_delete/` with `MD5SUMS`);
   `data/gtsm/retired_v1_monmouth/`; the v1.5 / v3 notebooks and the weekly reports;
   `logs/audit_v4_hot_plus_2026-10-05/v4_vs_v3_deficit/shadow_hp_norain/` (705 MB rebuildable
   floodmap, on scratch; user 10-05: keep for now).
-- Candidates for the user (10-05, not deleted): `data/elevation_v4/inland_water/
-  inland_water_bed_v4_draft.tif` (byte-identical to the registered `inland_water_bed_v4.tif`);
-  `data/discharge_v4/usgs_sandy_discharge_v4_hot_plus.nc` will carry the 4 inflow moves after
+- `data/discharge_v4/usgs_sandy_discharge_v4_hot_plus.nc` will carry the 4 inflow moves after
   job 62279940 (only a future A+ restage reads it).

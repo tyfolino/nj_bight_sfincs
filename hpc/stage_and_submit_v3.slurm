@@ -79,11 +79,12 @@ JOBFILE="logs/stage_v3_${SLURM_JOB_ID:-local}.jobs"
 ARMS="$ARMS" SOLVE_TIME="$SOLVE_TIME" SOLVE_MEM="$SOLVE_MEM" SOLVE_CONSTRAINT="$SOLVE_CONSTRAINT" JOBFILE="$JOBFILE" python - <<'PY'
 import os
 from nj_sfincs import run
-from nj_sfincs.config import BaseConfig, exp_root
-base = BaseConfig()
-# SFINCS_BIN in the environment = the native engine (plan Phase 1b); else the container.
+from nj_sfincs.config import exp_root
+# The engine is ALWAYS explicit (2026-10-15): SFINCS_BIN (native) or SFINCS_SIF, exactly one.
 binary = os.environ.get("SFINCS_BIN") or None
-sif = None if binary else str(base.container_sif)
+sif = os.environ.get("SFINCS_SIF") or None
+if bool(binary) == bool(sif):
+    raise SystemExit("[engine] REFUSING: set exactly one of SFINCS_BIN or SFINCS_SIF")
 print(f"[engine] {'bin:' + binary if binary else 'sif:' + sif}", flush=True)
 ids = []
 for arm in os.environ["ARMS"].split(","):

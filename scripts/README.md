@@ -50,10 +50,6 @@ Every script reads `NJ_DOMAIN` unless its row names a domain. Run from the repo 
 | `relocate_coarse_inflows.py` | Flag inflows piling up on a coarse face; move them down the creek (screen / write / apply) | live |
 | `compare_usgs_transects.py` | Model beach runup level vs USGS Sandy transects (TWL, dune crest, sandline washover) — the read where IG shows | live (restored 2026-10-01) |
 | `stockdon_envelope.py` | Stockdon (2006) runup envelope on a still-water run (diagnostic) | live |
-| `diagnose_bay_seiche.py` | Raritan Bay sub-hourly motion: coherent seiche or chatter (v1.5) | frozen |
-| `make_flux_crosssections.py` | Two control lines partitioning inflow to the Shrewsbury / Navesink | frozen |
-| `score_bracket.py` | Score the Manahawkin bracket (v2) | frozen |
-| `score_v2_barnegat.py` | Score the archived v2_barnegat runs to a CSV | frozen |
 | `verify_port.py` | The port gate: the scorer reproduces the archive bit for bit (v1_monmouth) | frozen |
 
 ## Waves
@@ -81,9 +77,6 @@ Every script reads `NJ_DOMAIN` unless its row names a domain. Run from the repo 
 | `check_naccs_vs_sensors.py` | NACCS forcing product vs interior storm-tide sensors (forcing diagnostic) | live |
 | `check_buildings_adequacy.py` | Adequacy checks before burning building footprints | live |
 | `plot_waterlevel_boundary.py` | Map the built water-level boundary by arm (v1.5 layout) | frozen |
-| `validate_domain.py` | Prove a rebuilt domain before paying for a subgrid (v1) | frozen |
-| `validate_region_v3.py` | Validate the hand-edited v3 region polygon | frozen |
-| `sweep_cudem_flatfill.py` | Find phantom water: stack says water, CoNED says land (v1.5) | frozen |
 | `audit_paved_channels.py` | Channels the top lidar paved over (v1.5 Workstream L) | frozen |
 
 ## Build model inputs
@@ -99,18 +92,17 @@ Every script reads `NJ_DOMAIN` unless its row names a domain. Run from the repo 
 | `build_refinement_v4.py` | v4 quadtree refinement polygons from a readable recipe; diffs names vs v3 | live |
 | `build_riverbeds_v4.py` | v4 river beds where no survey reaches, one carving raster per reach | live |
 | `build_usace_unpave_v4.py` | CUDEM painted back where the 2010 USACE lidar paves deep water (3 boxes), an overlay tier | live |
-| `build_usace_unpave_backbay_v4.py` | The same un-paving in 10 back-bay channel / basin boxes (Ocean City → Wildwood, LBI, Atlantic City, Keansburg), a second overlay tier | live |
-| `build_riverbed_sayreville_v4.py` | The Raritan's side channels and bank margins at Sayreville from the 2012 survey, NOS H05647 and ENC soundings (was 3DEP's water surface), an overlay tier | live |
-| `build_littleegg_channel_v4.py` | Little Egg Inlet's flood channels + the NJIWW behind Holgate from NOS H12597 (2014) and eHydro IW_08 (2024): an OPTIONAL post-Sandy overlay tier | live |
+| `build_usace_unpave_backbay_v4.py` | The same un-paving in 10 back-bay channel / basin boxes (Ocean City → Wildwood, LBI, Atlantic City, Keansburg), a second overlay tier | provenance |
+| `build_riverbed_sayreville_v4.py` | The Raritan's side channels and bank margins at Sayreville from the 2012 survey, NOS H05647 and ENC soundings (was 3DEP's water surface), an overlay tier | provenance |
+| `build_littleegg_channel_v4.py` | Little Egg Inlet's flood channels + the NJIWW behind Holgate from NOS H12597 (2014) and eHydro IW_08 (2024): an OPTIONAL post-Sandy overlay tier | provenance |
 | `build_riverbed_cohansey_v4.py` | The tidal Cohansey at a stated depth below MLLW (no measured bed), an overlay tier | live |
 | `build_riverbeds_gmrt_v4.py` | The four A+ tidal rivers whose bed falls through to GMRT (Maurice, Mullica, Tuckahoe, Rancocas): soundings, else a stated depth below MLLW, one overlay VRT | live |
 | `build_riverbeds_tidal_v4.py` | The tidal Christina, Big Timber Creek and St Jones (NOS soundings, else 1.2 m below MLLW), one overlay VRT; `--section shaped` = a measured parabolic-type section option for these, the GMRT reaches and the Cohansey; `evidence` / `conveyance` tables | live |
-| `build_riverbeds_hierarchy_v4.py` | ONE bed-source hierarchy (eHydro → real CUDEM → chart/NOS → sloping river, shaped section) for 18 tidal reaches incl. the Cohansey / GMRT / tidal ones it REPLACES; fill test, provenance raster, domain-wide fill screen, premier-tier consistency report; one overlay VRT | live |
+| `build_riverbeds_hierarchy_v4.py` | ONE bed-source hierarchy (eHydro → real CUDEM → chart/NOS → sloping river, shaped section) for 18 tidal reaches incl. the Cohansey / GMRT / tidal ones it REPLACES; fill test, provenance raster, domain-wide fill screen, premier-tier consistency report; one overlay VRT | provenance |
 | `build_inland_water_v4.py` | v4 inland water: CUDEM's 0 m fill under lakes and rivers, channel roughness (`manning` step → `manning_water_v4.tif`, n = 0.02 on every NHD lake/river polygon in the A+ ring) | live |
 | `build_river_table_v4.py` | v4 river-inflow decision table: gauge flow vs flow at the model edge | live |
 | `build_v3_coarse_bed.sh` | The v3 coarse bed as actually built (its tier order differs from `domain.py`) | provenance |
 | `build_coned_sw_raritan.py` | CoNED topobathy tier for the SW Raritan box (in the frozen v1.5 bed) | provenance |
-| `build_refinement_v1_5.py` | The v1.5 refinement recipe (kept by user decision 09-21) | frozen |
 
 ## Acquire data
 

@@ -78,7 +78,10 @@ _TIME = [
 
 #: forcing file in the run dir -> what it carries and which catalog key produced it
 _FORCING = [
-    ("sfincs_netbndbzsbzifile.nc", "water-level boundary", "noaa_sandy_nj"),
+    # ⚠️ ARM-DEPENDENT: an arm's `waterlevel_geodataset` override (the NACCS boundary on
+    # v1.5 / v3 / v4) replaces the base default. Resolved at call time from the registry by
+    # the run dir's name (`_waterlevel_key`); the label was the base default until 10-15.
+    ("sfincs_netbndbzsbzifile.nc", "water-level boundary", "waterlevel"),
     ("snapwave.bhs", "wave boundary (Hs)", "cora_waves_nj"),
     ("sfincs_netamuv.nc", "wind field", "era5_nj"),
     ("sfincs_netamp.nc", "pressure field", "era5_nj"),
@@ -90,12 +93,33 @@ _FORCING = [
 ]
 
 
-def _forcing_rows():
-    """`_FORCING` with the domain-dependent catalog keys filled in."""
+def _waterlevel_key(model_dir: Path | None) -> str:
+    """The water-level catalog key the arm in ``model_dir`` was staged with: its
+    registry ``waterlevel_geodataset`` override, else the base default. Never raises."""
+    from .config import BaseConfig
+
+    default = BaseConfig.__dataclass_fields__["waterlevel_geodataset"].default
+    if model_dir is None:
+        return default
+    try:
+        from .experiments import experiments
+
+        exp = experiments().get(Path(model_dir).name)
+        if exp is not None and exp.waterlevel_geodataset:
+            return exp.waterlevel_geodataset
+    except Exception:  # noqa: BLE001
+        pass
+    return default
+
+
+def _forcing_rows(model_dir: Path | None = None):
+    """`_FORCING` with the domain- and arm-dependent catalog keys filled in."""
     from . import domain as _domain
 
     key = _domain.active().discharge_geodataset
-    return [(f, d, k if k is not None else key) for f, d, k in _FORCING]
+    wl = _waterlevel_key(model_dir)
+    fill = {None: key, "waterlevel": wl}
+    return [(f, d, fill.get(k, k)) for f, d, k in _FORCING]
 
 
 def _meteo_source_key(path: Path, default: str) -> str:
@@ -431,7 +455,7 @@ def manifest(model_dir: Path | str, data_dir: Path = DATA) -> pd.DataFrame:
         add("elevation", "stack", f"unavailable ({e})", "")
 
     # ── forcing actually present on disk ──────────────────────────────────────
-    for fname, what, row_key in _forcing_rows():
+    for fname, what, row_key in _forcing_rows(model_dir):
         p = model_dir / fname
         key = row_key
         if p.exists() and fname in ("sfincs_netamuv.nc", "sfincs_netamp.nc"):
@@ -533,6 +557,58 @@ def wind_scale_label(model_dir: Path | str) -> str:
 
     a, b = _umax(f), _umax(g)
     return f"{a / b:.3f}" if b > 0 else "nan"
+
+
+def meteo_label(model_dir: Path | str) -> str:
+    """Which wind and pressure fields this run was handed, and on which grid convention:
+    ``wind:<src> pres:<src> grid:<engine|centres>``. ``grid:centres`` = written before the
+    2026-10-06 corner fix (FINDINGS part 4 (e)) — sampled ~12.5 km off. Read from the
+    files' own attributes; ``none`` without meteo files."""
+    from nj_sfincs import meteo_grid
+
+    d = Path(model_dir)
+    parts, grids = [], []
+    for fname, tag in (("sfincs_netamuv.nc", "wind"), ("sfincs_netamp.nc", "pres")):
+        f = d / fname
+        if not f.is_file():
+            continue
+        src = _meteo_source_key(f, "era5").split(" ")[0]
+        try:
+            st = meteo_grid.file_state(f)
+            grids.append("engine" if st["fixed"] else "centres")
+            if st["regrid"] and src == "era5":
+                src = "era5-bilinear" if "bilinear" in st["regrid"] else "era5-regrid"
+        except Exception:  # noqa: BLE001
+            grids.append("unknown")
+        parts.append(f"{tag}:{src}")
+    if not parts:
+        return "none"
+    grid = grids[0] if len(set(grids)) == 1 else "mixed"
+    return " ".join(parts + [f"grid:{grid}"])
+
+
+def infiltration_label(model_dir: Path | str) -> str:
+    """``no-rain`` (no precipitation file), ``off`` (rain, no infiltration keys), or
+    the engine's ``infiltration_type`` (``cna`` / ``cnb`` / …). Read from ``sfincs.inp``."""
+    inp = read_inp(model_dir)
+    if not (inp.get("netamprfile") or inp.get("precipfile") or inp.get("precip")):
+        return "no-rain"
+    return inp.get("infiltration_type") or ("qinf" if inp.get("qinf") else "off")
+
+
+def engine_seed_label(model_dir: Path | str) -> str:
+    """The SnapWave IG random draw (FINDINGS §44): ``fixed`` on a build carrying
+    ``nj-igseed``, ``os-random`` otherwise — such a waves-on run does NOT repeat itself;
+    ``n/a`` when SnapWave or its IG boundary is off. From ``sfincs.inp`` + ``sfincs.log``."""
+    inp = read_inp(model_dir)
+    if str(inp.get("snapwave", "0")).strip() != "1":
+        return "n/a:no-snapwave"
+    if str(inp.get("snapwave_igwaves", "0")).strip() != "1":
+        return "n/a:ig-off"
+    revs = " ".join(build_revisions(model_dir))
+    if not revs:
+        return "unknown"
+    return "fixed" if "nj-igseed" in revs else "os-random"
 
 
 def sea_level_offset_label(model_dir: Path | str) -> str:

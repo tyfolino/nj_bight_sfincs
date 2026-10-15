@@ -1194,7 +1194,7 @@ V1_5_RARITAN = Domain(
 # Its five kept runs (8.79 GB of sfincs_map.nc) had NO metrics.csv anywhere — their
 # scores existed only as prose in the archived campaign logs, so trimming the maps
 # would have made them unre-scorable forever. This entry exists so the bight scorer
-# can bank a CSV first (scripts/score_v2_barnegat.py); the maps are then trimmable.
+# can bank a CSV first (scripts/score_v2_barnegat.py, retired 2026-10-15, in git history); the maps are then trimmable.
 #
 # frozen=True: staged and scored, never built — the frozen mesh was deliberately not
 # ported (ARCHIVE.md). Only the fields the SCORER touches are populated; build-time
@@ -1307,7 +1307,7 @@ V2_BARNEGAT = Domain(
 # (every dry edge cell is, OUTFLOW_MAX_BED) and drains once water reaches it — hence the
 # Tuckahoe wall below and FINDINGS §50/§53. The Cape May Canal is NOT cut: the
 # ring leaves land north of the canal's Delaware Bay mouth (NOAA 8536110 sits on it) and
-# a forced wedge in Delaware Bay rounds Cape May Point. Gate: scripts/validate_region_v3.py
+# a forced wedge in Delaware Bay rounds Cape May Point. Gate: scripts/validate_region_v3.py (retired 2026-10-15, in git history)
 # (exit 0, 17 declared reaches, zero river reaches). docs/STATUS.md has the measurements.
 #
 # ⚠️ `n_waterlevel_support` stays UNSET until hydromt selects on the real mesh: Cape May

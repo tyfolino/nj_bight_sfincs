@@ -1,0 +1,12 @@
+{
+ "label": "v3n_on",
+ "n": 94,
+ "rmse": 0.3004108905130004,
+ "bias": -0.09735103662977827,
+ "metrics_n": 94,
+ "metrics_rmse": 0.3004108905130004,
+ "metrics_bias": -0.0973510366297782,
+ "metrics_estimator": "median",
+ "metrics_radius": 50.0,
+ "reproduces_metrics_4dp": true
+}

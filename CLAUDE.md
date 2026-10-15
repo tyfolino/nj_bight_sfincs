@@ -151,10 +151,12 @@ resumed trajectory differs from the uninterrupted one by ≤ 0.2 mm (p90), 8 mm 
 exactly one of `sif` (container) or `binary` (a native build from
 `hpc/build_sfincs_native.sh`) — `run.py` and `hpc/sfincs_run.slurm` both REFUSE a run with
 none or both; the old fallback to `sfincs-cpu.sif` (Galibier v2.4.0, NOT the premier's Faber
-v2.3.3) is gone. `SFINCS_BIN=<path>` in the environment makes the sweep driver and
-`stage_and_submit_v3.slurm` use the native engine. Every finished run gets `engine.txt`
+v2.3.3) is gone. The sweep driver and `stage_and_submit_v3.slurm` REFUSE to solve unless
+exactly one of `SFINCS_BIN=<path>` / `SFINCS_SIF=<path>` is set (2026-10-15; their silent
+default to the unpatched Faber container is gone). Every finished run gets `engine.txt`
 (label `sif:<stem>@<sha8>` / `bin:<variant>@<sha8>`, Build-Revision, host, job) and
-`metrics.csv` carries `engine`, `snapwave_direction` (`wind` = the FINDINGS §43 bug) and
+`metrics.csv` carries `engine`, `snapwave_direction` (`wind` = the FINDINGS §43 bug),
+`engine_seed` (`os-random` = the unseeded IG draw, §44), `meteo`, `infiltration` and
 `subgrid` on every row.
 
 ⚠️ **`build_template()` calls `rmtree` on its target.** It refuses when the template is

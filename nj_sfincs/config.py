@@ -78,7 +78,7 @@ DEFAULT_ELEVATION_LIST: tuple[dict, ...] = (
     # VALUE, not NoData, so a tier BELOW cudem_nj would change nothing there, and the
     # no-NoData assert is structurally blind to it. 1 m CoNED, clipped to a declared box:
     # the product is POST-Sandy, so it is kept off erodible pre-storm shoreline on purpose.
-    # See scripts/build_coned_sw_raritan.py and scripts/sweep_cudem_flatfill.py.
+    # See scripts/build_coned_sw_raritan.py and scripts/sweep_cudem_flatfill.py (retired 2026-10-15, in git history).
     {"elevation": "coned_sw_raritan"},
     {"elevation": "cudem_nj"},  # 3 m fill: inlets + shelf + Raritan Bay
     {"elevation": "nj_10ft_dem", "zmin": 0.001},  # 3 m fill: inland land, NJ ONLY
@@ -114,7 +114,6 @@ class BaseConfig:
     # still audits as the same domain. That is the point: comparable by construction.
     # Defaults to the domain's land cover (Domain.landcover); an arm may still override it.
     roughness_lulc: str = field(default_factory=lambda: _domain.active().landcover)
-    container_sif: Path = ROOT / "sfincs-desktop.sif"
 
     # Reproducibility: if set to a pre-built static-mesh dir, build_static COPIES it
     # instead of rebuilding the quadtree (which is environment-sensitive — two builds of

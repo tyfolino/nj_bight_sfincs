@@ -144,6 +144,50 @@ PRESETS: dict[str, dict] = {
             ("rf_off", "v3fix_off", "v4 re-freeze vs v3, shared fixes, waves off"),
         ],
     ),
+    # 2026-10-11 (job 62551000 / 62554764): the like-for-like v4 − v3 read. v3 has rain
+    # with NO infiltration, so `+rain-noinfil` is v4's matching arm; the v3 pair is the
+    # NACCS-blend re-run of the shared-bed-fix reference. pv4_* marks = rfw_* of 10-09
+    # (same runs, renamed into place 10-11; copied, not recomputed).
+    "premier": dict(
+        date="2026-10-11",
+        runs=[
+            ("pv4_on", "experiments/v4_refreeze/naccs-premier", "v4 premier, waves ON"),
+            (
+                "pv4_off",
+                "experiments/v4_refreeze/naccs-nowaves",
+                "v4 premier's waves-off twin",
+            ),
+            (
+                "ni_on",
+                "experiments/v4_refreeze/naccs-premier+rain-noinfil",
+                "v4 premier, infiltration OFF (= v3's rain), waves ON",
+            ),
+            (
+                "ni_off",
+                "experiments/v4_refreeze/naccs-nowaves+rain-noinfil",
+                "v4 infiltration OFF, waves off",
+            ),
+            (
+                "v3n_on",
+                "experiments/v3/bed-v4fixes+wave-dt3600+wind-naccs",
+                "v3 reference candidate: shared bed fixes, hourly waves, NACCS wind",
+            ),
+            (
+                "v3n_off",
+                "experiments/v3/bed-v4fixes+naccs-nowaves+wind-naccs",
+                "its waves-off twin",
+            ),
+        ],
+        pairs=[
+            ("ni_on", "v3n_on", "v4 vs v3, like for like (no infiltration), waves on"),
+            ("ni_off", "v3n_off", "v4 vs v3, like for like, waves off"),
+            ("pv4_on", "v3n_on", "v4 premier (CN infiltration) vs v3, waves on"),
+            ("ni_on", "pv4_on", "infiltration off vs on, waves on"),
+            ("ni_off", "pv4_off", "infiltration off vs on, waves off"),
+            ("ni_on", "ni_off", "wave contribution, no infiltration"),
+            ("v3n_on", "v3n_off", "v3 wave contribution, NACCS wind"),
+        ],
+    ),
     # (the `_pre_damcrest` run this preset also paired was deleted 2026-10-11 —
     # reports/cleanup/deletion_manifest_2026-10-11.md; its row stays in metrics.csv)
     "test": dict(

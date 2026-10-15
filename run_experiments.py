@@ -313,6 +313,9 @@ def collect_metrics(names: list[str]) -> pd.DataFrame:
             rows[name]["subgrid"] = provenance.subgrid_label(exp_dir)
             rows[name]["wind_scale"] = provenance.wind_scale_label(exp_dir)
             rows[name]["sea_level_offset"] = provenance.sea_level_offset_label(exp_dir)
+            rows[name]["meteo"] = provenance.meteo_label(exp_dir)
+            rows[name]["infiltration"] = provenance.infiltration_label(exp_dir)
+            rows[name]["engine_seed"] = provenance.engine_seed_label(exp_dir)
         except Exception as e:  # noqa: BLE001
             rows[name]["subgrid"] = f"unavailable ({e})"
         # Stamp the domain onto every row. A metrics table whose numbers do not say which
@@ -547,12 +550,21 @@ def main(argv=None) -> int:
         )
 
     # ── per-experiment prepare + run ─────────────────────────────────────────
-    # The engine: SFINCS_BIN in the environment selects a native build (the patched
-    # v2.3.3, plan Phase 2); otherwise the configured container. Exactly one is passed,
-    # explicitly — run.py and the batch script both refuse a run with no engine.
+    # The engine is ALWAYS explicit (2026-10-15): SFINCS_BIN selects a native build,
+    # SFINCS_SIF a container; exactly one. The old silent default to `base.container_sif`
+    # (the UNPATCHED Faber engine — FINDINGS §43 wind-direction bug, §44 unseeded IG) is
+    # gone. Staging-only modes solve nothing and need no engine.
+    solving = not (args.inputs_only or args.dry_run or args.no_run)
     binary = os.environ.get("SFINCS_BIN") or None
-    sif = None if binary else str(base.container_sif)
-    print(f"[engine] {'bin:' + binary if binary else 'sif:' + sif}")
+    sif = os.environ.get("SFINCS_SIF") or None
+    if solving and bool(binary) == bool(sif):
+        print(
+            "[engine] REFUSING: set exactly one of SFINCS_BIN (native build, e.g. "
+            "~/nj_sandy_sfincs/sfincs-native/<variant>/bin/sfincs) or SFINCS_SIF"
+        )
+        return 2
+    if solving:
+        print(f"[engine] {'bin:' + binary if binary else 'sif:' + sif}")
     submitted = {}
     for name in names:
         exp_dir = prepare_experiment(name, base)

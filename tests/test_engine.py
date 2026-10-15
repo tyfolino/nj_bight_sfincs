@@ -64,6 +64,38 @@ class TestSnapWaveDirection(unittest.TestCase):
             self.assertEqual(P.snapwave_direction(d), "imposed")
 
 
+class TestRunLabels(unittest.TestCase):
+    """The 2026-10-15 metrics columns: the IG random seed (FINDINGS §44) and infiltration."""
+
+    def test_engine_seed(self):
+        seeded = (
+            "Build-Revision: $Rev: v2.3.3 mt. Faber+ nj-winddir-fix-1 nj-igseed-1\n"
+        )
+        ig_on = "snapwave = 1\nsnapwave_igwaves = 1\n"
+        cases = [
+            ("snapwave = 0\n", LOG_FIXED, "n/a:no-snapwave"),
+            ("snapwave = 1\nsnapwave_igwaves = 0\n", LOG_FIXED, "n/a:ig-off"),
+            ("snapwave = 1\n", LOG_FIXED, "n/a:ig-off"),
+            (ig_on, LOG_FIXED, "os-random"),
+            (ig_on, seeded, "fixed"),
+            (ig_on, None, "unknown"),
+        ]
+        for inp, log, want in cases:
+            with tempfile.TemporaryDirectory() as td:
+                self.assertEqual(P.engine_seed_label(_dir(td, inp, log)), want, inp)
+
+    def test_infiltration(self):
+        cases = [
+            ("snapwave = 0\n", "no-rain"),
+            ("netamprfile = sfincs_netampr.nc\n", "off"),
+            ("netamprfile = sfincs_netampr.nc\ninfiltration_type = cna\n", "cna"),
+            ("precipfile = sfincs.precip\ninfiltration_type = cnb\n", "cnb"),
+        ]
+        for inp, want in cases:
+            with tempfile.TemporaryDirectory() as td:
+                self.assertEqual(P.infiltration_label(_dir(td, inp, None)), want, inp)
+
+
 class TestEngineLabel(unittest.TestCase):
     def test_inferred_labels(self):
         with tempfile.TemporaryDirectory() as td:

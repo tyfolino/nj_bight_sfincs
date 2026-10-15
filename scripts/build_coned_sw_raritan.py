@@ -23,7 +23,7 @@ CoNED NJ/DE is compiled 2015 from sources through 2014, so on Staten Island its 
 **after** the storm this model hindcasts. On bedrock upland that does not matter — Ward
 Point did not appear between 2012 and 2014. On erodible beach, dune and berm it matters a
 lot, and post-Sandy topography is the WRONG bed for a Sandy hindcast. The sweep
-(`scripts/sweep_cudem_flatfill.py`) found exactly that at Oakwood Beach, lon −74.133, where
+(`scripts/sweep_cudem_flatfill.py`, retired 2026-10-15, in git history) found exactly that at Oakwood Beach, lon −74.133, where
 CUDEM reads −4.08 m and CoNED +0.93 m on ground that saw post-storm berm and buyout work.
 There the OLDER bed is the more correct one.
 

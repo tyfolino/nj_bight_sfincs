@@ -507,7 +507,7 @@ def assert_sealed_domain(model_dir: Path | str, context: str = "") -> None:
             f"({brk.bound} bound), not a sealed domain.\n"
             f"    {brk.inadmissible_why}\n"
             f"    it bounds: {brk.bounds_what}\n"
-            "  Score it with scripts/score_bracket.py and NJ_ALLOW_BRACKET set.\n"
+            "  Score it with scripts/score_bracket.py (retired 2026-10-15, in git history) and NJ_ALLOW_BRACKET set.\n"
             "  It must never enter reports/metrics.csv or sit in a table beside a "
             "candidate arm."
         )
