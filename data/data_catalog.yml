@@ -1146,6 +1146,23 @@ usgs_sandy_discharge_v4_hot_plus_walls:
       §1): Delaware at Trenton 01463500, White Clay 01479000, Rahway 01395000, Hackensack +
       Pascack 01377000/01377500. logs/bedfix_2026-10-05/walls/move_inflows_walls.py.
 
+usgs_sandy_discharge_v4_refreeze:
+  data_type: GeoDataset
+  uri: discharge_v4/usgs_sandy_discharge_v4_refreeze.nc
+  driver:
+    name: geodataset_xarray
+    options: {}
+  metadata:
+    category: hydro
+    crs: 4326
+    unit: m3/s
+    source: >-
+      usgs_sandy_discharge_v4_hot_plus_walls with the 12 coarse-face inflows moved down their
+      creeks onto the first <= 50 m channel face (2026-10-15, scripts/relocate_coarse_inflows.py
+      write, reference naccs-nowaves+rain-off+slr-0m; tested 10-11 as logs/inflow_move_2026-10-11).
+      Discharge UNCHANGED. The inflow WALLS stay on the old points
+      (Domain.wall_sources_geodataset), so the mask and fingerprint do not move.
+
 usgs_sandy_discharge_v4_hot_plus:
   data_type: GeoDataset
   uri: discharge_v4/usgs_sandy_discharge_v4_hot_plus.nc

@@ -330,6 +330,12 @@ class Domain:
     #: radius rule instead of ~47 hand boxes; applied after ``mask_overrides``, and every
     #: source's walled count is printed.
     wall_outflow_near_sources_m: float = 0.0
+    #: Catalog key whose points the inflow WALLS are built from; ``None`` = the inflow
+    #: points themselves (``discharge_geodataset``). The walls define the MASK, so moving an
+    #: inflow in the registry would also move its walls — re-opening the old crossing and
+    #: changing the fingerprint. v4_refreeze (2026-10-15) moves 12 coarse-face inflows down
+    #: their creeks and keeps the walls on ``v4_hot_plus_walls``'s points.
+    wall_sources_geodataset: str | None = None
 
     #: 🔴 WALL THE EDGE AT THE ENDS OF EVERY FORCED LINE: free-outflow cells (mask 3)
     #: within this many metres of a ``mask==2`` cell become ordinary active (1). Where a
@@ -2989,6 +2995,12 @@ V4_REFREEZE = replace(
         ("lewes_canal_e_n", -75.0848, 38.750),
     ),
     obs_gauges=tuple(_refreeze_gauge(g) for g in V4_HOT_PLUS_WALLS.obs_gauges),
+    # 2026-10-15: the 12 coarse-face inflows moved down their creeks
+    # (scripts/relocate_coarse_inflows.py; test logs/inflow_move_2026-10-11/), the walls
+    # kept on the old points so the mask stays 378014e154b4ff41. Reaches a run only
+    # through a RE-STAGED template (CLAUDE.md §5).
+    discharge_geodataset="usgs_sandy_discharge_v4_refreeze",
+    wall_sources_geodataset=V4_HOT_PLUS_WALLS.discharge_geodataset,
 )
 
 DOMAINS: dict[str, Domain] = {

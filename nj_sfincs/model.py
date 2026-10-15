@@ -815,6 +815,12 @@ def wall_outflow_near_forced(mask, fx, fy, radius_m: float) -> np.ndarray:
     return new
 
 
+def wall_sources_key(dom, base) -> str:
+    """The catalog key the inflow walls are built from (``Domain.wall_sources_geodataset``,
+    else the inflow points). Walls shape the mask; the inflow points do not."""
+    return dom.wall_sources_geodataset or base.discharge_geodataset
+
+
 def _wall_outflow_near_sources(sf, mask, fx, fy, key: str, radius_m: float):
     """Read the domain's discharge points and wall the outflow edge around each one."""
     gdf = sf.data_catalog.get_geodataset(key).vector.to_gdf().to_crs(sf.crs)
@@ -984,7 +990,12 @@ def apply_mask_and_boundary(
     # `Domain.wall_outflow_near_sources_m`. Off (0) on every domain before v4.
     if dom.wall_outflow_near_sources_m > 0:
         mask = _wall_outflow_near_sources(
-            sf, mask, fx, fy, base.discharge_geodataset, dom.wall_outflow_near_sources_m
+            sf,
+            mask,
+            fx,
+            fy,
+            wall_sources_key(dom, base),
+            dom.wall_outflow_near_sources_m,
         )
     # …and at the ends of every forced line (`Domain.wall_outflow_near_forced_m`).
     if dom.wall_outflow_near_forced_m > 0:

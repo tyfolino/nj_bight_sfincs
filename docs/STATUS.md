@@ -107,10 +107,14 @@ submitting the v3-reference job. Scratch cleaned 10-11 (was over its soft quota)
    10-15) is QUEUED on priority — estimate **10-18 14:49** (fair share 0.0086; the user's agri jobs share it).
    Its EXPECT_MD5 guards `scripts/engine_gate.py`, `logs/ig_det_2026-10-15/{igseed_sens2.slurm,his_pair.py}`
    and both engine binaries — do not edit them while it waits. Read `logs/ig_det_2026-10-15/igseed_sens2_62645470.out`.
-2. **Lake-crossing audit (NEXT):** build a per-lake review view for the 15 flagged coastal lakes (method: inside
-   each NHD outline, merged bed `_subgrid_refreeze/subgrid/dep_subgrid_merged.tif` vs `nj_10ft_dem_v4.tif`,
-   patches > 1 m above; the scan is in this session's history — re-derive it). User decides per lake; Wreck
-   Pond's band first. The fix is a PREMIER bed overlay in the re-baseline (a subgrid rebuild).
+2. **Lake-crossing audit — IN REVIEW (user).** Scan re-derived as `logs/lake_audit_2026-10-15/lake_scan.py`
+   (+ per-pixel source attribution): 15 of 127 coastal lakes carry a > 300 m² patch > 1 m above the 10 ft
+   lidar, and in ALL 15 the raised bed is the **USACE 2010 tier** (`usace_nj_2010_v3`, 58–96 % of raised
+   pixels; the rest edge mixes) — interpolated across the water from the banks (Wesley Lake 2.2 m on a
+   0.61 m flattened surface), plus outlet crossings (Wreck Pond 1st Ave / Ocean Ave) and a filled lagoon
+   canal at Point Pleasant (L02, +0.73 on −1.07). Proposed fix: premier overlay `bed = min(bed, 10 ft
+   lidar)` inside the NHD outline (lower-only). Review page https://claude.ai/artifact/XVdVLkbrke5CTmspseyShu
+   (`lake_review.html`; builder `build_lake_review.py`) → user's fix/keep/look CSV.
 3. **Breach arm:** Mantoloking = the user's polygons (checked); Wreck Pond = a STATED channel beside the outfall
    (post-storm surveys miss the healed inlet) + optional open-pipe culvert; Deal Lake none.
 4. Then Phase 3 code: inflow-wall split, `cnb`, `--pressure era5`, `lake_outlet_blocked` flag, Horton arm.

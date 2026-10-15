@@ -1571,6 +1571,29 @@ class TestWallOutflowNearPoints(unittest.TestCase):
         self.assertEqual(mask.tolist(), [3, 3, 2, 3, 1, 0])  # input not mutated
 
 
+class TestInflowWallsStayPut(unittest.TestCase):
+    """Moving an inflow must not move its wall: the walls are MASK (2026-10-15)."""
+
+    def test_default_walls_follow_the_inflows(self):
+        from types import SimpleNamespace
+
+        from nj_sfincs.model import wall_sources_key
+
+        base = SimpleNamespace(discharge_geodataset="arm_points")
+        self.assertEqual(wall_sources_key(domain.DOMAINS["v4"], base), "arm_points")
+
+    def test_v4_refreeze_walls_on_the_old_points(self):
+        from types import SimpleNamespace
+
+        from nj_sfincs.model import wall_sources_key
+
+        rf = domain.DOMAINS["v4_refreeze"]
+        old = domain.DOMAINS["v4_hot_plus_walls"].discharge_geodataset
+        self.assertNotEqual(rf.discharge_geodataset, old)
+        base = SimpleNamespace(discharge_geodataset=rf.discharge_geodataset)
+        self.assertEqual(wall_sources_key(rf, base), old)
+
+
 class TestBreakHardlinks(unittest.TestCase):
     """A staged arm's write must not reach the runs it shares inodes with (10-01: one
     staging rewrote the premier's ``sfincs_subgrid.nc`` through a ``swap_subgrid`` link)."""
@@ -1639,7 +1662,15 @@ class TestV4Refreeze(unittest.TestCase):
         }
         self.assertEqual(
             diff,
-            {"name", "mask_overrides", "waterlevel_line_sea_closure_ll", "obs_gauges"},
+            {
+                "name",
+                "mask_overrides",
+                "waterlevel_line_sea_closure_ll",
+                "obs_gauges",
+                # 2026-10-15: inflows moved, walls kept on run B's points
+                "discharge_geodataset",
+                "wall_sources_geodataset",
+            },
         )
         self.assertEqual(self.RF.mesh_key, "v4")
 
