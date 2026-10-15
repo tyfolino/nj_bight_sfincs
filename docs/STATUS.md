@@ -107,6 +107,13 @@ submitting the v3-reference job. Scratch cleaned 10-11 (was over its soft quota)
    est. **10-18 14:49** (fair share 0.0086; the user's ~25 agri jobs share it). EXPECT_MD5 guards
    `scripts/engine_gate.py`, `logs/ig_det_2026-10-15/{igseed_sens2.slurm,his_pair.py}` and both engine
    binaries — do not edit them while it waits. Read `logs/ig_det_2026-10-15/igseed_sens2_62645470.out`.
+1b. **62646886 `sbg_lakes`** (submitted 10-15 ~18:30, est. start 10-16 04:03, ~6 h): the premier bed rebuilt
+   = the 10-06 recipe UNCHANGED (all 58 bed rasters md5-identical to `logs/refreeze_2026-10-06/rebuild_expected.md5`)
+   + `lake_fix_v4` painted last → `experiments/v4_refreeze/_subgrid_refreeze_lakes`. 🔴 EXPECT_MD5 guards
+   `data/data_catalog.yml`, `nj_sfincs/domain.py`, `nj_sfincs/premier.py`, `scripts/rebuild_subgrid.py` + the
+   rasters — do NOT edit them until it STARTS (or re-write `logs/rebaseline_2026-10-15/rebuild_lakes_expected.md5`
+   right after an edit). Read: its `subgrid_diff.json` is vs the TEMPLATE; the check that matters is
+   `z_volmax` vs `_subgrid_refreeze` — changed ONLY on faces inside the 14 lakes, bit-identical elsewhere.
 2. ✅ **Lake bed fix DECIDED + BUILT.** Scan `logs/lake_audit_2026-10-15/lake_scan.py` (+ per-pixel source):
    15 of 127 coastal lakes carry a > 300 m² patch > 1 m above the 10 ft lidar, and in ALL 15 it is the
    **USACE 2010 tier** (`usace_nj_2010_v3`) interpolated across the water (Wesley 2.2 m on a 0.61 m surface),
@@ -126,9 +133,14 @@ submitting the v3-reference job. Scratch cleaned 10-11 (was over its soft quota)
      ✅ **User OK'd 10-15:** the engine clamps `Se = min(Se, smax)` after any dry spell > 0.06/kr h
      (~2 h on sand), and 10-28's rain is patchy, so with `smax` = S_II an `effective` 1.5 collapses to 1.0
      before the main rain. Hence `smax = max(1, e)·S_II`, `seff = e·S_II`. `smax` = the premier's own CN map.
-   - ⏳ `ksat_v4_refreeze` (`build_cn_nj.py --ksat`, SSURGO) and `data/wind_v4/naccs_blend_p_era5`
-     (`--pressure era5`) building (logs in `logs/rebaseline_2026-10-15/`). Then: point the premier family's
-     `meteo_from` at the new blend, register the `cnb` arms (1.5 premier, 1.0 / 2.38 brackets), Horton arm.
+   - ✅ `ksat_v4_refreeze` built (SSURGO, 209,643 of 220,760 polygons carry a surface ksat; median 23 µm/s).
+     Dry run on the premier's faces: 2.0 M of 3.97 M active faces infiltrate, `seff` (e 1.5) median 6.7 cm,
+     `ks` median 262 mm/h, 7.4 % without ksat (no recovery); the dry spell before the clamp is 1.4 h at the
+     median — the `smax` raise is load-bearing.
+   - ✅ `data/wind_v4/naccs_blend_p_era5` built: wind bit-identical to `naccs_blend`, pressure differs only in
+     the NACCS zone (p99 7.8 hPa, max 19.7). NOT yet in the registry: the new premier (seeded engine + `cnb`
+     1.5 + ERA5 pressure + moved inflows + lake-fixed bed) is registered under a candidate name in the
+     re-baseline pass, run, then renamed into place (the 10-11 recipe); brackets `cnb` 1.0 / 2.38 + Horton.
    - ✅ metrics read-back now also checks the label columns (`_ROUNDTRIP_LABELS`); ✅ islands log prints
      its BC count only when the mask has BC cells. ✅ HWM 6044: no v4 action — with the 12 moved inflows,
      0 of 193 v4 marks are within 500 m of a source (nearest 6208, 970 m); 6044 is a v3 mark.
