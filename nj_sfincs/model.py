@@ -335,11 +335,16 @@ def _drop_detached_active_islands(sf, mask, zb) -> np.ndarray:
     detached = np.zeros(len(mask), dtype=bool)
     detached[idx[lab != main]] = True
     fx, fy = _face_xy(sf)
-    n_bc = int((mask[detached] == 2).sum())
+    # build_static calls this BEFORE create_boundary, when the mask holds no 2s yet; the
+    # BC count is only meaningful (and only printed) when it does (FINDINGS §58h).
+    bc = (
+        f" — {int((mask[detached] == 2).sum())} of them water-level BC cells"
+        if (mask == 2).any()
+        else ""
+    )
     print(
         f"[mask] DROPPED {int(detached.sum())} active cells in "
-        f"{len(labels) - 1} detached island(s) — {n_bc} of them were water-level BC "
-        f"cells forming closed rings with no connection to the domain. "
+        f"{len(labels) - 1} detached island(s){bc}, with no connection to the domain. "
         f"Largest kept component: {counts.max():,} cells."
     )
     for lb, ct in zip(labels, counts):
@@ -1834,7 +1839,9 @@ def _ensure_weirfile_key(text: str, model_dir: Path) -> str:
 _SCS_WATER_TRAP_IN = 900.0
 
 
-def _infiltration_keys(text: str, model_dir: Path, on: bool) -> str:
+def _infiltration_keys(
+    text: str, model_dir: Path, on: bool, cnb_effective: float | None = None
+) -> str:
     """Patch the infiltration keys of a written ``sfincs.inp`` (``finalize`` step b).
 
     Always strips hydromt's keys: its quadtree ``create_cn`` sets
@@ -1848,7 +1855,14 @@ def _infiltration_keys(text: str, model_dir: Path, on: bool) -> str:
     rain-OFF model that runs clean. (2) A CN raster with water CN 0 gives S = 990 in, so
     rain on the bays / rivers vanishes: refused here if any ACTIVE face carries it.
     """
-    drop = ("infiltration_file", "infiltration_type", "scsfile")
+    drop = (
+        "infiltration_file",
+        "infiltration_type",
+        "scsfile",
+        "smaxfile",
+        "sefffile",
+        "ksfile",
+    )
     if on:
         drop += ("storecumprcp",)
     lines = [ln for ln in text.splitlines() if not ln.strip().startswith(drop)]
@@ -1880,6 +1894,8 @@ def _infiltration_keys(text: str, model_dir: Path, on: bool) -> str:
             f"{_SCS_WATER_TRAP_IN:.0f} in (CN ~1): rain there would vanish. Rebuild the CN "
             "raster with water = CN 100 (scripts/build_cn_nj.py)."
         )
+    if cnb_effective is not None:
+        return _cnb_keys(lines, model_dir, qtr, float(cnb_effective))
     s_act = scs[active]
     print(
         f"[infiltration] cna ON from {qtr}:scs, storecumprcp = 1; active S [in] "
@@ -1892,6 +1908,33 @@ def _infiltration_keys(text: str, model_dir: Path, on: bool) -> str:
         f"{'infiltration_type':<21}= cna",
         f"{'storecumprcp':<21}= 1",
     ]
+    return "\n".join(lines) + "\n"
+
+
+def _cnb_keys(lines: list[str], model_dir: Path, qtr: str, effective: float) -> str:
+    """``cnb`` from three binaries (``nj_sfincs.infiltration``); the qtrfile keeps ``scs``
+    but no ``infiltration_file`` points at it, so the engine selects ``cnb`` via
+    ``sefffile``. ``storecumprcp = 1`` keeps the cumulative maps the scorer reads."""
+    from nj_sfincs import infiltration as _inf
+    from nj_sfincs.provenance import catalog_uri
+
+    from .config import DATA
+
+    dom = _domain.active()
+    if not dom.ksat_dataset:
+        raise SystemExit(f"cnb arm on {dom.name}: Domain.ksat_dataset is not set")
+    uri = catalog_uri(dom.ksat_dataset)
+    if not uri:
+        raise SystemExit(f"cnb: catalog has no {dom.ksat_dataset!r}")
+    meta = _inf.write_cnb_inputs(model_dir, effective, DATA / uri, dom.epsg, qtr)
+    print(
+        f"[infiltration] cnb ON, effective {effective:g} (smax x "
+        f"{meta['smax_factor']:g}); seff [m] p10/50/90 {meta['seff_m_p10_50_90']}, "
+        f"ks [mm/h] {meta['ks_mm_h_p10_50_90']}, ks missing on "
+        f"{meta['ks_missing_on_land']:.0%} of infiltrating points",
+        flush=True,
+    )
+    lines = lines + _inf.cnb_keys(lines) + [f"{'storecumprcp':<21}= 1"]
     return "\n".join(lines) + "\n"
 
 
@@ -1972,6 +2015,7 @@ def finalize(
     sea_level_offset_m: float | None = None,
     meteo_from: Path | str | None = None,
     infiltration: bool = True,
+    cnb_effective: float | None = None,
 ) -> None:
     """Release handles, write, patch sfincs.inp, write the SnapWave ASCII forcing.
 
@@ -2103,7 +2147,10 @@ def finalize(
     # it ON. Rain-off arms get none — SFINCS infiltration only acts on rainfall — and
     # neither do ``infiltration=False`` arms (rain on, every drop runs off; v3's setup).
     text = _infiltration_keys(
-        text, model_dir, on=_domain.active().infiltration and rain and infiltration
+        text,
+        model_dir,
+        on=_domain.active().infiltration and rain and infiltration,
+        cnb_effective=cnb_effective,
     )
 
     # (b2) sea-level offset: start at the offset where the sea connects, dry elsewhere.

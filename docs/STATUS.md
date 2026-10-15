@@ -102,24 +102,38 @@ submitting the v3-reference job. Scratch cleaned 10-11 (was over its soft quota)
 
 ## ⭐ FINAL AUDIT → "the v4 premier is ready" (plan approved 10-15)
 
-▶ **HANDOFF (10-15 ~17:20, before a compaction + new VS Code node).** In flight / next, in order:
-1. **62645470 `igseed_sens`** (seeded-engine repeat + `rhoa` nudge, 6 h cut; resubmit of 62626713, cancelled
-   10-15) is QUEUED on priority — estimate **10-18 14:49** (fair share 0.0086; the user's agri jobs share it).
-   Its EXPECT_MD5 guards `scripts/engine_gate.py`, `logs/ig_det_2026-10-15/{igseed_sens2.slurm,his_pair.py}`
-   and both engine binaries — do not edit them while it waits. Read `logs/ig_det_2026-10-15/igseed_sens2_62645470.out`.
-2. **Lake-crossing audit — IN REVIEW (user).** Scan re-derived as `logs/lake_audit_2026-10-15/lake_scan.py`
-   (+ per-pixel source attribution): 15 of 127 coastal lakes carry a > 300 m² patch > 1 m above the 10 ft
-   lidar, and in ALL 15 the raised bed is the **USACE 2010 tier** (`usace_nj_2010_v3`, 58–96 % of raised
-   pixels; the rest edge mixes) — interpolated across the water from the banks (Wesley Lake 2.2 m on a
-   0.61 m flattened surface), plus outlet crossings (Wreck Pond 1st Ave / Ocean Ave) and a filled lagoon
-   canal at Point Pleasant (L02, +0.73 on −1.07). Proposed fix: premier overlay `bed = min(bed, 10 ft
-   lidar)` inside the NHD outline (lower-only). Review page https://claude.ai/artifact/XVdVLkbrke5CTmspseyShu
-   (`lake_review.html`; builder `build_lake_review.py`) → user's fix/keep/look CSV.
-3. **Breach arm:** Mantoloking = the user's polygons (checked); Wreck Pond = a STATED channel beside the outfall
-   (post-storm surveys miss the healed inlet) + optional open-pipe culvert; Deal Lake none.
-4. Then Phase 3 code: inflow-wall split, `cnb`, `--pressure era5`, `lake_outlet_blocked` flag, Horton arm.
-- Staged, not committed: docs, `hpc/vscode_node.sh` (default 4 cores / 32 G), `premier.py` RETIRED labels,
-  `retire_arm.py`, `v4_first_results.py`, cleanup manifests. Picker: `logs/breach_picker_2026-10-15/`.
+▶ **HANDOFF (10-15 evening).** In flight / next, in order:
+1. **62645470 `igseed_sens`** (seeded-engine repeat + `rhoa` nudge, 6 h cut; resubmit of 62626713) QUEUED —
+   est. **10-18 14:49** (fair share 0.0086; the user's ~25 agri jobs share it). EXPECT_MD5 guards
+   `scripts/engine_gate.py`, `logs/ig_det_2026-10-15/{igseed_sens2.slurm,his_pair.py}` and both engine
+   binaries — do not edit them while it waits. Read `logs/ig_det_2026-10-15/igseed_sens2_62645470.out`.
+2. ✅ **Lake bed fix DECIDED + BUILT.** Scan `logs/lake_audit_2026-10-15/lake_scan.py` (+ per-pixel source):
+   15 of 127 coastal lakes carry a > 300 m² patch > 1 m above the 10 ft lidar, and in ALL 15 it is the
+   **USACE 2010 tier** (`usace_nj_2010_v3`) interpolated across the water (Wesley 2.2 m on a 0.61 m surface),
+   plus outlet crossings and a filled Point Pleasant lagoon canal. User 10-15: **fix 14, keep Lake of the
+   Lilies** (`decisions_2026-10-15.csv`; review page https://claude.ai/artifact/XVdVLkbrke5CTmspseyShu).
+   Overlay `lake_fix_v4` (`scripts/build_lake_fix_overlay.py`): inside each outline, lidar where lidar <
+   merged bed — 1.25 km² lowered, 0.53 Mm³ removed (per-lake `lake_fix_v4.json`). Paint it LAST in the
+   premier bed rebuild (`rebuild_subgrid.py --overlay … lake_fix_v4`); check `z_volmax`.
+3. **Breach arm** (sensitivity, not premier): Mantoloking = the user's polygons; Wreck Pond = a STATED channel
+   beside the outfall + optional open-pipe culvert; Deal Lake none.
+4. **Phase 3 code — done so far (staged, tests pass):**
+   - ✅ inflow-wall split: `Domain.wall_sources_geodataset`; v4_refreeze discharge =
+     `usgs_sandy_discharge_v4_refreeze` (the 12 moves), walls stay on run B's points (`model.wall_sources_key`).
+     Reaches runs only through a RE-STAGED template; gate = sha `378014e154b4ff41` unchanged.
+   - ✅ `cnb` code: `Experiment.cnb_effective` → `nj_sfincs/infiltration.py` writes `smax`/`seff`/`ks` binaries
+     (active-point order) + `smaxfile`/`sefffile`/`ksfile`; label `cnb:e<eff>`; `tests/test_cnb.py`.
+     ✅ **User OK'd 10-15:** the engine clamps `Se = min(Se, smax)` after any dry spell > 0.06/kr h
+     (~2 h on sand), and 10-28's rain is patchy, so with `smax` = S_II an `effective` 1.5 collapses to 1.0
+     before the main rain. Hence `smax = max(1, e)·S_II`, `seff = e·S_II`. `smax` = the premier's own CN map.
+   - ⏳ `ksat_v4_refreeze` (`build_cn_nj.py --ksat`, SSURGO) and `data/wind_v4/naccs_blend_p_era5`
+     (`--pressure era5`) building (logs in `logs/rebaseline_2026-10-15/`). Then: point the premier family's
+     `meteo_from` at the new blend, register the `cnb` arms (1.5 premier, 1.0 / 2.38 brackets), Horton arm.
+   - ✅ metrics read-back now also checks the label columns (`_ROUNDTRIP_LABELS`); ✅ islands log prints
+     its BC count only when the mask has BC cells. ✅ HWM 6044: no v4 action — with the 12 moved inflows,
+     0 of 193 v4 marks are within 500 m of a source (nearest 6208, 970 m); 6044 is a v3 mark.
+   - Still to do: `lake_outlet_blocked` flag (plan: reuse `sea_level.connected_initial_zs` at the local sea
+     peak), README, desk checks, env lock; the re-baseline job (Phase 4).
 
 Plan: `~/.claude/plans/i-think-i-m-ready-warm-trinket.md`. User decisions 10-15: lakes = rule-based
 flag + a documented-site breach SENSITIVITY arm (not in the premier); IG stays on, seeded; v3

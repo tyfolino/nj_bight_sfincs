@@ -1300,8 +1300,8 @@ CLAUDE.md §5.
     a canal or creek at 10 m on 1/9″ CUDEM, and treat the SLR gate runs as the real sweep.
     (g) The quadtree builds the region's ROTATED BOUNDING BOX before the clip deactivates it
     (v1.5: 40.8 % of faces are `mask == 0`). (h) `_drop_detached_active_islands` keeps only the
-    largest component and ate half of two narrow v1.5 cuts before the bay box; its log line
-    counting BC cells always prints 0 (it runs before `create_boundary`). (i) Porting a domain
+    largest component and ate half of two narrow v1.5 cuts before the bay box; its BC-cell
+    count is printed only when the mask already has BC cells (it runs before `create_boundary`). (i) Porting a domain
     drops more than refinement polygons: v3 silently lost v1.5's always-active / dry-land /
     no-water-level boxes (the Raritan lobe was severed), its two Raritan sources, and
     `open_coast_max_y` (the NY limb went under-supported) — diff the predecessor's Domain

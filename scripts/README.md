@@ -88,7 +88,8 @@ Every script reads `NJ_DOMAIN` unless its row names a domain. Run from the repo 
 | `build_motf_valid_mask.py` | Where the MOTF sheet can adjudicate, on the MOTF grid | live |
 | `build_coarse_bed.py` | A domain's 25 m coarse bed from its elevation list | live |
 | `burn_building_footprints.py` | Building-block elevation tier for the subgrid | live |
-| `build_cn_nj.py` | Curve Number raster for infiltration | live |
+| `build_cn_nj.py` | Curve Number raster for infiltration; `--ksat` = the SSURGO ksat raster for `cnb` | live |
+| `build_lake_fix_overlay.py` | lower-only coastal-lake bed overlay (10 ft lidar under the USACE 2010 lake fill; 10-15 audit) | live |
 | `build_refinement_v4.py` | v4 quadtree refinement polygons from a readable recipe; diffs names vs v3 | live |
 | `build_riverbeds_v4.py` | v4 river beds where no survey reaches, one carving raster per reach | live |
 | `build_usace_unpave_v4.py` | CUDEM painted back where the 2010 USACE lidar paves deep water (3 boxes), an overlay tier | live |

@@ -276,6 +276,7 @@ def prepare_experiment(name: str, base: BaseConfig) -> Path:
         sea_level_offset_m=exp.sea_level_offset_m,
         meteo_from=exp.meteo_from,
         infiltration=exp.infiltration,
+        cnb_effective=exp.cnb_effective,
     )
     # hydromt's writer drops crsfile/storevel; put them back so a staged arm carries the
     # flux cross-sections — which on a relocated-boundary domain are the headline result,
@@ -655,6 +656,17 @@ def _split_brackets(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
     return df[~is_brk], df[is_brk]
 
 
+#: metrics.csv label columns checked on read-back (``_write_outputs_locked``).
+_ROUNDTRIP_LABELS = (
+    "engine",
+    "snapwave_direction",
+    "engine_seed",
+    "meteo",
+    "infiltration",
+    "subgrid",
+)
+
+
 def _write_outputs(df: pd.DataFrame) -> None:
     if df.empty:
         print("No metrics to write (no completed runs found).")
@@ -704,6 +716,15 @@ def _write_outputs_locked(df: pd.DataFrame) -> None:
                 f"🔴 {name}: row MISSING from {METRICS_CSV} after the write — "
                 "another writer clobbered it; re-run --validate-only for this arm"
             )
+            continue
+        # …and its LABELS must read back as written (2026-10-15): a stale engine / seed /
+        # forcing label beside fresh numbers is the same lost write, only quieter.
+        for col in _ROUNDTRIP_LABELS:
+            if col in df.columns and str(df.at[name, col]) != str(back.at[name, col]):
+                print(
+                    f"🔴 {name}: {col} reads back {back.at[name, col]!r}, this job "
+                    f"wrote {df.at[name, col]!r} — another writer; re-run --validate-only"
+                )
     for line in hwm_count_mismatches(df):
         print(line)
     try:

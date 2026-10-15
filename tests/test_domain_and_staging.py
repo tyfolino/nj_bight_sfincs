@@ -1670,6 +1670,7 @@ class TestV4Refreeze(unittest.TestCase):
                 # 2026-10-15: inflows moved, walls kept on run B's points
                 "discharge_geodataset",
                 "wall_sources_geodataset",
+                "ksat_dataset",  # cnb arms (2026-10-15)
             },
         )
         self.assertEqual(self.RF.mesh_key, "v4")

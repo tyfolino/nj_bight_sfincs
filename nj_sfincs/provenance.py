@@ -588,12 +588,21 @@ def meteo_label(model_dir: Path | str) -> str:
 
 
 def infiltration_label(model_dir: Path | str) -> str:
-    """``no-rain`` (no precipitation file), ``off`` (rain, no infiltration keys), or
-    the engine's ``infiltration_type`` (``cna`` / ``cnb`` / …). Read from ``sfincs.inp``."""
+    """``no-rain`` (no precipitation file), ``off`` (rain, no infiltration keys), the
+    engine's ``infiltration_type`` (``cna`` / …), or ``cnb:e<effective>`` for the binary
+    curve-number-with-recovery inputs (``nj_sfincs.infiltration``). From ``sfincs.inp``."""
     inp = read_inp(model_dir)
     if not (inp.get("netamprfile") or inp.get("precipfile") or inp.get("precip")):
         return "no-rain"
-    return inp.get("infiltration_type") or ("qinf" if inp.get("qinf") else "off")
+    if inp.get("infiltration_type"):
+        return inp["infiltration_type"]
+    if inp.get("sefffile"):
+        from nj_sfincs.infiltration import read_meta
+
+        meta = read_meta(model_dir) or {}
+        eff = meta.get("effective")
+        return f"cnb:e{eff:g}" if isinstance(eff, (int, float)) else "cnb"
+    return "qinf" if inp.get("qinf") else "off"
 
 
 def engine_seed_label(model_dir: Path | str) -> str:

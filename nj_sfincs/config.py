@@ -341,6 +341,13 @@ class Experiment:
     #: marks, FINDINGS part 4 (d)).
     infiltration: bool = True
 
+    #: ``None`` = the domain's ``cna`` curve number. A float stages ``cnb`` (curve number
+    #: WITH recovery, ``nj_sfincs/infiltration.py``) from the same CN map, with this
+    #: antecedent-moisture factor on S: 1.0 = AMC II, 1.5 = the 2012 estimate, 2.38 = AMC I
+    #: (logs/soil_moisture_2026-10-11/README.md §5). Needs ``Domain.ksat_dataset``.
+    #: Ignored when infiltration is off (rain-off / ``infiltration=False``).
+    cnb_effective: float | None = None
+
     #: ``bed-*`` ARMS ONLY. Name of a dir under ``experiments/<domain>/`` (convention
     #: ``_subgrid_<what>``, made by ``scripts/rebuild_subgrid.py``) whose
     #: ``sfincs_subgrid.nc`` and ``subgrid/`` REPLACE the sealed template's after staging.

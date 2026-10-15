@@ -15,6 +15,13 @@ domain bbox. HYSOGs250m would be an alternative but is Earthdata-gated.
 
 Output: data/infiltration/cn_nj.nc  (RasterDataset, var `cn`, on the NLCD grid)
 Then:   sf.infiltration.create_cn(cn="cn_nj", antecedent_moisture=None)
+
+``--ksat`` (2026-10-15, for `cnb` = curve number WITH recovery): writes
+``data/infiltration_<domain>/ksat_<domain>.tif`` instead — saturated hydraulic conductivity
+[µm/s] of the SAME dominant component (TOP 1 by comppct_r with a hydgrp) as the CN, from its
+SURFACE horizon (lowest hzdept_r with a ksat_r), rasterized on the NLCD grid. SFINCS uses it
+only for the recovery rate between rain events (kr = sqrt(ks [in/h]) / 75, SWMM eq. 4-36).
+Map units with no ksat (water, urban land) stay NoData -> ks 0 at staging = no recovery.
 """
 
 import os
@@ -67,7 +74,7 @@ HSG_CODE = {"A": 1, "B": 6, "C": 5, "D": 3, "A/D": 2, "B/D": 7, "C/D": 8, "D/D":
 DEFAULT_HSG_CODE = 3  # land with no SSURGO HSG -> treat as D (conservative)
 
 
-def fetch_hsg_polygons(bbox, tile_deg=0.25):
+def fetch_hsg_polygons(bbox, tile_deg=0.25, tile_fn=None):
     """SSURGO map units intersecting bbox, fetched in tiles.
 
     SDA answers a single v1-sized box but returns HTTP 413 on the v3 bbox (1.4 x 1.8
@@ -83,17 +90,20 @@ def fetch_hsg_polygons(bbox, tile_deg=0.25):
     for (x0, x1), (y0, y1) in itertools.product(
         zip(xs[:-1], xs[1:]), zip(ys[:-1], ys[1:])
     ):
-        g = _fetch_hsg_tile((x0, y0, x1, y1))
-        for mukey, hsg, wkt in g:
+        g = (tile_fn or _fetch_hsg_tile)((x0, y0, x1, y1))
+        for mukey, val, wkt in g:
             if (mukey, wkt) in seen:
                 continue
             seen.add((mukey, wkt))
-            parts.append((mukey, hsg, wkt))
+            parts.append((mukey, val, wkt))
     print(
         f"  SSURGO: {len(parts)} unique map-unit polygons from "
         f"{(len(xs) - 1) * (len(ys) - 1)} tiles"
     )
     geoms = [shapely_wkt.loads(wk) for _m, _h, wk in parts]
+    if tile_fn is not None:  # raw values (the ksat mode)
+        vals = [np.nan if v is None else float(v) for _m, v, _w in parts]
+        return gpd.GeoDataFrame({"value": vals}, geometry=geoms, crs="EPSG:4326")
     codes = [HSG_CODE.get(h, DEFAULT_HSG_CODE) for _m, h, _w in parts]
     return gpd.GeoDataFrame({"hsg_code": codes}, geometry=geoms, crs="EPSG:4326")
 
@@ -115,7 +125,54 @@ def _fetch_hsg_tile(bbox):
     return [(mukey, hsg, wk) for mukey, hsg, wk in rows if wk is not None]
 
 
-def main():
+def _fetch_ksat_tile(bbox):
+    """Surface-horizon ksat_r [µm/s] of each map unit's CN component (same TOP 1 rule)."""
+    w, s, e, n = bbox
+    poly = f"POLYGON(({w} {s}, {e} {s}, {e} {n}, {w} {n}, {w} {s}))"
+    sql = (
+        "SELECT mu.mukey, "
+        "(SELECT TOP 1 ch.ksat_r FROM chorizon ch WHERE ch.cokey = "
+        " (SELECT TOP 1 c.cokey FROM component c WHERE c.mukey=mu.mukey "
+        "  AND c.hydgrp IS NOT NULL ORDER BY c.comppct_r DESC) "
+        " AND ch.ksat_r IS NOT NULL ORDER BY ch.hzdept_r ASC) AS ksat, "
+        "g.mupolygongeo.STAsText() AS wkt "
+        "FROM mupolygon g JOIN mapunit mu ON g.mukey=mu.mukey "
+        f"WHERE g.mupolygongeo.STIntersects(geometry::STGeomFromText('{poly}',4326))=1"
+    )
+    r = requests.post(SDA, json={"format": "JSON", "query": sql}, timeout=300)
+    r.raise_for_status()
+    rows = r.json().get("Table", [])
+    return [(mukey, k, wk) for mukey, k, wk in rows if wk is not None]
+
+
+def main_ksat(bbox, nlcd):
+    """``--ksat``: the cnb recovery input, on the NLCD grid, EPSG:4326, µm/s."""
+    gdf = fetch_hsg_polygons(bbox, tile_fn=_fetch_ksat_tile).to_crs(nlcd.rio.crs)
+    ok = np.isfinite(gdf["value"].values)
+    print(
+        f"SSURGO polygons: {len(gdf)}, with a surface ksat {int(ok.sum())}; ksat [µm/s] "
+        f"p10/50/90 {np.nanpercentile(gdf['value'], [10, 50, 90]).round(2).tolist()}"
+    )
+    ks = rasterize(
+        ((g, v) for g, v in zip(gdf.geometry[ok], gdf["value"][ok])),
+        out_shape=nlcd.shape,
+        transform=nlcd.rio.transform(),
+        fill=np.nan,
+        dtype="float32",
+    )
+    da = xr.DataArray(ks, coords=nlcd.coords, dims=nlcd.dims, name="ksat")
+    da = da.rio.write_crs(nlcd.rio.crs).rio.write_nodata(np.nan)
+    da = da.rio.reproject("EPSG:4326", nodata=np.nan)
+    da.attrs.update(units="micrometer s-1", source="SSURGO chorizon.ksat_r, surface")
+    out = OUT_DIR / f"ksat_{_DOM.name}.tif"
+    OUT_DIR.mkdir(parents=True, exist_ok=True)
+    tmp = out.with_suffix(".tmp.tif")
+    da.rio.to_raster(tmp, compress="deflate")
+    os.replace(tmp, out)
+    print(f"Wrote {out}")
+
+
+def main(ksat=False):
     import rioxarray  # noqa: F401
 
     bbox = tuple(gpd.read_file(REGION).to_crs(4326).total_bounds)
@@ -130,6 +187,8 @@ def main():
     bx = gpd.GeoDataFrame(geometry=[box(*bbox)], crs=4326).to_crs(nlcd.rio.crs)
     nlcd = nlcd.rio.clip_box(*bx.total_bounds)
     print(f"NLCD grid: {nlcd.shape}, crs {nlcd.rio.crs}, res {nlcd.rio.resolution()}")
+    if ksat:
+        return main_ksat(bbox, nlcd)
 
     # SSURGO HSG polygons -> rasterize onto the NLCD grid
     gdf = fetch_hsg_polygons(bbox).to_crs(nlcd.rio.crs)
@@ -193,4 +252,6 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    import sys
+
+    main(ksat="--ksat" in sys.argv[1:])

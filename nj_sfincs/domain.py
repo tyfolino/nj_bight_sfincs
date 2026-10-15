@@ -448,6 +448,9 @@ class Domain:
     #: (user, 2026-09-28: rain false alarms on Cape May, > 4" of Sandy rain). It only ever
     #: subtracts from RAIN, never surge or river water. See ``model._infiltration_keys``.
     infiltration: bool = False
+    #: SSURGO surface ksat [µm/s] raster for ``cnb`` arms (``Experiment.cnb_effective``):
+    #: the recovery rate between rain events. Built by ``build_cn_nj.py --ksat``.
+    ksat_dataset: str | None = None
     cora_waves: Path = DATA / "waves" / "cora_waves_nj.nc"
 
     #: The high-water-mark set this domain is scored against. A DOMAIN fact for the same
@@ -3001,6 +3004,7 @@ V4_REFREEZE = replace(
     # through a RE-STAGED template (CLAUDE.md §5).
     discharge_geodataset="usgs_sandy_discharge_v4_refreeze",
     wall_sources_geodataset=V4_HOT_PLUS_WALLS.discharge_geodataset,
+    ksat_dataset="ksat_v4_refreeze",  # cnb arms (2026-10-15)
 )
 
 DOMAINS: dict[str, Domain] = {

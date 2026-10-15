@@ -1082,6 +1082,22 @@ naccs_sandy_v4:
 # Curve numbers for v4 (infiltration ON, user 2026-09-28). Open water / NoData = CN 100
 # (rain on water stays in the water) — unlike cn_nj / cn_v3, which carry the shipped
 # table's water CN 0. Built on nlcd_2012_v4 (Domain.landcover).
+ksat_v4_refreeze:
+  data_type: RasterDataset
+  uri: infiltration_v4_refreeze/ksat_v4_refreeze.tif
+  driver:
+    name: rasterio
+    options: {}
+  metadata:
+    category: soil
+    crs: 4326
+    unit: micrometer s-1
+    source: >-
+      USDA SSURGO (Soil Data Access) chorizon.ksat_r of the SURFACE horizon of each map
+      unit's dominant component with a hydgrp (the same component cn_v4 takes its HSG from),
+      rasterized on the NLCD 2012 v4 grid (2026-10-15, scripts/build_cn_nj.py --ksat). The
+      cnb recovery rate (nj_sfincs/infiltration.py). NoData = no ksat (water, urban).
+
 cn_v4:
   data_type: RasterDataset
   uri: infiltration_v4/cn_v4.nc
@@ -1390,6 +1406,24 @@ manning_water_v4:
     nodata: -9999.0
     unit: s m-1/3
     source: NHD HR Area (460/336/431) + Waterbody (390/436), scripts/build_inland_water_v4.py manning
+
+lake_fix_v4:
+  data_type: RasterDataset
+  uri: elevation_v4/lake_fix/lake_fix_v4.tif
+  driver:
+    name: rasterio
+    options: {}
+  metadata:
+    category: topography
+    crs: 32618
+    nodata: -9999.0
+    unit: m+NAVD88
+    source: >-
+      LOWER-ONLY coastal-lake bed fix (2026-10-15): inside 14 Monmouth / north Ocean NHD lake
+      outlines (user decisions logs/lake_audit_2026-10-15/decisions_2026-10-15.csv; Lake of
+      the Lilies kept), the NJ 10 ft lidar where it is below the v4_refreeze merged bed — the
+      USACE 2010 tier interpolated across the water. scripts/build_lake_fix_overlay.py;
+      paint LAST with rebuild_subgrid.py --overlay.
 
 inland_water_bed_v4:
   data_type: RasterDataset
