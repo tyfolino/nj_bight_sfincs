@@ -217,9 +217,9 @@ KNOWN = {
     ),
     V3: "v3 FROZEN 2026-08-26, NY edge + Raritan cut WALLED 2026-09-22 — full Jersey "
     "shore, NACCS 224-point boundary (sha16 19f53cfd4cb804fb), 4 arms",
-    V4: "v4 FROZEN 2026-09-28 — NJ coast + Delaware Bay/river + Raritan + Newark Bay, "
+    V4: "v4 FROZEN 2026-09-28, RETIRED 2026-10-15 (records in _retired/) — NJ coast + Delaware Bay/river + Raritan + Newark Bay, "
     "drawn water-level line, NACCS 241-point boundary (sha16 4f020321d32076d7)",
-    V4_HOT: "v4_hot STAGED 2026-10-02 — v4 with 8 river arms trimmed at today's head of "
+    V4_HOT: "v4_hot STAGED 2026-10-02, RETIRED 2026-10-15 (records in _retired/) — v4 with 8 river arms trimmed at today's head of "
     "tide (A, the river-cut memo); same mesh as v4",
     V4_HOT_PLUS_PRE_DAMCREST: (
         "v4_hot_plus as STAGED 2026-10-02, BEFORE the 10-05 dam-crest cut (61 Union Lake "
@@ -232,7 +232,8 @@ KNOWN = {
         "v4_refreeze STAGED 2026-10-06 — THE re-frozen v4: v4_hot_plus_walls + the Lewes "
         "ring edit; bed _subgrid_refreeze, Keansburg + Overpeck weirs, Overpeck pool start"
     ),
-    V4_HOT_PLUS: "v4_hot_plus RE-STAGED 2026-10-05 (Maurice cut on the Union Lake dam crest)"
+    V4_HOT_PLUS: "v4_hot_plus RE-STAGED 2026-10-05, RETIRED 2026-10-15 (records in _retired/)"
+    " (Maurice cut on the Union Lake dam crest)"
     " — v4_hot but the Cohansey and Neshaminy "
     "keep v4's +3 m reach (A+); same mesh as v4",
     V4_PRE_DARBY: (

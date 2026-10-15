@@ -17,7 +17,7 @@
 #   ./hpc/vscode_node.sh --status              # show the node you're holding (if any)
 #   ./hpc/vscode_node.sh --stop                # release the allocation
 #
-# Defaults: -p main -c 32 --mem 128G -t 08:00:00 --exclude=halk[0001-0159]
+# Defaults: -p main -c 4 --mem 32G -t 08:00:00 --exclude=halk[0001-0159]
 #   main node tiers: 192 GB / 256 GB / 512 GB (max single-node ~500G). main-redhat was
 #   merged into main on 2026-08-20; submitting to it fails outright.
 #
@@ -51,8 +51,11 @@ set -uo pipefail
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 PART="${VSCODE_PART:-main}"
-CORES="${VSCODE_CORES:-32}"
-MEM="${VSCODE_MEM:-128G}"
+# 4 cores by default (2026-10-15): fair share bills every allocated core for the whole
+# session, idle or not — 23 sessions at 32 cores were 4,011 core-hours in three weeks, more
+# than any model run. Heavy work goes through srun / sbatch; ask for more only when needed.
+CORES="${VSCODE_CORES:-4}"
+MEM="${VSCODE_MEM:-32G}"
 TIME="${VSCODE_TIME:-08:00:00}"
 # halk* nodes are on their own InfiniBand fabric (`scontrol show topology`: hdrck*/ndrk*
 # cores, no switch shared with hal* or the storage leaf), so every GPFS metadata op

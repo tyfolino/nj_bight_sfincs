@@ -1315,6 +1315,14 @@ CLAUDE.md §5.
     / `cuminf`, so a solve resumed during the rain restarts with an empty soil (warned, not
     gated). `cna` only ever subtracts from RAIN, never from surge or river water. Check the log
     for "Curve Number method - A".
+    **Which methods drain STANDING water (engine source, `sfincs_infiltration.f90`, 2026-10-15):**
+    `cna`, `cnb` and `gai` (Green-Ampt) act on each step's RAIN only — infiltration stops when
+    the rain stops, so no curve-number premier drains surge or ponded rain; `hor` (Horton)
+    infiltrates wherever the cell holds water OR it rains (it would drain bays / marsh too
+    unless its rates are 0 there); `con` / `c2d` take a constant rate from any wet cell. One
+    method per run. Peak-based scores (HWM, MOTF) barely feel post-peak drainage; closed basins
+    (the rain-pond lakes, rising at tstop) do — their real drain is outfalls / sewers, which no
+    infiltration method represents.
 
 60. **Gauges, sensors and marks.** (a) USGS storm-tide sensors are mounted ABOVE normal water
     and read their own floor below it, so their statistics are HIGH-WATER statistics; tidal

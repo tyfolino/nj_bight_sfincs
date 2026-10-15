@@ -67,9 +67,15 @@ KEEP_FILES = {
     "metrics.json",
     "cut_faces_reopened_idx.npy",  # hand-staged nyedge-only test: the 35 cut faces put back to outflow (stage_nyedge_only.py)
     "report.html",
+    "sfincs.wvm",  # wavemaker line (an input, KB-sized; FINDINGS §45/§49)
+    "mask_repair_changed_idx.npy",  # the 09-22 mask repair's record (restage_mask_repair.py)
+    "mask_repair_diff.json",
+    "overflow_check.csv",  # SLR containment gate results (overflow_check.py)
+    "overflow_check.png",
 }
 KEEP_GLOBS = (
     "provenance*.txt",
+    "sfincs_ini_*",  # a sea_level.py start (binary inifile + its json sidecar; MB-sized)
     "snapwave.b??",
     "snapwave.bnd",
     "subgrid_*diff.json",

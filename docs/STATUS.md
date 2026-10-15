@@ -40,8 +40,8 @@ submitting the v3-reference job. Scratch cleaned 10-11 (was over its soft quota)
 
 ## Running
 
-- **62626713** `igseed_sens` (10-15, one exclusive emeraldrapids node, 6 h cut of the premier;
-  `logs/ig_det_2026-10-15/igseed_sens.slurm`): the SEEDED engine — repeat (SEED_a vs SEED_b,
+- **62645470** `igseed_sens` (10-15, PENDING, est. 10-18 14:49; resubmit of cancelled 62626713 on
+  sapphire|emerald, longer timeouts; 6 h cut of the premier; `logs/ig_det_2026-10-15/igseed_sens2.slurm`): the SEEDED engine — repeat (SEED_a vs SEED_b,
   predicted STRICT) AND sensitivity to a null perturbation (`rhoa` 1.25 → 1.2501, waves on and
   waves off), plus seeded vs unseeded (one IG sample vs another). Repeating is necessary but not
   sufficient: if capped calls amplify tiny input differences, two ARMS still diverge in the bays.
@@ -91,7 +91,7 @@ submitting the v3-reference job. Scratch cleaned 10-11 (was over its soft quota)
   on record (G1, G3_patched_rep = the F.4 cut) was IG OFF; every non-repeating one (pack test,
   det test, the 10-11 pair) IG ON. ⇒ §44's "v3 is deterministic" holds for IG off only, and
   §45's "IG does nothing to water levels" is wrong as mechanism (its measured null at the marks
-  stands). Test: job 62626713 (Running).
+  stands). Test: job 62645470 (queued).
   ✅ **User 10-15: IG STAYS ON in the premier; fix by SEEDING, not by switching IG off.** Engine
   variant `v2.3.3-winddir-igseed-1-gf11` = the premier's source (diff sha `02aa32005413ad5c`, same
   compiler / flags) + a fixed `random_seed(put=…)` before the 400 draws in `compute_herbers`,
@@ -101,6 +101,21 @@ submitting the v3-reference job. Scratch cleaned 10-11 (was over its soft quota)
   against a pre-seed run.
 
 ## ⭐ FINAL AUDIT → "the v4 premier is ready" (plan approved 10-15)
+
+▶ **HANDOFF (10-15 ~17:20, before a compaction + new VS Code node).** In flight / next, in order:
+1. **62645470 `igseed_sens`** (seeded-engine repeat + `rhoa` nudge, 6 h cut; resubmit of 62626713, cancelled
+   10-15) is QUEUED on priority — estimate **10-18 14:49** (fair share 0.0086; the user's agri jobs share it).
+   Its EXPECT_MD5 guards `scripts/engine_gate.py`, `logs/ig_det_2026-10-15/{igseed_sens2.slurm,his_pair.py}`
+   and both engine binaries — do not edit them while it waits. Read `logs/ig_det_2026-10-15/igseed_sens2_62645470.out`.
+2. **Lake-crossing audit (NEXT):** build a per-lake review view for the 15 flagged coastal lakes (method: inside
+   each NHD outline, merged bed `_subgrid_refreeze/subgrid/dep_subgrid_merged.tif` vs `nj_10ft_dem_v4.tif`,
+   patches > 1 m above; the scan is in this session's history — re-derive it). User decides per lake; Wreck
+   Pond's band first. The fix is a PREMIER bed overlay in the re-baseline (a subgrid rebuild).
+3. **Breach arm:** Mantoloking = the user's polygons (checked); Wreck Pond = a STATED channel beside the outfall
+   (post-storm surveys miss the healed inlet) + optional open-pipe culvert; Deal Lake none.
+4. Then Phase 3 code: inflow-wall split, `cnb`, `--pressure era5`, `lake_outlet_blocked` flag, Horton arm.
+- Staged, not committed: docs, `hpc/vscode_node.sh` (default 4 cores / 32 G), `premier.py` RETIRED labels,
+  `retire_arm.py`, `v4_first_results.py`, cleanup manifests. Picker: `logs/breach_picker_2026-10-15/`.
 
 Plan: `~/.claude/plans/i-think-i-m-ready-warm-trinket.md`. User decisions 10-15: lakes = rule-based
 flag + a documented-site breach SENSITIVITY arm (not in the premier); IG stays on, seeded; v3
@@ -119,28 +134,50 @@ scripts go; scratch tiers A + B of `reports/cleanup/deletion_manifest_2026-10-15
   `data_move_2026-10-05` (the swap script), `wind_x110_reads_2026-09-22`, `naccs_chs_2026-10-06`; both
   09-09 weeklies (plain + technical versions). KEPT scripts the plan listed: `plot_waterlevel_boundary`
   (`accept_domain.py` runs it), `stockdon_envelope` (run-up — the Deal Lake question), two downloaders
-  (catalog provenance). **Pending the backup:** scratch tiers A + B, the `premier.py` "retired" labels
-  and the `test` preset (same pass), NACCS scratch dir → symlink to home; home: `micromamba clean -a`,
-  finish the elevation_v4 swap (copy 4 home-only `inland_water` files first), caches; env lock file.
-- **Phase 2:** read 62626713 → A (clean) / B (noise band + cap test) / C (snan build); FINDINGS
+  (catalog provenance). ✅ **Scratch + home DONE 10-15** after the backup: 26 arms retired
+  (`retire_arm.py`), the superseded domains' templates / subgrids / floodmaps and tiers A + B deleted →
+  scratch 713 → 438 G, home 71 → 63 G; elevation_v4 swap finished; NACCS originals → symlink to home;
+  `premier.py` labels v4 / v4_hot / v4_hot_plus RETIRED. 🔴 The backup never pulled
+  `nj_bight_sfincs_data/` (data/'s symlink targets, 78 G) — fixed in `desktop_pull_backup.sh`; USER: re-run
+  it once (big first pull). Still open: env lock file (`micromamba env export --explicit`).
+- **Phase 2:** read 62645470 → A (clean) / B (noise band + cap test) / C (snan build); FINDINGS
   §44/§45 rewrite; CLAUDE.md §5 RNG trap.
 - **Phase 3 (code, no solves):** `cnb` (SSURGO ksat → `create_cn_with_recovery`, `effective` 1.5,
   brackets 1.0 / 2.38; soil-RESET warning `cna`-only; toy resume test — soil on 10-28 was DRIER than
   AMC II, so expect MORE infiltration); inflow moves with a separate wall-points field (walls on the
   OLD points; `discharge_geodataset` is mask-defining — restaged sha must stay `378014e154b4ff41`);
   `--pressure era5` blend; `_subgrid_breach` (post-storm CZMIL / EAARL in hand-drawn polygons at
-  Wreck Pond outlet, Deal Lake flume / Ocean Ave, Mantoloking / Bay Head; `logs/dune_lever_2026-09-23/`);
+  Wreck Pond outlet, Deal Lake flume / Ocean Ave, Mantoloking / Bay Head; `logs/dune_lever_2026-09-23/`;
+  USER draws them in the Breach Picker https://claude.ai/artifact/T6vURCojwcXQCo3voMcHdo, built by
+  `logs/breach_picker_2026-10-15/build_breach_picker.py`; LOWER-ONLY overlay (min of bed and post-storm —
+  lidar reads the pond / bay water surface), painted after the buildings (houses inside are removed; drawn
+  around except at Mantoloking), ~25 m into the water on each side);
   `lake_outlet_blocked` scorer flag (headline with and without; never dropped); fixes (provenance
   NACCS label, meteo / infiltration / engine_seed columns, metrics round-trip, refuse an unset engine,
   HWM 6044 flag, islands log, `README.md`); desk checks (Atlantic City datum, paved channels).
   Pre-register in `logs/rebaseline_2026-10-xx/PREREG.md`.
 - **Phase 4:** ONE 2-node job on the seeded engine: new premier + repeat + `bed-breach` + waves-off
-  + `cnb` 1.0 / 2.38 + `bed-nobuildings` (node 1); v3 reference pair (node 2); validate; paired reads.
+  + `cnb` 1.0 / 2.38 + `bed-nobuildings` + a waves-off Horton (`hor`) arm — the standing-water
+  drainage bracket; `cnb` stays the premier (user 10-15; FINDINGS §59) (node 1); v3 reference pair + a
+  full-length `rhoa` 1.2501 copy of the new premier — the noise band THROUGH the peak (62645470 sees only
+  the calm first 6 h) (node 2); validate; paired reads.
   Must end before maintenance 11-10 08:00.
 - **Phase 5–6:** reads (new preset) → frozen premier (engine `…igseed-1…@2e4e9645`, user tags git),
   `docs/MODEL.md` model card (processes in / out with literature, patches, cost, reproducibility,
   data attribution, "how to start an experiment"), validation summary, research-group brief,
   docs refresh, backup, user commits.
+- 🔴 **Wreck Pond is cut in two by the model's BED (10-15, user's 1st Ave hunch):** inside the NHD outline the
+  merged bed carries a band 1.7–3.9 m (max 4.2) across the east end (−74.0285…−74.0317, ~40.1385) where the
+  statewide 10 ft lidar reads water / < 1 m; within the pond, east end ↔ the rest connect only at 3.74 m
+  (mid ↔ 6130 at 1.0 m). Premier zsmax: sea 2.80, east end 1.88, mid pond 0.38, 6130 0.86 (obs 2.74). The
+  ocean ↔ pond sill is the beach at the outfall (−74.0261, 40.1391), 3.1–3.65 m. The post-storm surveys do
+  NOT show the Sandy inlet (it healed within ~2 weeks; NJDEP / press) — so the breach arm needs a STATED
+  channel at Wreck Pond, not a lidar overlay; the broken tide gate left the 7-ft outfall pipe open (a culvert
+  candidate; nothing in nj_sfincs writes a drainage-structure file yet). Mantoloking: user's two polygons
+  checked OK (`logs/breach_picker_2026-10-15/polygons_final_2026-10-15.csv`); Deal Lake: no breach polygon
+  (overtopping — user). **Lake-crossing audit:** 15 of 127 coastal NHD lakes have > 300 m² where the model
+  bed is > 1 m above the 10 ft lidar (Wesley — likely the deliberate 10-05 clamp; Deal, Spring Lake,
+  Little Silver, Lake Louise, Takanassee, Twilight, … — decks / buildings?); per-lake read + user call next.
 - **Status notebook fig. 2** ("rise above normal water", user 10-11) goes into the brief: normally-wet
   faces → peak − pre-storm high water; normally-dry → depth; baseline from the premier's early 6-h
   `zsmax` blocks (`logs/notebook_qc_2026-10-11/baseline_check.py` picks them).

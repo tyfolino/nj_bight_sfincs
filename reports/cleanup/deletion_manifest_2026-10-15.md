@@ -7,10 +7,12 @@
 
 **How "freed" is measured:** one read-only per-inode walk. It counts only files whose EVERY hard link lies inside the set, so the figure is what deleting the set actually returns. The set lists are in the session scratchpad (`deletion_sets.json`); the per-path list goes to `deleted_2026-10-15.txt` when the deletions are applied.
 
-**Status:** DRAFT.
-- The user approved tiers A and B in principle on 10-15.
-- 🔴 **Gate:** nothing on scratch is deleted until the user confirms the desktop backup (`scripts/desktop_pull_backup.sh`).
-- Job 62626713 must also have finished, because it reads `v4_refreeze/naccs-premier`.
+**Status: DONE 2026-10-15** (after the desktop backup and the user's commit).
+- Tiers A + B applied; every path is in `deleted_2026-10-15.txt`, and retired arms are in each domain's `_retired/MANIFEST.md` (26 arms, via `retire_arm.py`).
+- Scratch 713 → 438.1G (mmlsquota lags ~10 min); home 71 → 63.45G.
+- The home items below are done, and the NACCS originals are now a symlink to the home copy.
+- Same pass: `premier.py` labels v4 / v4_hot / v4_hot_plus RETIRED; `v4_first_results.py` `test` preset points at `_retired/`; `retire_arm.py` learned 5 more record types (`sfincs.wvm`, the mask-repair records, the `overflow_check` outputs, `sfincs_ini_*`).
+- 🔴 **Found:** `desktop_pull_backup.sh` copied `data/`'s scratch symlinks as links, so `nj_bight_sfincs_data/` (78 G: frozen meshes, beds, NACCS) was never in the backup. It is now pulled as its own tier, with `~/nj_bight_durable/`.
 
 ## Tier A — rebuildable or duplicated (no record lost)
 

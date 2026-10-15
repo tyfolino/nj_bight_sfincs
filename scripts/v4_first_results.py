@@ -193,8 +193,13 @@ PRESETS: dict[str, dict] = {
     "test": dict(
         date="test",
         runs=[
-            ("hp", "experiments/v4_hot_plus/naccs-nowaves", "A+ waves-off, dam crest"),
-            ("v4", "experiments/v4/naccs-nowaves", "v4 waves-off"),
+            # retired 2026-10-15: records only (his / inp / log), no map — `residuals` cannot run
+            (
+                "hp",
+                "experiments/v4_hot_plus/_retired/naccs-nowaves",
+                "A+ waves-off, dam crest",
+            ),
+            ("v4", "experiments/v4/_retired/naccs-nowaves", "v4 waves-off"),
             ("v3", "experiments/v3/naccs-premier", "v3 reference (FINDINGS §50)"),
             ("v3_off", "experiments/v3/naccs-nowaves", "v3 waves-off"),
         ],
