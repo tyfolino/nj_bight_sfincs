@@ -6,7 +6,8 @@ running, what is next, what is open. When an item closes, its durable fact goes 
 Git has the history. The campaign log this file grew into until 2026-09-29 (6,767 lines) is
 `git show d70dd1e:docs/STATUS.md`; FINDINGS cites it as "STATUS <date>".
 
-Last updated: **2026-10-15** (the four pre-maintenance jobs read — "Read 10-15" below; the
+Last updated: **2026-10-16** (check-in: `igseed_sens` and `sbg_lakes` both PREEMPTED; igseed resubmitted with the core-pinning fix).
+Before: **2026-10-15** (the four pre-maintenance jobs read — "Read 10-15" below; the
 readiness audit for experiments is in progress). Before: 2026-10-11 (every 10-09 job read). The re-frozen v4 is
 solved, scored and written up: `reports/v4_first_results_2026-10-09/summary.md`, FINDINGS part 4 (g).
 Infiltration decided (stays on; `cnb` with ERA5-Land soil state next). Open: declaring the v4 premier,
@@ -40,8 +41,24 @@ submitting the v3-reference job. Scratch cleaned 10-11 (was over its soft quota)
 
 ## Running
 
-- **62645470** `igseed_sens` (10-15, PENDING, est. 10-18 14:49; resubmit of cancelled 62626713 on
-  sapphire|emerald, longer timeouts; 6 h cut of the premier; `logs/ig_det_2026-10-15/igseed_sens2.slurm`): the SEEDED engine — repeat (SEED_a vs SEED_b,
+- **62670930** `igseed_sens` on **CAMDEN** (`cmain`, halc073, icelake 8352Y; RUNNING since 10-16 15:56;
+  `logs/ig_det_2026-10-15/igseed_sens3c.slurm`). Camden sees its own `/scratch`, so the premier's 19 solver
+  inputs were copied to `/cache/home/tpj8/nj_bight_staging/igseed_src_v4refreeze_premier/` (5.6 G, md5 vs the
+  premier OK; a cut from it gives a byte-identical `sfincs.inp`); solves in Camden
+  `/scratch/tpj8/igseed_camden/` (maps stay there — reach them via a `cmain` srun); comparisons + his + logs
+  come back to `logs/ig_det_2026-10-15/sens3c_62670930_r0/`. Master threads pinned 0/16/32/48 ✅. icelake
+  is ~3× slower per core on SnapWave → timeouts 16 h / 3 h, limit 22 h. Delete the home staging copy once
+  read. **62670893** = the same test on `main` (PENDING) — whichever finishes first wins; cancel the other.
+- **62670893** `igseed_sens` (submitted 10-16 15:55, PENDING; `logs/ig_det_2026-10-15/igseed_sens3.slurm`,
+  out `/scratch/tpj8/engine_gate/igseed_sens3_<job>_r<restart>/`). Resubmit of 62645470, which ran 10-16
+  10:03 → **PREEMPTED 15:47** (no `--requeue`, nothing finished; its partial dirs are in
+  `/scratch/tpj8/engine_gate/igseed_sens/`, safe to delete). 🔴 That run also went at ~¼ speed:
+  `engine_gate.py run` sets `OMP_PROC_BIND=spread` + `OMP_PLACES=cores`, so all four 16-thread copies
+  pinned to the SAME cores (0,4,…,60) and their serial SnapWave master threads shared core 0 (node 98 %
+  idle; SEED_a 30 %, ON_a 45 %, SEED_b / SEED_p 65 % after 5.6 h). sens3 runs each copy under
+  `taskset` on its own core block (libgomp places stay inside the mask; thread counts unchanged), adds
+  `--requeue`, and a fresh out dir per attempt. Same engine_gate / his_pair / binaries (md5) as sens2.
+  Any future side-by-side `engine_gate.py run` needs disjoint cores the same way. The SEEDED engine — repeat (SEED_a vs SEED_b,
   predicted STRICT) AND sensitivity to a null perturbation (`rhoa` 1.25 → 1.2501, waves on and
   waves off), plus seeded vs unseeded (one IG sample vs another). Repeating is necessary but not
   sufficient: if capped calls amplify tiny input differences, two ARMS still diverge in the bays.
@@ -103,11 +120,14 @@ submitting the v3-reference job. Scratch cleaned 10-11 (was over its soft quota)
 ## ⭐ FINAL AUDIT → "the v4 premier is ready" (plan approved 10-15)
 
 ▶ **HANDOFF (10-15 evening).** In flight / next, in order:
-1. **62645470 `igseed_sens`** (seeded-engine repeat + `rhoa` nudge, 6 h cut; resubmit of 62626713) QUEUED —
-   est. **10-18 14:49** (fair share 0.0086; the user's ~25 agri jobs share it). EXPECT_MD5 guards
-   `scripts/engine_gate.py`, `logs/ig_det_2026-10-15/{igseed_sens2.slurm,his_pair.py}` and both engine
-   binaries — do not edit them while it waits. Read `logs/ig_det_2026-10-15/igseed_sens2_62645470.out`.
-1b. **62646886 `sbg_lakes`** (submitted 10-15 ~18:30, est. start 10-16 04:03, ~6 h): the premier bed rebuilt
+1. **`igseed_sens`** (seeded-engine repeat + `rhoa` nudge, 6 h cut; pinning fixed): **62670930 RUNNING on
+   Camden** + 62670893 PENDING on `main` (see Running). Their md5 guards (`igseed_sens3{,c}_expected.md5`)
+   cover `scripts/engine_gate.py`, `logs/ig_det_2026-10-15/{igseed_sens3{,c}.slurm,his_pair.py}`, both engine
+   binaries and the staged-source md5 — do not edit them while either is queued or running. Read
+   `logs/ig_det_2026-10-15/igseed_sens3c_62670930.out` + `sens3c_62670930_r0/`.
+1b. **62670904 `sbg_lakes`** (PENDING on `main`; resubmitted 10-16 with `--force` + `--requeue` via
+   `logs/rebaseline_2026-10-15/submit_bed_lakes_resubmit.sh` — the first try, 62646886, was PREEMPTED 10-15
+   19:52 after 1 h 24 with no requeue). What it builds: the premier bed rebuilt
    = the 10-06 recipe UNCHANGED (all 58 bed rasters md5-identical to `logs/refreeze_2026-10-06/rebuild_expected.md5`)
    + `lake_fix_v4` painted last → `experiments/v4_refreeze/_subgrid_refreeze_lakes`. 🔴 EXPECT_MD5 guards
    `data/data_catalog.yml`, `nj_sfincs/domain.py`, `nj_sfincs/premier.py`, `scripts/rebuild_subgrid.py` + the
