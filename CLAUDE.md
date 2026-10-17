@@ -306,6 +306,15 @@ not trip that guard. Do not run the sweep driver to "just rebuild" a template.
   now; do not weaken that.
 - **SnapWave is ~97% of runtime** (FINDINGS §20; `scripts/snapwave_cost.py` reads it off a
   log); the 3 h batch default is not enough for a large domain. Pass `--slurm-args "--time=12:00:00"`.
+- 🔴 **An IG-on SnapWave run on an UNSEEDED engine never repeats itself.** The Herbers IG
+  boundary draws `RANDOM_NUMBER` every call and stock SFINCS never seeds it, so two runs from
+  byte-identical inputs differ by dm at the NY-bay gauges, and a "paired" Δ between two arms
+  is partly a different random draw — coherent across marks, so the bootstrap calls it
+  significant (FINDINGS §44). Seeded builds (`…igseed…`) repeat bit-for-bit, across nodes too;
+  `metrics.csv` `engine_seed` says which (`fixed` / `os-random` / `n/a:ig-off`). ⚠️ Even
+  seeded, a waves-on run amplifies a NULL input change (`rhoa` × 1.00008) to 0.2–0.36 m at the
+  bay gauges in 6 h: a waves-on arm Δ of a few cm in the NY bays is inside the noise.
+  Waves-off runs are well-conditioned (mm).
 - 🔴 **A wind-on SnapWave solve on v3 needs the FAST nodes** (confirmed 2026-09-13 on the
   full 73 h run): 3.3 sim-h per wall-h on `emeraldrapids` (21 h 55 total) vs 0.98 on
   `icelake` (`hal02xx`) → ~74 h, past the 40 h limit, and a TIMEOUT is NOT auto-requeued

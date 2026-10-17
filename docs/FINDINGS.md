@@ -733,56 +733,79 @@ CLAUDE.md §5.
     removes a real process: every back-bay gauge reads hm0 0.00–0.07 m against 0.2–0.5 m
     with wind (Sandy raised ~0.5 m fetch waves in Barnegat Bay).
 
-44. 🔴 **The patched wind-on solve is DETERMINISTIC on v3 (NOT on v4 — below); the unpatched container-vs-native
-    disagreement is compiler rounding amplified by the SnapWave limit cycle, not run-to-run
-    noise.** `G3_patched_rep` (same binary, hal0384) vs `G3_patched` (hal0386), the 12-hour
-    v3 wind-on cut: every field bit-identical — zs, zsmax, hm0, tp, hm0ig, wavdir max |Δ| 0
-    over 15.6 M cell-hours, 25 of 25 SnapWave calls with |Δiter| 0 (`engine_gate.py
-    compare`, VERDICT STRICT, 2026-09-13). The same cut on the container vs the unpatched
-    native build (2026-09-12) differed by Δzs max 5.9 m, p99 36 cm, p90 8.6 cm, with 15–20 %
-    of active cells > 5 cm apart from hour 1, traced to a 34,000 N/m² wave force under a
-    spurious 20 m wave in Lower Bay (a physical force is O(1–10)). Consequence: a paired Δ
-    between two arms run on ONE binary is an exact number; a Δ across binaries carries
-    ~10 cm p90 in the bays and dm-scale transients at the bay gauges, and every pre-09-12
-    wind-on row (container engine) is such a sample. Every `metrics.csv` row carries
-    `engine`, so the binary is always known. The Sandy Hook limit cycle itself (STATUS
-    09-12 AM: a few hundred cells at the period floor cycling with period 2–3) persists on
-    the patched engine — 55 of 145 calls capped on the full run — and the period-floor
-    lever `snapwave_sigmax` (2 s and 3 s cuts) does not remove it, it relocates the
-    blow-ups onto the open shelf; the engine-side interior initial-guess remap is the open
-    follow-up.
-    🔴 **On v4 a capped SnapWave call puts a ~1 m pulse into the Delaware River (2026-10-11).**
-    In the premier (`v4_refreeze/naccs-premier`, NACCS wind) the 10-29 18:00 call ENDED at the
-    50-iteration cap (error 0.88, %ok 96.1; 606 s vs ~300) and its field held for the hour:
-    hm0 up to 11.3 m, 50,730 faces > 3 m within 40–50 km of Reedy Point (17:00 / 19:00: max
-    2.5–2.8 m); 20:00 capped again (error 0.32; max 6.6 m). The water answers with a long wave
-    that starts at Reedy Point / Delaware City at ~19:30 (+0.8…+1.3 m in an hour) and reaches
-    Philadelphia at ~21:30–22:00 (~8 m/s); the waves-OFF twin with the same wind falls smoothly
-    through it, and observations show nothing. The ERA5 waves-on run has a smaller one at ~00:30.
-    It rides the ebb 0.3–0.5 m under the crest at these gauges, so their PEAKS are unaffected;
-    elsewhere unchecked. `notebooks/v4/sandy-v4-status-2026-10-11.ipynb` (Delaware panel).
-    🔴 **ON v4 THE SAME BINARY DOES NOT REPEAT ITSELF (2026-10-09).** The packing test
-    (`logs/pack_test_2026-10-07/`, run B cut to 10-28 00:00–03:00, `bin:v2.3.3-winddir-fix-1-gf11`)
-    staged 13 copies with byte-identical inputs; four 16-thread copies run side by side on one
-    emeraldrapids node differ from EACH OTHER as much as from the 64-thread copy: SnapWave
-    iteration counts by up to 41, point hm0 already at the FIRST wave solve (t = 0; Sea Bright
-    1.7 m, Ship John Shoal 1.0 m, Narrows SI 0.44 m), point zs from the first 10 min. Over the
-    3 h, max over 6 copy pairs: zs Keansburg 0.41, Sandy Hook 0.40, Great Kills 0.36, Arthur
-    Kill mouth 0.25, South Amboy 0.17 m; 10 of 48 gauges > 5 cm, 6 exactly 0. Map: zsmax p90
-    ~1 cm, p99 ~3 cm. **Co-tenancy is NOT the cause** (`logs/det_test_2026-10-09/`, job
-    62418789, one exclusive emeraldrapids node): two LONE 64-thread copies run back to back
-    differ too — iteration counts 13/9/9/30 vs 10/9/19/50, zsmax p90 9 mm / p99 2.4 cm (max
-    3.25 m at a few wetting cells), point zs Sea Bright 0.11 m and 15 of 48 gauges > 1 cm by
-    3 h, point hm0 up to 0.75 m. Two 1-THREAD copies were cut by their 5 h timeout before the
-    end, but differ already at the first SnapWave call (9 vs 14 iterations from identical
-    inputs) — if that holds the cause is not an OpenMP race but something order- or
-    memory-dependent in the SnapWave solve on this domain (uninitialised state is the
-    suspect; not localised). A waves-on v4 paired Δ in the NY bays therefore carries
-    run-to-run noise of cm (map) to dm (single gauges); waves-off v4 is untested but §44's G1
-    says the hydrodynamics alone repeat exactly. The same packing test measured PACE (3 h cut of run B, one emeraldrapids node):
-    1×64 threads 56 min, 4×16 copies 58–60 min each, 8×8 65–72 min each — waves-on arms can
-    share a node at little cost (input is ~half of a 3 h cut's wall, so a full run may gain
-    less); `logs/pack_test_2026-10-07/compare/`.
+44. 🔴 **With IG on, SnapWave does not repeat itself unless the engine is SEEDED; seeded, it repeats
+    bit-for-bit, across machines too — but a waves-on run still amplifies a NULL input change
+    to decimetres at the NY-bay gauges, so every waves-on paired Δ carries a noise band.**
+    (a) **Why an unseeded run never repeats.** `compute_herbers` (`snapwave_infragravity.f90`)
+    builds the Herbers IG boundary from `RANDOM_NUMBER` draws for 400 wave components on every
+    call; nothing seeds it and libgfortran seeds itself from the OS, so each IG-on run draws a
+    different sample. The IG source is subtracted from the INCIDENT energy
+    (`snapwave_solver.f90:664`, `snapwave_shinc2ig` read with default **1.0** at
+    `sfincs_snapwave.f90:644`; the solver's "0=default" comment is stale), so the sample reaches
+    breaking, the wave force and zs. Every bit-identical repeat on record had IG off (G1: no
+    SnapWave; the `repro/` cuts incl. `G3_patched_rep`: `snapwave_igwaves = 0`); every
+    non-repeating one had IG on. The bug is on upstream `main` too (issue draft
+    `docs/upstream/snapwave_igseed*`).
+    (b) **What the unseeded noise looks like** (engine `…winddir-fix-1…`, v4). Packing test
+    (`logs/pack_test_2026-10-07/`, 3 h cut of run B, 13 byte-identical copies): copies differ from
+    each other at the FIRST wave solve (t = 0: point hm0 Sea Bright 1.7 m, Ship John Shoal 1.0 m)
+    and in point zs from the first 10 min; over 3 h, max over 6 pairs: Keansburg 0.41, Sandy Hook
+    0.40, Great Kills 0.36, Arthur Kill mouth 0.25, South Amboy 0.17 m; zsmax p90 ~1 cm, p99
+    ~3 cm. Lone 64-thread copies back to back on one exclusive node differ as much
+    (`logs/det_test_2026-10-09/`), and 1-thread copies differ at the first call — the draw, not
+    co-tenancy or an OpenMP race. On FULL runs (10-11 premier pair, `logs/premier_2026-10-11/`):
+    `naccs-premier` vs `+rain-noinfil` differ 0.12 m at Keansburg in the first hour (rain
+    0.008 mm/h; the waves-off pair 0.2 mm), 0.54 m at the Narrows by 12 h, a Delaware River pulse
+    (Delaware City +1.4 m at 10-29 20:00) sits in one and not the other, and at the marks the noise
+    is a COHERENT NY-bay shift (+0.037 m, 44 of 46 one sign) that the paired bootstrap reads as
+    significant (CI [+0.028, +0.044]) — a noise band does not average out over marks.
+    (c) **The fix: engine `v2.3.3-winddir-igseed-1-gf11`** = the premier's source (same compiler
+    and flags) + a fixed `random_seed(put=…)` before the draws, re-set on EVERY call: the same
+    component sample at every point and call, independent of restarts, `dtwave` and boundary
+    count. Diff sha `02aa32005413ad5c`; source `/scratch/tpj8/sfincs-build/src-igseed-1`
+    (`git diff 091f531`). User 2026-10-15: IG stays ON in the premier, fixed by seeding. A new
+    binary is a new engine label — re-baseline every arm on it, never Δ against a pre-seed run.
+    (d) **Seeded, it repeats** (2026-10-16, 6 h cut of `v4_refreeze/naccs-premier`, IG on,
+    `logs/ig_det_2026-10-15/`, jobs 62670893 on `main` hal0396 and 62670930 on Camden halc073,
+    icelake 8352Y): two identical copies are STRICT (zs, zsmax, hm0 maps, 48 points, SnapWave
+    iterations 50 11 42 6 50 13 16 in both), and every seeded and waves-off `sfincs_his.nc` is
+    byte-identical BETWEEN the two clusters.
+    (e) **Seeded, it is still ill-conditioned waves-on.** `rhoa` 1.25 → 1.2501 (wind stress
+    ×1.00008), same jobs. Waves ON: 7 of 48 points > 10 cm within 6 h (Narrows Bkln 0.36,
+    Narrows SI 0.28, Arthur Kill mouth 0.26, Great Kills 0.22, Keansburg 0.20, South Amboy
+    0.20 m), 18 > 5 cm, 27 > 1 cm; zsmax map p90 7.9 mm, p99 3.1 cm; point hm0 up to 1.4 m
+    (Atlantic City); iterations split from the second call (50 11 42 6 50 13 16 → 50 50 22 7 50
+    50 20) — a call that converges in one run ends at the cap in the other. Waves OFF: zsmax p99
+    0.18 mm; 2 of 48 points > 1 cm (Great Kills 4.7, Narrows Bkln 3.9 cm), growing after hour
+    3.5. ⇒ **Seeding makes a run REPEATABLE; it does not make two waves-on ARMS comparable to
+    the centimetre.** A waves-on paired Δ in the NY bays carries mm–cm on the map and cm–dm at
+    single gauges in the calm first 6 h; the band through the peak is unmeasured. Whether the
+    capped calls are the amplifier: the `snapwave_niter` 800 cut (STATUS).
+    (f) **Across binaries the same amplifier works on rounding.** The v3 12 h wind-on cut (IG
+    off) on the container vs the unpatched native build (2026-09-12) differed by Δzs max 5.9 m,
+    p99 36 cm, p90 8.6 cm, 15–20 % of active cells > 5 cm apart from hour 1, traced to a
+    34,000 N/m² wave force under a spurious 20 m wave in Lower Bay (a physical force is
+    O(1–10)). Every pre-09-12 wind-on row (container engine) is such a sample; every
+    `metrics.csv` row carries `engine`.
+    (g) **The Sandy Hook limit cycle** (a few hundred cells at the period floor cycling with
+    period 2–3; STATUS 09-12) persists on the patched engine — 55 of 145 calls capped on a full
+    v3 run — and the period-floor lever `snapwave_sigmax` (2 s and 3 s cuts) relocates the
+    blow-ups onto the open shelf rather than removing them; the engine-side interior
+    initial-guess remap is the open follow-up.
+    (h) 🔴 **On v4 a capped call puts a ~1 m pulse into the Delaware River (2026-10-11).** In the
+    premier the 10-29 18:00 call ended at the cap (error 0.88, %ok 96.1; 606 s vs ~300) and its
+    field held for the hour: hm0 up to 11.3 m, 50,730 faces > 3 m within 40–50 km of Reedy Point
+    (17:00 / 19:00: max 2.5–2.8 m); 20:00 capped again (error 0.32; max 6.6 m). The water answers
+    with a long wave from Reedy Point / Delaware City at ~19:30 (+0.8…+1.3 m in an hour) to
+    Philadelphia at ~21:30–22:00 (~8 m/s); the waves-off twin falls smoothly through it and
+    observations show nothing. It rides the ebb 0.3–0.5 m under the crest at these gauges, so
+    their PEAKS are unaffected; elsewhere unchecked.
+    (i) **Pace when sharing a node** (packing test, 3 h cut of run B, one emeraldrapids node):
+    1×64 threads 56 min, 4×16 copies 58–60 min each, 8×8 65–72 min each. 🔴 Side-by-side copies
+    need DISJOINT cores: `engine_gate.py run` sets `OMP_PROC_BIND=spread` + `OMP_PLACES=cores`,
+    so unpinned copies stack on the same cores and their serial SnapWave masters share core 0
+    (~¼ speed, 2026-10-16); run each under `taskset` on its own block
+    (`logs/ig_det_2026-10-15/igseed_sens3.slurm`).
 
     **The native build reproduces the container** (2026-09-11, `scripts/engine_gate.py`):
     G1 (hydromt `sfincs_compound` example, no SnapWave) is STRICT — zs / zsmax / h max|Δ| 0
@@ -805,27 +828,29 @@ CLAUDE.md §5.
     shelf |Δhm0| p99 criterion is unmeetable (the control's own spikes give p99 1.57 m); use
     site medians on cap-hit-free hours.
 
-45. 🔴 **`snapwave_igwaves = 1` does NOTHING to SFINCS water levels unless a WAVEMAKER is
-    defined — every "IG" arm ever scored (v1.5 `wave-ig`, v3 premier vs `wave-noig`) was a
-    null by construction.** The only quantity SnapWave hands the flow solver is the wave
-    force, and `snapwave_solver.f90:908` builds it from the short-wave breaking dissipation
-    alone (`F = Dw·k/σ/ρ/h`); the IG balance (§A2 of Leijnse et al. 2025, Coastal Eng.
-    199:104726) runs beside it and its output `hm0ig`/`tpig` is consumed by exactly one
-    module, `sfincs_wavemaker.f90` — the van Dongeren & Svendsen absorbing-generating
-    boundary on a `wavemaker_wvmfile` polyline (~5 m depth at high tide), which takes
-    `hm0ig` at its points and `tp_ig = snapwave_tpigmean` and injects a randomly phased
-    long-crested signal landward of the line. No run in either repo carries a wavemaker on
-    the premier lineage (`grep wvm experiments/*/*/sfincs.inp`). Measured on v3, 2026-09-17:
-    premier (IG on) vs `wave-noig` (IG off), same binary, paired ΔRMSE +0.0005 m, 95 % CI
-    [−0.0024, +0.0036] on 94 marks — identical to the millimetre, as it must be. IG on
-    costs ~4 h of a 25 h solve for a field nobody reads. What IG WOULD inject is not yet
-    credible either: at the surge peak 976,804 cells carry `hm0ig` > 1 m (215,992 of them
-    SFINCS-active, median 1.24 m in the −10..−5 m band, max 2.0 m), against 0.67 m at the
-    bar in Leijnse's SFINCS and 0.33 m in XBeach for a comparable storm. Any wavemaker arm
-    is therefore two changes — the line AND the IG shoaling/breaking knobs
-    (`snapwave_alphaigfac`, `snapwave_gammaig`, `snapwave_fwig`) — and the toy plane-beach
-    case (`scripts/make_snapwave_reproducer.py`, ~1 s) is where the injected signal is read
-    first. STATUS 2026-09-17.
+45. 🔴 **`snapwave_igwaves = 1` without a WAVEMAKER reaches the water only THROUGH THE SHORT
+    WAVES, and on v3 that path measured nil at the marks; the IG field itself is never handed to
+    the flow.** The wave force SFINCS receives is built from the short-wave breaking dissipation
+    alone (`snapwave_solver.f90:908`, `F = Dw·k/σ/ρ/h`); the IG balance (§A2 of Leijnse et al.
+    2025, Coastal Eng. 199:104726) runs beside it and its output `hm0ig`/`tpig` is consumed by
+    exactly one module, `sfincs_wavemaker.f90` — the van Dongeren & Svendsen absorbing-generating
+    boundary on a `wavemaker_wvmfile` polyline (~5 m depth at high tide), which takes `hm0ig` at
+    its points and `tp_ig = snapwave_tpigmean` and injects a randomly phased long-crested signal
+    landward of the line. No run on the premier lineage carries a wavemaker (`grep wvm
+    experiments/*/*/sfincs.inp`). BUT the IG source term is SUBTRACTED from the incident
+    short-wave energy (`snapwave_shinc2ig`, default 1.0; §44 (a)), so IG on lowers the incident
+    energy and moves breaking — a real path to zs, and the route by which the unseeded IG draw
+    made runs differ. Its measured size at the marks, v3, 2026-09-17: premier (IG on) vs
+    `wave-noig` (IG off), same binary, paired ΔRMSE +0.0005 m, 95 % CI [−0.0024, +0.0036] on 94
+    marks (one IG sample of the unseeded engine). IG on costs ~4 h of a 25 h solve. User
+    2026-10-15: IG stays ON in the premier, seeded (§44 (c)). What IG WOULD inject through a
+    wavemaker is not yet credible: at the surge peak 976,804 cells carry `hm0ig` > 1 m (215,992
+    of them SFINCS-active, median 1.24 m in the −10..−5 m band, max 2.0 m), against 0.67 m at the
+    bar in Leijnse's SFINCS and 0.33 m in XBeach for a comparable storm. Any wavemaker arm is
+    therefore two changes — the line AND the IG shoaling/breaking knobs (`snapwave_alphaigfac`,
+    `snapwave_gammaig`, `snapwave_fwig`) — and the toy plane-beach case
+    (`scripts/make_snapwave_reproducer.py`, ~1 s) is where the injected signal is read first.
+    STATUS 2026-09-17, 2026-10-15.
 
 46. ⭐ **Extending the SnapWave band north across the Sandy Hook–Rockaway apron to the Long
     Island shore is a real, one-flag HWM improvement on v3 and is the premier's boundary
@@ -1004,8 +1029,8 @@ CLAUDE.md §5.
     engine**: faces with hm0 ever `inf` or > 20 m 1,511 (premier) → 34,845 (`wave-nowind`) →
     83,273 (all four levers), brief sub-hourly spikes that `zsmax` catches (294 m near Cape
     May; 22–48 m at Coney Island and Brigantine); the clean part of wind growth looks like
-    ~1 cm at the marks. Mechanism not read. (e) **IG off is a null** without a wavemaker
-    (§45), so it is free to drop. (f) **The wavemaker's gain survives the cheap settings**:
+    ~1 cm at the marks. Mechanism not read. (e) **IG off measures nil at the marks** without a
+    wavemaker (§45), so it was free to drop here (the premier keeps IG on, seeded — §44 (c)). (f) **The wavemaker's gain survives the cheap settings**:
     beach level p50 3.75 vs 3.80 m, ~0.92 of the wavemaker's per-transect lift (0.85
     Ocean City–Brigantine … 0.95 Barnegat–Monmouth), but **Sea Bright keeps about half**
     (storm-tide peak 3.16 vs 3.35; obs 3.47). ⚠️ Every 12 h cut ends before the Cape May
@@ -1356,7 +1381,8 @@ Each of these cost a campaign and is settled. The evidence is in the archive's
 
 - **Infragravity waves at a −5 m wavemaker line are a SMALL lever, not a null — measured
   2026-09-20, §49.** The pre-09-17 "null lever" (every metric ≤ 0.01 m; v3 paired Δ +0.0005 m)
-  was `snapwave_igwaves = 1` with NO wavemaker, a null by construction (§45). With the line
+  was `snapwave_igwaves = 1` with NO wavemaker, which reaches the water only through the
+  short-wave energy it removes and measured nil at the marks (§45). With the line
   (v3 `wave-wavemaker`) the open-coast paired median is +0.021 m [+0.006, +0.054] — real,
   under the +0.05 bar, and confined to beachfront marks: ~1 m crests fill the surf zone and
   the dune holds them. What stays closed: the "IG caused blow-ups" verdict (a pre-sealed

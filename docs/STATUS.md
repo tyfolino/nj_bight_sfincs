@@ -6,9 +6,10 @@ running, what is next, what is open. When an item closes, its durable fact goes 
 Git has the history. The campaign log this file grew into until 2026-09-29 (6,767 lines) is
 `git show d70dd1e:docs/STATUS.md`; FINDINGS cites it as "STATUS <date>".
 
-Last updated: **2026-10-16** (check-in: `igseed_sens` and `sbg_lakes` both PREEMPTED; igseed resubmitted with the core-pinning fix).
-Before: **2026-10-15** (the four pre-maintenance jobs read — "Read 10-15" below; the
-readiness audit for experiments is in progress). Before: 2026-10-11 (every 10-09 job read). The re-frozen v4 is
+Last updated: **2026-10-17** (all three overnight jobs read — "Read 10-17" below: the seeded engine
+repeats bit-for-bit across machines but a null perturbation still diverges waves-on; the lake-fixed
+bed is built and contained). Before: 2026-10-16 (both jobs PREEMPTED, resubmitted with core pinning).
+Before: **2026-10-15** (the four pre-maintenance jobs read — "Read 10-15" below). Before: 2026-10-11 (every 10-09 job read). The re-frozen v4 is
 solved, scored and written up: `reports/v4_first_results_2026-10-09/summary.md`, FINDINGS part 4 (g).
 Infiltration decided (stays on; `cnb` with ERA5-Land soil state next). Open: declaring the v4 premier,
 submitting the v3-reference job. Scratch cleaned 10-11 (was over its soft quota).
@@ -41,28 +42,52 @@ submitting the v3-reference job. Scratch cleaned 10-11 (was over its soft quota)
 
 ## Running
 
-- **62670930** `igseed_sens` on **CAMDEN** (`cmain`, halc073, icelake 8352Y; RUNNING since 10-16 15:56;
-  `logs/ig_det_2026-10-15/igseed_sens3c.slurm`). Camden sees its own `/scratch`, so the premier's 19 solver
-  inputs were copied to `/cache/home/tpj8/nj_bight_staging/igseed_src_v4refreeze_premier/` (5.6 G, md5 vs the
-  premier OK; a cut from it gives a byte-identical `sfincs.inp`); solves in Camden
-  `/scratch/tpj8/igseed_camden/` (maps stay there — reach them via a `cmain` srun); comparisons + his + logs
-  come back to `logs/ig_det_2026-10-15/sens3c_62670930_r0/`. Master threads pinned 0/16/32/48 ✅. icelake
-  is ~3× slower per core on SnapWave → timeouts 16 h / 3 h, limit 22 h. Delete the home staging copy once
-  read. **62670893** = the same test on `main` (PENDING) — whichever finishes first wins; cancel the other.
-- **62670893** `igseed_sens` (submitted 10-16 15:55, PENDING; `logs/ig_det_2026-10-15/igseed_sens3.slurm`,
-  out `/scratch/tpj8/engine_gate/igseed_sens3_<job>_r<restart>/`). Resubmit of 62645470, which ran 10-16
-  10:03 → **PREEMPTED 15:47** (no `--requeue`, nothing finished; its partial dirs are in
-  `/scratch/tpj8/engine_gate/igseed_sens/`, safe to delete). 🔴 That run also went at ~¼ speed:
-  `engine_gate.py run` sets `OMP_PROC_BIND=spread` + `OMP_PLACES=cores`, so all four 16-thread copies
-  pinned to the SAME cores (0,4,…,60) and their serial SnapWave master threads shared core 0 (node 98 %
-  idle; SEED_a 30 %, ON_a 45 %, SEED_b / SEED_p 65 % after 5.6 h). sens3 runs each copy under
-  `taskset` on its own core block (libgomp places stay inside the mask; thread counts unchanged), adds
-  `--requeue`, and a fresh out dir per attempt. Same engine_gate / his_pair / binaries (md5) as sens2.
-  Any future side-by-side `engine_gate.py run` needs disjoint cores the same way. The SEEDED engine — repeat (SEED_a vs SEED_b,
-  predicted STRICT) AND sensitivity to a null perturbation (`rhoa` 1.25 → 1.2501, waves on and
-  waves off), plus seeded vs unseeded (one IG sample vs another). Repeating is necessary but not
-  sufficient: if capped calls amplify tiny input differences, two ARMS still diverge in the bays.
-  Supersedes 62625419 (cancelled) and 62626666.
+- **62678718 `igcap`** on CAMDEN (halc073, RUNNING since 10-17 08:27; `logs/ig_cap_2026-10-17/igcap.slurm`):
+  the cap test — 6 h cut, seeded engine, four copies on disjoint cores: `snapwave_niter` 800 (N8_a / N8_p)
+  and `snapwave_crit` 0.01 (C2_a / C2_p), each with a `rhoa` 1.2501 twin; compared against the 10-16
+  SEED_a / SEED_p. Expectation written in the script header. Out: `igcap_62678718.out` +
+  `igcap_62678718_r0/` (maps on Camden `/scratch/tpj8/igseed_camden/igcap_62678718_r0`). 🔴 Its md5 guard
+  covers `scripts/engine_gate.py` and `logs/ig_det_2026-10-15/his_pair.py` — leave them alone until it ends
+  (it re-checks only at start, but a `--requeue` restart re-checks). `data_catalog.yml`, `domain.py`,
+  `premier.py`, `rebuild_subgrid.py` are free to edit.
+- 🔴 Kept from the 10-16 runs: `engine_gate.py run` sets `OMP_PROC_BIND=spread` + `OMP_PLACES=cores`,
+  so side-by-side copies pin to the SAME cores and their serial SnapWave master threads share core 0
+  (~¼ speed). Any future side-by-side `engine_gate.py run` goes under `taskset` on disjoint core blocks
+  (`logs/ig_det_2026-10-15/igseed_sens3.slurm` is the template).
+- **Clean-up (user OK 10-17):** ✅ preempted partials `/scratch/tpj8/engine_gate/igseed_sens/` (59 G) and
+  ✅ Camden's duplicate 10-16 maps (28 G, deleted by 62678718 at start). KEEP the home staging copy
+  `/cache/home/tpj8/nj_bight_staging/igseed_src_v4refreeze_premier/` (5.6 G) until the cap test is read —
+  it is Camden's input.
+
+## Read 10-17 — the seeded engine and the lake-fixed bed (62670930 Camden, 62670893 `main`, 62670904)
+
+- ✅ **The seeded engine repeats, ACROSS MACHINES too.** `v2.3.3-winddir-igseed-1-gf11`, 6 h cut of the
+  v4 premier, waves on: SEED_a vs SEED_b **bit-identical** (zs, zsmax, hm0 maps; 48 points) on `main`
+  (hal0396) and on Camden (halc073, icelake 8352Y), and every seeded / waves-off `sfincs_his.nc` is
+  byte-identical BETWEEN the two clusters. SnapWave iterations per call identical (50 11 42 6 50 13 16).
+  The unseeded ON_a differs from SEED_a and from its own copy on the other node (50 50 47 6 50 12 16 vs
+  50 9 21 18 14 14 18) — the §44 RNG, as predicted.
+- 🔴 **A null perturbation still diverges with waves on → outcome B (noise band).** `rhoa` 1.25 → 1.2501
+  (8e-5 relative), waves ON: 7 of 48 points differ > 10 cm inside 6 h (Narrows Bkln 0.36, Narrows SI
+  0.28, Arthur Kill mouth 0.26, Great Kills 0.22, Keansburg 0.20, South Amboy 0.20 m); zsmax map p90
+  8 mm / p99 3 cm; hm0 up to 1.4 m (Atlantic City). Iterations split from call 2
+  (50 11 42 6 50 13 16 → 50 50 22 7 50 50 20): a call that converges in one run hits the cap in the
+  other. Waves OFF: zsmax p99 0.18 mm, points ≤ 4.7 cm (Great Kills dry-bank sensor, Narrows Bkln;
+  grows after 03:30). ⇒ **seeding makes a run REPEATABLE; it does not make two ARMS comparable.** Every
+  waves-on arm-vs-arm Δ carries a band this size in the calm first 6 h; through the peak it is Phase 4's
+  full-length `rhoa` copy.
+- **The "50-iteration cap" is `snapwave_niter = 200` sweeps** — the log prints `iter/4`
+  (`snapwave_solver.f90:874`); `snapwave_crit` is at its 0.001 default. Both are runtime keys, no new
+  build. **Cap test:** the same SEED_a / SEED_p pair at `snapwave_niter` 800. If the split collapses,
+  the noise is the cap (raise it in the premier); if not, it is the wave–water-level feedback itself.
+- ✅ **`_subgrid_refreeze_lakes` built and contained** (62670904, 5 h 21 m, 80 G peak, every guarded md5
+  OK; the `sys.excepthook` lines come after `DONE` — shutdown noise). Against `_subgrid_refreeze`:
+  2,952 faces change `z_volmax` (2,038 `z_zmin`, 1,297 `z_zmax`, 3,759 `uv_zmin`), **every one inside a
+  fixed lake; none elsewhere**; all 14 fixed lakes are touched, Lake of the Lilies has 0. ⚠️ 112 of them
+  (≈4 %) got a HIGHER `z_zmin` (max +1.35 m Lake Louise, +0.62 m Deal): the overlay is lower-only on its
+  3 m lidar lattice, but its nearest paint onto the rotated 3.125 m subgrid lattice can overwrite a
+  deeper subgrid pixel. Small; a `min(bed, overlay)` paint mode in `rebuild_subgrid.py` removes it, and
+  the breach overlay needs that same mode.
 
 ## Read 10-15 — v4 vs v3, like for like (`reports/v4_first_results_2026-10-11/`, job 62625293)
 
@@ -120,20 +145,10 @@ submitting the v3-reference job. Scratch cleaned 10-11 (was over its soft quota)
 ## ⭐ FINAL AUDIT → "the v4 premier is ready" (plan approved 10-15)
 
 ▶ **HANDOFF (10-15 evening).** In flight / next, in order:
-1. **`igseed_sens`** (seeded-engine repeat + `rhoa` nudge, 6 h cut; pinning fixed): **62670930 RUNNING on
-   Camden** + 62670893 PENDING on `main` (see Running). Their md5 guards (`igseed_sens3{,c}_expected.md5`)
-   cover `scripts/engine_gate.py`, `logs/ig_det_2026-10-15/{igseed_sens3{,c}.slurm,his_pair.py}`, both engine
-   binaries and the staged-source md5 — do not edit them while either is queued or running. Read
-   `logs/ig_det_2026-10-15/igseed_sens3c_62670930.out` + `sens3c_62670930_r0/`.
-1b. **62670904 `sbg_lakes`** (PENDING on `main`; resubmitted 10-16 with `--force` + `--requeue` via
-   `logs/rebaseline_2026-10-15/submit_bed_lakes_resubmit.sh` — the first try, 62646886, was PREEMPTED 10-15
-   19:52 after 1 h 24 with no requeue). What it builds: the premier bed rebuilt
-   = the 10-06 recipe UNCHANGED (all 58 bed rasters md5-identical to `logs/refreeze_2026-10-06/rebuild_expected.md5`)
-   + `lake_fix_v4` painted last → `experiments/v4_refreeze/_subgrid_refreeze_lakes`. 🔴 EXPECT_MD5 guards
-   `data/data_catalog.yml`, `nj_sfincs/domain.py`, `nj_sfincs/premier.py`, `scripts/rebuild_subgrid.py` + the
-   rasters — do NOT edit them until it STARTS (or re-write `logs/rebaseline_2026-10-15/rebuild_lakes_expected.md5`
-   right after an edit). Read: its `subgrid_diff.json` is vs the TEMPLATE; the check that matters is
-   `z_volmax` vs `_subgrid_refreeze` — changed ONLY on faces inside the 14 lakes, bit-identical elsewhere.
+1. ✅ **`igseed_sens` READ 10-17** → outcome B (repeat strict, null perturbation diverges waves-on);
+   next = the `snapwave_niter` 800 cap test. "Read 10-17" above.
+1b. ✅ **`_subgrid_refreeze_lakes` BUILT + checked 10-17** (`experiments/v4_refreeze/_subgrid_refreeze_lakes`;
+   the 10-06 recipe + `lake_fix_v4` last; contained to the 14 lakes). It is the bed for the Phase 4 premier.
 2. ✅ **Lake bed fix DECIDED + BUILT.** Scan `logs/lake_audit_2026-10-15/lake_scan.py` (+ per-pixel source):
    15 of 127 coastal lakes carry a > 300 m² patch > 1 m above the 10 ft lidar, and in ALL 15 it is the
    **USACE 2010 tier** (`usace_nj_2010_v3`) interpolated across the water (Wesley 2.2 m on a 0.61 m surface),
@@ -190,8 +205,8 @@ scripts go; scratch tiers A + B of `reports/cleanup/deletion_manifest_2026-10-15
   `premier.py` labels v4 / v4_hot / v4_hot_plus RETIRED. 🔴 The backup never pulled
   `nj_bight_sfincs_data/` (data/'s symlink targets, 78 G) — fixed in `desktop_pull_backup.sh`; USER: re-run
   it once (big first pull). Still open: env lock file (`micromamba env export --explicit`).
-- **Phase 2:** read 62645470 → A (clean) / B (noise band + cap test) / C (snan build); FINDINGS
-  §44/§45 rewrite; CLAUDE.md §5 RNG trap.
+- **Phase 2:** read → **B** (10-17: repeat strict, ACROSS clusters; null perturbation diverges
+  waves-on). ✅ FINDINGS §44/§45 rewritten + CLAUDE.md §5 RNG trap (10-17). Cap test RUNNING (below).
 - **Phase 3 (code, no solves):** `cnb` (SSURGO ksat → `create_cn_with_recovery`, `effective` 1.5,
   brackets 1.0 / 2.38; soil-RESET warning `cna`-only; toy resume test — soil on 10-28 was DRIER than
   AMC II, so expect MORE infiltration); inflow moves with a separate wall-points field (walls on the
@@ -211,7 +226,13 @@ scripts go; scratch tiers A + B of `reports/cleanup/deletion_manifest_2026-10-15
   drainage bracket; `cnb` stays the premier (user 10-15; FINDINGS §59) (node 1); v3 reference pair + a
   full-length `rhoa` 1.2501 copy of the new premier — the noise band THROUGH the peak (62645470 sees only
   the calm first 6 h) (node 2); validate; paired reads.
-  Must end before maintenance 11-10 08:00.
+  Must end before maintenance 11-10 08:00. **Wall budget if the cap test says raise `snapwave_niter`:**
+  the v4 premier took **10 h 05** on emeraldrapids hal0395 (job 62328438; SnapWave 28,568 s of 36,258 s;
+  18 capped calls × 539 s, 55 converged × 343 s). At niter 800 a call that STILL caps costs ~4× (~2,150 s)
+  → worst case +~8 h ≈ 18 h solo, packed 4×16 about the same (packing test). On icelake (~3× slower
+  per core) that becomes ~54 h > the 40 h limit, and a TIMEOUT is not requeued (a hand-resume resets
+  the `cna` soil, CLAUDE.md §5) → Phase 4 with `SOLVE_CONSTRAINT=emeraldrapids`; read the cap test's
+  "SnapWave s per call" lines before choosing a value.
 - **Phase 5–6:** reads (new preset) → frozen premier (engine `…igseed-1…@2e4e9645`, user tags git),
   `docs/MODEL.md` model card (processes in / out with literature, patches, cost, reproducibility,
   data attribution, "how to start an experiment"), validation summary, research-group brief,
@@ -367,7 +388,7 @@ heads may still be tidal (unpainted). Paerdegat: leave it (user).
   the desktop pull (`scripts/desktop_pull_backup.sh`) — re-run it whenever an arm is scored.
 - **Attic:** `/scratch/tpj8/nj_bight_attic_2026-09-30/` (manifest lists every file; purges
   itself after 90 days).
-- **Maintenance:** every hal/halk node, 10-13 08:00 → 10-14 23:59, then 11-10 and 12-15.
+- **Maintenance:** every hal/halk node, next **11-10 08:00 → 11-11 23:59**, then 12-15.
 - Claude Code may run on a LOGIN node (`amarel*`): heavy work through `srun` on an allocation.
 
 ## Housekeeping
