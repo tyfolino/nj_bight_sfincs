@@ -44,6 +44,21 @@ hydromt's ``_parse_datasets_elevation`` (which copies ``merge_method``) to the w
 ``--tier`` (plain prepend) is kept for tiers that are meant to be merged, e.g. a
 bathymetry survey, and is the trapped path for a burn.
 
+**``--overlay <key>:min`` (2026-10-17): LOWER-ONLY paint.** The same nearest paint, but
+each pixel becomes ``min(merged bed, overlay)`` where the overlay is valid — the bed is
+never RAISED (a merged pixel that is NoData takes the overlay, as in a plain paint).
+Needed because "lower-only" on an overlay's OWN lattice is not lower-only after the
+nearest resample onto the subgrid's rotated lattice: ``lake_fix_v4`` (3 m, rule "lidar
+where lidar < merged bed") painted plain raised ``z_zmin`` on 112 of 2,952 changed faces
+(max +1.35 m, ``_subgrid_refreeze_lakes`` vs ``_subgrid_refreeze``, 2026-10-16); a
+post-storm-lidar breach overlay (reads the water SURFACE) needs the same rule. The
+suffix rides in the one ``--overlay`` list, so its position in the paint ORDER is kept
+(later wins, whatever the mode): ``--overlay a --overlay b:min`` paints ``a``, then
+lowers to ``b``. It becomes ``merge_method: "overlay_min"`` in the elevation list (and
+hence in ``provenance.txt``, whose ``overlay_tiers`` keeps the raw ``:min`` tokens).
+Without a suffix every list, the wrapper's arithmetic and the provenance are the
+pre-flag script's, byte for byte. Bed only: ``--manning-overlay`` refuses a suffix.
+
 **``--manning-overlay`` (2026-10-05): the same paint, on ROUGHNESS.** hydromt builds the
 uv-point Manning block with the same ``merge_multi_dataarrays`` call (``roughness_list``
 → the NLCD reclass), and ``_parse_roughness_list`` copies ``merge_method`` too, so a
@@ -72,6 +87,7 @@ Cost on v3: ~47 min, ~20 GB RSS (SLURM 61230804), plus the merge. Submit
 rather than running on a login node:
 
     sbatch hpc/rebuild_subgrid.slurm --dst _subgrid_buildings --overlay bed_buildings_v3
+    sbatch hpc/rebuild_subgrid.slurm --dst _subgrid_x --overlay <burn> --overlay <lake>:min
 """
 
 from __future__ import annotations
@@ -115,6 +131,27 @@ def _pct(a):
     }
 
 
+# --overlay <key>[:<mode>] → the merge_method marker the wrapper reads. "" = plain paint.
+OVERLAY_MODES = {"": "overlay", "min": "overlay_min"}
+OVERLAY_METHODS = frozenset(OVERLAY_MODES.values())
+
+
+def parse_overlay(token: str) -> tuple[str, str]:
+    """``"key"`` → ``("key", "overlay")``; ``"key:min"`` → ``("key", "overlay_min")``.
+
+    Catalog keys carry no ``:`` (data/data_catalog.yml), so the suffix is unambiguous;
+    an unknown suffix is refused rather than read as part of a key."""
+    key, sep, mode = token.rpartition(":")
+    if not sep:
+        return token, OVERLAY_MODES[""]
+    if not key or mode not in OVERLAY_MODES or not mode:
+        raise SystemExit(
+            f"--overlay {token!r}: unknown mode {mode!r} "
+            f"(valid: '<key>' or '<key>:min')"
+        )
+    return key, OVERLAY_MODES[mode]
+
+
 def install_overlay_merge() -> None:
     """Wrap the quadtree builder's ``merge_multi_dataarrays`` so that entries marked
     ``merge_method == "overlay"`` are removed from hydromt's merge and painted on the
@@ -125,6 +162,11 @@ def install_overlay_merge() -> None:
     a build without it. Applies to every call the builder makes — the cell-centre block,
     the uv-point block and the Manning block (which carries overlay entries only under
     ``--manning-overlay``; otherwise it passes straight through).
+
+    ``merge_method == "overlay_min"`` (``--overlay <key>:min``) paints only where the
+    overlay is LOWER than the block so far (or the block is NoData): the result is
+    ``min(block, overlay)`` where the overlay is valid. Overlays are applied in list
+    order, each on the result of the previous one, so a later entry wins either way.
     """
     from hydromt_sfincs.components.quadtree import (
         subgrid_quadtree_builder as bld,  # noqa: PLC0415
@@ -133,8 +175,8 @@ def install_overlay_merge() -> None:
     orig = bld.merge_multi_dataarrays
 
     def merge_with_overlay(da_list, gdf_list=[], da_like=None, **kw):  # noqa: B006
-        overlays = [d for d in da_list if d.get("merge_method") == "overlay"]
-        rest = [d for d in da_list if d.get("merge_method") != "overlay"]
+        overlays = [d for d in da_list if d.get("merge_method") in OVERLAY_METHODS]
+        rest = [d for d in da_list if d.get("merge_method") not in OVERLAY_METHODS]
         out = orig(da_list=rest, gdf_list=gdf_list, da_like=da_like, **kw)
         for d in overlays:
             da = d["da"]
@@ -151,6 +193,14 @@ def install_overlay_merge() -> None:
             if not valid.any():
                 continue
             nodata = out.raster.nodata
+            if d.get("merge_method") == "overlay_min":
+                # never raise: paint only where the overlay is lower, or where the
+                # block has no value (NaN / its nodata) — i.e. min(block, overlay)
+                cur = out.values
+                have = np.isfinite(cur)
+                if nodata is not None and np.isfinite(nodata):
+                    have &= cur != nodata
+                valid &= ~have | (ov.values < cur)
             out = out.where(~valid, ov)
             out.raster.set_nodata(nodata)
         return out
@@ -214,18 +264,27 @@ def diff_subgrid(new: Path, old: Path, grid: Path, manning: bool = False) -> dic
     return out
 
 
-def input_lists(args, base) -> tuple[list[dict], list[dict]]:
+def input_lists(args, base, validate_only=False) -> tuple[list[dict], list[dict]]:
     """The hydromt ``elevation_list`` and ``roughness_list`` for this rebuild.
 
     Overlays go LAST in each list so hydromt's own merge (which the wrapper runs on the
     non-overlay entries) sees exactly the premier's tiers in the premier's order; the
     NLCD reclass stays FIRST and untouched in the roughness list. Without
     ``--manning-overlay`` the roughness list is the premier's one-entry list.
+    ``--overlay <key>:min`` gives ``merge_method: "overlay_min"`` in the same slot.
     """
+    for t in args.manning_overlay:
+        if ":" in t:
+            raise SystemExit(
+                f"--manning-overlay {t!r}: modes apply to bed overlays only"
+            )
+    overlays = [parse_overlay(t) for t in args.overlay]
+    if validate_only:
+        return [], []
     elevation_list = (
         [{"elevation": t, "reproj_method": args.reproj_method} for t in args.tier]
         + base.elevation()
-        + [{"elevation": t, "merge_method": "overlay"} for t in args.overlay]
+        + [{"elevation": k, "merge_method": m} for k, m in overlays]
     )
     roughness_list = [
         {"lulc": base.roughness_lulc, "reclass_table": str(base.reclass_table)}
@@ -245,8 +304,10 @@ def main(argv=None) -> int:
         action="append",
         default=[],
         help="data-catalog source(s) painted ON TOP of the premier's merged "
-        "elevation with nearest resampling where valid (the burn path; "
-        "see the module docstring)",
+        "elevation with nearest resampling where valid, in the order given "
+        "(later wins; the burn path). '<key>:min' = LOWER-ONLY: the pixel "
+        "becomes min(bed so far, overlay), never raised (see the module "
+        "docstring)",
     )
     ap.add_argument(
         "--tier",
@@ -274,6 +335,8 @@ def main(argv=None) -> int:
     )
     ap.add_argument("--force", action="store_true", help="overwrite an existing --dst")
     args = ap.parse_args(argv)
+    # refuse a bad ':mode' BEFORE --force removes the dst
+    input_lists(args, None, validate_only=True)
 
     dom = _domain.active()
     base = BaseConfig()

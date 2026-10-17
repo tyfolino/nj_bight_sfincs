@@ -1872,6 +1872,57 @@ the waves-on crest there carries the §61 (g) seiche phase and §44 noise, so th
 (levee / meteo corner / waves / phase) is not measured. **SLR design gate on the re-freeze** (`overflow_check`, rain off, +0/+2/+3 m): no
 outflow edge cell gets wet at any level (max rise 0.006 m); the rise stacks against the walls as
 designed (Bayonne 4.2, Cape Henlopen / Henlopen–Atlantic 3.5, Maurice 3.2, Hackensack 3.1 m at +3 m).
+(h) **The 2026-10-15 reads** (median, 50 m, paired B 200 000; unseeded engine `…winddir-fix-1…` —
+every waves-on Δ here carries the §44 noise band). **v4 = v3 once the rain is treated alike**
+(`reports/v4_first_results_2026-10-11/`, job 62625293; v4 `+rain-noinfil` vs the NACCS-wind v3 on
+the 94 shared marks): waves off ΔRMSE −0.001 [−0.037, +0.035], every basin group within ±0.02;
+waves on +0.017 [−0.031, +0.057] (NY bays +0.027). The (g) "+0.181" was all infiltration.
+**The premier's RMSE is two marks:** 6122 (Deal Lake) and 6130 (Wreck Pond) read −2.37 / −2.34 m;
+without them 0.436 → 0.301 (n 108). **Premier candidates** (`logs/premier_2026-10-11/paired_*.txt`):
+v3 `bed-v4fixes+wave-dt3600+wind-naccs` 0.300 / −0.097 (n 94) vs its ERA5 twin 0.323 / −0.157
+(ΔRMSE −0.023 [−0.066, +0.014]; meteo AND the weir-crest rounding differ; bias +0.08 in the NY bays
+and NJ back bays, 0 on the open coast); v3 wave lift with NACCS wind −0.057 [−0.088, −0.028]. v4
+`naccs-premier+rain-noinfil` 0.307 / −0.034 (n 110), CSI 0.763 (FAR 0.143) vs the premier 0.436 /
+−0.110, CSI 0.780: ΔRMSE −0.129 [−0.260, −0.010], the rain-pond basins again; v4 wave lift with no
+infiltration −0.037 [−0.074, −0.004]. **MOTF gap box `salem_marshes`** (job 62561016): 418 km² of
+ground the MOTF layer leaves blank, removed from the score; CSI +0.05 on every arm (premier 0.728 →
+0.780, FAR 0.162 → 0.098), HWM unchanged. **The 12 moved inflows** (job 62561797, rain-off
+waves-off copy): the old-face peak falls 1–10 m (source 46: 11.70 → 2.93 m within 3 km); > 10 km
+away p99 0.2 mm; obs points ≤ 1.3 cm except `sss_great_kills` 7.6 cm (dry-bank sensor, §60); with
+them 0 of 193 v4 marks lie within 500 m of a source (nearest 6208, 970 m). **The waves-on noise
+reaches the zsmax MAP:** infiltration off − on, median zsmax per basin, waves on vs off: Delaware
+Bay NJ shore +0.139 vs +0.003, DE +0.067 vs +0.005, Raritan Bay +0.050 vs +0.001.
+**The coastal lakes (why 6122 / 6130 read −2.3 m).** In Sandy the dune breached at Wreck Pond beside
+the outfall pipe and reopened a natural inlet (NJDEP Wreck Pond EA; it healed within ~2 weeks, and
+the post-storm surveys do not show it; the expanded gated culvert is 2016, not 2012), and the ocean
+overwashed Ocean Ave into Deal Lake at the flume (Asbury Park Sun, 2012). In the model the lowest
+ocean–lake connection is 3.10 m (Wreck Pond, the beach at the outfall, −74.0261 40.1391) / 3.62 m
+(Deal) against a sea-side peak of 2.81–3.01 m, so the sea never enters either; Deal Lake's mark
+(3.14 m) stands above the modelled sea, which needs run-up a fixed-bed SFINCS without a wavemaker
+lacks. Post-storm lidar crest at the Wreck Pond outlet 1.65–2.49 m (pre-storm 4.89). **The model's
+bed also cuts Wreck Pond in two:** inside the NHD outline a band 1.7–3.9 m (max 4.2) crosses the east
+end (−74.0285…−74.0317, ~40.1385) where the 10 ft lidar reads water / < 1 m; premier zsmax sea
+2.80, east end 1.88, mid pond 0.38, at 6130 0.86 (obs 2.74). **Lake-crossing audit**
+(`logs/lake_audit_2026-10-15/`): 15 of 127 coastal NHD lakes carry a > 300 m² patch > 1 m above the
+10 ft lidar, and in ALL 15 it is the USACE 2010 tier (`usace_nj_2010_v3`) interpolated across the
+water (Wesley Lake 2.2 m on a 0.61 m surface), plus outlet crossings and a filled Point Pleasant
+lagoon canal. User 10-15: fix 14, keep Lake of the Lilies. Overlay `lake_fix_v4`
+(`scripts/build_lake_fix_overlay.py`; inside each outline, lidar where lidar < merged bed): 1.25 km²
+lowered, 0.53 Mm³. Built 10-16 as `_subgrid_refreeze_lakes` (the 10-06 recipe + `lake_fix_v4` last):
+vs `_subgrid_refreeze` 2,952 faces change `z_volmax`, every one inside a fixed lake; 112 got a
+HIGHER `z_zmin` (max +1.35 m, Lake Louise) because nearest paint onto the rotated subgrid lattice
+can overwrite a deeper subgrid pixel — a lower-only paint mode removes it.
+**The `lake_outlet_blocked` flag** (`nj_sfincs/validate/lake_flag.py`, 2026-10-17; never reads the
+observation): P = median `zsmax` on sea-connected faces within 1 km beyond the sea face nearest the
+mark; C = the lowest level at which the sea reaches any face in the 50 m scoring window (through
+`z_zmin` and the uv sills, the `connected_initial_zs` graph; weirs NOT in it, so it can only
+under-flag behind a weir); F = the window's lowest `z_zmin`; flag = F < P ≤ C. On the unseeded v4
+premier it flags 5 scored marks — 6121, 6122, 6124 (`south_coast`), 6129 (`shark_river`), 6130
+(`barnegat_bay`) — plus q > 2 marks 6119, 6120, 6126, the same set at 500 / 1000 / 2000 m; all are
+Monmouth coastal lakes and ponds. Headline (median, 50 m): n 110 RMSE 0.436 / bias −0.110 →
+excluding them n 105 RMSE 0.281 / bias −0.050. ⚠️ 6129 and 6130 are flagged by 2–5 cm (C 2.819 vs P
+2.80 — a route below the 3.10 m beach sill), inside the §44 waves-on noise: a paired comparison holds
+ONE mark set on both sides (the reference run's `hwm_lake_outlet_blocked_ids`).
 
 **Still open after the audit:** the Schuylkill backing up to 6.8 m BELOW the Fairmount Dam on a
 ~0 m bed (no river cut removes it; the box-MEAN Manning above `uv_zmax` is the suspect —

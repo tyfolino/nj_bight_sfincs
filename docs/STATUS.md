@@ -6,259 +6,107 @@ running, what is next, what is open. When an item closes, its durable fact goes 
 Git has the history. The campaign log this file grew into until 2026-09-29 (6,767 lines) is
 `git show d70dd1e:docs/STATUS.md`; FINDINGS cites it as "STATUS <date>".
 
-Last updated: **2026-10-17** (all three overnight jobs read — "Read 10-17" below: the seeded engine
-repeats bit-for-bit across machines but a null perturbation still diverges waves-on; the lake-fixed
-bed is built and contained). Before: 2026-10-16 (both jobs PREEMPTED, resubmitted with core pinning).
-Before: **2026-10-15** (the four pre-maintenance jobs read — "Read 10-15" below). Before: 2026-10-11 (every 10-09 job read). The re-frozen v4 is
-solved, scored and written up: `reports/v4_first_results_2026-10-09/summary.md`, FINDINGS part 4 (g).
-Infiltration decided (stays on; `cnb` with ERA5-Land soil state next). Open: declaring the v4 premier,
-submitting the v3-reference job. Scratch cleaned 10-11 (was over its soft quota).
+Last updated: **2026-10-17** — the seeded-engine test read (repeats bit-for-bit across machines; a
+null perturbation still diverges waves-on → FINDINGS §44 (d)–(e)); the lake-fixed bed built; the 10-15
+reads moved to FINDINGS part 4 (h); cap test, template re-stage and the lower-only lake-bed rebuild
+submitted; `--overlay <key>:min`, env lock (`env/`), README done. Before: 2026-10-15 (pre-maintenance
+jobs read; FINAL AUDIT plan approved).
 
 ---
 
 ## Now
 
 - **v3 is DONE** (2026-09-24). Reference `naccs-premier` on the repaired mask — HWM RMSE 0.329 /
-  bias −0.143 (median, 50 m, n 94), MOTF CSI 0.706. Its shared-bed-fix re-run
-  (`bed-v4fixes+wave-dt3600`, 0.323 / −0.157) is read; whether it replaces the reference is the
-  user's call (it is hourly waves + the Great Egg un-pave, FINDINGS §54 (h)).
-- **v4 = `v4_refreeze`** (= `v4_hot_plus_walls` + Lewes; `378014e154b4ff41`; bed `_subgrid_refreeze`,
-  Keansburg + Overpeck weirs, ERA5-bilinear meteo on the engine's corner convention). Run B
-  (`v4_hot_plus_walls`) stays in its own domain as the pre-re-freeze record.
-- **10-09 scores** (median, 50 m, n 110; FINDINGS part 4 (g)):
+  bias −0.143 (median, 50 m, n 94), MOTF CSI 0.706. Its NACCS-wind re-run
+  `bed-v4fixes+wave-dt3600+wind-naccs` reads 0.300 / −0.097 (part 4 (h)); the v3 reference is re-run
+  on the seeded engine in Phase 4.
+- **v4 = `v4_refreeze`** (`378014e154b4ff41`; bed `_subgrid_refreeze`, Keansburg + Overpeck weirs,
+  ERA5-bilinear meteo on the engine's corner convention). Premier `naccs-premier` (NACCS-blend wind,
+  CN infiltration, unseeded engine): RMSE 0.436 / bias −0.110 (n 110), CSI 0.780 with the
+  `salem_marshes` box — and 0.301 without marks 6122 / 6130, the two lakes the sea never enters in the
+  model (part 4 (g)–(h)). Run B (`v4_hot_plus_walls`) stays as the pre-re-freeze record.
+- **Heading for:** ONE Phase 4 re-baseline job on the seeded engine (below), before maintenance 11-10.
 
-  | arm (names since the 10-11 re-baseline) | RMSE | bias | CSI | note |
-  |---|---|---|---|---|
-  | **`naccs-premier`** (NACCS wind) | **0.436** | −0.110 | 0.728 | THE premier; uninterrupted |
-  | `naccs-nowaves` (NACCS wind) | 0.490 | −0.240 | 0.718 | its twin |
-  | parked: ERA5 `naccs-premier` | 0.479 | −0.174 | 0.713 | ⚠️ soil RESET at resume (§59) |
-  | parked: ERA5 `naccs-nowaves` | 0.539 | −0.361 | 0.698 | |
-  | parked: ERA5 `naccs-nowaves+rain-noinfil` | 0.407 | −0.294 | 0.689 | FAR 0.144 → 0.186 |
+## Running (10-17)
 
-  Wave lift −0.060 [−0.115, −0.019]; NACCS wind (waves off) −0.049 [−0.084, −0.023]; v4 trails v3
-  by +0.18 on the 94 shared marks — mostly the rain-pond basins, and switching infiltration off
-  closes most of it. The Raritan Bay low is mostly gone waves-on (`raritan_bay` bias +0.01, South
-  Amboy −0.03 m; seiche-phase caveat). SLR gate +0/+2/+3 m: no outflow edge wets.
-
-## Running
-
-- **62678718 `igcap`** on CAMDEN (halc073, RUNNING since 10-17 08:27; `logs/ig_cap_2026-10-17/igcap.slurm`):
-  the cap test — 6 h cut, seeded engine, four copies on disjoint cores: `snapwave_niter` 800 (N8_a / N8_p)
-  and `snapwave_crit` 0.01 (C2_a / C2_p), each with a `rhoa` 1.2501 twin; compared against the 10-16
-  SEED_a / SEED_p. Expectation written in the script header. Out: `igcap_62678718.out` +
-  `igcap_62678718_r0/` (maps on Camden `/scratch/tpj8/igseed_camden/igcap_62678718_r0`). 🔴 Its md5 guard
-  covers `scripts/engine_gate.py` and `logs/ig_det_2026-10-15/his_pair.py` — leave them alone until it ends
-  (it re-checks only at start, but a `--requeue` restart re-checks). `data_catalog.yml`, `domain.py`,
-  `premier.py`, `rebuild_subgrid.py` are free to edit.
-- 🔴 Kept from the 10-16 runs: `engine_gate.py run` sets `OMP_PROC_BIND=spread` + `OMP_PLACES=cores`,
-  so side-by-side copies pin to the SAME cores and their serial SnapWave master threads share core 0
-  (~¼ speed). Any future side-by-side `engine_gate.py run` goes under `taskset` on disjoint core blocks
-  (`logs/ig_det_2026-10-15/igseed_sens3.slurm` is the template).
-- **Clean-up (user OK 10-17):** ✅ preempted partials `/scratch/tpj8/engine_gate/igseed_sens/` (59 G) and
-  ✅ Camden's duplicate 10-16 maps (28 G, deleted by 62678718 at start). KEEP the home staging copy
-  `/cache/home/tpj8/nj_bight_staging/igseed_src_v4refreeze_premier/` (5.6 G) until the cap test is read —
-  it is Camden's input.
-
-## Read 10-17 — the seeded engine and the lake-fixed bed (62670930 Camden, 62670893 `main`, 62670904)
-
-- ✅ **The seeded engine repeats, ACROSS MACHINES too.** `v2.3.3-winddir-igseed-1-gf11`, 6 h cut of the
-  v4 premier, waves on: SEED_a vs SEED_b **bit-identical** (zs, zsmax, hm0 maps; 48 points) on `main`
-  (hal0396) and on Camden (halc073, icelake 8352Y), and every seeded / waves-off `sfincs_his.nc` is
-  byte-identical BETWEEN the two clusters. SnapWave iterations per call identical (50 11 42 6 50 13 16).
-  The unseeded ON_a differs from SEED_a and from its own copy on the other node (50 50 47 6 50 12 16 vs
-  50 9 21 18 14 14 18) — the §44 RNG, as predicted.
-- 🔴 **A null perturbation still diverges with waves on → outcome B (noise band).** `rhoa` 1.25 → 1.2501
-  (8e-5 relative), waves ON: 7 of 48 points differ > 10 cm inside 6 h (Narrows Bkln 0.36, Narrows SI
-  0.28, Arthur Kill mouth 0.26, Great Kills 0.22, Keansburg 0.20, South Amboy 0.20 m); zsmax map p90
-  8 mm / p99 3 cm; hm0 up to 1.4 m (Atlantic City). Iterations split from call 2
-  (50 11 42 6 50 13 16 → 50 50 22 7 50 50 20): a call that converges in one run hits the cap in the
-  other. Waves OFF: zsmax p99 0.18 mm, points ≤ 4.7 cm (Great Kills dry-bank sensor, Narrows Bkln;
-  grows after 03:30). ⇒ **seeding makes a run REPEATABLE; it does not make two ARMS comparable.** Every
-  waves-on arm-vs-arm Δ carries a band this size in the calm first 6 h; through the peak it is Phase 4's
-  full-length `rhoa` copy.
-- **The "50-iteration cap" is `snapwave_niter = 200` sweeps** — the log prints `iter/4`
-  (`snapwave_solver.f90:874`); `snapwave_crit` is at its 0.001 default. Both are runtime keys, no new
-  build. **Cap test:** the same SEED_a / SEED_p pair at `snapwave_niter` 800. If the split collapses,
-  the noise is the cap (raise it in the premier); if not, it is the wave–water-level feedback itself.
-- ✅ **`_subgrid_refreeze_lakes` built and contained** (62670904, 5 h 21 m, 80 G peak, every guarded md5
-  OK; the `sys.excepthook` lines come after `DONE` — shutdown noise). Against `_subgrid_refreeze`:
-  2,952 faces change `z_volmax` (2,038 `z_zmin`, 1,297 `z_zmax`, 3,759 `uv_zmin`), **every one inside a
-  fixed lake; none elsewhere**; all 14 fixed lakes are touched, Lake of the Lilies has 0. ⚠️ 112 of them
-  (≈4 %) got a HIGHER `z_zmin` (max +1.35 m Lake Louise, +0.62 m Deal): the overlay is lower-only on its
-  3 m lidar lattice, but its nearest paint onto the rotated 3.125 m subgrid lattice can overwrite a
-  deeper subgrid pixel. Small; a `min(bed, overlay)` paint mode in `rebuild_subgrid.py` removes it, and
-  the breach overlay needs that same mode.
-
-## Read 10-15 — v4 vs v3, like for like (`reports/v4_first_results_2026-10-11/`, job 62625293)
-
-- ⭐ **On the 94 shared marks, v4 = v3 once the rain is treated alike** (v4 `+rain-noinfil` vs the
-  NACCS-wind v3; median, 50 m): waves off ΔRMSE **−0.001 [−0.037, +0.035]**, every group within
-  ±0.02; waves on +0.017 [−0.031, +0.057] (NY bays +0.027, v4 bias +0.05 vs v3 −0.05 — the
-  waves-on crest, see the noise below). The 10-09 "+0.18" was all infiltration.
-- **The premier's RMSE is two marks:** 6122 (Deal Lake, `south_coast`) and 6130 (Wreck Pond,
-  `barnegat_bay`) read −2.37 / −2.34 m; without them 0.436 → 0.301 (n 108). The sea never enters
-  either lake in the model (part 4 (g)).
-- **Waves-on noise reaches the zsmax MAP:** infiltration off − on, median zsmax per basin, waves
-  on vs waves off: Delaware Bay NJ shore +0.139 vs +0.003, DE +0.067 vs +0.005, Raritan Bay
-  +0.050 vs +0.001 → ~5–14 cm of the waves-on Δ is run-to-run noise (`zsmax/*_stats.csv`).
-
-## Read 10-15 — the four jobs that finished before maintenance (all audited `output WHOLE`, uninterrupted, one engine)
-
-- **62551000 / 62554764 (premier candidates)** — median, 50 m, paired B 200 k
-  (`logs/premier_2026-10-11/paired_*.txt`):
-  v3 `bed-v4fixes+wave-dt3600+wind-naccs` **0.300 / −0.097** (n 94) vs the ERA5 twin 0.323 / −0.157:
-  ΔRMSE −0.023 [−0.066, +0.014] (meteo AND the weir-crest rounding differ); bias moves +0.08 in NY
-  bays and the NJ back bays, 0 on the open coast. v3 wave lift with NACCS wind −0.057 [−0.088, −0.028].
-  v4 `naccs-premier+rain-noinfil` **0.307 / −0.034** (n 110), CSI 0.763 (FAR 0.143) vs the premier
-  0.436 / −0.110, CSI 0.780: ΔRMSE −0.129 [−0.260, −0.010] — `south_coast` / `barnegat_bay` rain
-  ponds as on 10-09. v4 wave lift (no infiltration) −0.037 [−0.074, −0.004].
-- **62561016 (MOTF gap box `salem_marshes`)**: 418 km² of valid ground → 0, nothing outside the box.
-  CSI +0.05 on every arm (premier 0.728 → **0.780**, FAR 0.162 → 0.098); HWM unchanged.
-- **62561797 (inflow move, rain-off waves-off copy)**: the 12 moved sources drop the old-face peak
-  1–10 m (e.g. idx 46 11.70 → 2.93 within 3 km); > 10 km away p99 0.2 mm; obs points ≤ 1.3 cm
-  except `sss_great_kills` 7.6 cm (dry-bank sensor, §60). Ready to ship — needs the walls kept on the
-  OLD points (`model.py:987` builds them from `discharge_geodataset`).
-- 🔴 **§44 confirmed on FULL runs:** `naccs-premier` vs `+rain-noinfil` (waves on) differ by 0.12 m
-  at Keansburg in the FIRST HOUR (rain 0.008 mm/h; the waves-off pair: 0.2 mm), 0.54 m at the
-  Narrows by 12 h; the Delaware River pulse (Delaware City +1.4 m at 10-29 20:00) is in the
-  premier and NOT in its twin. Capped SnapWave calls: v4 18 / 21 of 73, v3 23 / 27 of 73, on
-  different hours in twins. At the marks the noise is a COHERENT NY-bay shift (+0.037 m, 44 of 46
-  marks one sign) that the paired bootstrap reads as significant (CI [+0.028, +0.044]).
-- 🔴 **Suspected cause (10-15, source read + a 3-line test; RUN 62625419 decides):** SnapWave's
-  Herbers IG boundary draws `RANDOM_NUMBER` for 400 wave components every call
-  (`snapwave_infragravity.f90:285`) and nothing seeds it; the engine's libgfortran seeds from the
-  OS, so every run draws differently. The IG source is subtracted from the INCIDENT energy
-  (`snapwave_solver.f90:664`, `snapwave_shinc2ig` reader default **1.0** — the solver comment
-  saying 0 is stale), so it reaches breaking, the wave force and zs. Every bit-identical repeat
-  on record (G1, G3_patched_rep = the F.4 cut) was IG OFF; every non-repeating one (pack test,
-  det test, the 10-11 pair) IG ON. ⇒ §44's "v3 is deterministic" holds for IG off only, and
-  §45's "IG does nothing to water levels" is wrong as mechanism (its measured null at the marks
-  stands). Test: job 62645470 (queued).
-  ✅ **User 10-15: IG STAYS ON in the premier; fix by SEEDING, not by switching IG off.** Engine
-  variant `v2.3.3-winddir-igseed-1-gf11` = the premier's source (diff sha `02aa32005413ad5c`, same
-  compiler / flags) + a fixed `random_seed(put=…)` before the 400 draws in `compute_herbers`,
-  re-set on EVERY call (same sample at every point and call — independent of restarts, `dtwave`
-  and boundary count). Source `/scratch/tpj8/sfincs-build/src-igseed-1` (`git diff 091f531`).
-  A new binary is a new engine label: every arm after the switch is re-baselined, never Δ'd
-  against a pre-seed run.
+- **62678718 `igcap`** on CAMDEN (halc073, since 08:27; `logs/ig_cap_2026-10-17/igcap.slurm`): the cap
+  test — 6 h cut of the premier, seeded engine, four copies on disjoint cores: `snapwave_niter` 800
+  (N8_a / N8_p) and `snapwave_crit` 0.01 (C2_a / C2_p), each `_p` with `rhoa` 1.2501; read against the
+  10-16 SEED_a / SEED_p (`logs/ig_det_2026-10-15/sens3c_62670930_r0/`). Expectation in the script
+  header. Out `igcap_62678718.out` + `igcap_62678718_r0/`; maps on Camden scratch. Its md5 guard covers
+  `scripts/engine_gate.py` + `logs/ig_det_2026-10-15/his_pair.py` (a requeue re-checks). Read also the
+  "SnapWave s per call" lines (×~1/3 for emeraldrapids) — they set Phase 4's wall budget.
+- ✅ **62678743 `restage_inflows` DONE** (12 min, 14 G): `experiments/v4_refreeze/_template_inflows` =
+  the v4_refreeze template with the 12 moved inflows (walls on run B's points). Fingerprint
+  `378014e154b4ff41` unchanged; `premier.assert_sealed_domain` OK. Three 10-06 hand steps were missing
+  (meteo `--era5-bilinear`, the Absecon obs nudge — staging copies `frozen_mesh_v4/sfincs.obs` —, the
+  Overpeck `sfincs_ini_regional.bin` + `inifile`); none depends on the inflows and the mask is
+  byte-identical, so the files were copied from `_template_sealed`. Final diff vs `_template_sealed`
+  (`logs/restage_2026-10-17/compare_after_handsteps.txt`): ONLY `sfincs_netsrcdisfile.nc` (12 of 61
+  points), `gis/dis.geojson`, `provenance.txt`, `.subgrid_sha256` (inode / mtime fields; same hash).
+  ▶ **Swap — needs the user's OK, and AFTER 62678757 ends (it reads `_template_sealed`):**
+  `mv _template_sealed _template_sealed_pre_inflows_2026-10-06 && mv _template_inflows _template_sealed`.
+  🔴 Trap for the next re-stage: `setup_boundary_depth.py` does NOT replay the 10-06 hand steps.
+- **62678757 `sbg_lakes_min`** (`main`; `logs/lakes_min_2026-10-17/submit.sh`): the lake-fixed bed again,
+  with `--overlay lake_fix_v4:min` (lower-only, user 10-17) → `_subgrid_refreeze_lakes_min`. Checks: vs
+  `_subgrid_refreeze` NO face gets a higher `z_zmin` / `uv_zmin`; changed faces ⊆ the 10-16 build's 2,952.
+  ⚠️ Submitted without `--force`: a requeue refuses on its own partial dst — resubmit with `--force`.
+  Guard: `data_catalog.yml`, `rebuild_subgrid.py`, `domain.py`, `premier.py` + the 58 rasters.
+- 🔴 Side-by-side `engine_gate.py run` copies need `taskset` on disjoint cores (FINDINGS §44 (i)).
+- **Clean-up (user OK 10-17):** ✅ `/scratch/tpj8/engine_gate/igseed_sens/` (59 G), ✅ Camden's 10-16
+  maps (28 G). KEEP `/cache/home/tpj8/nj_bight_staging/igseed_src_v4refreeze_premier/` (5.6 G, Camden's
+  input) until the cap test is read. After the lakes_min build is checked, `_subgrid_refreeze_lakes`
+  (10-16, superseded) can go.
 
 ## ⭐ FINAL AUDIT → "the v4 premier is ready" (plan approved 10-15)
 
-▶ **HANDOFF (10-15 evening).** In flight / next, in order:
-1. ✅ **`igseed_sens` READ 10-17** → outcome B (repeat strict, null perturbation diverges waves-on);
-   next = the `snapwave_niter` 800 cap test. "Read 10-17" above.
-1b. ✅ **`_subgrid_refreeze_lakes` BUILT + checked 10-17** (`experiments/v4_refreeze/_subgrid_refreeze_lakes`;
-   the 10-06 recipe + `lake_fix_v4` last; contained to the 14 lakes). It is the bed for the Phase 4 premier.
-2. ✅ **Lake bed fix DECIDED + BUILT.** Scan `logs/lake_audit_2026-10-15/lake_scan.py` (+ per-pixel source):
-   15 of 127 coastal lakes carry a > 300 m² patch > 1 m above the 10 ft lidar, and in ALL 15 it is the
-   **USACE 2010 tier** (`usace_nj_2010_v3`) interpolated across the water (Wesley 2.2 m on a 0.61 m surface),
-   plus outlet crossings and a filled Point Pleasant lagoon canal. User 10-15: **fix 14, keep Lake of the
-   Lilies** (`decisions_2026-10-15.csv`; review page https://claude.ai/artifact/XVdVLkbrke5CTmspseyShu).
-   Overlay `lake_fix_v4` (`scripts/build_lake_fix_overlay.py`): inside each outline, lidar where lidar <
-   merged bed — 1.25 km² lowered, 0.53 Mm³ removed (per-lake `lake_fix_v4.json`). Paint it LAST in the
-   premier bed rebuild (`rebuild_subgrid.py --overlay … lake_fix_v4`); check `z_volmax`.
-3. **Breach arm** (sensitivity, not premier): Mantoloking = the user's polygons; Wreck Pond = a STATED channel
-   beside the outfall + optional open-pipe culvert; Deal Lake none.
-4. **Phase 3 code — done so far (staged, tests pass):**
-   - ✅ inflow-wall split: `Domain.wall_sources_geodataset`; v4_refreeze discharge =
-     `usgs_sandy_discharge_v4_refreeze` (the 12 moves), walls stay on run B's points (`model.wall_sources_key`).
-     Reaches runs only through a RE-STAGED template; gate = sha `378014e154b4ff41` unchanged.
-   - ✅ `cnb` code: `Experiment.cnb_effective` → `nj_sfincs/infiltration.py` writes `smax`/`seff`/`ks` binaries
-     (active-point order) + `smaxfile`/`sefffile`/`ksfile`; label `cnb:e<eff>`; `tests/test_cnb.py`.
-     ✅ **User OK'd 10-15:** the engine clamps `Se = min(Se, smax)` after any dry spell > 0.06/kr h
-     (~2 h on sand), and 10-28's rain is patchy, so with `smax` = S_II an `effective` 1.5 collapses to 1.0
-     before the main rain. Hence `smax = max(1, e)·S_II`, `seff = e·S_II`. `smax` = the premier's own CN map.
-   - ✅ `ksat_v4_refreeze` built (SSURGO, 209,643 of 220,760 polygons carry a surface ksat; median 23 µm/s).
-     Dry run on the premier's faces: 2.0 M of 3.97 M active faces infiltrate, `seff` (e 1.5) median 6.7 cm,
-     `ks` median 262 mm/h, 7.4 % without ksat (no recovery); the dry spell before the clamp is 1.4 h at the
-     median — the `smax` raise is load-bearing.
-   - ✅ `data/wind_v4/naccs_blend_p_era5` built: wind bit-identical to `naccs_blend`, pressure differs only in
-     the NACCS zone (p99 7.8 hPa, max 19.7). NOT yet in the registry: the new premier (seeded engine + `cnb`
-     1.5 + ERA5 pressure + moved inflows + lake-fixed bed) is registered under a candidate name in the
-     re-baseline pass, run, then renamed into place (the 10-11 recipe); brackets `cnb` 1.0 / 2.38 + Horton.
-   - ✅ metrics read-back now also checks the label columns (`_ROUNDTRIP_LABELS`); ✅ islands log prints
-     its BC count only when the mask has BC cells. ✅ HWM 6044: no v4 action — with the 12 moved inflows,
-     0 of 193 v4 marks are within 500 m of a source (nearest 6208, 970 m); 6044 is a v3 mark.
-   - Still to do: `lake_outlet_blocked` flag (plan: reuse `sea_level.connected_initial_zs` at the local sea
-     peak), README, desk checks, env lock; the re-baseline job (Phase 4).
-
 Plan: `~/.claude/plans/i-think-i-m-ready-warm-trinket.md`. User decisions 10-15: lakes = rule-based
 flag + a documented-site breach SENSITIVITY arm (not in the premier); IG stays on, seeded; v3
-reference re-run on the seeded engine; retired domains keep their registry entries (labelled), their
-scripts go; scratch tiers A + B of `reports/cleanup/deletion_manifest_2026-10-15.md` approved.
+reference re-run on the seeded engine; `cnb` stays the premier's infiltration (FINDINGS §59).
 
-- **Phase 0 ✅ (10-15):** seed patch + Deltares issue draft (`docs/upstream/snapwave_igseed*`; the
-  bug is on upstream `main` too); NACCS originals copied to `~/nj_bight_durable/` (md5-verified);
-  deletion manifest drafted (A + B = **271.9 G** freed by nlink). 🔴 USER: run
-  `scripts/desktop_pull_backup.sh` — it gates every scratch deletion.
-- **Phase 1 (repo part ✅ 10-15):** 8 frozen-domain scripts retired (`git rm`, citations say
-  "retired 2026-10-15"); 4 v4 overlay builders relabelled provenance; 70 job stdout files filed into
-  `logs/slurm/<yyyy-mm>/`; caches, 3 orphan log files, 4 tracked + 11 untracked obsolete report
-  files, 2 data leftovers removed; suite 299 OK. KEPT (evidence, cited now in the index below):
-  `pressure_2026-10-07`, `dune_lever_2026-09-23`, `weekly_2026-10-06` (the brief builder),
-  `data_move_2026-10-05` (the swap script), `wind_x110_reads_2026-09-22`, `naccs_chs_2026-10-06`; both
-  09-09 weeklies (plain + technical versions). KEPT scripts the plan listed: `plot_waterlevel_boundary`
-  (`accept_domain.py` runs it), `stockdon_envelope` (run-up — the Deal Lake question), two downloaders
-  (catalog provenance). ✅ **Scratch + home DONE 10-15** after the backup: 26 arms retired
-  (`retire_arm.py`), the superseded domains' templates / subgrids / floodmaps and tiers A + B deleted →
-  scratch 713 → 438 G, home 71 → 63 G; elevation_v4 swap finished; NACCS originals → symlink to home;
-  `premier.py` labels v4 / v4_hot / v4_hot_plus RETIRED. 🔴 The backup never pulled
-  `nj_bight_sfincs_data/` (data/'s symlink targets, 78 G) — fixed in `desktop_pull_backup.sh`; USER: re-run
-  it once (big first pull). Still open: env lock file (`micromamba env export --explicit`).
-- **Phase 2:** read → **B** (10-17: repeat strict, ACROSS clusters; null perturbation diverges
-  waves-on). ✅ FINDINGS §44/§45 rewritten + CLAUDE.md §5 RNG trap (10-17). Cap test RUNNING (below).
-- **Phase 3 (code, no solves):** `cnb` (SSURGO ksat → `create_cn_with_recovery`, `effective` 1.5,
-  brackets 1.0 / 2.38; soil-RESET warning `cna`-only; toy resume test — soil on 10-28 was DRIER than
-  AMC II, so expect MORE infiltration); inflow moves with a separate wall-points field (walls on the
-  OLD points; `discharge_geodataset` is mask-defining — restaged sha must stay `378014e154b4ff41`);
-  `--pressure era5` blend; `_subgrid_breach` (post-storm CZMIL / EAARL in hand-drawn polygons at
-  Wreck Pond outlet, Deal Lake flume / Ocean Ave, Mantoloking / Bay Head; `logs/dune_lever_2026-09-23/`;
-  USER draws them in the Breach Picker https://claude.ai/artifact/T6vURCojwcXQCo3voMcHdo, built by
-  `logs/breach_picker_2026-10-15/build_breach_picker.py`; LOWER-ONLY overlay (min of bed and post-storm —
-  lidar reads the pond / bay water surface), painted after the buildings (houses inside are removed; drawn
-  around except at Mantoloking), ~25 m into the water on each side);
-  `lake_outlet_blocked` scorer flag (headline with and without; never dropped); fixes (provenance
-  NACCS label, meteo / infiltration / engine_seed columns, metrics round-trip, refuse an unset engine,
-  HWM 6044 flag, islands log, `README.md`); desk checks (Atlantic City datum, paved channels).
-  Pre-register in `logs/rebaseline_2026-10-xx/PREREG.md`.
-- **Phase 4:** ONE 2-node job on the seeded engine: new premier + repeat + `bed-breach` + waves-off
-  + `cnb` 1.0 / 2.38 + `bed-nobuildings` + a waves-off Horton (`hor`) arm — the standing-water
-  drainage bracket; `cnb` stays the premier (user 10-15; FINDINGS §59) (node 1); v3 reference pair + a
-  full-length `rhoa` 1.2501 copy of the new premier — the noise band THROUGH the peak (62645470 sees only
-  the calm first 6 h) (node 2); validate; paired reads.
-  Must end before maintenance 11-10 08:00. **Wall budget if the cap test says raise `snapwave_niter`:**
-  the v4 premier took **10 h 05** on emeraldrapids hal0395 (job 62328438; SnapWave 28,568 s of 36,258 s;
-  18 capped calls × 539 s, 55 converged × 343 s). At niter 800 a call that STILL caps costs ~4× (~2,150 s)
-  → worst case +~8 h ≈ 18 h solo, packed 4×16 about the same (packing test). On icelake (~3× slower
-  per core) that becomes ~54 h > the 40 h limit, and a TIMEOUT is not requeued (a hand-resume resets
-  the `cna` soil, CLAUDE.md §5) → Phase 4 with `SOLVE_CONSTRAINT=emeraldrapids`; read the cap test's
-  "SnapWave s per call" lines before choosing a value.
+- **Phase 0–1 ✅ (10-15):** seed patch + Deltares issue draft (`docs/upstream/snapwave_igseed*`); NACCS
+  originals in `~/nj_bight_durable/`; repo, scratch and home cleanup (scratch 713 → 438 G).
+  🔴 USER: re-run `scripts/desktop_pull_backup.sh` once (first pull of `nj_bight_sfincs_data/`, 78 G) —
+  in progress 10-17.
+- **Phase 2 ✅ (10-17):** outcome B — seeded repeat STRICT across clusters, null perturbation diverges
+  waves-on (FINDINGS §44 (d)–(e)); §44 / §45 rewritten; CLAUDE.md §5 RNG trap. Open: the cap test.
+- **Phase 3 (code, no solves):**
+  - ✅ inflow-wall split (`Domain.wall_sources_geodataset`; discharge `usgs_sandy_discharge_v4_refreeze`,
+    walls on run B's points) — reaches runs via the re-stage (Running).
+  - ✅ `cnb` (`Experiment.cnb_effective` → `nj_sfincs/infiltration.py`; `smax = max(1, e)·S_II`,
+    `seff = e·S_II` because the engine clamps `Se ≤ smax` after a dry spell > 0.06/kr h — user OK 10-15);
+    `ksat_v4_refreeze` built (SSURGO; dry run: 2.0 M of 3.97 M active faces infiltrate, `seff` (e 1.5)
+    median 6.7 cm, `ks` median 262 mm/h, 7.4 % without ksat).
+  - ✅ `data/wind_v4/naccs_blend_p_era5` (wind = `naccs_blend`, pressure ERA5 outside / blend inside the
+    NACCS zone; p99 7.8 hPa); not yet registered.
+  - ✅ lake bed: audit + `lake_fix_v4` (part 4 (h)); ✅ `rebuild_subgrid.py --overlay <key>:min`
+    (lower-only paint, 10-17; `tests/test_rebuild_subgrid.py`); lower-only rebuild running.
+  - ✅ metrics label round-trip, islands log, HWM 6044 (no v4 action), env lock (`env/`), README (10-17).
+  - ✅ `lake_outlet_blocked` flag (10-17; rule + v4 premier read in FINDINGS part 4 (h)): new keys
+    `hwm_*_excl_lake_blocked`, `hwm_lake_outlet_blocked_ids` (label round-trip), per-mark columns in
+    `v4_first_results.py` marks CSVs; light per-run read `scripts/lake_outlet_blocked.py`. Suite 322 OK.
+  - ☐ `_subgrid_breach` (sensitivity arm): Mantoloking = the user's two polygons
+    (`logs/breach_picker_2026-10-15/polygons_final_2026-10-15.csv`, painted `:min` after the buildings);
+    Wreck Pond = a STATED channel beside the outfall (the inlet healed within ~2 weeks, so no survey shows
+    it) + optionally the open 7-ft outfall pipe as a culvert (nothing in nj_sfincs writes a drainage
+    file yet); Deal Lake none (overtopping — user). Needs the channel's width / invert from the user.
+  - ☐ desk checks: Atlantic City datum, paved channels.
+  - ☐ register the Phase 4 arms (candidate premier name; renamed into place after, the 10-11 recipe) +
+    `logs/rebaseline_2026-10-xx/PREREG.md`. Waits on the cap test (`snapwave_niter` enters every arm).
+  - ✅ full suite 322 OK / 6 skipped (10-17, ~14 G peak; under an 8 G cap `test_motf_simulated_mask` errors).
+- **Phase 4:** ONE 2-node job on the seeded engine. Node 1: new premier (seeded + `cnb` 1.5 + ERA5
+  pressure + moved inflows + lake-fixed bed) + its repeat + `bed-breach` + waves-off + `cnb` 1.0 / 2.38
+  + `bed-nobuildings` + a waves-off Horton (`hor`) arm. Node 2: v3 reference pair + a full-length `rhoa`
+  1.2501 copy of the new premier (the noise band THROUGH the peak). Validate; paired reads. Must end
+  before 11-10 08:00. **Wall budget:** the v4 premier took 10 h 05 on emeraldrapids (job 62328438;
+  SnapWave 28,568 of 36,258 s; 18 capped calls × 539 s, 55 converged × 343 s). At `snapwave_niter` 800 a
+  call that still caps costs ~4× → worst case ~18 h, packed 4×16 about the same; on icelake ×3 → past
+  the 40 h limit, and a TIMEOUT is not requeued (a hand-resume resets `cna` soil) →
+  `SOLVE_CONSTRAINT=emeraldrapids`.
 - **Phase 5–6:** reads (new preset) → frozen premier (engine `…igseed-1…@2e4e9645`, user tags git),
-  `docs/MODEL.md` model card (processes in / out with literature, patches, cost, reproducibility,
-  data attribution, "how to start an experiment"), validation summary, research-group brief,
-  docs refresh, backup, user commits.
-- 🔴 **Wreck Pond is cut in two by the model's BED (10-15, user's 1st Ave hunch):** inside the NHD outline the
-  merged bed carries a band 1.7–3.9 m (max 4.2) across the east end (−74.0285…−74.0317, ~40.1385) where the
-  statewide 10 ft lidar reads water / < 1 m; within the pond, east end ↔ the rest connect only at 3.74 m
-  (mid ↔ 6130 at 1.0 m). Premier zsmax: sea 2.80, east end 1.88, mid pond 0.38, 6130 0.86 (obs 2.74). The
-  ocean ↔ pond sill is the beach at the outfall (−74.0261, 40.1391), 3.1–3.65 m. The post-storm surveys do
-  NOT show the Sandy inlet (it healed within ~2 weeks; NJDEP / press) — so the breach arm needs a STATED
-  channel at Wreck Pond, not a lidar overlay; the broken tide gate left the 7-ft outfall pipe open (a culvert
-  candidate; nothing in nj_sfincs writes a drainage-structure file yet). Mantoloking: user's two polygons
-  checked OK (`logs/breach_picker_2026-10-15/polygons_final_2026-10-15.csv`); Deal Lake: no breach polygon
-  (overtopping — user). **Lake-crossing audit:** 15 of 127 coastal NHD lakes have > 300 m² where the model
-  bed is > 1 m above the 10 ft lidar (Wesley — likely the deliberate 10-05 clamp; Deal, Spring Lake,
-  Little Silver, Lake Louise, Takanassee, Twilight, … — decks / buildings?); per-lake read + user call next.
-- **Status notebook fig. 2** ("rise above normal water", user 10-11) goes into the brief: normally-wet
-  faces → peak − pre-storm high water; normally-dry → depth; baseline from the premier's early 6-h
-  `zsmax` blocks (`logs/notebook_qc_2026-10-11/baseline_check.py` picks them).
-- **The lakes (10-15):** Sandy breached the dune at Wreck Pond beside the outfall pipe and reopened a
-  natural inlet (NJDEP Wreck Pond EA; closed in ~2 weeks; the expanded gated culvert is 2016 —
-  present-day, not 2012); the ocean overwashed Ocean Ave into Deal Lake at the flume (Asbury Park Sun,
-  2012). Model: lowest ocean–lake connection 3.10 m (Wreck Pond) / 3.62 m (Deal) vs a sea-side peak of
-  2.81–3.01 m; post-storm lidar crest at the Wreck Pond outlet 1.65–2.49 m (was 4.89). Deal Lake's
-  mark (3.14) stands ABOVE the modelled sea → needs run-up, which a fixed-bed SFINCS without a
-  wavemaker lacks. Not done: the 12-creek refinement band (next mesh); the dtwave-600 swing leg.
+  `docs/MODEL.md` model card, validation summary, research-group brief (incl. status-notebook fig. 2,
+  "rise above normal water": baseline from the premier's early 6-h `zsmax` blocks,
+  `logs/notebook_qc_2026-10-11/baseline_check.py`), docs refresh, backup, user commits.
 
 ## Re-freeze bed — notes that still apply
 
@@ -297,59 +145,45 @@ heads may still be tidal (unpainted). Paerdegat: leave it (user).
 
 ## Open questions (each with what would close it)
 
-- **River inflows that pile up on a ~0 m bed (FINDINGS part 4, "Still open"):** peak at the
-  source vs bed — Ridley Ck 5.98 / 0.27, Chester Ck 5.51 / 0.04, Frankford Ck 6.70 / 2.56,
-  Red Clay 5.40 / −0.02, White Clay 4.62 / −0.16, Christina 3.83 / −0.05 (PA/DE, unscored), and
-  **Salem R. at Woodstown 4.38 / 0.01 (NJ)** (`logs/notebook_qc_2026-10-11/river_heads.py`).
-  Most other "high water at river heads" on the peak map is the river's own stage on a 4–8 m
-  bed (depth 0.3–1.5 m): the v3-inherited southern cuts sit at the gauges, above today's head
-  of tide (the Great Egg reach above Mays Landing). **Mechanism (10-11):** every
-  one sits on a COARSE face (100–200 m; Christina 25 m) over a narrow creek valley (`z_zmax`
-  10–33 m) and steps down 2–3.5 m in 2 km on rain-off alone; the Maurice on a 25 m wet face is
-  flat (`logs/notebook_qc_2026-10-11/inflow_pileups.py`). Close: see PICK UP (folds into the `cnb`
-  re-baseline after maintenance).
-
-- **Southern back-bay deficit (§57):** mechanism unknown; the Great Egg inlet sill (FINDINGS
-  §54 h) is now a candidate share. Close: the v3 re-run's Great Egg / Ocean City pre-storm
-  bay-minus-pier; the calm-month datum check of the seven southern USGS stations.
-- **NY east bay ~0.2 m low after the repair (§50);** `lower_bay_si_shore` (n 3) keeps moving the
-  wrong way; the cross-Narrows tilt at `sss_narrows_bkln`. Close: per-mark and Narrows Q(t).
+- **River inflows that pile up on a ~0 m bed (FINDINGS part 4, "Still open"):** Ridley, Chester,
+  Frankford, Red Clay, White Clay, Christina (PA/DE, unscored) and **Salem R. at Woodstown 4.38 / 0.01
+  (NJ)**; every one on a COARSE face (100–200 m) over a narrow creek valley, stepping down 2–3.5 m in
+  2 km on rain-off alone (`logs/notebook_qc_2026-10-11/inflow_pileups.py`). Close: read on the Phase 4
+  premier; a refinement band is the next-mesh fix.
+- **Waves-on noise band (§44 (e)):** does `snapwave_niter` close it, and how wide is it through the
+  peak? Close: the cap test (Running), then Phase 4's full-length `rhoa` copy.
+- **Capped calls inject river pulses on v4 (§44 (h)).** Close: count capped calls in every v4 log;
+  check whether any face's `zsmax` is set inside a capped hour; the cap test's niter-800 copies.
+- **Southern back-bay deficit (§57):** the Great Egg inlet sill (§54 h) a candidate share. Close: the
+  v3 re-run's Great Egg / Ocean City pre-storm bay-minus-pier; calm-month datum check of the seven
+  southern USGS stations.
+- **NY east bay ~0.2 m low after the repair (§50);** `lower_bay_si_shore` (n 3) moves the wrong way;
+  the cross-Narrows tilt at `sss_narrows_bkln`. Close: per-mark and Narrows Q(t).
 - **Great Kills sensor offset cause (§50).** Close: USGS STN deployment / survey records.
 - **12 USGS gauges empty over the storm day (§60f).** Close: NWISWeb 2012 / the USGS Sandy report.
-- **Atlantic City peak ~+0.5 m high on every run, v3 and v4, waves on and off** (+0.47…+0.55).
-  Close: NACCS at the nearest save point vs the gauge; the gauge's datum.
-- **NY-bay waves-on crest = seiche phase** (FINDINGS §61 (g)): how much of the NY-bay wave gain
-  survives a fine `dtwave` is unmeasured. Close: PICK UP 4.
-- **v4 waves-on is not repeatable run to run (§44).** Close: PICK UP 3.
-- **Capped SnapWave calls inject river pulses on v4 (§44, 10-11):** the premier's 10-29 18:00 and
-  20:00 calls ended at the 50-iteration cap; hm0 to 11 m in the upper Delaware Bay for an hour and a
-  ~1 m long wave up the river (waves-off twin clean). Close: count capped calls in every v4 log;
-  test a higher cap / `snapwave_crit` on a restart cut from 10-29 17:00 (`engine_gate.py make`);
-  check whether any face's `zsmax` is set inside a capped hour.
-- **Infiltration vs the rain-pond marks** (part 4 (d), (g)). Close: user call + the lakes' timing.
+- **Atlantic City peak ~+0.5 m high on every run** (+0.47…+0.55). Close: NACCS at the nearest save
+  point vs the gauge; the gauge's datum (Phase 3 desk check).
+- **NY-bay waves-on crest = seiche phase** (§61 (g)): how much of the wave gain survives a fine
+  `dtwave` is unmeasured (the dtwave-600 swing leg was never run).
 - **Unread from the 10-05 pre-registration:** do the Maurice / Mullica / Tuckahoe / Rancocas reaches
-  wet on the re-freeze; hm0 vs depth at the SnapWave band's 53 boundary cells shallower than −20 m
-  (depth-limited breaking at the boundary?). Close: one read of `naccs-premier`'s map output.
-- **Test 8 (setup-only wavemaker line):** evidence says don't run it as designed (FINDINGS §62,
-  `reports/literature_review_2026-10/B2_back_bay_setup_followup.md`); user's call. Optional
-  check: USGS doi:10.5066/P99K85SW (Defne & Ganju 2019) — server timed out 10-03.
-- **Buildings never re-run on the apex band (§55).** Close: `bed-nobuildings` on the premier.
-- **No model M2 test** of the interior amplification (FINDINGS part 2). Close: modelled M2 at
-  Port Reading / Keasbey / South Amboy / Great Kills vs the NOAA harcon table.
-- **Flux cross-sections never read** (Narrows prism, Rockaway throat). Close: read
-  `crosssection_discharge` from a finished run.
-- **Engine follow-ups:** the interior initial-guess remap and per-point boundary direction
-  (§43/§44) never built; the dead-corner rule not reported upstream; PR #363 still open.
-- **`accept_domain.py` FAILS on v3** (15 inflows on dry ground, 1 inactive; pre-existing); on
-  A+ it needs `--mesh <template>` (the default reads v4's frozen mesh).
+  wet; hm0 vs depth at the SnapWave band's 53 boundary cells shallower than −20 m. Close: one read of
+  the premier's map output.
+- **Test 8 (setup-only wavemaker line):** evidence says don't run it as designed (§62); user's call.
+- **Buildings never re-run on the apex band (§55).** Close: `bed-nobuildings` in Phase 4.
+- **No model M2 test** of the interior amplification (part 2). Close: modelled M2 at Port Reading /
+  Keasbey / South Amboy / Great Kills vs the NOAA harcon table.
+- **Flux cross-sections never read** (Narrows prism, Rockaway throat). Close: `crosssection_discharge`.
+- **Engine follow-ups:** the interior initial-guess remap and per-point boundary direction (§43/§44)
+  never built; the dead-corner rule not reported upstream; PR #363 open; the igseed issue not filed.
+- **`accept_domain.py` FAILS on v3** (15 inflows on dry ground, 1 inactive; pre-existing); on a mask
+  variant it needs `--mesh <template>`.
 - **v3 scorer does not flag HWM 6044** (49 m from the Absecon Creek source, §40).
 - **`plots.plot_hwm_residual_panels` peaks at 165 G for six arms.** Close: release per arm.
-- **`metrics.csv` last-digit drift** (no `round_trip` guard in `_write_outputs`). Close:
-  read → write → byte-compare once.
-- **`_drop_detached_active_islands`** logs "N BC cells" before the BC exists (always 0).
-- **Deliberately deferred by the user:** the dune-failure `bed-postsandy` lever; an ICW
-  (`bed-icw`) survey tier; raising `bay_fringe` past zmax 2.0; §49's pre-repair beach numbers
-  (flagged in FINDINGS with the post-repair baseline beside them).
+- **`metrics.csv` last-digit drift:** the read-back checks row presence and the label columns
+  (`run_experiments._ROUNDTRIP_LABELS`), not the floats. Close: read → write → byte-compare once.
+- **Deliberately deferred by the user:** the dune-failure `bed-postsandy` lever; an ICW (`bed-icw`)
+  survey tier; raising `bay_fringe` past zmax 2.0; §49's pre-repair beach numbers; the 12-creek
+  refinement band (next mesh).
 
 ## Evidence index
 
@@ -375,32 +209,31 @@ heads may still be tidal (unpainted). Paerdegat: leave it (user).
 | meteo, dunes, briefs, data moves | `pressure_2026-10-07/` (blend pressure < 1–4 cm), `wind_x110_reads_2026-09-22/`, `naccs_chs_2026-10-06/`, `dune_lever_2026-09-23/` (pre/post-Sandy crests — the breach arm), `weekly_2026-10-06/build_brief.py`, `data_move_2026-10-05/swap.sh` | in-folder | part 4 (e), §38 |
 | v4 vs v3 like for like; IG seed | `premier_2026-10-11/`, `ig_det_2026-10-15/`, `reports/v4_first_results_2026-10-11/` | `v4_first_results.py --preset premier`, `engine_gate.py` | §44, part 4 |
 | SLURM stdout | `logs/slurm/<yyyy-mm>/` (filed by month; batch scripts write to `logs/`) | — | — |
+| seeded engine, cap test | `ig_det_2026-10-15/` (sens3 / sens3c), `ig_cap_2026-10-17/` | `engine_gate.py` | §44 (d)–(e) |
+| lake audit + fix, lower-only paint | `lake_audit_2026-10-15/`, `rebaseline_2026-10-15/`, `lakes_min_2026-10-17/` | `build_lake_fix_overlay.py`, `rebuild_subgrid.py --overlay <key>:min` | part 4 (h) |
+| inflow re-stage | `restage_2026-10-17/` | `setup_boundary_depth.py`, in-folder `compare_templates.py` | part 4 (h) |
 
 ## Disk and cluster
 
-- **Home** (`/cache/home`, GPFS): 100 G soft / 110 G hard; **68.3 G on 2026-10-11**. The data swap
-  is unfinished: `data/elevation_v4/enc`, `gmrt_v4.tif`, `inland_water`, `nj_10ft_dem_v4.tif.ovr`
-  (~2.1 G) are still on home — job 62282097 refused at `enc` because scratch holds an extra
-  `raw_cohansey/`; finish with a diff that allows dst-only files. Ask `/usr/lpp/mmfs/bin/mmlsquota -u $USER
-  --block-size auto cache` (lags ~10 min).
-- **Scratch** (`/scratch/tpj8`): 1 T soft / 2 T hard. 🔴 **Not backed up; files not accessed for
-  90 days are deleted.** `experiments/` and now most of `data/` live here; the durable copy is
-  the desktop pull (`scripts/desktop_pull_backup.sh`) — re-run it whenever an arm is scored.
-- **Attic:** `/scratch/tpj8/nj_bight_attic_2026-09-30/` (manifest lists every file; purges
-  itself after 90 days).
+- **Home** (`/cache/home`, GPFS): 100 G soft / 110 G hard; **68.6 G on 2026-10-17**. Ask
+  `/usr/lpp/mmfs/bin/mmlsquota -u $USER --block-size auto cache` (lags ~10 min).
+- **Scratch** (`/scratch/tpj8`): 1 T soft / 2 T hard, **567 G on 2026-10-17** (incl. the 39 G
+  `_template_inflows`). 🔴 **Not backed up; files not accessed for 90 days are deleted.** `experiments/`
+  and most of `data/` (the 10-05 swap is finished) live here; the durable copy is the desktop pull
+  (`scripts/desktop_pull_backup.sh`) — re-run it whenever an arm is scored. The engine sources
+  (`/scratch/tpj8/sfincs-build/`) live here too; the patches are in `hpc/patches/` + `docs/upstream/`.
+- **Camden** (`cmain`, halc*) sees its OWN `/scratch`: stage inputs via home (the igseed recipe).
 - **Maintenance:** every hal/halk node, next **11-10 08:00 → 11-11 23:59**, then 12-15.
-- Claude Code may run on a LOGIN node (`amarel*`): heavy work through `srun` on an allocation.
+- **10-17:** ~186 `main` nodes draining ("Reduce Temps"); Camden had idle nodes.
+- Claude Code may run on a LOGIN node (`amarel*`) or a small VS Code allocation (10-17: 4 CPU / 32 G):
+  heavy work through `sbatch` / `srun`.
 
 ## Housekeeping
 
-- Last cleanup: **2026-10-15 repo** (FINAL AUDIT Phase 1 above); scratch + home pass pending the
-  backup — `reports/cleanup/deletion_manifest_2026-10-15.md`. Before: 2026-10-11 scratch (~374 G,
-  `deletion_manifest_2026-10-11.md`). Report job stdout (`reports/**/jobs/*.out`) is gitignored.
-- Kept on purpose, user's call to remove: `data/NACCS/_originals_pending_delete/` (3.2 G — the
-  only byte-reproducible source of v3's NACCS boundary, FINDINGS part 3; durable copy since 10-15 in
-  `~/nj_bight_durable/NACCS_originals_pending_delete/` with `MD5SUMS`);
-  `data/gtsm/retired_v1_monmouth/`; the v1.5 / v3 notebooks and the weekly reports;
-  `logs/audit_v4_hot_plus_2026-10-05/v4_vs_v3_deficit/shadow_hp_norain/` (705 MB rebuildable
-  floodmap, on scratch; user 10-05: keep for now).
-- `data/discharge_v4/usgs_sandy_discharge_v4_hot_plus.nc` will carry the 4 inflow moves after
-  job 62279940 (only a future A+ restage reads it).
+- Last cleanup: **2026-10-17** (the igseed partials + Camden duplicates, 87 G). Before: 2026-10-15
+  repo + scratch + home (`reports/cleanup/deletion_manifest_2026-10-15.md`).
+- Kept on purpose, user's call to remove: `data/NACCS/_originals_pending_delete/` (3.2 G — the only
+  byte-reproducible source of v3's NACCS boundary, part 3; durable copy in
+  `~/nj_bight_durable/NACCS_originals_pending_delete/` with `MD5SUMS`); `data/gtsm/retired_v1_monmouth/`;
+  the v1.5 / v3 notebooks and the weekly reports;
+  `logs/audit_v4_hot_plus_2026-10-05/v4_vs_v3_deficit/shadow_hp_norain/` (705 MB rebuildable floodmap).

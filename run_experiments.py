@@ -664,6 +664,8 @@ _ROUNDTRIP_LABELS = (
     "meteo",
     "infiltration",
     "subgrid",
+    "hwm_lake_flag_rule",
+    "hwm_lake_outlet_blocked_ids",
 )
 
 

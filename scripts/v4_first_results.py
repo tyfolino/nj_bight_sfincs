@@ -485,6 +485,12 @@ HEADLINE_KEYS = [
     "hwm_bias_scored_m",
     "hwm_rmse_scored_m",
     "hwm_within0.5_scored",
+    # the same, WITHOUT the lake_outlet_blocked marks (beside, never instead; NaN on a
+    # row scored before 2026-10-17)
+    "hwm_n_lake_outlet_blocked",
+    "hwm_lake_outlet_blocked_ids",
+    "hwm_bias_scored_excl_lake_blocked_m",
+    "hwm_rmse_scored_excl_lake_blocked_m",
     "motf_csi",
     "motf_pod",
     "motf_far",
@@ -641,6 +647,21 @@ def cmd_residuals(args) -> int:
         )
     )
     df["domain"], df["arm"] = run.domain, run.arm
+    # the lake flag (validate/lake_flag.py): a column, never a filter. Light (~2 GB on
+    # v4) — free the floodmap memo first so it does not stack on the residuals' peak.
+    validate.cache_clear()
+    try:
+        from nj_sfincs.validate.lake_flag import lake_outlet_blocked
+
+        lake = lake_outlet_blocked(run.path, df.x.values, df.y.values, RADIUS_M)
+        df = pd.concat([df, lake], axis=1)
+        print(
+            f"  lake_outlet_blocked: {int(lake.lake_outlet_blocked.sum())} marks "
+            f"({', '.join(df.hwm_id[lake.lake_outlet_blocked.values])})",
+            flush=True,
+        )
+    except Exception as e:  # noqa: BLE001 — keep the residuals, note the failure
+        print(f"  ⚠️ lake_outlet_blocked not computed: {e}", flush=True)
     (out / "marks").mkdir(parents=True, exist_ok=True)
     dst = out / "marks" / f"{run.label}.csv"
     tmp = dst.with_suffix(".partial.csv")

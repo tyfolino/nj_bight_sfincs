@@ -551,6 +551,7 @@ def hwm_metrics(
     hwm_ids: "set | list | None" = None,
     estimator: str = HWM_ESTIMATOR_DEFAULT,
     radius_m: float = HWM_RADIUS_M,
+    model_dir: Path | None = None,
 ) -> dict:
     """USGS High Water Mark residuals: RMSE / bias / within-0.5 m (headline q<=2).
 
@@ -618,6 +619,15 @@ def hwm_metrics(
         water win; under ``median`` it is −0.21 (slightly dry) and the same arms lose. The
         ranking inverts exactly. The emitted ``hwm_estimator`` / ``hwm_radius_m`` keys exist
         so a CSV always says which.
+
+    ``model_dir`` — THE LAKE FLAG (2026-10-15). When given, every mark also gets
+        ``lake_outlet_blocked`` (``validate/lake_flag.py``: the bed holds the mark's basin
+        shut above the local sea-side peak — Deal Lake, Wreck Pond), and the headline
+        ``*_scored`` keys are repeated as ``*_scored_excl_lake_blocked`` beside
+        ``hwm_n_lake_outlet_blocked`` / ``hwm_lake_outlet_blocked_ids`` /
+        ``hwm_lake_flag_rule``. Additive only: no existing key changes, no mark is
+        dropped from them. A failure costs the extra keys (``hwm_lake_flag_error``),
+        never the row.
     """
     if estimator not in HWM_ESTIMATORS:
         raise ValueError(
@@ -736,7 +746,52 @@ def hwm_metrics(
     n_unassigned = int((basin == "unassigned").sum())
     if n_unassigned:
         result["hwm_n_unassigned"] = n_unassigned
+    if model_dir is not None:
+        try:
+            result.update(
+                lake_blocked_keys(model_dir, hwm, resid_s, head_s, wet, radius_m)
+            )
+        except Exception as e:  # noqa: BLE001 — the extra keys, never the row
+            result["hwm_lake_flag_error"] = str(e)
     return result
+
+
+def lake_blocked_keys(model_dir, hwm, resid_s, head_s, wet, radius_m) -> dict:
+    """The headline ``*_scored`` keys again WITHOUT the ``lake_outlet_blocked`` marks.
+
+    Never instead of the headline — beside it. ``hwm`` is the scored frame (any CRS; it is
+    taken to the run's own ``epsg``), the arrays are ``hwm_metrics``' per-mark ones.
+    """
+    from .core import inp_value
+    from .lake_flag import lake_outlet_blocked, rule_label
+
+    try:
+        epsg = int(float(inp_value(Path(model_dir) / "sfincs.inp", "epsg")))
+    except (KeyError, ValueError):
+        epsg = _domain.active().epsg
+    xy = hwm.to_crs(epsg).geometry
+    df = lake_outlet_blocked(model_dir, xy.x.values, xy.y.values, radius_m)
+    blk = df["lake_outlet_blocked"].to_numpy(bool)
+    keep = head_s & ~blk
+    rk = resid_s[keep]
+    ids = hwm["hwm_id"].astype(str).to_numpy()[head_s & blk]
+    return {
+        "hwm_lake_flag_rule": rule_label(radius_m),
+        "hwm_n_lake_outlet_blocked": int((head_s & blk).sum()),
+        # bracketed: "" reads back from metrics.csv as NaN and a lone "6122" as 6122.0
+        "hwm_lake_outlet_blocked_ids": "[" + ";".join(ids) + "]",
+        "hwm_n_scored_excl_lake_blocked": int(keep.sum()),
+        "hwm_n_dry_scored_excl_lake_blocked": int((keep & ~wet).sum()),
+        "hwm_rmse_scored_excl_lake_blocked_m": (
+            float(np.sqrt((rk**2).mean())) if keep.any() else float("nan")
+        ),
+        "hwm_bias_scored_excl_lake_blocked_m": (
+            float(rk.mean()) if keep.any() else float("nan")
+        ),
+        "hwm_within0.5_scored_excl_lake_blocked": (
+            float(np.mean(np.abs(rk) < 0.5)) if keep.any() else float("nan")
+        ),
+    }
 
 
 def motf_metrics(da_hmax, da_dep, model_dir: Path, data_dir: Path = DATA) -> dict:
@@ -919,7 +974,18 @@ def evaluate(
     for fn, args in [
         (gauge_peak_metrics, (mod, model_dir, data_dir)),
         (tide_metrics, (mod, model_dir, data_dir)),
-        (hwm_metrics, (da_hmax, da_dep, data_dir, hwm_ids, hwm_estimator)),
+        (
+            hwm_metrics,
+            (
+                da_hmax,
+                da_dep,
+                data_dir,
+                hwm_ids,
+                hwm_estimator,
+                HWM_RADIUS_M,
+                model_dir,
+            ),
+        ),
         (motf_metrics, (da_hmax, da_dep, model_dir, data_dir)),
         (fa_decomposition, (da_hmax, da_dep, model_dir, data_dir)),
     ]:

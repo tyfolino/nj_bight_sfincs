@@ -1,9 +1,12 @@
-"""``scripts/rebuild_subgrid.py``: the overlay wrapper and ``--manning-overlay``.
+"""``scripts/rebuild_subgrid.py``: the overlay wrapper, ``--manning-overlay`` and the
+lower-only ``--overlay <key>:min`` paint.
 
 Pins the two things a roughness overlay must not break: WITHOUT the flag the roughness
 list is the premier's one-entry NLCD list (every bed-only rebuild must reproduce), and
 the wrapper paints an overlay's n ONLY where the overlay is valid, on top of hydromt's
-own merge, which it leaves untouched. Synthetic rasters only; no run dir is read.
+own merge, which it leaves untouched. And for ``:min``: a plain overlay still overwrites
+a deeper pixel (the 10-06 recipe), a lower-only one never raises one, and the paint ORDER
+decides which wins. Synthetic rasters only; no run dir is read.
 """
 
 from __future__ import annotations
@@ -83,6 +86,28 @@ class TestRebuildSubgridLists(unittest.TestCase):
         self.assertEqual(rgh[1:], [{"manning": "n_water", "merge_method": "overlay"}])
         self.assertEqual(elev, _Base().elevation())  # the bed is untouched
 
+    def test_min_suffix_keeps_its_slot_in_the_paint_order(self):
+        rbs = _load()
+        elev, _ = rbs.input_lists(_args(overlay=["burn", "lake:min", "chan"]), _Base())
+        self.assertEqual(
+            elev[2:],
+            [
+                {"elevation": "burn", "merge_method": "overlay"},
+                {"elevation": "lake", "merge_method": "overlay_min"},
+                {"elevation": "chan", "merge_method": "overlay"},
+            ],
+        )
+
+    def test_bad_suffixes_are_refused(self):
+        rbs = _load()
+        for tok in ("lake:max", "lake:", ":min"):
+            with self.assertRaises(SystemExit, msg=tok):
+                rbs.input_lists(_args(overlay=[tok]), _Base())
+        with self.assertRaises(SystemExit):  # bed only
+            rbs.input_lists(_args(manning_overlay=["n_water:min"]), _Base())
+        with self.assertRaises(SystemExit):  # caught before --force's rmtree
+            rbs.input_lists(_args(overlay=["lake:low"]), None, validate_only=True)
+
 
 @mock.patch.dict(os.environ, {"NJ_DOMAIN": "v1_monmouth"})
 class TestOverlayWrapper(unittest.TestCase):
@@ -123,6 +148,70 @@ class TestOverlayWrapper(unittest.TestCase):
         ref = self.orig(da_list=[{"da": base}], da_like=like)
         got = self.bld.merge_multi_dataarrays(da_list=[{"da": base}], da_like=like)
         np.testing.assert_array_equal(got.values, ref.values)
+
+    # ---- lower-only paint (--overlay <key>:min); one 3 m lattice, so nearest is exact
+    def _bed(self):
+        bed = np.full((12, 12), 1.0)
+        bed[:, :6] = -2.0  # a deep half (the lake bottom the plain paint overwrote)
+        return _raster(bed)
+
+    def _paint(self, *entries):
+        like = _raster(np.zeros((12, 12)))
+        da_list = [{"da": self._bed()}] + [
+            {"da": da, "merge_method": m} for da, m in entries
+        ]
+        ref = self.orig(da_list=[{"da": self._bed()}], da_like=like)
+        return ref.values, self.bld.merge_multi_dataarrays(
+            da_list=da_list, da_like=like
+        ).values
+
+    def _lake(self):
+        ov = np.full((12, 12), 0.0)  # above the deep half, below the high half
+        ov[8:, :] = -9999.0  # NoData rows
+        return ov, _raster(ov, nodata=-9999.0)
+
+    def test_plain_overlay_overwrites_a_deeper_pixel(self):
+        ov, da = self._lake()
+        ref, got = self._paint((da, "overlay"))
+        np.testing.assert_array_equal(ref, self._bed().values)  # merge is identity
+        np.testing.assert_array_equal(got[:8], 0.0)  # deep half RAISED to 0
+        np.testing.assert_array_equal(got[8:], ref[8:])
+
+    def test_lower_only_overlay_never_raises(self):
+        ov, da = self._lake()
+        ref, got = self._paint((da, "overlay_min"))
+        self.assertTrue(np.all(got <= ref))
+        valid = ov != -9999.0
+        np.testing.assert_array_equal(got[valid], np.minimum(ref, ov)[valid])
+        np.testing.assert_array_equal(got[~valid], ref[~valid])
+        np.testing.assert_array_equal(got[:8, :6], -2.0)  # deep pixels kept
+        np.testing.assert_array_equal(got[:8, 6:], 0.0)  # high pixels lowered
+
+    def test_lower_only_fills_a_nodata_block_pixel(self):
+        like = _raster(np.zeros((12, 12)))
+        bed = self._bed().values.copy()
+        bed[0, 0] = np.nan
+        ov, da = self._lake()
+        got = self.bld.merge_multi_dataarrays(
+            da_list=[{"da": _raster(bed)}, {"da": da, "merge_method": "overlay_min"}],
+            da_like=like,
+        ).values
+        self.assertEqual(got[0, 0], 0.0)  # as a plain paint would
+
+    def test_paint_order_decides_the_winner(self):
+        _, lake = self._lake()
+        high = _raster(np.full((12, 12), 5.0))  # a plain overlay above everything
+        low = _raster(np.full((12, 12), -1.0))
+        # plain AFTER lower-only: the plain one wins everywhere it is valid
+        _, got = self._paint((lake, "overlay_min"), (high, "overlay"))
+        np.testing.assert_array_equal(got, 5.0)
+        # lower-only AFTER plain: min(plain result, lower-only)
+        _, got = self._paint((high, "overlay"), (lake, "overlay_min"))
+        np.testing.assert_array_equal(got[:8], 0.0)
+        np.testing.assert_array_equal(got[8:], 5.0)
+        # lower-only AFTER plain cannot raise what the plain one lowered
+        _, got = self._paint((low, "overlay"), (lake, "overlay_min"))
+        np.testing.assert_array_equal(got, -1.0)
 
 
 if __name__ == "__main__":

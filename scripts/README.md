@@ -23,7 +23,7 @@ Every script reads `NJ_DOMAIN` unless its row names a domain. Run from the repo 
 | `accept_domain.py` | One read-only command: is this domain fit to run? | live |
 | `freeze_mesh.py` | Build the static mesh once and freeze it (via `hpc/freeze_mesh.slurm`) | live |
 | `probe_mesh_size.py` | Cell counts per size before paying for the subgrid | live |
-| `rebuild_subgrid.py` | Rebuild only the subgrid on a frozen mesh; `--overlay` for burn rasters (CLAUDE.md §5), `--manning-overlay` paints a Manning-n raster over the NLCD reclass the same way | live |
+| `rebuild_subgrid.py` | Rebuild only the subgrid on a frozen mesh; `--overlay` for burn rasters (CLAUDE.md §5; `--overlay <key>:min` = lower-only, `min(bed, overlay)`, never raises — order kept, later wins), `--manning-overlay` paints a Manning-n raster over the NLCD reclass the same way | live |
 | `fix_meteo_grid_origin.py` | Rewrite a template's / staged dir's `netamuv`/`netamp`/`netampr` x, y to the engine's corner convention (centre − signed step/2; data untouched, idempotent); `--check` read-only, `--era5-bilinear` re-samples wind + pressure from native ERA5 (2026-10-06, `nj_sfincs/meteo_grid.py`) | live |
 | `build_wind_naccs_blend.py` | NACCS ADCIRC save-point wind + pressure (Delaunay on u, v, p; long / land triangles dropped) blended into ERA5 bilinear over a 15 km taper, on a 500 m UTM grid covering every active + SnapWave face; writes `sfincs_netamuv.nc` / `sfincs_netamp.nc` with the engine corner convention + marker to `data/wind_v4/naccs_blend/` (`--extra-dir` adds CHS save points; 2026-10-06, `nj_sfincs/meteo_blend.py`, `logs/wind_naccs_blend_2026-10-06/`) | live |
 | `setup_boundary_depth.py` | Stage a mask-variant domain (boundary depth, trimmed ring) from its frozen mesh | live |
@@ -47,6 +47,7 @@ Every script reads `NJ_DOMAIN` unless its row names a domain. Run from the repo 
 | `v4_first_results.py` | The first waves-on v4 read in one command: setup, scores, paired marks (incl. v4 vs v3), gauge/HWM/zsmax figures, summary skeleton; `submit --preset refreeze` | live |
 | `overflow_check.py` | Where the peak water reaches the model edge; `--compare` for the SLR ladder | live |
 | `source_proximity.py` | Which marks and gauges sit close enough to a river inflow to read it | live |
+| `lake_outlet_blocked.py` | Which marks sit in a basin whose outlet the model holds shut above the local sea peak (`lake_outlet_blocked`; light, no floodmap); `--marks` prints the headline with and without | live |
 | `relocate_coarse_inflows.py` | Flag inflows piling up on a coarse face; move them down the creek (screen / write / apply) | live |
 | `compare_usgs_transects.py` | Model beach runup level vs USGS Sandy transects (TWL, dune crest, sandline washover) — the read where IG shows | live (restored 2026-10-01) |
 | `stockdon_envelope.py` | Stockdon (2006) runup envelope on a still-water run (diagnostic) | live |

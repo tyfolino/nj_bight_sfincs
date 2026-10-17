@@ -196,7 +196,10 @@ not trip that guard. Do not run the sweep driver to "just rebuild" a template.
   not as domain fields; `frozen_mesh_v4` got the obs file by hand and NOT the weir, so every v4
   run until 10-06 had no levee (pocket marks +1.7 m). After any freeze: `diff <(ls
   data/frozen_mesh_v3) <(ls data/frozen_mesh_<new>)`, and check the staged `sfincs.log` for
-  "N structure u/v points found".
+  "N structure u/v points found". The same goes for a RE-STAGE: `setup_boundary_depth.py` does
+  not replay a template's hand steps (v4_refreeze: the ERA5-bilinear meteo, the Absecon obs
+  nudge, the Overpeck `sfincs_ini_regional.bin`) — diff the new template against the old one
+  file by file (`logs/restage_2026-10-17/compare_templates.py`) before swapping it in.
 - **A roughness or elevation change needs a SUBGRID rebuild on the frozen mesh.**
   `build_static` copies the frozen mesh and returns early, so it will silently produce a
   no-op template. A *mask* change is the opposite: no subgrid rebuild, but the fingerprint
