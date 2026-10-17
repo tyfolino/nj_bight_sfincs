@@ -7,6 +7,14 @@
         [--y-max 4480000 --x-min 520000] \\
         --out data/wavemakers_v3/v3_wavemaker_5m_mhw.geojson
 
+    # v4_refreeze (2026-10-17; logs/wavemaker_v4_2026-10-17/README.md): the 12.5 m bed is
+    # 301 M pixels — read a window, contour the σ 400 m bed on 25 m, float32 weights (4.4 GB)
+    NJ_DOMAIN=v4_refreeze python scripts/build_wavemaker_line.py \
+        --dep experiments/v4_refreeze/_subgrid_refreeze/subgrid/dep_subgrid_lev0.tif \
+        --mesh experiments/v4_refreeze/_template_sealed/sfincs.nc \
+        --window 495000 4285000 605000 4492000 --contour-stride 2 --float32-weights \
+        [--snap-seaward-of-beach] --out data/wavemakers_v4/v4_wavemaker_5m_mhw.geojson
+
 WHY (STATUS 2026-09-17, FINDINGS §45): SnapWave's infragravity energy reaches SFINCS only
 through a wavemaker (Leijnse et al. 2025, App. B), placed "at ~5 m depth at high tide" in the
 surf zone. A raw −5 m contour of NJ bathymetry is jumpy (shoals, ebb deltas, borrow pits), and a
@@ -54,24 +62,49 @@ import numpy as np
 
 
 # ── raster helpers ───────────────────────────────────────────────────────────
-def smooth_nan(z: np.ndarray, sigma_px: float) -> np.ndarray:
-    """Gaussian smoothing that ignores NaN (normalised convolution)."""
+def smooth_nan(
+    z: np.ndarray, sigma_px: float, float32_weights: bool = False
+) -> np.ndarray:
+    """Gaussian smoothing that ignores NaN (normalised convolution).
+
+    ``float32_weights`` (v4's 301 M-pixel bed: the float64 weight array alone is 2.4 GB)
+    moves the smoothed bed by ~1e-5 m.
+    """
     from scipy.ndimage import gaussian_filter
 
     ok = np.isfinite(z)
-    num = gaussian_filter(np.where(ok, z, 0.0), sigma_px, mode="nearest")
-    den = gaussian_filter(ok.astype(float), sigma_px, mode="nearest")
+    num = gaussian_filter(np.where(ok, z, z.dtype.type(0)), sigma_px, mode="nearest")
+    wdt = np.float32 if float32_weights else float
+    den = gaussian_filter(ok.astype(wdt), sigma_px, mode="nearest")
+    del ok
     out = np.full_like(z, np.nan)
     m = den > 0.05
     out[m] = num[m] / den[m]
     return out
 
 
-def contour_pieces(x, y, z, level):
+def contour_pieces(T, z, level, stride: int = 1):
+    """Contour ``z`` at ``level`` in PIXEL space, then map the lines through the affine.
+
+    Identical to contouring on the affine-mapped pixel-centre grid (an affine map
+    carries contourpy's linear edge interpolation exactly), without two full-size
+    float64 coordinate grids. ``stride`` > 1 contours every stride-th pixel — only for
+    the heavily smoothed bed, whose σ is tens of pixels.
+    """
     import contourpy
 
-    cg = contourpy.contour_generator(x, y, np.where(np.isfinite(z), z, 99.0))
-    return [np.asarray(ln) for ln in cg.lines(level) if len(ln) >= 2]
+    zz = z[::stride, ::stride]
+    cols = np.arange(0, z.shape[1], stride, dtype=float) + 0.5
+    rows = np.arange(0, z.shape[0], stride, dtype=float) + 0.5
+    cg = contourpy.contour_generator(cols, rows, np.where(np.isfinite(zz), zz, 99.0))
+    out = []
+    for line in cg.lines(level):
+        if len(line) < 2:
+            continue
+        ln = np.asarray(line)
+        mx, my = T * (ln[:, 0], ln[:, 1])
+        out.append(np.column_stack([mx, my]))
+    return out
 
 
 def sample_bed(zs, inv, _unused, res, px, py):
@@ -194,8 +227,15 @@ def open_coast(xy, sea_left, zs, z_light, x0, y0, res, a, k):
     return sea_ok & land_ok
 
 
-def snap_to_crossing(xy, sea_left, z_light, x0, y0, res, z_line, reach_m):
-    """Move each vertex along its normal to the light bed's first land→water crossing of z_line."""
+def snap_to_crossing(xy, sea_left, z_light, x0, y0, res, z_line, reach_m, mhw=None):
+    """Move each vertex along its normal to the light bed's first land→water crossing of z_line.
+
+    With ``mhw``, only crossings SEAWARD of the last point at or above MHW on the profile
+    count (the beach), when there is one: a dredged back-bay channel within ``reach_m``
+    behind a barrier island is otherwise the first crossing, and the vertex snaps into the
+    bay and is dropped (v4 re-freeze bed, Holgate, 2026-10-17: the NJIWW / Little Egg
+    channels at −7..−13 m, 0.5–1.5 km behind the beach, cost 4.5 km of LBI's line).
+    """
     _, left = normals(xy)
     sea = np.where(sea_left, 1.0, -1.0)[:, None] * left
     d = np.arange(-reach_m, reach_m + 1, res)
@@ -209,6 +249,10 @@ def snap_to_crossing(xy, sea_left, z_light, x0, y0, res, z_line, reach_m):
             continue
         zz, dd = z[ok], d[ok]
         cross = np.where((zz[:-1] > z_line) & (zz[1:] <= z_line))[0]
+        if mhw is not None:
+            dry = np.where(zz >= mhw)[0]
+            if len(dry):
+                cross = cross[cross >= dry[-1]]
         if len(cross) == 0:
             continue
         j = cross[0]
@@ -241,29 +285,47 @@ def level_flags(xy, mesh: Path):
 def build(a) -> int:
     import geopandas as gpd
     import rasterio
+    from rasterio.windows import Window
     from shapely.geometry import LineString
 
     with rasterio.open(a.dep) as r:
-        z = r.read(1).astype("float32")
+        win = None
+        if a.window:
+            # the pixel block covering a MAP box, through the inverse affine (rotated
+            # rasters: CLAUDE.md §5); never boundless (that reads the wrong pixels)
+            bx0, by0, bx1, by1 = a.window
+            cc_, rr_ = ~r.transform * (
+                np.array([bx0, bx1, bx0, bx1]),
+                np.array([by0, by0, by1, by1]),
+            )
+            c0 = max(0, int(np.floor(cc_.min())))
+            r0 = max(0, int(np.floor(rr_.min())))
+            c1 = min(r.width, int(np.ceil(cc_.max())))
+            r1 = min(r.height, int(np.ceil(rr_.max())))
+            win = Window(c0, r0, c1 - c0, r1 - r0)
+        z = r.read(1, window=win).astype("float32")
         if r.nodata is not None and np.isfinite(r.nodata):
             z[z == r.nodata] = np.nan
         res = float(r.res[0])
-        T = r.transform
+        T = r.window_transform(win) if win is not None else r.transform
         crs = r.crs
+        if win is not None:  # the window's origin must be the full raster's pixel
+            assert np.allclose(T * (0, 0), r.transform * (win.col_off, win.row_off))
+            assert np.allclose(
+                T * (1, 1), r.transform * (win.col_off + 1, win.row_off + 1)
+            )
+            print(f"[window] {a.window} → pixels {win}")
     ny, nx = z.shape
-    # pixel-centre map coordinates through the affine (rotation included)
-    cc, rr = np.meshgrid(np.arange(nx) + 0.5, np.arange(ny) + 0.5)
-    XX, YY = T * (cc, rr)
     x0, y0 = ~T, None  # sample_bed takes the INVERSE affine in the x0 slot
     z_line = a.mhw - a.depth
     print(
         f"[bed] {a.dep}: {nx}×{ny} @ {res:g} m; contour z = {z_line:+.2f} m "
         f"(MHW {a.mhw:+.2f} − {a.depth:g} m); σ {a.sigma_m:g} m, light σ {a.sigma_light_m:g} m"
     )
-    zs = smooth_nan(z, a.sigma_m / res)
-    z_light = smooth_nan(z, a.sigma_light_m / res)
-    pieces = contour_pieces(XX, YY, zs, z_line)
-    print(f"[contour] {len(pieces)} raw pieces")
+    zs = smooth_nan(z, a.sigma_m / res, a.float32_weights)
+    pieces = contour_pieces(T, zs, z_line, a.contour_stride)
+    z_light = smooth_nan(z, a.sigma_light_m / res, a.float32_weights)
+    print(f"[contour] {len(pieces)} raw pieces (stride {a.contour_stride})")
 
     k = _odd(a.along_window_m, res)
     kept, rows = [], []
@@ -283,7 +345,15 @@ def build(a) -> int:
                 continue
             seg = moving_average(seg, k)  # where along the coast
             seg, snapped = snap_to_crossing(
-                seg, sl, z_light, x0, y0, res, z_line, a.snap_reach_m
+                seg,
+                sl,
+                z_light,
+                x0,
+                y0,
+                res,
+                z_line,
+                a.snap_reach_m,
+                a.mhw if a.snap_seaward_of_beach else None,
             )
             # a vertex with no land→water crossing within reach is not on a beach
             # profile (ebb delta, channel, shoal): drop it and split the run there
@@ -335,7 +405,11 @@ def build(a) -> int:
                 continue
             seg_len = np.hypot(*np.diff(xy, axis=0).T)
             s_ = np.concatenate([[0.0], np.cumsum(seg_len)])
-            keep_v = (s_ >= a.end_trim_m) & (s_ <= s_[-1] - a.end_trim_m)
+            # 1 cm of slack: on a 100 m resample a vertex sits at EXACTLY the setback,
+            # and without it floating-point noise decided whether it stayed (v3 regress
+            # 2026-10-17: four piece ends moved by one vertex on a 1e-9 m change)
+            tol = 0.01
+            keep_v = (s_ >= a.end_trim_m - tol) & (s_ <= s_[-1] - a.end_trim_m + tol)
             if (
                 keep_v.sum() >= 2
                 and (s_[-1] - 2 * a.end_trim_m) >= a.min_length_km * 1e3
@@ -501,6 +575,32 @@ def main(argv=None) -> int:
     add("--land-window-m", type=float, default=300.0, help="majority window, land test")
     add("--y-max", type=float, default=4_480_000.0, help="tip of Sandy Hook (UTM 18N)")
     add("--x-min", type=float, default=520_000.0, help="east of Delaware Bay")
+    add(
+        "--window",
+        type=float,
+        nargs=4,
+        metavar=("XMIN", "YMIN", "XMAX", "YMAX"),
+        default=None,
+        help="read only the pixels covering this MAP box (memory; keep its edges "
+        "≥ 10 km from any line — the smoothing sees the crop edge within ~4σ)",
+    )
+    add(
+        "--contour-stride",
+        type=int,
+        default=1,
+        help="contour the σ-smoothed bed every Nth pixel (memory; v4's 12.5 m bed: 2)",
+    )
+    add(
+        "--snap-seaward-of-beach",
+        action="store_true",
+        help="snap only to a crossing seaward of the profile's last MHW point "
+        "(v4: a dredged back-bay channel behind the island is not the shoreface)",
+    )
+    add(
+        "--float32-weights",
+        action="store_true",
+        help="float32 smoothing weights (memory; identical v3 line, 2026-10-17)",
+    )
     add(
         "--out",
         type=Path,

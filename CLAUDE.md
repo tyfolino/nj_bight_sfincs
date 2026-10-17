@@ -144,7 +144,13 @@ scripts/sfincs_restart.py plan <dir>` is read-only; `enable <dir>` retrofits a s
 submitted BEFORE 09-10 runs the old spooled batch script: it still restarts from scratch,
 resume it by hand (`prepare`, then `run.submit_slurm`). Measured on the toy model: the
 resumed trajectory differs from the uninterrupted one by ≤ 0.2 mm (p90), 8 mm max on a
-2 cm wetting front, mean −0.08 mm — the same size as changing `tstop` alone.
+2 cm wetting front, mean −0.08 mm — the same size as changing `tstop` alone. 🔴 **That figure is
+for a toy WITHOUT waves.** The restart file holds only `zs`, `q` and the boundary `uvmean` — not
+the advection velocities, the SnapWave field (a resume starts its iterations cold), `zsm` or the
+wavemaker's flux filter — so a resumed WAVES-ON run is a different run: on the toy wavemaker case
+0.10–0.17 m at single gauges (correlation 0.91 with the uninterrupted run, on the engine whose
+wavemaker phase follows model time; FINDINGS §44 (j)). Read a resumed waves-on run against an
+uninterrupted twin, or re-run it.
 
 ⚠️ **Submit the STAGED dir via `run.submit_slurm(dir, sif=... | binary=...)`, not
 `--slurm`,** when you have already staged. 🔴 **The engine is always explicit (2026-09-11):**
@@ -315,8 +321,9 @@ not trip that guard. Do not run the sweep driver to "just rebuild" a template.
   is partly a different random draw — coherent across marks, so the bootstrap calls it
   significant (FINDINGS §44). Seeded builds (`…igseed…`) repeat bit-for-bit, across nodes too;
   `metrics.csv` `engine_seed` says which (`fixed` / `os-random` / `n/a:ig-off`). ⚠️ Even
-  seeded, a waves-on run amplifies a NULL input change (`rhoa` × 1.00008) to 0.2–0.36 m at the
-  bay gauges in 6 h: a waves-on arm Δ of a few cm in the NY bays is inside the noise.
+  seeded, a waves-on run amplifies a NULL input change (`rhoa` × 1.00008) to 0.1–0.3 m at the
+  Narrows and Delaware Bay gauges in 6 h, and raising `snapwave_niter` does not stop it: a
+  waves-on arm Δ of a few cm in the bays is inside the noise.
   Waves-off runs are well-conditioned (mm).
 - 🔴 **A wind-on SnapWave solve on v3 needs the FAST nodes** (confirmed 2026-09-13 on the
   full 73 h run): 3.3 sim-h per wall-h on `emeraldrapids` (21 h 55 total) vs 0.98 on

@@ -771,16 +771,27 @@ CLAUDE.md §5.
     iterations 50 11 42 6 50 13 16 in both), and every seeded and waves-off `sfincs_his.nc` is
     byte-identical BETWEEN the two clusters.
     (e) **Seeded, it is still ill-conditioned waves-on.** `rhoa` 1.25 → 1.2501 (wind stress
-    ×1.00008), same jobs. Waves ON: 7 of 48 points > 10 cm within 6 h (Narrows Bkln 0.36,
-    Narrows SI 0.28, Arthur Kill mouth 0.26, Great Kills 0.22, Keansburg 0.20, South Amboy
-    0.20 m), 18 > 5 cm, 27 > 1 cm; zsmax map p90 7.9 mm, p99 3.1 cm; point hm0 up to 1.4 m
-    (Atlantic City); iterations split from the second call (50 11 42 6 50 13 16 → 50 50 22 7 50
+    ×1.00008), same jobs. Waves ON: 7 of 48 points > 10 cm within 6 h (Narrows SI 0.31,
+    Narrows Bkln 0.28, Murderkill 0.17, Ship John Shoal 0.13, Brandywine 0.12, Bivalve 0.11 m),
+    18 > 5 cm, 27 > 1 cm; zsmax map p90 7.9 mm, p99 3.1 cm; point hm0 up to 1.4 m (Atlantic
+    City). (Seeded vs UNSEEDED — one IG sample vs another — is the same size: Narrows Bkln 0.36,
+    Arthur Kill mouth 0.26, Great Kills 0.22, Keansburg 0.20 m.) Iterations split from the second call (50 11 42 6 50 13 16 → 50 50 22 7 50
     50 20) — a call that converges in one run ends at the cap in the other. Waves OFF: zsmax p99
     0.18 mm; 2 of 48 points > 1 cm (Great Kills 4.7, Narrows Bkln 3.9 cm), growing after hour
     3.5. ⇒ **Seeding makes a run REPEATABLE; it does not make two waves-on ARMS comparable to
     the centimetre.** A waves-on paired Δ in the NY bays carries mm–cm on the map and cm–dm at
-    single gauges in the calm first 6 h; the band through the peak is unmeasured. Whether the
-    capped calls are the amplifier: the `snapwave_niter` 800 cut (STATUS).
+    single gauges in the calm first 6 h; the band through the peak is unmeasured.
+    **Not the iteration cap** (2026-10-17, job 62678718 on Camden, `logs/ig_cap_2026-10-17/`; same
+    cut, seeded, one null pair per setting — one draw of the noise each). `snapwave_niter` 800
+    (the log's 200): calls 0 and 4 still end at the cap (the t = 0 limit cycle), the `rhoa` pair
+    still splits (iterations 200 13 18 6 200 33 19 vs 200 14 25 30 19 67 11), 7 of 48 points
+    > 10 cm (Narrows Bkln 0.49, Narrows SI 0.26, Keansburg 0.23 m), zsmax p90 4.3 mm / p99 2.4 cm
+    (vs 7.9 mm / 3.1 cm at 200 — within what one draw can tell apart), wall +12 %. And the knob
+    itself moves the answer by a noise-sized amount: niter 800 vs 200, same inputs, Keansburg
+    0.39, Narrows 0.24 m. `snapwave_crit` 0.01 (the old default) is WORSE: the pair splits at 21 of
+    48 points > 10 cm, zsmax p90 24 cm, and the answer moves 0.44 m (Narrows SI) from the 0.001
+    run. ⇒ The amplifier is the coupled wave–flow solve itself, not unconverged calls: any change
+    in the inputs or the solver settings moves waves-on bay gauges by 0.1–0.5 m in 6 h.
     (f) **Across binaries the same amplifier works on rounding.** The v3 12 h wind-on cut (IG
     off) on the container vs the unpatched native build (2026-09-12) differed by Δzs max 5.9 m,
     p99 36 cm, p90 8.6 cm, 15–20 % of active cells > 5 cm apart from hour 1, traced to a
@@ -806,6 +817,22 @@ CLAUDE.md §5.
     so unpinned copies stack on the same cores and their serial SnapWave masters share core 0
     (~¼ speed, 2026-10-16); run each under `taskset` on its own block
     (`logs/ig_det_2026-10-15/igseed_sens3.slurm`).
+    (j) **The wavemaker draws too, and a resume is a different run (2026-10-17,
+    `logs/wmseed_2026-10-17/`).** `sfincs_wavemaker.f90` draws the IG (and incident) phases with an
+    unseeded `random_number` once at init. Engine `v2.3.3-winddir-igk-igseed-wmseed-1-gf11`
+    (`hpc/patches/snapwave_igseed_wmseed_v2.3.3.patch`, diff sha `32410c2a5f74f8d0`, binary md5
+    `cbf497dc…`) = igseed + igk-fix + `nj-wmseed-1`: a fixed seed (`20121030 + 7919·i`) before
+    the phase draws, and the phase computed from model time (`2πft + φ0 + dφ·t`, double) instead
+    of a running single-precision sum — identical on an uninterrupted run with tstart = tref
+    (toy: ≤ 0.15 mm), and it makes a resumed run's IG FORCING the uninterrupted one's (the stock
+    sum restarts at the resume and scrambles every phase). Toy wavemaker case, run twice: every
+    field max |Δ| 0 (old igk-fix engine: point zs 0.32 m, hm0ig 0.13 m). Resumed from a restart
+    file, max |Δzs| over 2 h at the IG stations: new engine 0.10–0.17 m (r 0.91–0.92), seed without
+    the phase fix 0.22–0.30 (r −0.36…0.20), old engine 0.18–0.28 (r 0.09–0.22); a toy with IG but
+    no wavemaker loses 8 mm on a 3 mm signal (r 0.78–0.90). The rest is state the restart file
+    does not carry (wavemaker flux filter, advection velocities, the SnapWave field, `zsm`).
+    `metrics.csv` `engine_seed` reads `os-random:wavemaker` for a wavemaker run on a build
+    without `nj-wmseed`.
 
     **The native build reproduces the container** (2026-09-11, `scripts/engine_gate.py`):
     G1 (hydromt `sfincs_compound` example, no SnapWave) is STRICT — zs / zsmax / h max|Δ| 0
@@ -939,7 +966,8 @@ CLAUDE.md §5.
     Diffraction (Holthuijsen et al. 2003, as in SWAN) is therefore a POTENTIAL later engine fix, not a
     current need (user, 2026-09-21); SnapWave v2.3.3 has no diffraction term.
 
-49. ⭐ **The IG lever, measured (v3 `wave-wavemaker`, 2026-09-20): a wavemaker on the MHW − 5 m
+49. ⭐ **The IG lever, measured (v3 `wave-wavemaker`, 2026-09-20; ⚠️ one random draw of BOTH the
+    Herbers sample and the wavemaker phases — unseeded engine, §44 (j)): a wavemaker on the MHW − 5 m
     contour injects ~1 m infragravity crests into the 100–400 m surf zone between the line and
     the beach, and an INTACT DUNE keeps them off the street — so the HWM and MOTF scores barely
     see it, and a line closer to shore is not a lever.** Setup: the apex premier + `wvmfile`
@@ -1895,9 +1923,14 @@ Bay NJ shore +0.139 vs +0.003, DE +0.067 vs +0.005, Raritan Bay +0.050 vs +0.001
 **The coastal lakes (why 6122 / 6130 read −2.3 m).** In Sandy the dune breached at Wreck Pond beside
 the outfall pipe and reopened a natural inlet (NJDEP Wreck Pond EA; it healed within ~2 weeks, and
 the post-storm surveys do not show it; the expanded gated culvert is 2016, not 2012), and the ocean
-overwashed Ocean Ave into Deal Lake at the flume (Asbury Park Sun, 2012). In the model the lowest
-ocean–lake connection is 3.10 m (Wreck Pond, the beach at the outfall, −74.0261 40.1391) / 3.62 m
-(Deal) against a sea-side peak of 2.81–3.01 m, so the sea never enters either; Deal Lake's mark
+overwashed Ocean Ave into Deal Lake at the flume (Asbury Park Sun, 2012). In the model the sea never enters
+either. The MODEL's lowest ocean–lake connection (the minimax route through `z_zmin` and the uv
+sills `uv_zmin` — the lowest subgrid pixel on a face edge, where water starts to pass; traced
+2026-10-17, `logs/lake_flag_trace_2026-10-17/`) is **2.82 m at the Wreck Pond outfall beach**
+(−74.0259, 40.1390; the 10-15 bed-profile read put the crest there at 3.10–3.65 m) and **3.11 m for
+Deal Lake, overland through low ground in Asbury Park** (bottleneck −74.0098, 40.2272, 540 m S of
+6122) — not the 3.62 m Ocean Ave flume crest; local sea peaks 2.78–2.80 m. Wreck Pond missed the sea by
+2 cm in the model; Deal Lake's mark
 (3.14 m) stands above the modelled sea, which needs run-up a fixed-bed SFINCS without a wavemaker
 lacks. Post-storm lidar crest at the Wreck Pond outlet 1.65–2.49 m (pre-storm 4.89). **The model's
 bed also cuts Wreck Pond in two:** inside the NHD outline a band 1.7–3.9 m (max 4.2) crosses the east
@@ -1912,6 +1945,14 @@ lowered, 0.53 Mm³. Built 10-16 as `_subgrid_refreeze_lakes` (the 10-06 recipe +
 vs `_subgrid_refreeze` 2,952 faces change `z_volmax`, every one inside a fixed lake; 112 got a
 HIGHER `z_zmin` (max +1.35 m, Lake Louise) because nearest paint onto the rotated subgrid lattice
 can overwrite a deeper subgrid pixel — a lower-only paint mode removes it.
+**Wave overtopping cannot fill Deal Lake** (2026-10-17, `logs/overtopping_2026-10-17/`; EurOtop 2018
+eq. 5.10/5.11, sloping beach + low crest; toe = first face seaward with mean bed ≤ −1 m, Hm0 2.4–3.7 m,
+Tm−1,0 12.2–12.6 s, SWL 2.84–2.92 m incl. setup, from the unseeded premier; 260 m frontage, post-storm
+USACE CZMIL crest 2.9–3.6 m on the north 110 m by the flume, 3.3–5.1 m south): peak 31.7 m³/s at
+10-30 00 UTC, 0.29 Mm³ in ~5 h, 97 % over the north 110 m — against 1.78 Mm³ to lift the lake from its
+0.61 m pool to the mark's 3.14 m: level pool ~1.25 m (premier 0.77). Crest −0.5 m: 0.88 Mm³ (2.15 m);
++0.5 m: 0.05; pre-storm crest: 0.017; Hm0 ±20 %: 0.21–0.39. Stockdon R2% 4.8–6.5 m — the REACH is there,
+the VOLUME is not. Untested: a failed / overtopped flume outfall (~20 m³/s for hours at a 2 m head).
 **The `lake_outlet_blocked` flag** (`nj_sfincs/validate/lake_flag.py`, 2026-10-17; never reads the
 observation): P = median `zsmax` on sea-connected faces within 1 km beyond the sea face nearest the
 mark; C = the lowest level at which the sea reaches any face in the 50 m scoring window (through
@@ -1920,9 +1961,12 @@ under-flag behind a weir); F = the window's lowest `z_zmin`; flag = F < P ≤ C.
 premier it flags 5 scored marks — 6121, 6122, 6124 (`south_coast`), 6129 (`shark_river`), 6130
 (`barnegat_bay`) — plus q > 2 marks 6119, 6120, 6126, the same set at 500 / 1000 / 2000 m; all are
 Monmouth coastal lakes and ponds. Headline (median, 50 m): n 110 RMSE 0.436 / bias −0.110 →
-excluding them n 105 RMSE 0.281 / bias −0.050. ⚠️ 6129 and 6130 are flagged by 2–5 cm (C 2.819 vs P
-2.80 — a route below the 3.10 m beach sill), inside the §44 waves-on noise: a paired comparison holds
-ONE mark set on both sides (the reference run's `hwm_lake_outlet_blocked_ids`).
+excluding them n 105 RMSE 0.281 / bias −0.050. ⚠️ 6129 and 6130 are BOTH Wreck Pond marks (6129 at
+−74.0291, 40.1438, 1.1 km from 6130; the `shark_river` label is the v1-inherited basin box x < 584,300,
+y < 4,450,800) and share P 2.799 / C 2.819 — the outfall-beach sill above; an independent flood
+(connected components, no spanning tree) reproduces C to the mm. Flagged by 2 cm, inside the §44
+waves-on noise: a paired comparison holds ONE mark set on both sides (the reference run's
+`hwm_lake_outlet_blocked_ids`).
 
 **Still open after the audit:** the Schuylkill backing up to 6.8 m BELOW the Fairmount Dam on a
 ~0 m bed (no river cut removes it; the box-MEAN Manning above `uv_zmax` is the suspect —

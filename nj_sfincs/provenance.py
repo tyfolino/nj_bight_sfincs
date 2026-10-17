@@ -606,18 +606,30 @@ def infiltration_label(model_dir: Path | str) -> str:
 
 
 def engine_seed_label(model_dir: Path | str) -> str:
-    """The SnapWave IG random draw (FINDINGS §44): ``fixed`` on a build carrying
-    ``nj-igseed``, ``os-random`` otherwise — such a waves-on run does NOT repeat itself;
-    ``n/a`` when SnapWave or its IG boundary is off. From ``sfincs.inp`` + ``sfincs.log``."""
+    """The engine's random draws (FINDINGS §44): ``fixed`` when every draw the run makes is
+    seeded, ``os-random`` otherwise — such a run does NOT repeat itself; ``n/a`` when it
+    makes none. Two draws: SnapWave's Herbers IG boundary (``snapwave_igwaves = 1``;
+    seeded by ``nj-igseed``) and the WAVEMAKER's random phases (a ``wvmfile``; seeded by
+    ``nj-wmseed``, 2026-10-17). An ``…igseed-1`` build seeds the first only, so a wavemaker
+    run on it is ``os-random:wavemaker``. From ``sfincs.inp`` + ``sfincs.log``."""
     inp = read_inp(model_dir)
-    if str(inp.get("snapwave", "0")).strip() != "1":
-        return "n/a:no-snapwave"
-    if str(inp.get("snapwave_igwaves", "0")).strip() != "1":
+    wavemaker = bool(str(inp.get("wvmfile", "")).strip())
+    herbers = (
+        str(inp.get("snapwave", "0")).strip() == "1"
+        and str(inp.get("snapwave_igwaves", "0")).strip() == "1"
+    )
+    if not wavemaker and not herbers:
+        if str(inp.get("snapwave", "0")).strip() != "1":
+            return "n/a:no-snapwave"
         return "n/a:ig-off"
     revs = " ".join(build_revisions(model_dir))
     if not revs:
         return "unknown"
-    return "fixed" if "nj-igseed" in revs else "os-random"
+    if herbers and "nj-igseed" not in revs:
+        return "os-random"
+    if wavemaker and "nj-wmseed" not in revs:
+        return "os-random:wavemaker"
+    return "fixed"
 
 
 def sea_level_offset_label(model_dir: Path | str) -> str:
@@ -642,3 +654,22 @@ def sea_level_offset_label(model_dir: Path | str) -> str:
     wet = zs[zs > DRY]
     start = float(wet.max()) if wet.size else float("nan")
     return f"bnd {off:+.3f} start {start:+.3f}"
+
+
+def extra_discharge_label(model_dir: Path | str) -> str:
+    """Arm-level extra point sources (``Experiment.extra_discharge``), as STAGED: names,
+    peak m3/s and volume m3 from the ``extra_discharge.json`` sidecar that
+    ``model.append_extra_discharge`` wrote, plus the source file's sha256[:8]. ``none``
+    when the run carries only the template's sources."""
+    import json
+
+    p = Path(model_dir) / "extra_discharge.json"
+    if not p.is_file():
+        return "none"
+    r = json.loads(p.read_text())
+    parts = [
+        f"{n} peak {pk:.2f} vol {v:.0f}"
+        for n, pk, v in zip(r["names"], r["peak_m3s"], r["volume_m3"])
+    ]
+    return "; ".join(parts) + f" @{r['sha256'][:8]}"
+

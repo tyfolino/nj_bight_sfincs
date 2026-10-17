@@ -71,6 +71,10 @@ class TestRunLabels(unittest.TestCase):
         seeded = (
             "Build-Revision: $Rev: v2.3.3 mt. Faber+ nj-winddir-fix-1 nj-igseed-1\n"
         )
+        wmseed = (
+            "Build-Revision: $Rev: v2.3.3 mt. Faber+ nj-winddir-fix-1 nj-igk-fix-1 "
+            "nj-igseed-1 nj-wmseed-1\n"
+        )
         ig_on = "snapwave = 1\nsnapwave_igwaves = 1\n"
         cases = [
             ("snapwave = 0\n", LOG_FIXED, "n/a:no-snapwave"),
@@ -79,6 +83,15 @@ class TestRunLabels(unittest.TestCase):
             (ig_on, LOG_FIXED, "os-random"),
             (ig_on, seeded, "fixed"),
             (ig_on, None, "unknown"),
+            # the wavemaker's own random phases (2026-10-17): seeded only by nj-wmseed
+            (ig_on + "wvmfile = sfincs.wvm\n", seeded, "os-random:wavemaker"),
+            (ig_on + "wvmfile = sfincs.wvm\n", wmseed, "fixed"),
+            (ig_on + "wvmfile = sfincs.wvm\n", LOG_FIXED, "os-random"),
+            (
+                "snapwave = 1\nsnapwave_igwaves = 0\nwvmfile = sfincs.wvm\n",
+                wmseed,
+                "fixed",
+            ),
         ]
         for inp, log, want in cases:
             with tempfile.TemporaryDirectory() as td:

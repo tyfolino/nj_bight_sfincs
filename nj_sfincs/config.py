@@ -385,6 +385,18 @@ class Experiment:
     #: (``provenance.sea_level_offset_label``), never this number.
     sea_level_offset_m: float | None = None
 
+    #: ``src-*`` ARMS ONLY (2026-10-17). A GeoDataset NetCDF of EXTRA point sources
+    #: (``discharge(time, index)`` m3/s; ``lon``/``lat`` or model-CRS ``x``/``y``; optional
+    #: ``name``) APPENDED to the staged ``netsrcdisfile`` after the write
+    #: (``model.append_extra_discharge``). The template's sources, mask and fingerprint are
+    #: untouched — ``discharge_geodataset`` is a domain field that reaches a run only through
+    #: the template, and builds the inflow walls where ``wall_sources_geodataset`` is unset.
+    #: First use: the EurOtop wave-overtopping inflow into Deal Lake
+    #: (``scripts/eurotop_overtopping.py``, logs/overtopping_2026-10-17/). The metrics row
+    #: carries ``provenance.extra_discharge_label`` (names, peak, volume, sha), read from the
+    #: staged sidecar, never this path.
+    extra_discharge: Path | None = None
+
 
 def with_window(base: BaseConfig, tstop: datetime) -> BaseConfig:
     """Return a copy of ``base`` with a shorter run window (for smoke tests)."""

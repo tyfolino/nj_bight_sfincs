@@ -91,6 +91,8 @@ Every script reads `NJ_DOMAIN` unless its row names a domain. Run from the repo 
 | `burn_building_footprints.py` | Building-block elevation tier for the subgrid | live |
 | `build_cn_nj.py` | Curve Number raster for infiltration; `--ksat` = the SSURGO ksat raster for `cnb` | live |
 | `build_lake_fix_overlay.py` | lower-only coastal-lake bed overlay (10 ft lidar under the USACE 2010 lake fill; 10-15 audit) | live |
+| `build_breach_overlay_v4.py` | lower-only breach bed overlays for the `bed-breach` arms: Wreck Pond a stated channel (0.0 / 1.65 m), Mantoloking the EAARL post-Sandy surface, in the user's polygons | live |
+| `eurotop_overtopping.py` | EurOtop (2018) mean wave-overtopping q over a front, from a finished run's own toe Hm0 / Tp / zs (segments CSV + crest columns), scenario table (crest ±0.5, Hm0 ±20 %, pre crest, setup-free SWL, vertical wall) + Stockdon R2% check; writes a one-point discharge NetCDF for `Experiment.extra_discharge` (2026-10-17, Deal Lake, `logs/overtopping_2026-10-17/`) | live |
 | `build_refinement_v4.py` | v4 quadtree refinement polygons from a readable recipe; diffs names vs v3 | live |
 | `build_riverbeds_v4.py` | v4 river beds where no survey reaches, one carving raster per reach | live |
 | `build_usace_unpave_v4.py` | CUDEM painted back where the 2010 USACE lidar paves deep water (3 boxes), an overlay tier | live |

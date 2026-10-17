@@ -1965,6 +1965,155 @@ def break_hardlinks(model_dir: Path, names=None) -> list[str]:
     return broken
 
 
+#: Sidecar ``append_extra_discharge`` writes beside the staged discharge file.
+EXTRA_DISCHARGE_META = "extra_discharge.json"
+
+
+def _inp_keys(inp: Path) -> dict:
+    out = {}
+    for ln in Path(inp).read_text().splitlines():
+        if "=" in ln:
+            k, v = ln.split("=", 1)
+            out[k.strip()] = v.strip()
+    return out
+
+
+def append_extra_discharge(model_dir: Path, src: Path | str) -> dict:
+    """APPEND point sources to the staged ``netsrcdisfile`` (``Experiment.extra_discharge``).
+
+    Why not the catalog: ``discharge_geodataset`` is a DOMAIN field and reaches a run only
+    through the template (staging copies it, CLAUDE.md §5) — and on a domain without
+    ``wall_sources_geodataset`` its points also build the inflow walls, i.e. the MASK and the
+    fingerprint. An arm-level source therefore goes in AFTER ``sf.write()``, on the staged
+    file only: the mesh, mask, subgrid and template are untouched, so ``assert_sealed_domain``
+    still passes and the arm differs from its twin by these sources alone.
+
+    ``src``: a GeoDataset NetCDF in the catalog's discharge format — ``discharge(time,
+    index)`` in m3/s with ``lon`` / ``lat`` (EPSG:4326) or ``x`` / ``y`` (model CRS) on
+    ``index``, optional ``name``. Refused when a point's nearest face is INACTIVE (a source
+    on a mask==0 face is a SIGSEGV, not a warning — ``_snap_sources_to_active_faces``) or
+    the series does not cover ``tstart``..``tstop``. Both sets are put on the UNION of the
+    two time axes by linear interpolation, which is exactly what SFINCS does between file
+    times, so the template's own sources see no change. Written to a temp file and renamed
+    (a fresh inode: a hard-linked staged file is never written through). Returns the
+    record also written to ``extra_discharge.json``.
+    """
+    import hashlib
+    import json
+
+    import pyproj
+    from scipy.spatial import cKDTree
+
+    model_dir, src = Path(model_dir), Path(src)
+    kv = _inp_keys(model_dir / "sfincs.inp")
+    if "netsrcdisfile" not in kv:
+        raise SystemExit(
+            "extra_discharge: the staged model has no netsrcdisfile (ASCII src/dis or no "
+            "sources) — not supported; add the key to the template first"
+        )
+    target = model_dir / kv["netsrcdisfile"]
+    tref, t0, t1 = (
+        pd.to_datetime(kv[k], format="%Y%m%d %H%M%S") for k in ("tref", "tstart", "tstop")
+    )
+    epsg = int(kv.get("epsg", 32618))
+
+    with xr.open_dataset(target) as d0:
+        base = d0.load()
+    with xr.open_dataset(src) as e0:
+        ext = e0.load()
+    idim = "index" if "index" in ext.dims else ext["discharge"].dims[-1]
+    ext = ext.transpose("time", idim)
+    if {"x", "y"} <= set(ext.coords) | set(ext.data_vars):
+        ex, ey = ext["x"].values.astype(float), ext["y"].values.astype(float)
+    else:
+        tr = pyproj.Transformer.from_crs(4326, epsg, always_xy=True)
+        ex, ey = tr.transform(ext["lon"].values.astype(float), ext["lat"].values.astype(float))
+        ex, ey = np.asarray(ex, float), np.asarray(ey, float)
+    names = (
+        [str(n) for n in ext["name"].values] if "name" in ext.coords or "name" in ext
+        else [f"extra_{k}" for k in range(ext.sizes[idim])]
+    )
+    et = pd.DatetimeIndex(ext["time"].values)
+    if et.min() > t0 or et.max() < t1:
+        raise SystemExit(
+            f"extra_discharge {src.name}: series {et.min()}..{et.max()} does not cover the "
+            f"run window {t0}..{t1}"
+        )
+
+    with xr.open_dataset(model_dir / "sfincs.nc") as g:
+        fx, fy = g["mesh2d_face_x"].values, g["mesh2d_face_y"].values
+        mask = g["mask"].values
+    dist, face = cKDTree(np.c_[fx, fy]).query(np.c_[ex, ey])
+    bad = [n for n, f in zip(names, face) if mask[f] <= 0]
+    if bad:
+        raise SystemExit(
+            f"extra_discharge {src.name}: {bad} sit on an INACTIVE face (SIGSEGV on the "
+            "first step) — move the point onto an active wet face"
+        )
+
+    bt = pd.DatetimeIndex(base["time"].values)
+    allt = bt.union(et)
+    bsec = (bt - tref).total_seconds().to_numpy()
+    esec = (et - tref).total_seconds().to_numpy()
+    asec = (allt - tref).total_seconds().to_numpy()
+    bq = base["discharge"].transpose("time", "stations").values
+    eq = ext["discharge"].values.astype(float)
+    qb = np.stack([np.interp(asec, bsec, bq[:, k]) for k in range(bq.shape[1])], axis=1)
+    qe = np.stack([np.interp(asec, esec, eq[:, k]) for k in range(eq.shape[1])], axis=1)
+    nb, ne = qb.shape[1], qe.shape[1]
+
+    def _coord(name, extra):
+        v = base[name].values if name in base.coords or name in base else np.ones(nb)
+        return ("stations", np.r_[v, extra])
+
+    out = xr.Dataset(
+        {"discharge": (("time", "stations"), np.c_[qb, qe])},
+        coords={
+            "time": allt.values,
+            "stations": np.arange(nb + ne),
+            "x": _coord("x", ex),
+            "y": _coord("y", ey),
+            "area_scale": _coord("area_scale", np.ones(ne)),
+        },
+        attrs=dict(base.attrs),
+    )
+    for v in ("x", "y", "area_scale", "discharge"):
+        if v in base.variables:
+            out[v].attrs = dict(base[v].attrs)
+    if "spatial_ref" in base.variables:
+        out["spatial_ref"] = base["spatial_ref"]
+    out.attrs["extra_discharge"] = f"{src} -> stations {nb}..{nb + ne - 1}"
+    tmp = target.with_name(f".{target.name}.extra")
+    out.to_netcdf(
+        tmp,
+        encoding={"time": {"units": f"minutes since {tref:%Y-%m-%d %H:%M:%S}", "dtype": "float64"}},
+    )
+    os.replace(tmp, target)
+
+    dsec = np.diff(esec)
+    rec = {
+        "source": str(src),
+        "sha256": hashlib.sha256(src.read_bytes()).hexdigest(),
+        "stations": list(range(nb, nb + ne)),
+        "names": names,
+        "x": [round(float(v), 1) for v in ex],
+        "y": [round(float(v), 1) for v in ey],
+        "face": [int(f) for f in face],
+        "dist_to_face_centre_m": [round(float(v), 1) for v in dist],
+        "peak_m3s": [round(float(eq[:, k].max()), 4) for k in range(ne)],
+        "volume_m3": [round(float(np.sum(0.5 * (eq[1:, k] + eq[:-1, k]) * dsec))) for k in range(ne)],
+        "template_sources": nb,
+    }
+    (model_dir / EXTRA_DISCHARGE_META).write_text(json.dumps(rec, indent=1) + "\n")
+    print(
+        f"[src] + {ne} extra source(s) from {src.name} as stations {nb}..{nb + ne - 1}: "
+        + ", ".join(f"{n} peak {p:.2f} m3/s, {v:,.0f} m3" for n, p, v in
+                    zip(names, rec["peak_m3s"], rec["volume_m3"])),
+        flush=True,
+    )
+    return rec
+
+
 #: The pair ``Experiment.meteo_from`` replaces (rain stays the template's).
 METEO_FROM_FILES = ("sfincs_netamuv.nc", "sfincs_netamp.nc")
 
@@ -2016,6 +2165,7 @@ def finalize(
     meteo_from: Path | str | None = None,
     infiltration: bool = True,
     cnb_effective: float | None = None,
+    extra_discharge: Path | str | None = None,
 ) -> None:
     """Release handles, write, patch sfincs.inp, write the SnapWave ASCII forcing.
 
@@ -2030,6 +2180,10 @@ def finalize(
 
     ``infiltration=False`` (``Experiment.infiltration``) keeps the rain but writes no
     infiltration keys, on a domain that otherwise has them (step b).
+
+    ``extra_discharge`` (``Experiment.extra_discharge``) APPENDS point sources to the
+    written ``netsrcdisfile`` (``append_extra_discharge``) — the template's sources and the
+    mask stay as they are.
     """
     model_dir = Path(model_dir)
     if meteo_from is not None and wind_scale != 1.0:
@@ -2123,6 +2277,13 @@ def finalize(
     # marker and the engine would zero no active face. Rain (netampr) is untouched.
     if meteo_from is not None:
         replace_meteo_from(model_dir, meteo_from)
+
+    # ``Experiment.extra_discharge`` (2026-10-17, the Deal Lake overtopping arm): extra point
+    # sources appended to the WRITTEN discharge file, after sf.write() so hydromt never
+    # re-snaps or drops them; the template's ``discharge_geodataset`` (a domain field, and
+    # mask-defining where it builds the inflow walls) is untouched.
+    if extra_discharge is not None:
+        append_extra_discharge(model_dir, extra_discharge)
 
     inp = model_dir / "sfincs.inp"
     text = inp.read_text()

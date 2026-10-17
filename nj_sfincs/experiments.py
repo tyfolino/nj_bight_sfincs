@@ -642,6 +642,25 @@ _V4_REFREEZE.update(
         for n in ("naccs-premier", "naccs-nowaves")
     }
 )
+# 2026-10-17 (user): the Deal Lake wave-OVERTOPPING sensitivity arm — the premier plus ONE
+# extra point source inside Deal Lake's ocean end carrying the EurOtop (2018) mean overtopping
+# discharge over the 260 m lake front, computed from the premier's OWN toe Hm0 / Tp / zs
+# (scripts/eurotop_overtopping.py; logs/overtopping_2026-10-17/README.md). SFINCS + SnapWave
+# has setup but no short-wave overtopping; mark 6122 (3.14 m) reads -2.37 m on the premier.
+# Appended to the staged discharge file (`Experiment.extra_discharge`), so mesh, mask, bed and
+# the template's 61 sources are the premier's. The forcing was derived from the UNSEEDED
+# premier, so it carries that run's waves-on noise (FINDINGS §44).
+_V4_REFREEZE["naccs-premier+src-deal-overtop"] = replace(
+    _V4_REFREEZE["naccs-premier"],
+    name="naccs-premier+src-deal-overtop",
+    description="naccs-premier + an empirical wave-overtopping inflow into Deal Lake (EurOtop "
+    "2018 sloping-front mean q from the premier's own toe Hm0/Tp/zs, post-storm USACE 2012 "
+    "crest, 260 m frontage; peak 31.7 m3/s at 10-30 00 UTC, 0.29 Mm3) at the lake's ocean "
+    "end, 841 m from mark 6122. Pair: naccs-premier. Sensitivity forcing, not a premier "
+    "candidate.",
+    extra_discharge=DATA / "discharge_v4" / "deal_lake_overtopping_v4_refreeze.nc",
+)
+
 # 2026-10-11 (user): the v3 reference re-run to MATCH v4 — the shared-bed-fix pair on v4's
 # exact wind + pressure (the same NACCS-blend files, staged by `meteo_from`, which refuses
 # if any v3 active face falls outside the blend grid). The 10-05 `bed-v4fixes` runs carry

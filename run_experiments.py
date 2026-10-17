@@ -277,6 +277,7 @@ def prepare_experiment(name: str, base: BaseConfig) -> Path:
         meteo_from=exp.meteo_from,
         infiltration=exp.infiltration,
         cnb_effective=exp.cnb_effective,
+        extra_discharge=exp.extra_discharge,
     )
     # hydromt's writer drops crsfile/storevel; put them back so a staged arm carries the
     # flux cross-sections — which on a relocated-boundary domain are the headline result,
@@ -317,6 +318,7 @@ def collect_metrics(names: list[str]) -> pd.DataFrame:
             rows[name]["meteo"] = provenance.meteo_label(exp_dir)
             rows[name]["infiltration"] = provenance.infiltration_label(exp_dir)
             rows[name]["engine_seed"] = provenance.engine_seed_label(exp_dir)
+            rows[name]["extra_discharge"] = provenance.extra_discharge_label(exp_dir)
         except Exception as e:  # noqa: BLE001
             rows[name]["subgrid"] = f"unavailable ({e})"
         # Stamp the domain onto every row. A metrics table whose numbers do not say which

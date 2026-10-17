@@ -4,8 +4,9 @@ WHY THIS EXISTS (2026-10-15, user decision)
 -------------------------------------------
 On the v4 premier two marks carry a third of the HWM error: 6122 (Deal Lake) and 6130
 (Wreck Pond) read ~ −2.3 m because the sea never enters either lake in the model. The
-lowest ocean–lake connection on the bed (3.10 m Wreck Pond, 3.62 m Deal) stands above
-the modelled sea-side peak (2.81–3.01 m). In 2012 Sandy breached the dune at Wreck Pond
+model's lowest ocean–lake connection (2.82 m at the Wreck Pond outfall beach; 3.11 m for
+Deal Lake, overland through Asbury Park — traced 2026-10-17) stands above the modelled
+sea-side peak (2.78–2.80 m). In 2012 Sandy breached the dune at Wreck Pond
 and overwashed Ocean Ave into Deal Lake — dune erosion and run-up, which a fixed-bed
 SFINCS without a wavemaker does not have. The user chose a RULE-BASED flag: headline
 metrics reported WITH and WITHOUT the flagged marks; a mark is NEVER dropped.
@@ -46,9 +47,9 @@ per-mark columns before excluding a mark.
 MEASURED (v4_refreeze ``naccs-premier``, 2026-10-17; ``scripts/lake_outlet_blocked.py``):
 5 scored marks flagged — 6121, 6122, 6124 (``south_coast``), 6129 (``shark_river``), 6130
 (``barnegat_bay``) — plus q>2 marks 6119, 6120, 6126; the SAME set at bands 500 / 1000 /
-2000 m. ⚠️ 6129 and 6130 are flagged by 2–5 cm (C 2.819 by some route other than the
-3.10 m beach sill, P 2.77–2.81), inside the 5–14 cm waves-on run-to-run noise: the flag
-can flip between arms, so a PAIRED comparison of ``*_excl_lake_blocked`` should hold one
+2000 m. ⚠️ 6129 and 6130 are both Wreck Pond marks (6129's ``shark_river`` label is the
+v1-inherited basin box) and share C 2.819 = the outfall-beach sill (P 2.799): flagged by
+2 cm, inside the 5–14 cm waves-on run-to-run noise, so the flag can flip between arms, so a PAIRED comparison of ``*_excl_lake_blocked`` should hold one
 mark set (the reference run's ``hwm_lake_outlet_blocked_ids``) on both sides.
 
 Same graph as ``sea_level`` (the connected start), so the sill reading cannot drift
