@@ -48,7 +48,7 @@ the Singularity images), symlinked in. That directory is **toolchain only** — 
 | hydromt_sfincs | an EDITABLE install at commit `d8514d6` **plus a local fix** ([hpc/patches/quadtree_mixin_pad2.patch](hpc/patches/quadtree_mixin_pad2.patch): pads 1-cell quadtree slivers in the subgrid merge); steps in `env/pip-extra.txt` |
 | SFINCS engine | native builds from [hpc/build_sfincs_native.sh](hpc/build_sfincs_native.sh) (gfortran 11.5) into `~/nj_sandy_sfincs/sfincs-native/<variant>/`; patches in `hpc/patches/` and [docs/upstream/](docs/upstream/). Every run records its engine in `engine.txt` and `metrics.csv` |
 
-[environment.yml](environment.yml) is the loose, human-readable spec the env was first solved
+[hpc/environment.yml](hpc/environment.yml) is the loose, human-readable spec the env was first solved
 from; the lock file is what reproduces it.
 
 ## Layout

@@ -13,7 +13,7 @@
         --dep experiments/v4_refreeze/_subgrid_refreeze/subgrid/dep_subgrid_lev0.tif \
         --mesh experiments/v4_refreeze/_template_sealed/sfincs.nc \
         --window 495000 4285000 605000 4492000 --contour-stride 2 --float32-weights \
-        [--snap-seaward-of-beach] --out data/wavemakers_v4/v4_wavemaker_5m_mhw.geojson
+        [--snap-seaward-of-beach] --out data/wavemakers_v4/v4_wavemaker_5m_mhw_snapbeach.geojson
 
 WHY (STATUS 2026-09-17, FINDINGS §45): SnapWave's infragravity energy reaches SFINCS only
 through a wavemaker (Leijnse et al. 2025, App. B), placed "at ~5 m depth at high tide" in the

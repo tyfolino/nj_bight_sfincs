@@ -6,169 +6,67 @@ running, what is next, what is open. When an item closes, its durable fact goes 
 Git has the history. The campaign log this file grew into until 2026-09-29 (6,767 lines) is
 `git show d70dd1e:docs/STATUS.md`; FINDINGS cites it as "STATUS <date>".
 
-▶ **PICK UP (10-20; PHASE 4 = job 62757492, HELD by the user until the Beach Creek beds (62757958) are in; gauge comparisons to discuss before release):**
-1. ✅ **Wavemaker line DECIDED (user 10-19): `--snap-seaward-of-beach`** =
-   `data/wavemakers_v4/v4_wavemaker_5m_mhw_snapbeach.geojson` (8 pieces, 157.7 km; Cape May / Wildwood
-   left out as in v3). ✅ the v4 6 h-cut wavemaker repeat PASSED (62734681: bit-identical; a resumed copy
-   differs by up to 1.99 m at the Narrows — FINDINGS §44 (j)).
-2. ✅ **Phase 4 arms REGISTERED (10-19; `nj_sfincs/experiments.py` PHASE 4 block, user choices 10-19):**
-   v4_refreeze `p4-premier` (lower-only lake bed, `cnb` 1.5, ERA5 pressure in the blend, `snapbeach`
-   wavemaker) + `p4-premier-repeat`, `p4-premier+wave-nowavemaker`, `p4-nowaves`, `p4-premier+rain-cnb1.0`
-   / `2.38`, `bed-nobuildings+p4-premier`, `bed-breach-wreck0` / `-wreck165+p4-premier`,
-   `p4-premier+src-deal-overtop` (old unseeded forcing, flagged), `null-rhoa1.2501` / `1.2499+p4-premier`;
-   v3 `p4-ref` / `p4-ref-nowaves` (new names, the 10-11 runs stay). Horton DROPPED (user). New
-   `Experiment.rhoa` (null arms); `experiments.reference_arm()` = the family premier (the bed test
-   pairs against it). `--check`: 12/12 + 2/2 would stage. ▶ **62734605 `sbg_nobldg`** builds
-   `_subgrid_refreeze_lakes_min_nobuildings` (~7 h; `logs/nobuildings_2026-10-19/`). ✅ PREREG drafted
-   (`logs/rebaseline_2026-10-19/PREREG.md`). ✅ Job DRAFTED, NOT submitted: `logs/rebaseline_2026-10-19/phase4.slurm` + `pack_worker.sh`
-   (ONE 2-node emeraldrapids job: stage 14 arms + checks → 4×16-thread slots per node via hpc/sfincs_run.slurm → each node
-   validates its own arms; lists `node1.txt` / `node2.txt`; ~23 h solves, 40 h limit). Then: the
-   2-node job (wavemaker repeat ✅ passed; ENGINE = the home copy
-   `~/nj_sandy_sfincs/sfincs-native/v2.3.3-winddir-igk-igseed-wmseed-1-gf11/bin/sfincs` — the `/scratch/tpj8/sfincs-build/` dir holds
-   no binary), desk checks (Atlantic City datum, paved channels).
-3. **Run gallery (user 10-19):** a standard figure set per arm, made in the validate stage and
-   collected into a static GitHub Pages site (per-domain arm table with flags, a page per arm, a
-   two-arm compare page). Ready before the Phase 4 reads, so they land in it. Showcase site
-   (10-19 meeting) = `~/sandy_flood_site`, builders in `logs/showcase_2026-10-19/`.
-   🔴 **Depth convention (user 10-19; CLAUDE.md §6):** flood depth = water above the pixel ground,
-   on NORMALLY-DRY land only (ground ≥ MHHW / lake pool), NOAA/NHC style; water bodies blank; a separate
-   peak WATER-LEVEL map for water. (Briefly "drawn everywhere" — reversed by the user the same hour.)
-   Reference ✅: `nj_sfincs/normal_surface.py` + `data/normal_surface_v4/` (VDatum MHHW, lidar lake pools).
-   The gallery's zsmax map had used the face's LOWEST pixel as ground (rain films read as floods,
-   Highlands bluffs as 5 m+): fixed to the face's mean ground. The showcase animation / tiles / SLR
-   images ✅ REBUILT 10-19 evening on `normal_surface.normally_dry` (land only; builders
-   `logs/showcase_2026-10-19/rise/`): premier peak 1,020.7 km² of normally-dry land ≥ 0.15 m; SLR +0/+2/+3 m
-   708 / 1,733 / 2,168 km². Private page republished (v7). Unchased: 4.68 m on a few Absecon pixels.
-   ✅ **Gallery BUILT 10-19** (`nj_sfincs/gallery.py`; job 62734964, 55 min, ~21 G peak per v4 arm / ~16 G v3):
-   9 figures per arm (zsmax LEVEL, flood depth on normally-dry land via `normally_wet`, Δzsmax vs
-   `experiments.reference_arm`, HWM map + scatter/basins, MOTF, gauges, gauge peaks, hm0) + run card + flags
-   in `<run>/gallery/manifest.json`; HWM / MOTF reproduce every metrics.csv row (self-check in the manifest).
-   Hook: `run_experiments.py` draws it after every validate (subprocess per arm, warn-only; `--no-gallery`).
-   All 7 v4_refreeze + 6 v3 arms drawn (v3: no flood depth — no `normal_surface_dir`; 2 bed-v4fixes arms lack a
-   gallery tif → HWM/MOTF skipped, flagged). ONE public site (user 10-19): the gallery IS
-   `~/sandy_flood_site` = GitHub `tyfolino/sandy-flood-model` (Pages on `main` /), written by
-   `scripts/publish_gallery.py` (default `--site`); ▶ USER commits + pushes. Re-draw: `scripts/build_gallery.py` /
-   `hpc/build_gallery.slurm`. The meeting showcase lives on only as the private claude.ai page
-   (https://claude.ai/artifact/NfCNKozVV3BzdKF4r7mpCw); its last land-only build is parked in
-   `/scratch/tpj8/sandy_showcase_2026-10-19/` (builders `logs/showcase_2026-10-19/`).
+▶ **PICK UP (10-20 evening): Phase 4 = job 62757492, HELD by the user** until (a) the creek beds are rebuilt and
+checked (**job 62759318**) and (b) the Keansburg weir test reads (**job 62759323**). Then: nudge the Sluice gauge onto
+its opened channel face, adopt the weir if it passes, point the Phase 4 arms at the `*_creeks` beds, refresh
+`logs/rebaseline_2026-10-19/expected.md5`, `--check` + tests, retire the four old beds, user releases 62757492.
 
-Last updated: **2026-10-19** (evening) — Phase 4 arms registered + job drafted; the run gallery built (one
-public site); depth convention + `nj_sfincs/normal_surface.py`; both 10-17 bed builds checked. Before: **2026-10-17** (end of day) — the seeded-engine test read (repeats bit-for-bit across machines; a
-null perturbation still diverges waves-on → FINDINGS §44 (d)–(e)); the lake-fixed bed built; the 10-15
-reads moved to FINDINGS part 4 (h); cap test, template re-stage and the lower-only lake-bed rebuild
-submitted; `--overlay <key>:min`, env lock (`env/`), README done. Before: 2026-10-15 (pre-maintenance
-jobs read; FINAL AUDIT plan approved).
+Last updated: **2026-10-20** — desk checks done; gauge nudges; 6-min NOAA scoring; `fa_rainonly` retired; creek
+beds (Beach Creek + 52 Delaware Bay creek groups, an ASSUMED bed); Keansburg weir candidate; HWM inventory + STN
+records + noted marks; the run gallery simplified (view runs, next-premier list). Before: 10-19 (Phase 4 arms +
+job drafted; gallery + one public site; depth convention).
 
 ---
 
 ## Now
 
-- **v3 is DONE** (2026-09-24). Reference `naccs-premier` on the repaired mask — HWM RMSE 0.329 /
-  bias −0.143 (median, 50 m, n 94), MOTF CSI 0.706. Its NACCS-wind re-run
-  `bed-v4fixes+wave-dt3600+wind-naccs` reads 0.300 / −0.097 (part 4 (h)); the v3 reference is re-run
-  on the seeded engine in Phase 4.
-- **v4 = `v4_refreeze`** (`378014e154b4ff41`; bed `_subgrid_refreeze`, Keansburg + Overpeck weirs,
-  ERA5-bilinear meteo on the engine's corner convention). Premier `naccs-premier` (NACCS-blend wind,
-  CN infiltration, unseeded engine): RMSE 0.436 / bias −0.110 (n 110), CSI 0.780 with the
-  `salem_marshes` box — and 0.301 without marks 6122 / 6130, the two lakes the sea never enters in the
-  model (part 4 (g)–(h)). Run B (`v4_hot_plus_walls`) stays as the pre-re-freeze record.
-- **Heading for:** ONE Phase 4 re-baseline job on the seeded engine (below), before maintenance 11-10.
+- **v3 is DONE** (2026-09-24). Reference `naccs-premier` — HWM RMSE 0.329 / bias −0.143 (median, 50 m, n 94),
+  MOTF CSI 0.706; re-run on the seeded engine in Phase 4 (`p4-ref` / `p4-ref-nowaves`).
+- **v4 = `v4_refreeze`** (`378014e154b4ff41`). Premier `naccs-premier` (NACCS-blend wind, CN infiltration,
+  unseeded engine): RMSE 0.436 / bias −0.110 (n 110), CSI 0.780; without the 5 noted marks 0.408 / −0.095 (n 105);
+  10 marks outside ±0.5 m, inventoried in FINDINGS part 4 (h).
+- **Heading for:** the Phase 4 re-baseline (below), before maintenance 11-10.
 
 ## Running (10-20)
 
-- ▶ **62757492 `phase4`** submitted 10-20 (EXPECT_MD5 `logs/rebaseline_2026-10-19/expected.md5` — 🔴 do not edit
-  the guarded code / lists / `hpc/sfincs_run.slurm` until it STARTS). `--check` 12/12 + 2/2, tests 367 OK.
-
-- ✅ **62734681 `wm_repeat`** COMPLETED (3 h 07, halc075): BIT-IDENTICAL; resume read in FINDINGS §44 (j).
-- ✅ **62734605 `sbg_nobldg`** COMPLETED 10-20 02:29 (5 h 44, exit 0): `_subgrid_refreeze_lakes_min_nobuildings`
-  (`subgrid_diff.json`: 68,312 faces change `z_zmin`, median −2.3 m).
-- ✅ 10-17 jobs read and closed: `igcap` (FINDINGS §44 (e); user keeps `snapwave_niter` 200), the inflow
-  re-stage (swapped in; 10-06 copy = `_template_sealed_pre_inflows_2026-10-06`; the hand-step trap is in
-  CLAUDE.md §5), `sbg_lakes_min` + `sbg_breach` (checked 10-19, FINDINGS part 4 (h)). Clean-up done
-  (10-17 / 10-19, ~160 G incl. `_subgrid_refreeze_lakes`).
+- ▶ **62759318 `beds_creeks`** — rebuilds `_subgrid_refreeze_lakes_min` / `_nobuildings` / `_breach_wreck0` /
+  `_wreck165` as `*_creeks` (+ `usace_unpave_backbay_v4` with Beach Creek, + `creek_bed_nj10ft_v4:min`), then
+  `logs/creek_beds_2026-10-20/check_beds.py` (changes inside the fix boxes only; no raise outside Beach Creek;
+  the Sluice gauge's connection level before / after).
+- ▶ **62759323 `kburg_weir`** — base vs `logs/keansburg_pocket_2026-10-20/candidate_sfincs.weir` (railroad gap at
+  Pews OPEN), two 60 h waves-off cuts of naccs-nowaves (`/scratch/tpj8/engine_gate/keansburg_2026-10-20/`) →
+  `test_result.txt`. Adopt if 6155 / 6156 / 6133 drop and 6154 / 6157 / 6158 / 6132 hold: copy into
+  `data/structures_v4/sfincs.weir` AND the template (weir only — no fingerprint move; check the log's
+  "structure u/v points"). Next leak: the Thornes Creek marsh near Rt 36 (unmapped).
+- ⏸ **62757492 `phase4`** HELD (user). Its EXPECT_MD5 predates 10-20's code edits — refresh before release.
 - 🔴 Side-by-side `engine_gate.py run` copies need `taskset` on disjoint cores (FINDINGS §44 (i)).
 
 ## ⭐ FINAL AUDIT → "the v4 premier is ready" (plan approved 10-15)
 
-Plan: `~/.claude/plans/i-think-i-m-ready-warm-trinket.md`. User decisions 10-15: lakes = rule-based
-flag + a documented-site breach SENSITIVITY arm (not in the premier); IG stays on, seeded; v3
-reference re-run on the seeded engine; `cnb` stays the premier's infiltration (FINDINGS §59).
+Plan: `~/.claude/plans/i-think-i-m-ready-warm-trinket.md`. Phases 0–3 ✅ (seed patch, cleanup, seeded-engine
+test, code; details FINDINGS part 4 (h), §44, git log). 🔴 USER: re-run `scripts/desktop_pull_backup.sh` once.
 
-- **Phase 0–1 ✅ (10-15):** seed patch + Deltares issue draft (`docs/upstream/snapwave_igseed*`); NACCS
-  originals in `~/nj_bight_durable/`; repo, scratch and home cleanup (scratch 713 → 438 G).
-  🔴 USER: re-run `scripts/desktop_pull_backup.sh` once (first pull of `nj_bight_sfincs_data/`, 78 G) —
-  in progress 10-17.
-- **Phase 2 ✅ (10-17):** outcome B — seeded repeat STRICT across clusters, null perturbation diverges
-  waves-on (FINDINGS §44 (d)–(e)); §44 / §45 rewritten; CLAUDE.md §5 RNG trap; the cap test says the
-  amplifier is the coupled solve, not the cap (§44 (e)).
-- **Phase 3 (code, no solves) ✅ except the open items below.** Done 10-15 → 10-19: inflow-wall split +
-  re-stage; `cnb` (`Experiment.cnb_effective`, `ksat_v4_refreeze`); `naccs_blend_p_era5` (registered in
-  `p4-premier`); lake audit + `lake_fix_v4` + `--overlay <key>:min`; `lake_outlet_blocked` flag; breach
-  design (user 10-17: Wreck 0.0 m main + 1.65 m bracket, Mantoloking post-storm EAARL-B, n 0.025) +
-  overlays + beds (checked 10-19); the Deal overtopping arm (`Experiment.extra_discharge`); metrics label
-  round-trip, env lock, README; the Phase 4 arms + PREREG (10-19). Details: FINDINGS part 4 (h), git log.
-  - ✅ CLOSED 10-20 (user): no lake pool start (the lakes start within 5–75 cm of their pools — the lidar
-    bed is the water surface; FINDINGS part 4 (h)); no Wreck Pond culvert.
-  - ✅ desk check Atlantic City (10-20): the +0.5 m is NACCS forcing, not datum or model (FINDINGS part 4 (h)).
-    ✅ NOAA gauges scored from the 6-min record on v3 + v4 (user 10-20; FINDINGS part 4 (h)). Phase 4's md5 to be
-    refreshed (domain.py, fa_decomp.py changed) when the creek beds are in.
-    ✅ `motf_km2_fa_rainonly` RETIRED (user 10-20; 0 by construction) — the attribution is the twin-run split
-      (`logs/fa_rain_2026-10-20/fa_cause_split.py`: premier FA rain 79 / surge 27 / waves 22 km², FINDINGS part 4 (h)).
-  - ✅ desk check paved channels (10-20): federal channels clear; Beach Creek (N. Wildwood) still paved, 2 probable
-    CUDEM surfaces — none moves a mark (FINDINGS part 4 (h)); `audit_paved_channels.py` retired.
-  - ✅ **Gauges on dry faces** (10-20, user: move now): `noaa_cape_may`, `usgs_tidal_cape_may_harbor`,
-    `usgs_tidal_barnegat_light` NUDGED 15–39 m onto the nearest face the sea reaches at −0.5 m
-    (`domain._V4_REFREEZE_NUDGED_2026_10_20`, template `sfincs.obs` synced, `logs/gauge_nudge_2026-10-20/`);
-    `usgs_tidal_sluice_creek` NOT moved (nearest connected face 2.6 km) — crest only. Old v4_refreeze runs now
-    audit "OBS STALE" (true: their his points are the old ones); staging is clean.
-  - ▶ **Creek bed fixes before Phase 4** (10-20, user): (1) Beach Creek box `beach_creek_nwildwood` added to
-    `usace_unpave_backbay_v4` (10 old boxes pixel-identical; 0.026 km², +1.22 → −1.78 m). (2) NEW overlay
-    `creek_bed_nj10ft_v4` (`scripts/build_creek_bed_nj10ft_v4.py`, `:min`): an ASSUMED bed — the NJ 10 ft DEM's
-    hydro-flat water FILL (−1.067 m = −3.5 ft ≈ USACE MLW, a convention, not a survey; user 10-20: keep it,
-    labelled assumed) along named creeks, NHD lakes excluded; first site Sluice/Dennis (USGS 01411435: bed
-    +0.6 m under the gauge, no modelled tide, obs range 1.06 m; `logs/sluice_creek_2026-10-20/`). (3) ✅ sweep
-    (`logs/de_bay_creeks_2026-10-20/`): 55 creeks / ~123 km qualify; user 10-20: ALL except the Salem River +
-    Mannington Creek (stepped NJ10 levels, maybe gates) → overlay built, 52 sites. Sluice gauge: nudge 30–40 m onto
-    the channel face AFTER the rebuild (its own face has no flat pixels). (4) ▶ **job 62759318** rebuilds the four
-    beds as `*_creeks` (+ `check_beds.py`). (5) ▶ **Keansburg weir** (`logs/keansburg_pocket_2026-10-20/`): the weir
-    covers ~¼ of the real 5.6 mi system — water goes round both ends (East Keansburg ~2.0 m via the Pews side, the west
-    end 2.30) and over a mis-drawn middle reach (2.90 m floor, 100–400 m inland of the real crest); pocket connects at
-    2.03 m (v3 2.13). User 10-20: the agent's `candidate_sfincs.weir` (railroad gap at Pews OPEN — its stop-log
-    closure is listed inoperable; est. connection 2.09) + a test: **job 62759323**, two 60 h waves-off cuts of
-    naccs-nowaves (base / candidate weir) in `/scratch/tpj8/engine_gate/keansburg_2026-10-20/` → `test_result.txt`.
-    Adopt if 6155 / 6156 / 6133 drop and 6154 / 6157 / 6158 / 6132 hold; then copy into `data/structures_v4/` AND the
-    template (a weir-only change, no fingerprint move). Next leak: Thornes Creek marsh near Rt 36 (unmapped).
-    Wreck Pond: no fix. Cohansey deeper section: AFTER Phase 4 (user). THEN
-    `logs/creek_beds_2026-10-20/build_beds_creeks.slurm` rebuilds the four Phase 4 beds as `*_creeks` +
-    `check_beds.py`; point `experiments.py` at them, refresh Phase 4's md5, retire the old four, user releases
-    62757492 (HELD). (62757958, the Beach-Creek-only rebuild, was cancelled for this.)
-  - ▶ **HWM inventory** (10-20, `logs/dry_mark_2026-10-20/per_mark_naccs-premier.csv`): 10 of 110 marks outside ±0.5 m on
-    the v4 premier — 4 sea-never-enters-lake (6122, 6130, 6124, 6129 dry), 3–4 oceanfront run-up / overwash above their
-    neighbours' measured levels (6121, 6398, 6188, 6169?), 2 model-high (6155 Keansburg pocket +1.49, 6202 +1.00 vs its
-    neighbours' obs). Agents running: Keansburg leak (`logs/keansburg_pocket_2026-10-20/`), the Wreck Pond band + 6129
-    (`logs/wreck_pond_band_2026-10-20/`: ✅ the band was the 1st Ave bridge deck, already removed by the lake fix — no
-    fix; 6129 is set by the pond level) — bed fixes ride the creek rebuild. ✅ STN records read (FINDINGS part 4 (h)):
-    lake marks sound; 6121 / 6398 / 6188 run-up / overwash upper bounds; 6155 sound, behind the levee; 6202 + 6169
-    SUSPECT. ✅ user 10-20: keep all five, draw them hollow (○ questioned 6169 / 6202, △ run-up 6121 / 6398 /
-    6188), report `hwm_*_scored_excl_noted` BESIDE the headline (`validate.metrics.HWM_MARK_NOTES`); v4 premier
-    110 marks RMSE 0.436 / bias −0.110 → without them n 105, 0.408 / −0.095 (median, 50 m). Figures redrawn.
-- **Phase 4:** ONE 2-node job on the seeded engine. Node 1: new premier (seeded + `cnb` 1.5 + ERA5
-  pressure + moved inflows + lake-fixed bed) + its repeat + `bed-breach` + waves-off + `cnb` 1.0 / 2.38
-  + `bed-nobuildings` + a waves-off Horton (`hor`) arm. Node 2: v3 reference pair + TWO full-length null
-  copies of the new premier, `rhoa` 1.2501 and 1.2499 (user 10-17: the noise band THROUGH the peak as a
-  spread, not one draw). All at `snapwave_niter` 200. Validate; paired reads. Must end
-  before 11-10 08:00. **Wall budget:** the v4 premier took 10 h 05 on emeraldrapids (job 62328438;
-  SnapWave 28,568 of 36,258 s; 18 capped calls × 539 s, 55 converged × 343 s); packed 4×16 about the
-  same (packing test); niter 800 measured +12 % on the 6 h cut. On icelake ×3 → ~30 h, near
-  the 40 h limit, and a TIMEOUT is not requeued (a hand-resume resets `cna` soil) →
-  `SOLVE_CONSTRAINT=emeraldrapids`. 🔴 A preempted-and-RESUMED waves-on arm is a different run (FINDINGS
-  §44 (j); dm at single gauges on the toy): check every arm's `restart_history.txt` before pairing, and
-  re-run a resumed premier / repeat / `rhoa` copy rather than read it.
-- **Phase 5–6:** ⚠️ update `scripts/publish_gallery.py` `NEXT_PREMIER` (the site's "coming in the next premier"
-  list, 10-20) when the new premier lands — and add the Delaware Bay creeks the sweep picks. Reads (new preset) → frozen premier (engine `…igseed-1…@2e4e9645`, user tags git),
-  `docs/MODEL.md` model card, validation summary, research-group brief (incl. status-notebook fig. 2,
-  "rise above normal water": baseline from the premier's early 6-h `zsmax` blocks,
-  `logs/notebook_qc_2026-10-11/baseline_check.py`), docs refresh, backup, user commits.
+- **Closed 10-20 (user; facts in FINDINGS part 4 (h)):** no lake pool start; no Wreck Pond culvert; Wreck Pond
+  "band" = the 1st Ave bridge deck, already removed — no fix; Atlantic City +0.5 m = NACCS forcing; paved
+  channels — federal channels clear (`audit_paved_channels.py` retired); `noaa_cape_may` /
+  `usgs_tidal_cape_may_harbor` / `usgs_tidal_barnegat_light` nudged onto sea-connected faces (old v4_refreeze
+  runs audit "OBS STALE", truthfully); NOAA gauges scored from 6-min on v3 + v4; `motf_km2_fa_rainonly` retired
+  (MOTF false alarms: rain 79 / surge 27 / waves 22 of 128.5 km², twin-run split); creek beds = an ASSUMED bed at
+  ≈ MLW (Salem River + Mannington Creek left out); HWM marks 6169 / 6202 (questioned) and 6121 / 6398 / 6188
+  (run-up) kept, drawn hollow, `hwm_*_scored_excl_noted` beside the headline.
+- **Phase 4 (job 62757492, `logs/rebaseline_2026-10-19/`):** ONE 2-node emeraldrapids job, seeded engine
+  `…igseed-wmseed-1-gf11`, 40 h: stage 12 v4_refreeze + 2 v3 arms, 4 × 16-thread slots per node, each node
+  validates its own. Node 1 (`node1.txt`): v3 `p4-ref`, `p4-premier`, its repeat, the two `rhoa` null copies,
+  `bed-breach-wreck0`. Node 2: `p4-nowaves`, `+wave-nowavemaker`, `cnb` 1.0 / 2.38, `bed-nobuildings`,
+  `bed-breach-wreck165`, `src-deal-overtop`, v3 `p4-ref-nowaves`. PREREG `PREREG.md`. Budget: v4 waves-on
+  ≈ 10 h on emeraldrapids. 🔴 A preempted-and-RESUMED waves-on arm is a different run (§44 (j)): check every
+  `restart_history.txt` before pairing; re-run a resumed premier / repeat / `rhoa` copy.
+- **Phase 5–6:** ⚠️ update `scripts/publish_gallery.py` `NEXT_PREMIER` when the new premier lands. Reads →
+  frozen premier (user tags git), `docs/MODEL.md`, validation summary, research-group brief (incl. the
+  status-notebook "rise above normal water" fig., `logs/notebook_qc_2026-10-11/baseline_check.py`), docs, backup.
+- **Gallery / site:** `~/sandy_flood_site` = `tyfolino/sandy-flood-model`, written by `scripts/publish_gallery.py`
+  (user commits + pushes); figures by `nj_sfincs/gallery.py` in every validate (`--no-gallery` to skip),
+  re-draw `scripts/build_gallery.py` / `hpc/build_gallery.slurm`. Depth convention: CLAUDE.md §6.
 
 ## Re-freeze bed — notes that still apply
 
@@ -241,23 +139,9 @@ heads may still be tidal (unpainted). Paerdegat: leave it (user).
 - **Unread from the 10-05 pre-registration:** do the Maurice / Mullica / Tuckahoe / Rancocas reaches
   wet; hm0 vs depth at the SnapWave band's 53 boundary cells shallower than −20 m. Close: one read of
   the premier's map output.
-- 🔴 **IG in the premier = computed, NOT coupled to the water (checked 10-17).** v4 and v3 premiers:
-  `snapwave_igwaves = 1`, no `wvmfile`; IG then acts only by removing short-wave energy (§45). The
-  user's supervisor wants IG ON (user 10-17) — in the sense of IG motion in the water that takes the
-  wavemaker (§49: v3 `wave-wavemaker` lifted 6122 Deal Lake +0.27, 6124 +0.53, 6123 +0.29 m; open coast
-  median +0.021; NY bays −0.049 re-ring). A v4 premier wavemaker needs: a v4 line
-  (`build_wavemaker_line.py`), an engine with igk-fix + igseed + a SEED for the wavemaker's own
-  random phases (`sfincs_wavemaker.f90:1322`, drawn once at init, unseeded), a repeat test, and a
-  check of the IG phase across a restart. ✅ **User 10-17: the wavemaker goes INTO the new premier**
-  (with a no-wavemaker arm beside it, so its effect is measured). In progress 10-17 (subagents): the
-  engine ✅ `v2.3.3-winddir-igk-igseed-wmseed-1-gf11` (toy: repeats exactly; FINDINGS §44 (j)); ✅ the v4 line built
-  (`data/wavemakers_v4/`, `logs/wavemaker_v4_2026-10-17/README.md`; on `_subgrid_refreeze` lev0, v3's rules:
-  9 pieces / 140.6 km, within 1–3 m of v3 (median) on the shared coast, all checks pass; the
-  re-freeze's dredged back-bay channels make v3's snap rule drop 4.5 km at Holgate → alternative
-  `--snap-seaward-of-beach`: 8 pieces / 157.7 km, Holgate back + 3 old v3 gaps closed (Brigantine N,
-  Longport, Sea Bright–Sandy Hook), 2 vertices fail the land test; Cape May / Wildwood oceanfront left
-  out by v3's `--x-min 520000`, optional `alt/v4_xmin505.geojson`). ✅ user 10-19: the `snapbeach` line; then the
-  v4 6 h-cut repeat (Camden). Arm: `replace(_V4_PREMIER_WAVES, wavemaker=True, wavemaker_line=…)`.
+- **IG in the water:** the v3 / old v4 premiers compute IG but do not couple it (`snapwave_igwaves = 1`, no
+  `wvmfile`; §45). ✅ The Phase 4 premier carries the wavemaker (user 10-17; line `snapbeach`, user 10-19;
+  engine `…igseed-wmseed-1…`, repeat test passed — §44 (j)) with a no-wavemaker arm beside it.
   ⚠️ `dep_subgrid_lev0.tif` is NaN over the Cape May peninsula block (no level-1 faces there).
 - **Test 8 (setup-only wavemaker line):** evidence says don't run it as designed (§62); user's call.
 - **Buildings never re-run on the apex band (§55).** Close: `bed-nobuildings` in Phase 4.
@@ -328,8 +212,8 @@ heads may still be tidal (unpainted). Paerdegat: leave it (user).
 
 ## Housekeeping
 
-- Last cleanup: **2026-10-17** (the igseed partials, Camden duplicates and cap-test maps, the home
-  staging copy: 120 G). Before: 2026-10-15
+- Last cleanup: **2026-10-20** (engine-gate dirs on scratch: `igseed_sens3_62670893_r0` 61 G, `swing_3600`,
+  `repro_ig`, `repro`, `swing_rst`; the unused v4 wavemaker line `git rm`'d). Before: 2026-10-17 (120 G), 2026-10-15
   repo + scratch + home (`reports/cleanup/deletion_manifest_2026-10-15.md`).
 - Kept on purpose, user's call to remove: `data/NACCS/_originals_pending_delete/` (3.2 G — the only
   byte-reproducible source of v3's NACCS boundary, part 3; durable copy in
