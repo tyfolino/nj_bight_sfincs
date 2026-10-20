@@ -694,6 +694,7 @@ _V3.update(
 #   p4-premier+wave-nowavemaker    the wavemaker's effect (user 10-17: measured, not assumed)
 #   p4-nowaves                     SnapWave off
 #   p4-premier+rain-cnb1.0 / 2.38  wetter (AMC II) / drier (AMC I) soil
+#   p4-premier+rain-off            no rain: the waves-ON rain / coastal split (user 10-20)
 #   bed-nobuildings+p4-premier     the building burn's effect on the apex band (§55)
 #   bed-breach-wreck0 / -wreck165+p4-premier   the breach sensitivity (user 10-15 / 10-17)
 #   p4-premier+src-deal-overtop    the Deal Lake overtopping inflow; its forcing is from the
@@ -757,6 +758,14 @@ _V4_REFREEZE.update(
             )
             for e in ("1.0", "2.38")
         },
+        "p4-premier+rain-off": _p4_arm(
+            "p4-premier+rain-off",
+            "p4-premier with the rain forcing removed (netamprfile stripped; infiltration "
+            "keys stay and act on nothing). The waves-ON twin for splitting flooding into "
+            "rain and coastal: the 10-20 split had only waves-off twins (user 10-20). "
+            "Pair: p4-premier.",
+            rain=False,
+        ),
         "bed-nobuildings+p4-premier": _p4_arm(
             "bed-nobuildings+p4-premier",
             "p4-premier on the same bed WITHOUT the building burn "

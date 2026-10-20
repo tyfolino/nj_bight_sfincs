@@ -1840,6 +1840,7 @@ class TestV4Refreeze(unittest.TestCase):
             "p4-nowaves": {"waves"},
             "p4-premier+rain-cnb1.0": {"cnb_effective"},
             "p4-premier+rain-cnb2.38": {"cnb_effective"},
+            "p4-premier+rain-off": {"rain"},
             "bed-nobuildings+p4-premier": {"subgrid_from"},
             "bed-breach-wreck0+p4-premier": {"subgrid_from"},
             "bed-breach-wreck165+p4-premier": {"subgrid_from"},
@@ -1858,6 +1859,7 @@ class TestV4Refreeze(unittest.TestCase):
             }
             self.assertEqual(diff, set(fields), name)
         self.assertFalse(arms["p4-premier+wave-nowavemaker"].waves.wavemaker)
+        self.assertFalse(arms["p4-premier+rain-off"].rain)
         self.assertFalse(arms["p4-nowaves"].waves.use_waves)
         self.assertEqual(
             sorted(arms[n].rhoa for n in arms if n.startswith("null-")),

@@ -10,6 +10,8 @@ Git has the history. The campaign log this file grew into until 2026-09-29 (6,76
 checked (**job 62759318**) and (b) the Keansburg weir test reads (**job 62759323**). Then: nudge the Sluice gauge onto
 its opened channel face, adopt the weir if it passes, point the Phase 4 arms at the `*_creeks` beds, refresh
 `logs/rebaseline_2026-10-19/expected.md5`, `--check` + tests, retire the four old beds, user releases 62757492.
+Both jobs started ~15:00–15:10 on 10-20. Phase 4 now has 13 v4 arms (`p4-premier+rain-off` added 10-20, node 2,
+staging check + PREREG line + family test). DEP one-pager drafted (user is writing it up; item under Phase 5–6).
 
 Last updated: **2026-10-20** — desk checks done; gauge nudges; 6-min NOAA scoring; `fa_rainonly` retired; creek
 beds (Beach Creek + 52 Delaware Bay creek groups, an ASSUMED bed); Keansburg weir candidate; HWM inventory + STN
@@ -55,15 +57,20 @@ test, code; details FINDINGS part 4 (h), §44, git log). 🔴 USER: re-run `scri
   ≈ MLW (Salem River + Mannington Creek left out); HWM marks 6169 / 6202 (questioned) and 6121 / 6398 / 6188
   (run-up) kept, drawn hollow, `hwm_*_scored_excl_noted` beside the headline.
 - **Phase 4 (job 62757492, `logs/rebaseline_2026-10-19/`):** ONE 2-node emeraldrapids job, seeded engine
-  `…igseed-wmseed-1-gf11`, 40 h: stage 12 v4_refreeze + 2 v3 arms, 4 × 16-thread slots per node, each node
+  `…igseed-wmseed-1-gf11`, 40 h: stage 13 v4_refreeze + 2 v3 arms, 4 × 16-thread slots per node, each node
   validates its own. Node 1 (`node1.txt`): v3 `p4-ref`, `p4-premier`, its repeat, the two `rhoa` null copies,
-  `bed-breach-wreck0`. Node 2: `p4-nowaves`, `+wave-nowavemaker`, `cnb` 1.0 / 2.38, `bed-nobuildings`,
-  `bed-breach-wreck165`, `src-deal-overtop`, v3 `p4-ref-nowaves`. PREREG `PREREG.md`. Budget: v4 waves-on
+  `bed-breach-wreck0`, `p4-nowaves`. Node 2: `+wave-nowavemaker`, `cnb` 1.0 / 2.38, `bed-nobuildings`,
+  `bed-breach-wreck165`, `src-deal-overtop`, `+rain-off` (added 10-20: the waves-ON rain / coastal twin; node 2
+  ends ~20 h), v3 `p4-ref-nowaves`. PREREG `PREREG.md`. Budget: v4 waves-on
   ≈ 10 h on emeraldrapids. 🔴 A preempted-and-RESUMED waves-on arm is a different run (§44 (j)): check every
   `restart_history.txt` before pairing; re-run a resumed premier / repeat / `rhoa` copy.
 - **Phase 5–6:** ⚠️ update `scripts/publish_gallery.py` `NEXT_PREMIER` when the new premier lands. Reads →
   frozen premier (user tags git), `docs/MODEL.md`, validation summary, research-group brief (incl. the
   status-notebook "rise above normal water" fig., `logs/notebook_qc_2026-10-11/baseline_check.py`), docs, backup.
+- **DEP one-pager** (claude.ai doc "A Compound-Flood Model of the New Jersey Coast", 10-20; figures + scripts
+  `logs/one_pager_2026-10-20/`): ⚠️ Fig. 2 and the quoted HWM numbers DROP 5 marks for now — 6155 (Keansburg
+  pocket), 6122, 6124, 6129, 6130 (Monmouth lakes). After Phase 4: bring them BACK (`REVISED` in
+  `plot_scatter.py`), re-run `per_mark.py` + `compute_depth.py` on the new premier, refresh every number in the doc.
 - **Gallery / site:** `~/sandy_flood_site` = `tyfolino/sandy-flood-model`, written by `scripts/publish_gallery.py`
   (user commits + pushes); figures by `nj_sfincs/gallery.py` in every validate (`--no-gallery` to skip),
   re-draw `scripts/build_gallery.py` / `hpc/build_gallery.slurm`. Depth convention: CLAUDE.md §6.
