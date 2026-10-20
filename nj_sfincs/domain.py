@@ -535,6 +535,18 @@ class Domain:
         default_factory=dict
     )
 
+    #: The fixed zoom windows of the run gallery (``nj_sfincs/gallery.py``): names in
+    #: ``map_windows``, in panel order, drawn for EVERY arm of the domain so the figures
+    #: line up across arms. Empty = every non-None ``map_windows`` entry. Plot metadata
+    #: only — no bearing on the mesh or the fingerprint.
+    gallery_windows: tuple[str, ...] = ()
+
+    #: Where the USUAL-SURFACE rasters live (``nj_sfincs/normal_surface.py``, 2026-10-19):
+    #: ``mhhw_navd88_<tag>.tif`` + ``lake_pool_<tag>.tif``, ``<tag>`` = this dir's name
+    #: after ``normal_surface_``. ``None`` = not built for this domain. Map metadata only
+    #: — no bearing on the mesh or the fingerprint.
+    normal_surface_dir: Path | None = None
+
     # ── Water-level boundary support points ──────────────────────────────────
     # hydromt selects the forcing gauges by BUFFERING the model region, so the number
     # of support points is a function of the DOMAIN, not of the forcing file. That makes
@@ -1749,6 +1761,9 @@ V3 = Domain(
         "great_egg": (522_000, 541_000, 4_341_000, 4_356_000),
         "cape_may": (498_000, 524_000, 4_303_000, 4_328_000),
     },
+    gallery_windows=(
+        "raritan", "sandy_hook", "barnegat", "great_bay", "absecon", "cape_may",
+    ),
     # FROZEN 2026-08-26: data/frozen_mesh_v3 (no mesh_key — one boundary depth so far),
     # fingerprint premier.V3 — moved 2026-09-22 by the mask repair above (same mesh,
     # `mask_overrides` re-derived by scripts/restage_mask_repair.py; the frozen mesh's
@@ -2496,6 +2511,8 @@ V4 = Domain(
     nr_subgrid_pixels=16,  # user 09-27: brings the 50 m faces to the ~3 m lidar
     refinement=DATA / "quadtree" / "refinement_v4.geojson",
     latitude=39.86,  # (38.725 + 40.994) / 2, the drawn ring's mid-latitude
+    # MHHW + lake pools (2026-10-19); inherited by every v4 mask variant via `replace`.
+    normal_surface_dir=DATA / "normal_surface_v4",
     # BASE (noaa_sandy_nj) selection, measured on the frozen mesh 2026-09-28: Battery +
     # Atlantic City + Cape May in the 100 km buffer, as on v3. Arms force from NACCS 241.
     n_waterlevel_support=3,
@@ -2724,6 +2741,19 @@ V4 = Domain(
         ),
     ),
     plot_window=(437_000, 626_000, 4_286_000, 4_539_000),
+    # Plot metadata only (2026-10-19, the run gallery): v4's first-results zooms
+    # (scripts/v4_first_results.py) + Newark Bay / the Raritan and the two Delaware reaches.
+    # Inherited by every v4 mask variant through `replace`.
+    map_windows={
+        "domain": None,
+        "ny_bays": (548_000, 600_000, 4_462_000, 4_500_000),
+        "newark_raritan": (528_000, 590_000, 4_482_000, 4_525_000),
+        "barnegat": (555_000, 592_000, 4_390_000, 4_440_000),
+        "great_bay_absecon": (535_000, 575_000, 4_350_000, 4_392_000),
+        "cape_may": (480_000, 535_000, 4_292_000, 4_345_000),
+        "delaware_bay": (440_000, 520_000, 4_310_000, 4_400_000),
+        "delaware_river": (445_000, 525_000, 4_390_000, 4_462_000),
+    },
 )
 
 # ── v4_hot / v4_hot_plus — 2026-10-02 (user: build A and A+ on v4's mesh) ─────────────

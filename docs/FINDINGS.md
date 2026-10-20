@@ -833,6 +833,16 @@ CLAUDE.md §5.
     does not carry (wavemaker flux filter, advection velocities, the SnapWave field, `zsm`).
     `metrics.csv` `engine_seed` reads `os-random:wavemaker` for a wavemaker run on a build
     without `nj-wmseed`.
+    **On v4 (2026-10-19, job 62734681, `logs/wm_repeat_2026-10-19/`):** the 10-11 premier's inputs
+    + the `snapbeach` line (8 polylines, 7,940 wavemaker u/v points; 0.4 % of run time), 6 h cut, two
+    copies side by side on Camden: **bit-identical** — 30 / 31 map and 38 / 39 his variables (only the
+    wall-clock `total_runtime` differs), both restart files byte-identical, the same SnapWave
+    iteration counts. A copy RESUMED at 03:00 from the uninterrupted one's restart file: IG band
+    (zs − 10-min mean) at 44 surf-zone points r median 0.79 (0.58–0.87) over 3 h — 0.83–0.93 in
+    the first 30 min, 0.98–0.99 in the last hour, so the IG field re-synchronises within ~2 h — but
+    the Narrows gauges differ by **1.99 m** (`sss_narrows_si`) and 1.05 m (`sss_narrows_bkln`), and
+    Sea Bright by 0.35 m, in a CALM pre-storm window; map zs p99 0.10 m. A resumed waves-on v4 run is
+    a different run: never read one in place of an uninterrupted arm.
 
     **The native build reproduces the container** (2026-09-11, `scripts/engine_gate.py`):
     G1 (hydromt `sfincs_compound` example, no SnapWave) is STRICT — zs / zsmax / h max|Δ| 0
@@ -1944,7 +1954,17 @@ lagoon canal. User 10-15: fix 14, keep Lake of the Lilies. Overlay `lake_fix_v4`
 lowered, 0.53 Mm³. Built 10-16 as `_subgrid_refreeze_lakes` (the 10-06 recipe + `lake_fix_v4` last):
 vs `_subgrid_refreeze` 2,952 faces change `z_volmax`, every one inside a fixed lake; 112 got a
 HIGHER `z_zmin` (max +1.35 m, Lake Louise) because nearest paint onto the rotated subgrid lattice
-can overwrite a deeper subgrid pixel — a lower-only paint mode removes it.
+can overwrite a deeper subgrid pixel — a lower-only paint mode removes it. **It does:** the
+lower-only rebuild `_subgrid_refreeze_lakes_min` (`--overlay lake_fix_v4:min`, 10-17) vs
+`_subgrid_refreeze` raises NO `z_zmin` (1,926 lowered, max −2.92 m) and NO `uv_zmin` (3,594 lowered,
+max −3.53 m); 2,927 faces change `z_volmax`, and every changed face lies inside the 10-16 build's set
+(`logs/breach_2026-10-17/check_beds.txt`). **The breach beds** (`_subgrid_breach_wreck0` /
+`_wreck165` = that bed + `breach_v4_<v>:min` + n 0.025, 10-17) vs it: no raise anywhere; 214 / 184
+changed faces, all within 27 m of the three polygons. Crossing sill, ocean → bay inside each polygon's
+own N–S band (minimax of `uv_zmin` and both faces' `z_zmin`): Wreck 2.82 → 0.01 / 1.66, manto_a
+3.97 → 1.11, manto_b 4.00 → 0.48 m — at Mantoloking BELOW the 3 m overlay's own crossing (1.60 / 0.60),
+because a uv sill is the lowest pixel in its uv area, not a continuous path. Sea-connection level at
+6130 2.82 → 0.83 / 1.66; at 6129 2.82 → 2.27 in both (the pond's internal band, now the control).
 **Wave overtopping cannot fill Deal Lake** (2026-10-17, `logs/overtopping_2026-10-17/`; EurOtop 2018
 eq. 5.10/5.11, sloping beach + low crest; toe = first face seaward with mean bed ≤ −1 m, Hm0 2.4–3.7 m,
 Tm−1,0 12.2–12.6 s, SWL 2.84–2.92 m incl. setup, from the unseeded premier; 260 m frontage, post-storm
@@ -1967,6 +1987,32 @@ y < 4,450,800) and share P 2.799 / C 2.819 — the outfall-beach sill above; an 
 (connected components, no spanning tree) reproduces C to the mm. Flagged by 2 cm, inside the §44
 waves-on noise: a paired comparison holds ONE mark set on both sides (the reference run's
 `hwm_lake_outlet_blocked_ids`).
+
+**Usual surface for depth maps (2026-10-19; CLAUDE.md §6).** v4 "flood depth" = water level −
+pixel ground, drawn only where the ground is normally dry: ground ≥ W, W = the normal pool of a
+non-tidal NHD lake, else MHHW, else undefined (no W = normally dry)
+(`nj_sfincs/normal_surface.py`, `data/normal_surface_v4/`, `scripts/build_normal_surface_v4.py`).
+MHHW = NOAA VDatum (epoch 1983–2001): MHHW above NAVD88 = mhhw.gtx − tss.gtx (tss = NAVD88 − LMSL;
+each grid interpolated on its own lattice; |tss| > 0.5 m, 171 junk inland nodes, treated as
+nodata). Against CO-OPS published datums: mean |Δ| 0.009 m, max 0.026 m (Marcus Hook) at the 14
+stations with a NAVD88 tie (Sandy Hook 0.000, Trenton Marine Terminal 0.000 — MHHW 1.488 m, the
+head of tide); the tidal part (MHHW − MSL) mean |Δ| 0.010 m, max 0.041 m at 26.
+VDatum stops short of the upper tidal reaches, so MHHW is carried up connected water inside the
+ring (along-water blend with the CO-OPS anchors Great Egg Harbor River and Bivalve; 376 km²), then
+≤ 2 km onto land by nearest neighbour. Of v4_refreeze's normally-wet area (z < 0 m or a lake pool;
+3,756 km²) 99.97 % has a W: 93.2 % VDatum, 2.5 % river fill, 0.8 % land extension, 3.4 % lake pools.
+Lakes are tidal when ≥ 50 % of their area is on VDatum and the 3DEP surface ≤ MHHW + 0.25 m, or
+when joined to tidal water with a surface below MHHW; non-tidal pools are the 3DEP 1/3″
+hydro-flattened surface (NJ 10 ft fallback; the 14 Monmouth audit lakes reproduce exactly).
+**The one wet/dry rule** (`normal_surface.normally_wet`): wet = in the NHD water mask (every river /
+stream / canal area polygon ∪ every lake / pond / reservoir; 578.6 km² inside the ring;
+`water_mask_v4.tif`) | a lake pool | ground < MHHW | (no MHHW & ground < 0 m NAVD88). The mask is
+needed: where the DEM holds the lidar WATER surface, "ground < MHHW" alone calls 42 % of the Raritan
+(Sayreville → Bound Brook) and 31 % of the Delaware (Fieldsboro → Trenton falls) centreline dry —
+the mask makes both 100 % wet. ⚠️ The land extension is not a connectivity test: diked land below MHHW inside it (Salem,
+Meadowlands, Keansburg) is measured from MHHW, so the map UNDER-shows depth there. ⚠️ A pool is the
+lidar-day surface: 1,483 lakes (47 km²) sit > 0.3 m below local MHHW, incl. Lake Lenape at −0.15 m
+on both DEMs (implausible for a dammed lake) — flagged in `lakes_v4.csv`, not corrected.
 
 **Still open after the audit:** the Schuylkill backing up to 6.8 m BELOW the Fairmount Dam on a
 ~0 m bed (no river cut removes it; the box-MEAN Manning above `uv_zmax` is the suspect —

@@ -17,7 +17,7 @@ from pathlib import Path
 from unittest import mock
 
 from nj_sfincs.config import Experiment, WaveConfig
-from nj_sfincs.experiments import EXPERIMENTS_BY_DOMAIN
+from nj_sfincs.experiments import EXPERIMENTS_BY_DOMAIN, reference_arm
 
 
 # Importing ``run_experiments`` resolves ``exp_root()``, which needs a declared domain
@@ -35,9 +35,11 @@ class TestBedArms(unittest.TestCase):
         the v3 premier itself carries `_subgrid_buildings` and `bed-nobuildings` is the
         arm that swaps back to the template — the contract is relative to the premier.)"""
         for dom, arms in EXPERIMENTS_BY_DOMAIN.items():
-            prem = arms.get("naccs-premier")
-            base = prem.subgrid_from if prem is not None else None
             for name, exp in arms.items():
+                # Relative to the arm's OWN family premier (2026-10-19: the p4- candidates
+                # run a new bed and pair against p4-premier / p4-ref, not naccs-premier).
+                ref = reference_arm(name, dom)
+                base = arms[ref].subgrid_from if ref is not None else None
                 with self.subTest(domain=dom, arm=name):
                     if name.startswith("bed-") or "+bed-" in name:
                         self.assertNotEqual(

@@ -398,6 +398,14 @@ not trip that guard. Do not run the sweep driver to "just rebuild" a template.
   ⚠️ On this domain it changes meaning: the Battery sits ~10 km north of the Narrows —
   *immediately outside a forced boundary* — so it is a forcing INPUT, not an independent
   holdout. The model holdouts are the interior Raritan gauges.
+- 🔴 **"Flood depth" on any map = water above the PIXEL ground, on NORMALLY-DRY land only**
+  (user 2026-10-19, NOAA/NHC practice). Normally dry = ground ≥ the usual water surface W
+  (MHHW from NOAA VDatum on tidal water, the normal pool on non-tidal lakes; one reference:
+  `nj_sfincs/normal_surface.py`). Bays, ocean, rivers, lakes and intertidal ground below MHHW are
+  left blank (the basemap shows water). Never use the subgrid face's `zb` / `z_zmin` as ground:
+  it is the face's LOWEST pixel and turns every rain film into a "flood". The water-on-water view
+  is a SEPARATE peak WATER-LEVEL map (`zsmax`, m NAVD88): label it a level, and mask dry faces
+  against the face's MEAN ground (`z_zmax − z_volmax / area`).
 - Prefer coordinate boxes and thresholds over auto-derived polygons.
 - `ruff.toml` sets line length 88 and pins the lint select explicitly. Ruff IS in the
   sfincs env since 2026-09-17 (`micromamba install -n sfincs -c conda-forge ruff`), so the

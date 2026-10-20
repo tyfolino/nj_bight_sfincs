@@ -283,6 +283,11 @@ def prepare_experiment(name: str, base: BaseConfig) -> Path:
     # flux cross-sections — which on a relocated-boundary domain are the headline result,
     # not a diagnostic.
     model.restore_diagnostics(exp_dir)
+    # ``Experiment.rhoa`` (null-* arms): last, on the written inp, so no writer above can put
+    # the template's 1.25 back.
+    if exp.rhoa is not None:
+        model.set_inp_keys(exp_dir / "sfincs.inp", {"rhoa": f"{exp.rhoa}"})
+        print(f"[{name}] rhoa = {exp.rhoa} on the staged copy (null perturbation)")
     del sf
     gc.collect()
     return exp_dir
@@ -430,6 +435,13 @@ def main(argv=None) -> int:
         help="override the run end date (YYYY-MM-DD) for a short smoke test; forces a "
         "template rebuild",
     )
+    p.add_argument(
+        "--no-gallery",
+        action="store_true",
+        help="skip the run-gallery figures (nj_sfincs/gallery.py) that are otherwise "
+        "drawn for every validated arm, one subprocess per arm, after metrics.csv is "
+        "written. A gallery failure only warns.",
+    )
     args = p.parse_args(argv)
 
     if not EXPERIMENTS:
@@ -541,6 +553,7 @@ def main(argv=None) -> int:
     # ── validate-only: just re-aggregate ─────────────────────────────────────
     if args.validate_only:
         _write_outputs(collect_metrics(names))
+        build_galleries(names, enabled=not args.no_gallery)
         return 0
 
     # ── build template (once) ────────────────────────────────────────────────
@@ -597,7 +610,42 @@ def main(argv=None) -> int:
 
     # ── local: validate + aggregate ──────────────────────────────────────────
     _write_outputs(collect_metrics(names))
+    build_galleries(names, enabled=not args.no_gallery)
     return 0
+
+
+def build_galleries(names: list[str], enabled: bool = True) -> None:
+    """The run gallery for each validated arm (``nj_sfincs/gallery.py``), AFTER
+    ``metrics.csv`` is written, so each manifest carries the arm's fresh row.
+
+    One SUBPROCESS per arm: the scorer's memos are cleared first and the child's
+    rasters die with it, so the gallery never stacks on validation's peak. A failure
+    WARNS and never fails the run or the scoring (warn, never gate). Brackets are
+    skipped (they never enter metrics.csv). ``--no-gallery`` turns it off; re-draw
+    later with ``python scripts/build_gallery.py``.
+    """
+    if not enabled:
+        print("[gallery] skipped (--no-gallery)")
+        return
+    from nj_sfincs import gallery
+
+    validate.cache_clear()
+    gc.collect()
+    for name in names:
+        exp = EXPERIMENTS.get(name)
+        if exp is not None and exp.bracket:
+            continue
+        if not (EXP_ROOT / name / "sfincs_map.nc").exists():
+            continue
+        try:
+            rc = gallery.build_in_subprocess(domain.active().name, name)
+            if rc != 0:
+                print(
+                    f"[{name}] ⚠️ gallery exited {rc} — figures incomplete; scoring "
+                    "is unaffected (re-draw: scripts/build_gallery.py)"
+                )
+        except Exception as e:  # noqa: BLE001 — the gallery never fails a run
+            print(f"[{name}] ⚠️ gallery not built: {e}")
 
 
 def _merge_metrics(df: pd.DataFrame, csv: Path = None) -> pd.DataFrame:

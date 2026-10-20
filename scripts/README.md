@@ -38,6 +38,8 @@ Every script reads `NJ_DOMAIN` unless its row names a domain. Run from the repo 
 | `desktop_pull_backup.sh` | Run on the desktop: rsync the irreplaceable outputs off Amarel | live |
 | `ring_to_geojson.py` | Region GeoJSON from the named-vertex ring CSV | live |
 | `export_share_floodmap.py` | Share-ready max-depth GeoTIFF for a collaborator | live |
+| `build_gallery.py` | Run-gallery figures (`nj_sfincs/gallery.py`) for finished arms, one subprocess per arm, serially — for arms validated before the `run_experiments.py` hook (which draws them after every validate; `--no-gallery` skips it) or to re-draw (`--only <keys>`); ~17 G peak per v4 arm, compute node | live |
+| `publish_gallery.py` | Collect every domain's arm galleries + `metrics.csv` into the static GitHub Pages site (default `~/sandy_flood_site` = GitHub `tyfolino/sandy-flood-model`, its own repo, never committed here): per-domain sortable arm table with flag badges, a page per arm, a two-arm compare page; PNGs only | live |
 
 ## Score and read results
 
@@ -105,6 +107,7 @@ Every script reads `NJ_DOMAIN` unless its row names a domain. Run from the repo 
 | `build_riverbeds_hierarchy_v4.py` | ONE bed-source hierarchy (eHydro → real CUDEM → chart/NOS → sloping river, shaped section) for 18 tidal reaches incl. the Cohansey / GMRT / tidal ones it REPLACES; fill test, provenance raster, domain-wide fill screen, premier-tier consistency report; one overlay VRT | provenance |
 | `build_inland_water_v4.py` | v4 inland water: CUDEM's 0 m fill under lakes and rivers, channel roughness (`manning` step → `manning_water_v4.tif`, n = 0.02 on every NHD lake/river polygon in the A+ ring) | live |
 | `build_river_table_v4.py` | v4 river-inflow decision table: gauge flow vs flow at the model edge | live |
+| `build_normal_surface_v4.py` | v4 usual-surface rasters for "depth" maps (`nj_sfincs/normal_surface.py`): VDatum MHHW (m NAVD88, mhhw − tss, along-water fill up the tidal reaches + ≤ 2 km land extension) and the pools of non-tidal NHD lakes (3DEP / NJ 10 ft lidar water surface), the mapped-water mask (NHD river areas + lakes, for `normally_wet`); CO-OPS station check, lake table, coverage → `data/normal_surface_v4/` (2026-10-19) | live |
 | `build_v3_coarse_bed.sh` | The v3 coarse bed as actually built (its tier order differs from `domain.py`) | provenance |
 | `build_coned_sw_raritan.py` | CoNED topobathy tier for the SW Raritan box (in the frozen v1.5 bed) | provenance |
 

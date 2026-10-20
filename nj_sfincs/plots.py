@@ -197,8 +197,15 @@ def _for_display(da, window=None, max_px: int = _DISPLAY_PX):
 # ── high-water marks ─────────────────────────────────────────────────────────
 
 
-def _sample_hwm(da_hmax, da_dep, data_dir=DATA, estimator=None, scored_only=False):
+def _sample_hwm(
+    da_hmax, da_dep, data_dir=DATA, estimator=None, scored_only=False,
+    return_ground=False,
+):
     """Shared HWM sampling for the scatter + residual figures.
+
+    ``return_ground`` — also return the lowest bed in each mark's window (a 7th element),
+    so a caller can form the SCORED level ``where(wet, mod_wse, ground)`` exactly as
+    ``hwm_metrics`` does (the run gallery, ``nj_sfincs/gallery.py``).
 
     ⚠️ This defers to ``validate`` for the estimator, the radius and the wet threshold. It
     USED to be an independent copy of the scorer's sampler, which meant the figures and the
@@ -257,6 +264,9 @@ def _sample_hwm(da_hmax, da_dep, data_dir=DATA, estimator=None, scored_only=Fals
         keep = np.isfinite(np.where(wet, mod_wse, mod_ground)) & (qual <= 2)
         hwm, obs = hwm.loc[keep].copy(), obs[keep]
         mod_wse, wet, qual = mod_wse[keep], wet[keep], qual[keep]
+        mod_ground = mod_ground[keep]
+    if return_ground:
+        return hwm, obs, mod_wse, mod_wse - obs, wet, qual, mod_ground
     return hwm, obs, mod_wse, mod_wse - obs, wet, qual
 
 

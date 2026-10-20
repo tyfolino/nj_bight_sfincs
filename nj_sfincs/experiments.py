@@ -682,6 +682,155 @@ _V3.update(
 )
 
 
+# ── PHASE 4 (2026-10-19, user; STATUS FINAL AUDIT): the re-baseline on the SEEDED engine ─
+# Candidate names `p4-…` while they run; after the read the winners are renamed into place
+# (`naccs-premier`, …) and the current runs parked with their rows frozen — the 10-11 recipe.
+# The engine is not an arm field: the job sets SFINCS_BIN to the seeded build
+# (`v2.3.3-winddir-igk-igseed-wmseed-1-gf11`). Every p4 arm stages from the 10-17 template
+# (moved inflows) at `snapwave_niter` 200 (the premier waves' own value, user 10-17).
+#   p4-premier                     the new premier: the lower-only lake-fixed bed, `cnb` 1.5,
+#                                  ERA5 pressure inside the blend, and the `snapbeach` wavemaker
+#   p4-premier-repeat              identical — the seeded engine must repeat it exactly
+#   p4-premier+wave-nowavemaker    the wavemaker's effect (user 10-17: measured, not assumed)
+#   p4-nowaves                     SnapWave off
+#   p4-premier+rain-cnb1.0 / 2.38  wetter (AMC II) / drier (AMC I) soil
+#   bed-nobuildings+p4-premier     the building burn's effect on the apex band (§55)
+#   bed-breach-wreck0 / -wreck165+p4-premier   the breach sensitivity (user 10-15 / 10-17)
+#   p4-premier+src-deal-overtop    the Deal Lake overtopping inflow; its forcing is from the
+#                                  UNSEEDED 10-11 premier's waves (user 10-19: run it, flagged)
+#   null-rhoa1.2501 / 1.2499+p4-premier   the waves-on noise band through the peak (10-17)
+# Horton infiltration: dropped from Phase 4 (user 10-19; the cnb ladder brackets infiltration).
+_P4_BED = "_subgrid_refreeze_lakes_min"
+_NACCS_BLEND_P_ERA5 = DATA / "wind_v4" / "naccs_blend_p_era5"
+_P4_WAVES = replace(
+    _V4_PREMIER_WAVES,
+    wavemaker=True,
+    wavemaker_line=DATA / "wavemakers_v4" / "v4_wavemaker_5m_mhw_snapbeach.geojson",
+)
+_P4_WHY = (
+    " Phase 4 candidate (seeded engine, 2026-10-19); renamed into place after the read."
+)
+_p4 = replace(
+    _V4_REFREEZE["naccs-premier"],
+    name="p4-premier",
+    waves=_P4_WAVES,
+    description="The new v4 premier candidate: naccs-premier on the lower-only lake-fixed bed "
+    "(_subgrid_refreeze_lakes_min), curve number with recovery (cnb, AMC factor 1.5), the "
+    "NACCS-blend wind with ERA5 pressure inside the blend (data/wind_v4/naccs_blend_p_era5), "
+    "the moved inflows (template 10-17) and the snap-seaward-of-beach wavemaker line "
+    "(8 pieces, 157.7 km; logs/wavemaker_v4_2026-10-17/)." + _P4_WHY,
+    subgrid_from=_P4_BED,
+    meteo_from=_NACCS_BLEND_P_ERA5,
+    cnb_effective=1.5,
+)
+
+
+def _p4_arm(name: str, description: str, **changes) -> Experiment:
+    return replace(_p4, name=name, description=description + _P4_WHY, **changes)
+
+
+_V4_REFREEZE.update(
+    {
+        "p4-premier": _p4,
+        "p4-premier-repeat": _p4_arm(
+            "p4-premier-repeat",
+            "p4-premier, identical: on the seeded engine it must repeat bit for bit.",
+        ),
+        "p4-premier+wave-nowavemaker": _p4_arm(
+            "p4-premier+wave-nowavemaker",
+            "p4-premier with the wavemaker OFF (IG computed but not in the water, as the "
+            "10-11 premier). Pair: p4-premier — the wavemaker's effect.",
+            waves=replace(_P4_WAVES, wavemaker=False),
+        ),
+        "p4-nowaves": _p4_arm(
+            "p4-nowaves",
+            "p4-premier with SnapWave off (one flag). Pair: p4-premier.",
+            waves=WaveConfig(use_waves=False),
+        ),
+        **{
+            f"p4-premier+rain-cnb{e}": _p4_arm(
+                f"p4-premier+rain-cnb{e}",
+                f"p4-premier with the cnb antecedent-moisture factor {e} "
+                f"({'AMC II, wetter' if e == '1.0' else 'AMC I, drier'} soil than the "
+                "premier's 1.5). Pair: p4-premier.",
+                cnb_effective=float(e),
+            )
+            for e in ("1.0", "2.38")
+        },
+        "bed-nobuildings+p4-premier": _p4_arm(
+            "bed-nobuildings+p4-premier",
+            "p4-premier on the same bed WITHOUT the building burn "
+            "(_subgrid_refreeze_lakes_min_nobuildings: the 10-17 recipe minus "
+            "bed_buildings_v4_cap10; logs/nobuildings_2026-10-19/). Pair: p4-premier.",
+            subgrid_from="_subgrid_refreeze_lakes_min_nobuildings",
+        ),
+        **{
+            f"bed-breach-{v}+p4-premier": _p4_arm(
+                f"bed-breach-{v}+p4-premier",
+                f"p4-premier on the breach bed _subgrid_breach_{v}: Wreck Pond channel at "
+                f"{'0.0' if v == 'wreck0' else '1.65'} m NAVD88 + the Mantoloking cuts "
+                "(post-storm EAARL-B), n 0.025 on the cut, open all run — an upper bound "
+                "(FINDINGS part 4 (h)). Pair: p4-premier.",
+                subgrid_from=f"_subgrid_breach_{v}",
+            )
+            for v in ("wreck0", "wreck165")
+        },
+        "p4-premier+src-deal-overtop": _p4_arm(
+            "p4-premier+src-deal-overtop",
+            "p4-premier + the Deal Lake EurOtop overtopping inflow. ⚠️ The inflow was "
+            "derived from the UNSEEDED 10-11 premier's toe waves (user 10-19: run it, "
+            "flagged; re-derive only if p4-premier's toe waves move much). Pair: p4-premier.",
+            extra_discharge=_V4_REFREEZE[
+                "naccs-premier+src-deal-overtop"
+            ].extra_discharge,
+        ),
+        **{
+            f"null-rhoa{r}+p4-premier": _p4_arm(
+                f"null-rhoa{r}+p4-premier",
+                f"p4-premier with rhoa {r} (template 1.25): a NULL perturbation. The two "
+                "null copies give the waves-on noise band through the peak as a spread "
+                "(FINDINGS §44 (e); user 10-17). Pair: p4-premier.",
+                rhoa=float(r),
+            )
+            for r in ("1.2501", "1.2499")
+        },
+    }
+)
+# v3's reference pair, re-run on the seeded engine under NEW names (user 10-19), so the
+# 10-11 unseeded runs and their rows stay beside them.
+_V3.update(
+    {
+        "p4-ref": replace(
+            _V3["bed-v4fixes+wave-dt3600+wind-naccs"],
+            name="p4-ref",
+            description="bed-v4fixes+wave-dt3600+wind-naccs re-run on the seeded engine "
+            "(the v3 reference for Phase 4)." + _P4_WHY,
+        ),
+        "p4-ref-nowaves": replace(
+            _V3["bed-v4fixes+naccs-nowaves+wind-naccs"],
+            name="p4-ref-nowaves",
+            description="bed-v4fixes+naccs-nowaves+wind-naccs re-run on the seeded engine "
+            "(the v3 reference's waves-off twin)." + _P4_WHY,
+        ),
+    }
+)
+
+
+def reference_arm(arm: str, domain_name: str | None = None) -> str | None:
+    """The arm a given arm is paired against: its family's premier.
+
+    A ``p4-`` candidate pairs against ``p4-premier`` (``p4-ref`` on a domain without one);
+    every other arm against the domain's ``naccs-premier``. ``None`` where that arm is
+    not registered.
+    """
+    arms = EXPERIMENTS_BY_DOMAIN.get(domain_name or active().name, {})
+    if "p4-" in arm:
+        ref = "p4-premier" if "p4-premier" in arms else "p4-ref"
+    else:
+        ref = "naccs-premier"
+    return ref if ref in arms else None
+
+
 EXPERIMENTS_BY_DOMAIN: dict[str, dict[str, Experiment]] = {
     "v1_monmouth": {},
     "v1_5_raritan": _V1_5_RARITAN,

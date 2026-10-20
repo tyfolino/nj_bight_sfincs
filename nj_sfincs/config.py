@@ -397,6 +397,13 @@ class Experiment:
     #: staged sidecar, never this path.
     extra_discharge: Path | None = None
 
+    #: ``null-*`` ARMS ONLY (2026-10-19). Air density written to the staged ``sfincs.inp``
+    #: (``rhoa``; the template's is 1.25) after every writer, so nothing restores 1.25 over
+    #: it. A NULL perturbation, not a physics knob: ±0.01 % moves the wind stress by the
+    #: same, far below anything measurable, so a pair of these copies reads the waves-on
+    #: run-to-run noise band through the peak (FINDINGS §44 (e); user 2026-10-17).
+    rhoa: float | None = None
+
 
 def with_window(base: BaseConfig, tstop: datetime) -> BaseConfig:
     """Return a copy of ``base`` with a shorter run window (for smoke tests)."""

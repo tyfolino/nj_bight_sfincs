@@ -1752,6 +1752,8 @@ class TestV4Refreeze(unittest.TestCase):
         # pressure; the SLR gate arms keep the template's ERA5-bilinear meteo.
         blend = domain.DATA / "wind_v4" / "naccs_blend"
         for name, exp in arms.items():
+            if "p4-" in name:  # the Phase 4 candidates: test_phase4_arms
+                continue
             self.assertEqual(exp.subgrid_from, "_subgrid_refreeze", name)
             self.assertEqual(exp.meteo_from, None if "slr-" in name else blend, name)
             self.assertEqual(exp.wind_scale, 1.0, name)
@@ -1774,6 +1776,70 @@ class TestV4Refreeze(unittest.TestCase):
                 dataclasses.replace(w, description="", subgrid_from=None),
                 name,
             )
+
+    def test_phase4_arms(self):
+        """The p4- family (2026-10-19): p4-premier = naccs-premier + exactly the declared
+        changes; every other p4 arm = p4-premier + its one named change."""
+        import dataclasses
+
+        arms = EXPERIMENTS_BY_DOMAIN["v4_refreeze"]
+        p4, old = arms["p4-premier"], arms["naccs-premier"]
+        self.assertEqual(p4.subgrid_from, "_subgrid_refreeze_lakes_min")
+        self.assertEqual(p4.meteo_from, domain.DATA / "wind_v4" / "naccs_blend_p_era5")
+        self.assertEqual(p4.cnb_effective, 1.5)
+        self.assertTrue(p4.waves.wavemaker)
+        self.assertEqual(
+            p4.waves.wavemaker_line.name, "v4_wavemaker_5m_mhw_snapbeach.geojson"
+        )
+        self.assertEqual(p4.waves.snapwave_niter, 200)
+        self.assertIsNone(p4.rhoa)
+        self.assertEqual(
+            dataclasses.replace(
+                p4.waves, wavemaker=False, wavemaker_line=old.waves.wavemaker_line
+            ),
+            old.waves,
+        )
+        strip = dict(
+            name="",
+            description="",
+            waves=None,
+            subgrid_from=None,
+            meteo_from=None,
+            cnb_effective=None,
+        )
+        self.assertEqual(
+            dataclasses.replace(p4, **strip), dataclasses.replace(old, **strip)
+        )
+        # one named change each
+        change = {
+            "p4-premier-repeat": {},
+            "p4-premier+wave-nowavemaker": {"waves"},
+            "p4-nowaves": {"waves"},
+            "p4-premier+rain-cnb1.0": {"cnb_effective"},
+            "p4-premier+rain-cnb2.38": {"cnb_effective"},
+            "bed-nobuildings+p4-premier": {"subgrid_from"},
+            "bed-breach-wreck0+p4-premier": {"subgrid_from"},
+            "bed-breach-wreck165+p4-premier": {"subgrid_from"},
+            "p4-premier+src-deal-overtop": {"extra_discharge"},
+            "null-rhoa1.2501+p4-premier": {"rhoa"},
+            "null-rhoa1.2499+p4-premier": {"rhoa"},
+        }
+        self.assertEqual(set(change) | {"p4-premier"}, {n for n in arms if "p4-" in n})
+        for name, fields in change.items():
+            a = arms[name]
+            diff = {
+                f.name
+                for f in dataclasses.fields(a)
+                if f.name not in ("name", "description")
+                and getattr(a, f.name) != getattr(p4, f.name)
+            }
+            self.assertEqual(diff, set(fields), name)
+        self.assertFalse(arms["p4-premier+wave-nowavemaker"].waves.wavemaker)
+        self.assertFalse(arms["p4-nowaves"].waves.use_waves)
+        self.assertEqual(
+            sorted(arms[n].rhoa for n in arms if n.startswith("null-")),
+            [1.2499, 1.2501],
+        )
 
     def test_fingerprint_shares_counts_with_run_b(self):
         rf, wl = premier.EXPECTED["v4_refreeze"], premier.EXPECTED["v4_hot_plus_walls"]
