@@ -746,6 +746,7 @@ def hwm_metrics(
     n_unassigned = int((basin == "unassigned").sum())
     if n_unassigned:
         result["hwm_n_unassigned"] = n_unassigned
+    result.update(noted_keys(hwm, resid_s, head_s, wet))
     if model_dir is not None:
         try:
             result.update(
@@ -754,6 +755,61 @@ def hwm_metrics(
         except Exception as e:  # noqa: BLE001 — the extra keys, never the row
             result["hwm_lake_flag_error"] = str(e)
     return result
+
+
+#: USGS marks read against their STN records (2026-10-20, logs/stn_marks_2026-10-20/; FINDINGS
+#: part 4 (h); user: keep them, mark them, report a score without them BESIDE the headline).
+#: "questioned" = the mark's level is doubtful on the evidence (an inference — USGS rates both
+#: Good / Excellent); "runup" = wave run-up / splash / overwash, an UPPER bound a still-water
+#: model should not reach. A fact about the MARK, so not per domain. Never drops a mark.
+HWM_MARK_NOTES: dict[str, tuple[str, str]] = {
+    "6169": (
+        "questioned",
+        "Manasquan: clear seed line ~1.0-1.3 m above a patio at ground "
+        "~1.5 m (photo) -> ~2.6-2.9 m like its neighbours, vs the stored 3.658",
+    ),
+    "6202": (
+        "questioned",
+        "West Creek: a faint smudge ~0.5 m up a foundation wall; open "
+        "marsh to the bay at 0.8 m, neighbours 2.38-2.44 vs 1.494",
+    ),
+    "6121": (
+        "runup",
+        "Long Branch: debris line on a lawn across Ocean Ave from the beach",
+    ),
+    "6398": (
+        "runup",
+        "Breezy Point: pen line atop debris spatter on house trim; indoor "
+        "6397 (3.26 m) is the still-water value",
+    ),
+    "6188": (
+        "runup",
+        "Ortley Beach: mid-island, 450 m behind the dune (overwash); no photos",
+    ),
+}
+
+
+def noted_keys(hwm, resid_s, head_s, wet) -> dict:
+    """The headline ``*_scored`` keys again WITHOUT the ``HWM_MARK_NOTES`` marks — beside
+    the headline, never instead of it (the lake flag's pattern)."""
+    ids = hwm["hwm_id"].astype(str).to_numpy()
+    noted = np.isin(ids, list(HWM_MARK_NOTES))
+    keep = head_s & ~noted
+    rk = resid_s[keep]
+    return {
+        "hwm_noted_ids": "[" + ";".join(ids[head_s & noted]) + "]",
+        "hwm_n_scored_excl_noted": int(keep.sum()),
+        "hwm_n_dry_scored_excl_noted": int((keep & ~wet).sum()),
+        "hwm_rmse_scored_excl_noted_m": (
+            float(np.sqrt((rk**2).mean())) if keep.any() else float("nan")
+        ),
+        "hwm_bias_scored_excl_noted_m": float(rk.mean())
+        if keep.any()
+        else float("nan"),
+        "hwm_within0.5_scored_excl_noted": (
+            float(np.mean(np.abs(rk) < 0.5)) if keep.any() else float("nan")
+        ),
+    }
 
 
 def lake_blocked_keys(model_dir, hwm, resid_s, head_s, wet, radius_m) -> dict:

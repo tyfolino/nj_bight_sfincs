@@ -10,7 +10,8 @@ here; the user commits and pushes):
     index.html                     the domains
     <domain>/index.html            sortable arm table (metrics.csv) with flag badges
     <domain>/<arm>/index.html      one page per arm: run card, flags, figures, full row
-    <domain>/compare.html          two dropdowns → the two arms' figures side by side
+    <domain>/compare.html          "view runs": one run's figures + scores (default), or two
+                                   side by side / in one frame (click to swap)
                                    (or one frame, click to swap), plus a metric diff table
     <domain>/data.js               the data the compare page reads (works from file://)
 
@@ -63,6 +64,7 @@ HEADLINE = (
     ("hwm_bias_scored_m", "bias m", "+.3f", "zero"),
     ("hwm_within0.5_scored", "±0.5 m", ".0%", "high"),
     ("hwm_rmse_scored_excl_lake_blocked_m", "RMSE excl. lakes", ".3f", "low"),
+    ("hwm_rmse_scored_excl_noted_m", "RMSE excl. noted", ".3f", "low"),
     ("motf_csi", "CSI", ".3f", "high"),
     ("motf_pod", "POD", ".3f", None),
     ("motf_far", "FAR", ".3f", "low"),
@@ -88,6 +90,7 @@ CSS = """
 --body:"Atkinson Hyperlegible Next","Atkinson Hyperlegible",system-ui,sans-serif;
 --mono:"Atkinson Hyperlegible Mono",ui-monospace,Menlo,Consolas,monospace}
 *{box-sizing:border-box}
+[hidden]{display:none!important}
 body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.6 var(--body)}
 a{color:var(--blue);text-underline-offset:2px}
 code{font-family:var(--mono);font-size:.92em}
@@ -137,6 +140,7 @@ select:focus-visible,button:focus-visible,th:focus-visible,a:focus-visible{outli
 .pair .side h4{font-size:15px;color:var(--ink-2);margin:0 0 4px;font-weight:400}
 .pair.one{grid-template-columns:1fr}
 .diff.better{color:var(--mint)}.diff.worse{color:var(--pink)}
+ul.next{padding-left:20px;max-width:90ch;margin:0}ul.next li{margin:6px 0;color:var(--ink-2)}
 footer{margin-top:40px;border-top:1px solid var(--rule);padding:16px 0 40px;color:var(--ink-3);font-size:14px}
 @media (max-width:820px){.pair{grid-template-columns:1fr}}
 """
@@ -165,7 +169,8 @@ const D=window.GALLERY_DATA, arms=Object.keys(D.arms).sort();
 const selA=document.getElementById('armA'), selB=document.getElementById('armB');
 const rowsEl=document.getElementById('figs'), tbl=document.getElementById('diff');
 const head=document.getElementById('pairhead');
-let mode='side';
+let mode=q0().get('m')||'one';
+function q0(){return new URLSearchParams(location.hash.slice(1));}
 arms.forEach(a=>{[selA,selB].forEach(s=>{const o=document.createElement('option');o.value=a;o.textContent=a;s.appendChild(o);});});
 const q=new URLSearchParams(location.hash.slice(1));
 let b=q.get('b')||arms.find(a=>a!==(D.reference||''))||arms[0];
@@ -180,13 +185,21 @@ const fmt=(v,f)=>{if(v==null||v===''||(typeof v==='number'&&!isFinite(v)))return
  const m=f.match(/(\+?)\.(\d)f/); if(m){const s=v.toFixed(+m[2]);return (m[1]&&v>=0?'+':'')+s;} return String(v);};
 function badges(fl){return (fl||[]).map(f=>`<span class="badge ${f.level}" title="${esc(f.text)}">${f.level==='serious'?'!! ':f.level==='caution'?'! ':'i '}${esc(f.code)}</span>`).join('');}
 function render(){
- a=selA.value;b=selB.value;history.replaceState(null,'','#a='+encodeURIComponent(a)+'&b='+encodeURIComponent(b));
+ a=selA.value;b=selB.value;history.replaceState(null,'','#a='+encodeURIComponent(a)+'&b='+encodeURIComponent(b)+'&m='+mode);
+ const one=mode==='one';document.querySelectorAll('.onlypair').forEach(e=>{e.hidden=one;});
+ document.querySelectorAll('[data-mode]').forEach(x=>x.setAttribute('aria-pressed',x.dataset.mode===mode));
  const A=D.arms[a],B=D.arms[b];
  const fa=(A.card.fingerprint||{}).sha,fb=(B.card.fingerprint||{}).sha;
- head.innerHTML=`<p class="note">A <b>${esc(a)}</b> ${badges(A.flags)}<br>B <b>${esc(b)}</b> ${badges(B.flags)}</p>`+
+ if(one){head.innerHTML=`<p class="note"><b>${esc(a)}</b> ${badges(A.flags)} · <a href="${esc(A.slug)}/index.html">run card and full metrics</a></p>`+
+  `<p class="note">HWM numbers: estimator ${esc(A.metrics.hwm_estimator)}, radius ${esc(A.metrics.hwm_radius_m)} m.</p>`;}
+ else head.innerHTML=`<p class="note">A <b>${esc(a)}</b> ${badges(A.flags)}<br>B <b>${esc(b)}</b> ${badges(B.flags)}</p>`+
   `<p class="note">${fa&&fa===fb?'Same domain fingerprint ('+esc(fa)+') — the two are on one mesh and bed.':'⚠️ Different fingerprints ('+esc(fa)+' vs '+esc(fb)+') — not the same model; do not difference.'}`+
   ` HWM numbers: estimator ${esc(A.metrics.hwm_estimator)} / ${esc(B.metrics.hwm_estimator)}, radius ${esc(A.metrics.hwm_radius_m)} / ${esc(B.metrics.hwm_radius_m)} m. A pooled difference is not a paired test — use scripts/paired_hwm_bootstrap.py.</p>`;
- let h='<thead><tr><th>metric</th><th class="num">A</th><th class="num">B</th><th class="num">B − A</th></tr></thead><tbody>';
+ if(one){let h='<thead><tr><th>metric</th><th class="num">value</th></tr></thead><tbody>';
+  D.headline.forEach(([k,l,f])=>{h+=`<tr><td>${esc(l)} <span class="note">${esc(k)}</span></td><td class="num">${fmt(A.metrics[k],f)}</td></tr>`;});
+  D.labels.forEach(k=>{h+=`<tr><td>${esc(k)}</td><td class="lbl">${esc((A.card.labels||{})[k])}</td></tr>`;});
+  tbl.innerHTML=h+'</tbody>';}
+ else{let h='<thead><tr><th>metric</th><th class="num">A</th><th class="num">B</th><th class="num">B − A</th></tr></thead><tbody>';
  D.headline.forEach(([k,l,f,better])=>{const x=A.metrics[k],y=B.metrics[k];
   let d='',cls='';if(typeof x==='number'&&typeof y==='number'&&isFinite(x)&&isFinite(y)){const dv=y-x;
    d=fmt(dv,f==='.0%'?'.0%':(f==='d'?'d':'+'+f.replace('+','')));
@@ -195,14 +208,15 @@ function render(){
   h+=`<tr><td>${esc(l)} <span class="note">${esc(k)}</span></td><td class="num">${fmt(x,f)}</td><td class="num">${fmt(y,f)}</td><td class="num diff ${cls}">${d}</td></tr>`;});
  D.labels.forEach(k=>{const x=(A.card.labels||{})[k],y=(B.card.labels||{})[k];
   h+=`<tr><td>${esc(k)}</td><td class="lbl">${esc(x)}</td><td class="lbl">${esc(y)}</td><td class="lbl">${String(x)===String(y)?'':'differs'}</td></tr>`;});
- tbl.innerHTML=h+'</tbody>';
+ tbl.innerHTML=h+'</tbody>';}
  const fA=Object.fromEntries((A.figures||[]).map(f=>[f.key,f])),fB=Object.fromEntries((B.figures||[]).map(f=>[f.key,f]));
  let out='';
  D.fig_order.forEach(k=>{const x=fA[k],y=fB[k];if(!x&&!y)return;const t=(x||y).title;
   const side=(f,arm,lab)=>{if(!f)return `<div class="side"><h4>${lab} · ${esc(arm)}</h4><div class="skip">not drawn</div></div>`;
    if(!f.file)return `<div class="side"><h4>${lab} · ${esc(arm)}</h4><div class="skip">${esc(f.skipped||f.error||'not drawn')}</div></div>`;
    return `<div class="side"><h4>${lab} · ${esc(arm)}</h4><a href="${esc(D.arms[arm].slug)}/${esc(f.file)}"><img loading="lazy" src="${esc(D.arms[arm].slug)}/${esc(f.file)}" alt="${esc(t)} — ${esc(arm)}"></a></div>`;};
-  if(mode==='side'||!(x&&x.file&&y&&y.file)){
+  if(one){if(!x)return;out+=`<figure><h3>${esc(t)}</h3>${x.file?`<a href="${esc(D.arms[a].slug)}/${esc(x.file)}"><img loading="lazy" src="${esc(D.arms[a].slug)}/${esc(x.file)}" alt="${esc(t)} — ${esc(a)}"></a>`:`<div class="skip">${esc(x.skipped||x.error||'not drawn')}</div>`}<figcaption>${esc(x.caption||'')}</figcaption></figure>`;}
+  else if(mode==='side'||!(x&&x.file&&y&&y.file)){
    out+=`<figure><h3>${esc(t)}</h3><div class="pair">${side(x,a,'A')}${side(y,b,'B')}</div><figcaption>${esc((y||x).caption||'')}</figcaption></figure>`;
   }else{
    out+=`<figure><h3>${esc(t)}</h3><div class="pair one"><div class="side"><h4 class="swaplab">A · ${esc(a)} — click the image to swap</h4><img class="swap" data-a="${esc(D.arms[a].slug)}/${esc(x.file)}" data-b="${esc(D.arms[b].slug)}/${esc(y.file)}" data-la="A · ${esc(a)}" data-lb="B · ${esc(b)}" src="${esc(D.arms[a].slug)}/${esc(x.file)}" alt="${esc(t)}" tabindex="0"></div></div><figcaption>${esc(y.caption||'')}</figcaption></figure>`;}
@@ -214,11 +228,55 @@ function render(){
 }
 selA.addEventListener('change',render);selB.addEventListener('change',render);
 document.getElementById('swapAB').addEventListener('click',()=>{const t=selA.value;selA.value=selB.value;selB.value=t;render();});
-document.querySelectorAll('[data-mode]').forEach(btn=>btn.addEventListener('click',()=>{mode=btn.dataset.mode;
- document.querySelectorAll('[data-mode]').forEach(x=>x.setAttribute('aria-pressed',x===btn));render();}));
+document.querySelectorAll('[data-mode]').forEach(btn=>btn.addEventListener('click',()=>{mode=btn.dataset.mode;render();}));
 render();
 })();
 """
+
+
+#: The plain-language "coming in the next premier" list, shown at the bottom of the home page
+#: and of that domain's runs page. ⚠️ Edit it when the next premier lands (Phase 4, STATUS):
+#: a stale list here gets believed.
+NEXT_PREMIER = {
+    "domain": "v4_refreeze",
+    "as_of": "2026-10-20",
+    "status": "Planned; queued as one batch of runs, not yet run.",
+    "items": (
+        "Repeatable waves: the wave model's random part is now seeded, so the same inputs "
+        "give the same answer every time.",
+        "Infragravity (IG) waves move the water: the long, slow waves under groups of "
+        "ordinary waves are now fed into the water along the beach, so they raise the water "
+        "level and push water ashore. Before, they were only calculated.",
+        "Rain soaking in: an updated method for how much rain the ground absorbs, set for "
+        "the soil conditions before Sandy.",
+        "Air pressure from the ERA5 weather reanalysis, blended with the storm's wind field.",
+        "Rivers enter in their channels: 12 river inflows moved off the banks and into "
+        "the water.",
+        "Lake beds fixed: 14 coastal lakes had a false ridge of land across them from an "
+        "old elevation survey; it is removed.",
+        "Creeks reopened: Beach Creek in North Wildwood (an old survey laid a false bank "
+        "across it), and about 50 marsh creeks on the New Jersey Delaware Bay shore (about "
+        "120 km of channel, Sluice and Dennis Creek among them) where the elevation data held "
+        "the water surface instead of the creek bottom, so they could not drain at low tide. "
+        "Their new bottoms are an assumption (about mean low water), not a survey.",
+        "Tide gauges moved off dry ground: Cape May, Cape May Harbor and Barnegat Light sat "
+        "on land in the model; each moved a few tens of metres into the water.",
+        "Side runs in the same batch: two copies with a tiny change to measure the noise, "
+        "waves off, no IG waves in the water, wetter and drier soil, no buildings, the Wreck Pond dune "
+        "breach at two depths, waves overtopping into Deal Lake, and the older v3 model "
+        "re-run on the same settings.",
+    ),
+}
+
+
+def next_premier_section() -> str:
+    n = NEXT_PREMIER
+    items = "".join(f"<li>{esc(t)}</li>" for t in n["items"])
+    return (
+        f"<section><h2>Coming in the next premier ({esc(n['domain'])})</h2>"
+        f'<p class="note">{esc(n["status"])} As of {esc(n["as_of"])}.</p>'
+        f'<ul class="next">{items}</ul></section>'
+    )
 
 
 def esc(v) -> str:
@@ -502,7 +560,7 @@ def arm_page(domain_name: str, arm: str, e: dict, ref: str | None) -> str:
         f"<tr><td>{esc(k)}</td><td class='lbl'>{esc(v)}</td></tr>"
         for k, v in row.items()
     )
-    cmp_link = f"../compare.html#a={esc(ref or '')}&amp;b={esc(arm)}"
+    cmp_link = f"../compare.html#a={esc(ref or '')}&amp;b={esc(arm)}&amp;m=side"
     body = (
         mast(
             f"<b>{esc(domain_name)}</b> · arm",
@@ -579,7 +637,7 @@ def domain_index(domain_name: str, arms: dict, ref: str) -> str:
             f"{domain_name}: every arm",
             "One row per model run (arm). Click a column header to sort. Badges are "
             "warnings, not filters; hover one for its text. "
-            "<a href='compare.html'>Compare two arms</a>",
+            "<b><a href='compare.html'>View runs one at a time, or compare two →</a></b>",
             '<a href="../index.html">runs</a> / ' + esc(domain_name),
         )
         + "<section>"
@@ -599,34 +657,39 @@ def domain_index(domain_name: str, arms: dict, ref: str) -> str:
         "on each arm's page.</p>"
         "</section>"
     )
+    if domain_name == NEXT_PREMIER["domain"]:
+        body += next_premier_section()
     return page(f"{domain_name} · runs", body, 1)
 
 
 def compare_page(domain_name: str) -> str:
+    """One run at a time by default; side by side / one frame (click to swap) on demand."""
     body = (
         mast(
-            f"<b>{esc(domain_name)}</b> · compare",
-            f"{domain_name}: compare two arms",
-            "Pick two arms. Every figure of the pair is drawn on the same fixed scale and "
-            "frame, so they compare by eye: side by side, or in one frame (click to swap).",
+            "",
+            f"{domain_name}: view runs",
+            "Pick a run to see its figures and scores. To compare two runs, switch to side "
+            "by side, or to one frame and click the image to swap. Every figure is drawn on "
+            "the same fixed scale and frame, so two runs compare by eye.",
             f'<a href="../index.html">runs</a> / <a href="index.html">{esc(domain_name)}'
-            "</a> / compare",
+            "</a> / view runs",
         )
-        + '<div class="ctl"><label>arm A<select id="armA"></select></label>'
-        '<button id="swapAB" type="button">A ⇄ B</button>'
-        '<label>arm B<select id="armB"></select></label>'
-        '<span><button type="button" data-mode="side" aria-pressed="true">side by side'
-        '</button> <button type="button" data-mode="swap" aria-pressed="false">one frame, '
-        "click to swap</button></span></div>"
+        + '<div class="ctl"><span><button type="button" data-mode="one" aria-pressed="true">'
+        'one run</button> <button type="button" data-mode="side" aria-pressed="false">'
+        'side by side</button> <button type="button" data-mode="swap" aria-pressed="false">'
+        "one frame, click to swap</button></span>"
+        '<label>run<select id="armA"></select></label>'
+        '<button id="swapAB" class="onlypair" type="button">A ⇄ B</button>'
+        '<label class="onlypair">compare with<select id="armB"></select></label></div>'
         '<section id="pairhead"></section>'
-        '<section><h2>Metrics</h2><div class="scroll"><table id="diff"></table></div>'
-        '<p class="note">Green / orange colour a difference by the metric\'s direction '
-        "(lower RMSE, higher CSI, bias nearer zero); it is not a ranking and not a test.</p>"
-        "</section>"
+        '<section><h2>Scores</h2><div class="scroll"><table id="diff"></table></div>'
+        '<p class="note onlypair">Green / pink colour a difference by the metric\'s '
+        "direction (lower RMSE, higher CSI, bias nearer zero); it is not a ranking and not "
+        "a test.</p></section>"
         '<section><h2>Figures</h2><div id="figs"></div></section>'
         '<script src="data.js"></script><script src="../assets/compare.js"></script>'
     )
-    return page(f"{domain_name} · compare", body, 1)
+    return page(f"{domain_name} · view runs", body, 1)
 
 
 def data_js(domain_name: str, arms: dict, ref: str) -> str:
@@ -666,7 +729,7 @@ def site_index(domains: dict) -> str:
         f'<tr><td><a href="{esc(d)}/index.html">{esc(d)}</a></td>'
         f'<td class="num">{len(a)}</td>'
         f'<td class="num">{sum(1 for e in a.values() if e["manifest"])}</td>'
-        f'<td><a href="{esc(d)}/compare.html">compare</a></td></tr>'
+        f'<td><a href="{esc(d)}/compare.html">view runs</a></td></tr>'
         for d, a in domains.items()
     )
     body = (
@@ -675,11 +738,12 @@ def site_index(domains: dict) -> str:
             "Run gallery",
             'A standard set of figures for every model run ("arm") of the Hurricane Sandy '
             "compound-flood hindcast, per domain, so runs compare by eye. Each domain is a "
-            "different model: compare arms within a domain.",
+            "different model: compare arms within a domain. Start with "
+            "<b><a href='v4_refreeze/compare.html'>view runs (v4)</a></b>.",
         )
         + '<section><table class="sortable"><thead><tr><th>domain</th><th class="num">arms</th>'
         f'<th class="num">with figures</th><th></th></tr></thead><tbody>{trs}</tbody>'
-        "</table></section>"
+        "</table></section>" + next_premier_section()
     )
     return page("Run gallery", body, 0)
 

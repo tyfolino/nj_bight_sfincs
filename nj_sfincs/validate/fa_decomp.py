@@ -2,9 +2,8 @@
 
 WHY (2026-08-20). MOTF is a surge-only bathtub — a water surface interpolated from
 HWMs/sensors over lidar. It structurally CANNOT show rain ponding. Our runs force
-rain in every arm (AORC hourly) and infiltration is effectively OFF (`model.py`
-strips the CN keys from `sfincs.inp` — see FINDINGS), so rain lands on
-impervious-in-effect ground and ponds. Every such pond scores as a FALSE ALARM
+rain (infiltration was off when this was written; v4 premiers since 10-11 use the curve
+number), and rain that ponds deeper than DEPTH_MIN scores as a FALSE ALARM
 against a reference that could never contain it, deflating CSI for a reason that is
 a *reference* limitation, not a model error.
 
@@ -19,10 +18,12 @@ surge. That is the split:
 * ``motf_km2_fa_connected``    — FA with a wet path to the sea: surge-plausible;
   MOTF could in principle have adjudicated it.
 * ``motf_km2_fa_disconnected`` — FA with no wet path to the sea, ever: not surge.
-* ``motf_km2_fa_rainonly``     — the disconnected subset whose ponded depth is within
-  the LOCAL AORC storm-total rain depth: conservatively attributable to rain alone.
-  ⚠️ A LOWER bound — with infiltration off, a depression collects its contributing
-  area's rain, so a real rain pond can be deeper than the local total.
+* (RETIRED 2026-10-20, user: ``motf_km2_fa_rainonly`` — "ponded depth within the local
+  AORC storm total" was 0 BY CONSTRUCTION, since wet needs h >= DEPTH_MIN = 0.15 m and
+  Sandy's total here is 5–12 cm. ⚠️ Neither key above separates rain from surge either: a
+  rain-fed creek is sea-connected. The attribution is the TWIN-RUN split —
+  logs/fa_rain_2026-10-20/fa_cause_split.py, FINDINGS part 4 (h): v4_refreeze
+  naccs-premier 79 of 128.5 km² from rain.)
 * ``motf_far_connected`` / ``motf_csi_connected`` — FAR/CSI recomputed counting only
   the connected false alarms, i.e. "the score if the reference's rain-blindness is
   excused". ⚠️ DIAGNOSTIC keys, reported ALONGSIDE ``motf_far``/``motf_csi`` — the
@@ -46,28 +47,6 @@ import rasterio
 from .core import DEPTH_MIN
 from .metrics import DATA, motf_exclude_mask, motf_path
 
-#: Storm-total rain file (hourly; summed here) and the wet threshold shared with the
-#: extent metric. AORC covers lat 39.66–40.57 — pixels past its edge get NaN rain and
-#: can therefore never classify as rainonly, which is the conservative direction.
-AORC_NC = "precip/aorc_sandy_nj.nc"
-
-
-def _rain_total_m(lon: np.ndarray, lat: np.ndarray, data_dir: Path) -> np.ndarray:
-    """AORC storm-total rain depth [m] at each (lon, lat), nearest-cell, NaN outside."""
-    import xarray as xr  # noqa: PLC0415
-
-    ds = xr.open_dataset(Path(data_dir) / AORC_NC)
-    total = ds["precip"].sum("time").values  # mm over the window
-    xs, ys = ds["x"].values, ds["y"].values
-    dx, dy = xs[1] - xs[0], ys[1] - ys[0]
-    ci = np.round((lon - xs[0]) / dx).astype(int)
-    ri = np.round((lat - ys[0]) / dy).astype(int)
-    ok = (ci >= 0) & (ci < xs.size) & (ri >= 0) & (ri < ys.size)
-    out = np.full(lon.shape, np.nan)
-    out[ok] = total[ri[ok], ci[ok]] / 1000.0
-    ds.close()
-    return out
-
 
 def sea_connected(mod_wet: np.ndarray, dep_at: np.ndarray) -> np.ndarray:
     """Which wet pixels sit in a component that touches permanent tidal water.
@@ -85,9 +64,6 @@ def sea_connected(mod_wet: np.ndarray, dep_at: np.ndarray) -> np.ndarray:
 
 def fa_decomposition(da_hmax, da_dep, model_dir: Path, data_dir: Path = DATA) -> dict:
     """The false-alarm decomposition keys. See the module docstring."""
-    from pyproj import Transformer  # noqa: PLC0415
-
-    from .. import domain as _domain  # noqa: PLC0415
     from .core import simulated_mask  # noqa: PLC0415
 
     with rasterio.open(str(motf_path(data_dir))) as r:
@@ -125,24 +101,12 @@ def fa_decomposition(da_hmax, da_dep, model_dir: Path, data_dir: Path = DATA) ->
     fa_conn = fa & connected
     fa_disc = fa & ~connected
 
-    # rain budget on the disconnected subset only (lazy: skip when nothing to label)
-    if fa_disc.any():
-        XX, YY = np.meshgrid(Xc, Yc)
-        lon, lat = Transformer.from_crs(
-            _domain.active().epsg, 4326, always_xy=True
-        ).transform(XX[fa_disc], YY[fa_disc])
-        rain_m = _rain_total_m(lon, lat, data_dir)
-        rainonly_n = int((h_at[fa_disc] <= rain_m).sum())
-    else:
-        rainonly_n = 0
-
     nh, nm = int(hits.sum()), int(miss.sum())
     nfc, nfd = int(fa_conn.sum()), int(fa_disc.sum())
     km2 = abs(mtf.a * mtf.e) / 1e6
     return {
         "motf_km2_fa_connected": nfc * km2,
         "motf_km2_fa_disconnected": nfd * km2,
-        "motf_km2_fa_rainonly": rainonly_n * km2,
         "motf_far_connected": nfc / (nh + nfc) if (nh + nfc) else float("nan"),
         "motf_csi_connected": (
             nh / (nh + nm + nfc) if (nh + nm + nfc) else float("nan")

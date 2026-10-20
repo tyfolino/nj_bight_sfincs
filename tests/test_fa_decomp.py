@@ -63,20 +63,13 @@ class TestFaDecomposition(unittest.TestCase):
         f = self._decomp()
         self.assertAlmostEqual(f["motf_km2_fa_connected"], 2.580525, places=6)
         self.assertAlmostEqual(f["motf_km2_fa_disconnected"], 7.959825, places=6)
-        self.assertGreater(
-            f["motf_km2_fa_disconnected"], f["motf_km2_fa_connected"]
-        )
+        self.assertGreater(f["motf_km2_fa_disconnected"], f["motf_km2_fa_connected"])
         self.assertAlmostEqual(f["motf_far_connected"], 0.04716298349357261, places=9)
         self.assertAlmostEqual(f["motf_csi_connected"], 0.7893125038322921, places=9)
 
-    def test_rainonly_lower_bound_is_conservative(self):
-        """``rainonly`` requires ponded depth within the LOCAL rain total. With
-        DEPTH_MIN=0.15 m and ~0.05–0.10 m of Sandy rain on this coast, no pixel can
-        qualify without runoff concentration — 0.0 here is the bound being honest,
-        not the classifier finding no rain. The real share comes from the norain arm.
-        """
-        f = self._decomp()
-        self.assertEqual(f["motf_km2_fa_rainonly"], 0.0)
+    def test_rainonly_key_is_retired(self):
+        """``motf_km2_fa_rainonly`` was 0 by construction and is gone (2026-10-20)."""
+        self.assertNotIn("motf_km2_fa_rainonly", self._decomp())
 
     def test_diagnostic_keys_do_not_touch_headline_keys(self):
         """The decomposition must be purely additive next to motf_metrics."""

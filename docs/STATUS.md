@@ -110,8 +110,9 @@ reference re-run on the seeded engine; `cnb` stays the premier's infiltration (F
   - ✅ CLOSED 10-20 (user): no lake pool start (the lakes start within 5–75 cm of their pools — the lidar
     bed is the water surface; FINDINGS part 4 (h)); no Wreck Pond culvert.
   - ✅ desk check Atlantic City (10-20): the +0.5 m is NACCS forcing, not datum or model (FINDINGS part 4 (h)).
-    ☐ AFTER 62757492 STARTS (md5-guarded code): score gauge peaks from the 6-min obs (hourly under-reads AC by 0.04 m).
-    ☐ AFTER 62757492 STARTS: `fa_decomp` rainonly key is dead by construction — replace with the twin-run split
+    ✅ NOAA gauges scored from the 6-min record on v3 + v4 (user 10-20; FINDINGS part 4 (h)). Phase 4's md5 to be
+    refreshed (domain.py, fa_decomp.py changed) when the creek beds are in.
+    ✅ `motf_km2_fa_rainonly` RETIRED (user 10-20; 0 by construction) — the attribution is the twin-run split
       (`logs/fa_rain_2026-10-20/fa_cause_split.py`: premier FA rain 79 / surge 27 / waves 22 km², FINDINGS part 4 (h)).
   - ✅ desk check paved channels (10-20): federal channels clear; Beach Creek (N. Wildwood) still paved, 2 probable
     CUDEM surfaces — none moves a mark (FINDINGS part 4 (h)); `audit_paved_channels.py` retired.
@@ -120,11 +121,37 @@ reference re-run on the seeded engine; `cnb` stays the premier's infiltration (F
     (`domain._V4_REFREEZE_NUDGED_2026_10_20`, template `sfincs.obs` synced, `logs/gauge_nudge_2026-10-20/`);
     `usgs_tidal_sluice_creek` NOT moved (nearest connected face 2.6 km) — crest only. Old v4_refreeze runs now
     audit "OBS STALE" (true: their his points are the old ones); staging is clean.
-  - ▶ **Beach Creek unpave** (10-20, user: fix before Phase 4): box `beach_creek_nwildwood` added to
-    `usace_unpave_backbay_v4` (10 old boxes pixel-identical; 0.026 km², +1.22 → −1.78 m). Job **62757958** rebuilds
-    the four Phase 4 beds as `*_bc` (lakes_min, lakes_min_nobuildings, breach_wreck0/165) + `check_beds.py`
-    (`logs/beach_creek_2026-10-20/`). THEN: point `experiments.py` at the `_bc` beds, refresh Phase 4's md5, retire
-    the old four beds, user releases 62757492 (HELD by the user 10-20).
+  - ▶ **Creek bed fixes before Phase 4** (10-20, user): (1) Beach Creek box `beach_creek_nwildwood` added to
+    `usace_unpave_backbay_v4` (10 old boxes pixel-identical; 0.026 km², +1.22 → −1.78 m). (2) NEW overlay
+    `creek_bed_nj10ft_v4` (`scripts/build_creek_bed_nj10ft_v4.py`, `:min`): an ASSUMED bed — the NJ 10 ft DEM's
+    hydro-flat water FILL (−1.067 m = −3.5 ft ≈ USACE MLW, a convention, not a survey; user 10-20: keep it,
+    labelled assumed) along named creeks, NHD lakes excluded; first site Sluice/Dennis (USGS 01411435: bed
+    +0.6 m under the gauge, no modelled tide, obs range 1.06 m; `logs/sluice_creek_2026-10-20/`). (3) ✅ sweep
+    (`logs/de_bay_creeks_2026-10-20/`): 55 creeks / ~123 km qualify; user 10-20: ALL except the Salem River +
+    Mannington Creek (stepped NJ10 levels, maybe gates) → overlay built, 52 sites. Sluice gauge: nudge 30–40 m onto
+    the channel face AFTER the rebuild (its own face has no flat pixels). (4) ▶ **job 62759318** rebuilds the four
+    beds as `*_creeks` (+ `check_beds.py`). (5) ▶ **Keansburg weir** (`logs/keansburg_pocket_2026-10-20/`): the weir
+    covers ~¼ of the real 5.6 mi system — water goes round both ends (East Keansburg ~2.0 m via the Pews side, the west
+    end 2.30) and over a mis-drawn middle reach (2.90 m floor, 100–400 m inland of the real crest); pocket connects at
+    2.03 m (v3 2.13). User 10-20: the agent's `candidate_sfincs.weir` (railroad gap at Pews OPEN — its stop-log
+    closure is listed inoperable; est. connection 2.09) + a test: **job 62759323**, two 60 h waves-off cuts of
+    naccs-nowaves (base / candidate weir) in `/scratch/tpj8/engine_gate/keansburg_2026-10-20/` → `test_result.txt`.
+    Adopt if 6155 / 6156 / 6133 drop and 6154 / 6157 / 6158 / 6132 hold; then copy into `data/structures_v4/` AND the
+    template (a weir-only change, no fingerprint move). Next leak: Thornes Creek marsh near Rt 36 (unmapped).
+    Wreck Pond: no fix. Cohansey deeper section: AFTER Phase 4 (user). THEN
+    `logs/creek_beds_2026-10-20/build_beds_creeks.slurm` rebuilds the four Phase 4 beds as `*_creeks` +
+    `check_beds.py`; point `experiments.py` at them, refresh Phase 4's md5, retire the old four, user releases
+    62757492 (HELD). (62757958, the Beach-Creek-only rebuild, was cancelled for this.)
+  - ▶ **HWM inventory** (10-20, `logs/dry_mark_2026-10-20/per_mark_naccs-premier.csv`): 10 of 110 marks outside ±0.5 m on
+    the v4 premier — 4 sea-never-enters-lake (6122, 6130, 6124, 6129 dry), 3–4 oceanfront run-up / overwash above their
+    neighbours' measured levels (6121, 6398, 6188, 6169?), 2 model-high (6155 Keansburg pocket +1.49, 6202 +1.00 vs its
+    neighbours' obs). Agents running: Keansburg leak (`logs/keansburg_pocket_2026-10-20/`), the Wreck Pond band + 6129
+    (`logs/wreck_pond_band_2026-10-20/`: ✅ the band was the 1st Ave bridge deck, already removed by the lake fix — no
+    fix; 6129 is set by the pond level) — bed fixes ride the creek rebuild. ✅ STN records read (FINDINGS part 4 (h)):
+    lake marks sound; 6121 / 6398 / 6188 run-up / overwash upper bounds; 6155 sound, behind the levee; 6202 + 6169
+    SUSPECT. ✅ user 10-20: keep all five, draw them hollow (○ questioned 6169 / 6202, △ run-up 6121 / 6398 /
+    6188), report `hwm_*_scored_excl_noted` BESIDE the headline (`validate.metrics.HWM_MARK_NOTES`); v4 premier
+    110 marks RMSE 0.436 / bias −0.110 → without them n 105, 0.408 / −0.095 (median, 50 m). Figures redrawn.
 - **Phase 4:** ONE 2-node job on the seeded engine. Node 1: new premier (seeded + `cnb` 1.5 + ERA5
   pressure + moved inflows + lake-fixed bed) + its repeat + `bed-breach` + waves-off + `cnb` 1.0 / 2.38
   + `bed-nobuildings` + a waves-off Horton (`hor`) arm. Node 2: v3 reference pair + TWO full-length null
@@ -137,7 +164,8 @@ reference re-run on the seeded engine; `cnb` stays the premier's infiltration (F
   `SOLVE_CONSTRAINT=emeraldrapids`. 🔴 A preempted-and-RESUMED waves-on arm is a different run (FINDINGS
   §44 (j); dm at single gauges on the toy): check every arm's `restart_history.txt` before pairing, and
   re-run a resumed premier / repeat / `rhoa` copy rather than read it.
-- **Phase 5–6:** reads (new preset) → frozen premier (engine `…igseed-1…@2e4e9645`, user tags git),
+- **Phase 5–6:** ⚠️ update `scripts/publish_gallery.py` `NEXT_PREMIER` (the site's "coming in the next premier"
+  list, 10-20) when the new premier lands — and add the Delaware Bay creeks the sweep picks. Reads (new preset) → frozen premier (engine `…igseed-1…@2e4e9645`, user tags git),
   `docs/MODEL.md` model card, validation summary, research-group brief (incl. status-notebook fig. 2,
   "rise above normal water": baseline from the premier's early 6-h `zsmax` blocks,
   `logs/notebook_qc_2026-10-11/baseline_check.py`), docs refresh, backup, user commits.
@@ -158,6 +186,18 @@ bed — never `--overlay` it. Premier-tier inconsistencies: `premier_tiers.csv`.
 (`download_ehydro_v4.py --set …`); `riverbed_sayreville_v4`; `littleegg_channel_v4`;
 `riverbeds_hierarchy_v4` (replaces the 10-05 Cohansey / GMRT / tidal builds). Paint order:
 buildings → lakes → channel fixes (later wins).
+
+**Cohansey bed sources (from the sfincs-nj-agri session, 10-20; unchecked here):** our Cohansey is the stated
+1.2 m-below-MLLW section (no soundings above the mouth). Candidates: USACE NCF federal channel `CENAP_CO_01_CRC`
+(6 ft authorized, 100 ft, 2.7 mi ≈ Fairton → Bridgeton; no eHydro, last dredging ~1985 — authorized ≠ actual);
+Coast Pilot 3 ch. 6 (controlling ~7 ft at the entrance); 1905–06 USACE survey sheets with soundings, Rutgers RUcore
+`rutgers-lib:56574` (mouth) / `56588` (Bridgeton → Lupton's Landing). Big Timber H09886 / Alloway H10112 / Cohansey
+mouth D00081 are already in the hierarchy; Oldmans (H10027) is outside the ring. After Phase 4.
+The sfincs-nj-agri session's test (10-20, its 100 m model, calm May 2023 week, beds only): soundings / a stated depth
+fixed most of its creek tide — Big Timber (H09886, MLW → MLLW −0.058) Westville 0.47 → 0.97 of the expected range;
+Cohansey at 7 ft below MLLW (Coast Pilot controlling depth) mouth → Fairton: Greenwich 0.55 → 0.72. Ours: Greenwich
+0.62 of observed on the 1.2 m-below-MLLW section — a deeper Cohansey section is the candidate fix (riverbeds_hierarchy
+rebuild).
 
 **Still open on the bed:** the Schuylkill below Fairmount (fill bed + box-mean Manning;
 FINDINGS part 4 "Still open"); optional `jamaica_wall_mid` west of Paerdegat; Big Timber branch

@@ -97,7 +97,8 @@ Every script reads `NJ_DOMAIN` unless its row names a domain. Run from the repo 
 | `build_refinement_v4.py` | v4 quadtree refinement polygons from a readable recipe; diffs names vs v3 | live |
 | `build_riverbeds_v4.py` | v4 river beds where no survey reaches, one carving raster per reach | live |
 | `build_usace_unpave_v4.py` | CUDEM painted back where the 2010 USACE lidar paves deep water (3 boxes), an overlay tier | live |
-| `build_usace_unpave_backbay_v4.py` | The same un-paving in 10 back-bay channel / basin boxes (Ocean City → Wildwood, LBI, Atlantic City, Keansburg), a second overlay tier | provenance |
+| `build_usace_unpave_backbay_v4.py` | The same un-paving in 11 back-bay channel / basin boxes (Ocean City → Wildwood incl. Beach Creek, LBI, Atlantic City, Keansburg), a second overlay tier | live |
+| `build_creek_bed_nj10ft_v4.py` | Lower-only ASSUMED tidal-creek beds (`:min`): the NJ 10 ft DEM's hydro-flat water fill (≈ USACE MLW) along named creeks where CUDEM holds the water surface — Sluice / Dennis + 51 NJ Delaware Bay shore creeks (2026-10-20) | live |
 | `build_riverbed_sayreville_v4.py` | The Raritan's side channels and bank margins at Sayreville from the 2012 survey, NOS H05647 and ENC soundings (was 3DEP's water surface), an overlay tier | provenance |
 | `build_littleegg_channel_v4.py` | Little Egg Inlet's flood channels + the NJIWW behind Holgate from NOS H12597 (2014) and eHydro IW_08 (2024): an OPTIONAL post-Sandy overlay tier | provenance |
 | `build_riverbed_cohansey_v4.py` | The tidal Cohansey at a stated depth below MLLW (no measured bed), an overlay tier | live |

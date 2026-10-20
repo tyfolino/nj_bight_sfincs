@@ -316,6 +316,10 @@ def headline(row: dict | None) -> dict:
         "hwm_rmse_scored_excl_lake_blocked_m",
         "hwm_bias_scored_excl_lake_blocked_m",
         "hwm_lake_outlet_blocked_ids",
+        "hwm_n_scored_excl_noted",
+        "hwm_rmse_scored_excl_noted_m",
+        "hwm_bias_scored_excl_noted_m",
+        "hwm_noted_ids",
         "motf_csi",
         "motf_pod",
         "motf_far",
@@ -1434,6 +1438,43 @@ def fig_hwm(c: _Ctx) -> tuple[dict, dict]:
     )
     ids = hwm["hwm_id"].astype(str).values
     lake = np.isin(ids, list(lake_ids)) if lake_ids else np.zeros(n, bool)
+    from .validate.metrics import HWM_MARK_NOTES
+
+    kind = np.array([HWM_MARK_NOTES.get(i, ("", ""))[0] for i in ids])
+    qn, ru = kind == "questioned", kind == "runup"
+    noted = qn | ru
+    keepn = ~noted
+    r_ex = res[keepn]
+    ex_line = (
+        f"without the {int(noted.sum())} noted marks (hollow): n {int(keepn.sum())} · "
+        f"RMSE {float(np.sqrt(np.mean(r_ex**2))):.3f} m · bias {float(np.mean(r_ex)):+.3f} m"
+        if noted.any() and keepn.any()
+        else ""
+    )
+    note_ids = (
+        "questioned: " + ", ".join(sorted(ids[qn])) + "; " if qn.any() else ""
+    ) + ("wave run-up (upper bound): " + ", ".join(sorted(ids[ru])) if ru.any() else "")
+    _norm_col = cmap_diverging()
+
+    def _rgba(v):
+        return _norm_col(
+            (np.clip(v, -RESID_LIM, RESID_LIM) + RESID_LIM) / (2 * RESID_LIM)
+        )
+
+    def _hollow(ax, x, y, v, k, s):
+        for sel, mk in ((k & qn, "o"), (k & ru, "^")):
+            if sel.any():
+                ax.scatter(
+                    x[sel],
+                    y[sel],
+                    s=s * 1.6,
+                    marker=mk,
+                    facecolor="none",
+                    edgecolor=_rgba(v[sel]),
+                    lw=1.6,
+                    zorder=6,
+                )
+
     hx, hy = hwm.geometry.x.values, hwm.geometry.y.values
     basin = np.asarray(_domain.classify_hwm_basin(hx, hy))
 
@@ -1446,7 +1487,8 @@ def fig_hwm(c: _Ctx) -> tuple[dict, dict]:
         inw = (hx >= x0) & (hx <= x1) & (hy >= y0) & (hy <= y1)
         big = name == "domain"
         s = 14 if big else 34
-        k = inw & wet
+        _hollow(ax, hx, hy, res, inw, s)
+        k = inw & wet & keepn
         sc = ax.scatter(
             hx[k],
             hy[k],
@@ -1459,7 +1501,7 @@ def fig_hwm(c: _Ctx) -> tuple[dict, dict]:
             lw=0.35,
             zorder=5,
         )
-        k = inw & ~wet
+        k = inw & ~wet & keepn
         ax.scatter(
             hx[k],
             hy[k],
@@ -1514,9 +1556,29 @@ def fig_hwm(c: _Ctx) -> tuple[dict, dict]:
                 ms=9,
                 label="lake_outlet_blocked",
             ),
+            Line2D(
+                [],
+                [],
+                marker="o",
+                ls="",
+                mfc="none",
+                mec=INK,
+                mew=1.4,
+                label="questioned mark (hollow)",
+            ),
+            Line2D(
+                [],
+                [],
+                marker="^",
+                ls="",
+                mfc="none",
+                mec=INK,
+                mew=1.4,
+                label="wave run-up mark (upper bound)",
+            ),
         ],
         loc="outside lower left",
-        ncols=3,
+        ncols=5,
         fontsize=8,
     )
     _save(m.fig, c.out / "hwm_map.png")
@@ -1525,8 +1587,10 @@ def fig_hwm(c: _Ctx) -> tuple[dict, dict]:
             f"HWM residuals (model − measured) for the {n} scored marks — {label}; the "
             "sampler is the scorer's (plots._sample_hwm → validate). Orange = model low, "
             f"purple = high, fixed ±{RESID_LIM:g} m; ✕ = model dry at the mark; ring = "
-            "flagged lake_outlet_blocked (FINDINGS part 4 (h)), never dropped. "
-            f"Pooled: RMSE {rmse:.3f} m, bias {bias:+.3f} m ({label})."
+            "flagged lake_outlet_blocked (FINDINGS part 4 (h)), never dropped; hollow = a "
+            f"mark noted against its USGS STN record ({note_ids or 'none'}), kept in the "
+            f"score. Pooled: RMSE {rmse:.3f} m, bias {bias:+.3f} m ({label})"
+            + (f"; {ex_line}." if ex_line else ".")
         ),
         "selfcheck": selfcheck,
     }
@@ -1546,10 +1610,11 @@ def fig_hwm(c: _Ctx) -> tuple[dict, dict]:
     a1.plot([lo, hi], [lo, hi], color=HAIR, lw=0.8, zorder=1)
     for off in (-0.5, 0.5):
         a1.plot([lo, hi], [lo + off, hi + off], color=HAIR, lw=0.5, ls=":", zorder=1)
+    _hollow(a1, obs, scored, res, np.ones(n, bool), 26)
     a1.scatter(
-        obs[wet],
-        scored[wet],
-        c=res[wet],
+        obs[wet & keepn],
+        scored[wet & keepn],
+        c=res[wet & keepn],
         cmap=cmap_diverging(),
         vmin=-RESID_LIM,
         vmax=RESID_LIM,
@@ -1559,9 +1624,9 @@ def fig_hwm(c: _Ctx) -> tuple[dict, dict]:
         zorder=3,
     )
     a1.scatter(
-        obs[~wet],
-        scored[~wet],
-        c=res[~wet],
+        obs[~wet & keepn],
+        scored[~wet & keepn],
+        c=res[~wet & keepn],
         cmap=cmap_diverging(),
         vmin=-RESID_LIM,
         vmax=RESID_LIM,
@@ -1588,7 +1653,8 @@ def fig_hwm(c: _Ctx) -> tuple[dict, dict]:
     a1.set_ylabel("modelled level at the mark [m NAVD88]")
     a1.set_title(
         f"n {n} · RMSE {rmse:.3f} m · bias {bias:+.3f} m · within ±0.5 m "
-        f"{np.mean(np.abs(res) < 0.5):.0%}\n{label}",
+        f"{np.mean(np.abs(res) < 0.5):.0%}\n{label}"
+        + (f"\n{ex_line}" if ex_line else ""),
         fontsize=8.5,
         loc="left",
     )
@@ -1643,7 +1709,8 @@ def fig_hwm(c: _Ctx) -> tuple[dict, dict]:
         "caption": (
             f"Left: measured vs modelled level at each scored mark ({label}); dotted = "
             "±0.5 m; ✕ = model dry (scored at the lowest ground in the window); ring = "
-            "lake_outlet_blocked. Right: per-basin bias (bar) and RMSE (tick), basins "
+            f"lake_outlet_blocked; hollow ○ questioned / △ wave run-up ({note_ids or 'none'})"
+            ", kept in the score. Right: per-basin bias (bar) and RMSE (tick), basins "
             "from Domain.hwm_rules (first match wins), sorted by bias."
         ),
         "basins": [

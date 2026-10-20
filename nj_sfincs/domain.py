@@ -1627,6 +1627,27 @@ _V3_SOUTH_RULES = (
     ),
 )
 
+#: The NOAA gauges' 6-MINUTE record (2026-10-20, user; scripts/download_noaa_sandy_wl.py
+#: --six-minute). Identical to the hourly product at every whole hour (0.000 m at all 13
+#: stations); between hours it holds the crest the hourly file misses — Atlantic City
+#: 1.915 vs 1.877, Cape May 1.798 vs 1.755, and Sandy Hook, which kept reporting to 23:36,
+#: 3.175 vs 2.808. v3 and the v4 family score from it; v1 / v1.5 / v2 keep the hourly file
+#: (frozen, pinned by the port gate).
+_NOAA_6MIN = "gtsm/noaa_sandy_validation_6min.nc"
+_NOAA_HOURLY = ("gtsm/noaa_sandy_validation.nc", "gtsm/noaa_sandy_validation_v4.nc")
+
+
+def _six_min(g: ObsGauge) -> ObsGauge:
+    if g.obs_file not in _NOAA_HOURLY:
+        return g
+    g = replace(g, obs_file=_NOAA_6MIN, note=g.note + " Scored from the 6-min record.")
+    if (
+        g.name == "sandy_hook"
+    ):  # its last 6-min sample, 36 min after the last hourly one
+        g = replace(g, record_ends="2012-10-29 23:36")
+    return g
+
+
 V3 = Domain(
     name="v3",
     region=DATA / "region_v3_EDITED_inland.geojson",
@@ -1781,12 +1802,15 @@ V3 = Domain(
     n_waterlevel_support=3,
     discharge_geodataset="usgs_sandy_discharge_v3",
     hwm_geojson=DATA / "validation_v3" / "sandy_hwms_v3.geojson",
-    obs_gauges=(
-        *V1_5_RARITAN.obs_gauges,
-        _NOAA_ATLANTIC_CITY,
-        _NOAA_CAPE_MAY,
-        *_V3_USGS_GAUGES,
-        *_V3_STN_GAUGES,
+    obs_gauges=tuple(
+        _six_min(g)
+        for g in (
+            *V1_5_RARITAN.obs_gauges,
+            _NOAA_ATLANTIC_CITY,
+            _NOAA_CAPE_MAY,
+            *_V3_USGS_GAUGES,
+            *_V3_STN_GAUGES,
+        )
     ),
     # south first (bounded), then v2's Barnegat rules (ymax 4,444,000 → effectively
     # 4,412,000..4,444,000 after the south), then v1.5's northern rules + catch-all.
@@ -2155,7 +2179,6 @@ _V4_BASIN_RULES = (
     ),
 )
 
-_V4_NOAA = "gtsm/noaa_sandy_validation_v4.nc"
 _V4_USGS = "gtsm/usgs_sandy_tidal_v4.nc"
 
 
@@ -2167,7 +2190,7 @@ def _v4_gauge(
         lon,
         lat,
         kind,
-        _V4_NOAA if src == "noaa" else _V4_USGS,
+        _NOAA_6MIN if src == "noaa" else _V4_USGS,
         "waterlevel" if src == "noaa" else None,
         sid,
         survives_crest=survives,

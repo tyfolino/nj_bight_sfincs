@@ -45,8 +45,18 @@ live from the CO-OPS `datums.json` endpoint and printed; the neighbours are name
 station list. ⚠️ An ESTIMATE, not a levelling tie: across the neighbours used, (NAVD88 -
 MSL) varies by ~1-4 cm, and by up to ~0.13 m between the bay mouth and the upper river.
 
+SIX-MINUTE VALIDATION FILE (2026-10-20, user). ``--six-minute`` writes
+``noaa_sandy_validation_6min.nc``: every station in STATIONS_V4 (a superset of v1–v3's four),
+CO-OPS product ``water_level`` (verified 6-min), the v4 window, the SAME MLLW→NAVD88 handling.
+Validation only (no forcing file). Why: an hourly series misses the crest between hours —
+Atlantic City's 6-min peak is 1.915 m at 10-30 00:24, the hourly 1.877 at 00:00, so the
+hourly file inflated the model's peak error there by 0.04 m (logs/atlantic_city_check_2026-10-20/).
+v3 and the v4 family score their NOAA gauges from it; the frozen v1 / v1.5 / v2 domains keep
+the hourly file (their published numbers are pinned by the port gate).
+
 Usage:
     NJ_DOMAIN=v4 python scripts/download_noaa_sandy_wl.py
+    NJ_DOMAIN=v4 python scripts/download_noaa_sandy_wl.py --six-minute
     NJ_DOMAIN=v3 python scripts/download_noaa_sandy_wl.py --out-dir /tmp/check
 A built domain's existing product is never overwritten without `--overwrite`.
 """
@@ -169,14 +179,15 @@ def navd_minus_mllw(st: dict) -> float:
     return off
 
 
-def fetch(st: dict) -> pd.Series:
-    """Return hourly water level (m NAVD88) for one station."""
+def fetch(st: dict, product: str = "hourly_height", window=None) -> pd.Series:
+    """Water level (m NAVD88) for one station: ``hourly_height`` or 6-min ``water_level``."""
     datum = st.get("datum", "NAVD")
+    begin, end = window or (BEGIN, END)
     params = {
-        "product":    "hourly_height",
+        "product":    product,
         "application": "nj_bight_sfincs",
-        "begin_date": BEGIN,
-        "end_date":   END,
+        "begin_date": begin,
+        "end_date":   end,
         "datum":      datum,
         "station":    st["id"],
         "time_zone":  "gmt",
@@ -253,6 +264,11 @@ def parse_args():
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[1])
     ap.add_argument("--out-dir", type=Path, help="write both files here instead")
     ap.add_argument(
+        "--six-minute",
+        action="store_true",
+        help="write only noaa_sandy_validation_6min.nc (all STATIONS_V4, verified 6-min)",
+    )
+    ap.add_argument(
         "--overwrite",
         action="store_true",
         help="allow replacing the EXISTING files of a built (not acquisition-only) domain",
@@ -260,8 +276,45 @@ def parse_args():
     return ap.parse_args()
 
 
+def main_six_minute(args) -> None:
+    """``noaa_sandy_validation_6min.nc``, checked against the hourly file at whole hours."""
+    out = (args.out_dir or OUT_DIR) / "noaa_sandy_validation_6min.nc"
+    if out.exists() and not args.overwrite and not args.out_dir:
+        raise SystemExit(f"{out} exists; use --overwrite")
+    window = WINDOW_BY_DOMAIN["v4"]
+    stations = [dict(s) for s in STATIONS_V4]
+    print(f"Fetching {len(stations)} NOAA stations, 6-min, {window[0]}-{window[1]} ...")
+    series = {s["id"]: fetch(s, "water_level", window) for s in stations}
+    ds = build_dataset(
+        stations,
+        series,
+        "NOAA CO-OPS 6-minute water levels (validation) — Hurricane Sandy",
+    )
+    ds.attrs["product"] = "water_level (verified 6-min)"
+    hourly = OUT_DIR / "noaa_sandy_validation_v4.nc"
+    if hourly.exists():  # self-check: 6-min at whole hours vs the hourly product
+        h = xr.open_dataset(hourly)
+        for s in stations:
+            sid = int(s["id"])
+            if sid not in h.stations.values:
+                continue
+            hv = h.waterlevel.sel(stations=sid).to_series().dropna()
+            sv = ds.waterlevel.sel(stations=sid).to_series().reindex(hv.index)
+            d = (sv - hv).dropna()
+            six = ds.waterlevel.sel(stations=sid).to_series()
+            print(
+                f"  {s['id']} {s['name']:24s} n6={int(six.notna().sum())} "
+                f"6min-hourly at hours: mean {d.mean():+.3f} max|d| {d.abs().max():.3f} m; "
+                f"peak 6min {six.max():.3f} @ {six.idxmax()} vs hourly {hv.max():.3f} @ {hv.idxmax()}"
+            )
+    write_atomic(ds, out)
+    print(f"Wrote {out}")
+
+
 def main():
     args = parse_args()
+    if args.six_minute:
+        return main_six_minute(args)
     out_f, out_v = OUT_FORCING, OUT_VALIDATION
     if args.out_dir:
         out_f, out_v = args.out_dir / out_f.name, args.out_dir / out_v.name

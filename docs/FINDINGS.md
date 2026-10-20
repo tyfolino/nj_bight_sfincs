@@ -1944,7 +1944,8 @@ Deal Lake, overland through low ground in Asbury Park** (bottleneck −74.0098, 
 (3.14 m) stands above the modelled sea, which needs run-up a fixed-bed SFINCS without a wavemaker
 lacks. Post-storm lidar crest at the Wreck Pond outlet 1.65–2.49 m (pre-storm 4.89). **The model's
 bed also cuts Wreck Pond in two:** inside the NHD outline a band 1.7–3.9 m (max 4.2) crosses the east
-end (−74.0285…−74.0317, ~40.1385) where the 10 ft lidar reads water / < 1 m; premier zsmax sea
+end (−74.0285…−74.0317, ~40.1385) where the 10 ft lidar reads water / < 1 m — the 1st Ave bridge deck,
+removed by `lake_fix_v4` (10-20, below); premier zsmax sea
 2.80, east end 1.88, mid pond 0.38, at 6130 0.86 (obs 2.74). **Lake-crossing audit**
 (`logs/lake_audit_2026-10-15/`): 15 of 127 coastal NHD lakes carry a > 300 m² patch > 1 m above the
 10 ft lidar, and in ALL 15 it is the USACE 2010 tier (`usace_nj_2010_v3`) interpolated across the
@@ -1964,7 +1965,7 @@ changed faces, all within 27 m of the three polygons. Crossing sill, ocean → b
 own N–S band (minimax of `uv_zmin` and both faces' `z_zmin`): Wreck 2.82 → 0.01 / 1.66, manto_a
 3.97 → 1.11, manto_b 4.00 → 0.48 m — at Mantoloking BELOW the 3 m overlay's own crossing (1.60 / 0.60),
 because a uv sill is the lowest pixel in its uv area, not a continuous path. Sea-connection level at
-6130 2.82 → 0.83 / 1.66; at 6129 2.82 → 2.27 in both (the pond's internal band, now the control).
+6130 2.82 → 0.83 / 1.66; at 6129 2.82 → 2.27 in both — that 2.27 is the GROUND of the face nearest the mark (2.26 m; the lowest face within 50 m connects at 2.13), NOT a band in the pond (corrected 10-20, below).
 **Wave overtopping cannot fill Deal Lake** (2026-10-17, `logs/overtopping_2026-10-17/`; EurOtop 2018
 eq. 5.10/5.11, sloping beach + low crest; toe = first face seaward with mean bed ≤ −1 m, Hm0 2.4–3.7 m,
 Tm−1,0 12.2–12.6 s, SWL 2.84–2.92 m incl. setup, from the unseeded premier; 260 m frontage, post-storm
@@ -1979,7 +1980,19 @@ normal pool takes 5 cm spread over Deal Lake (35 × 10³ m³; median face `z_zmi
 Wreck Pond, 20 cm Lake Como, 43 cm Wesley / Takanassee / Lilies, 75 cm Lake Louise — against 1.78 Mm³
 Deal Lake lacks to reach its mark. Lakes with a pool below 0 m (Wreck Pond −0.16, Louise −0.68) start
 ABOVE it (`sfincs_ini_regional.bin` base 0.0). User 10-20: no pool start; the Wreck Pond outfall
-culvert is not modelled either (the breach arms carry Sandy's route; 6129 is held by the 2.27 m band).
+culvert is not modelled either (the breach arms carry Sandy's route).
+**The Wreck Pond "band" is the 1st Avenue bridge deck, and the lake fix already removed it** (2026-10-20,
+`logs/wreck_pond_band_2026-10-20/`; Monmouth County bridge W-27, a concrete arch, Sea Girt–Spring Lake; ID from OSM
++ press, no imagery offline). The 2010 USACE lidar holds its deck top (lowest crossing 3.57–3.72 m; the premier bed
+3.63–3.74) where NJ 10 ft reads water under the bridge (−0.08…+0.06) and CUDEM +0.06…+0.14 — the bridge-deck-as-dam
+trap. The east-end-to-pond connection level: premier `_subgrid_refreeze` 2.55 m (3 m pixels) / 0.72 (model faces);
+`_lakes_min` 0.14 / 0.10; `_wreck0` 0.01. In the PREMIER the deck held the wave-pushed overwash over the 2.82 m
+outfall beach in the east end (peak 1.87 m) while the main pond rose only to 0.38 m (rain). **6129** sits on a yard
+~200 m N of the pond's NE shore, in Wreck Pond's drainage (to Spring Lake the crossing is 3.52 m); its ground is
+2.77 m vs the observed 2.774 — the water only just reached it. It is controlled by the POND LEVEL, not a band:
+with a breach it wets once the pond passes 2.13 m and reads near the observation at ~2.75 m. Inferred (not run):
+without a breach the overwash (~10⁴ m³) adds cm to the pond and 6129 stays dry. No bed fix needed (6 leftover deck
+pixels outside the outline change nothing).
 **Atlantic City's +0.5 m peak is the FORCING** (2026-10-20 desk check, `logs/atlantic_city_check_2026-10-20/`;
 NOAA 8534720 verified, NAVD88): the 3 forced boundary points facing Atlantic City (3.1–3.6 km off, same on v3
 and v4_refreeze) peak +0.43…+0.47 m above the 6-min obs peak (1.915 m, 10-30 00:24 UTC), NACCS's own save
@@ -1991,13 +2004,19 @@ of today's gauge, zsmax 2.417 vs 2.421 m). The scorer's `peak_obs` is the HOURLY
 inflates the error a further +0.04. Inferred: the AC HWM group's ~0 bias (+0.008, median, 50 m, n 9) is
 a too-high ocean standing in for the back-bay excess the model lacks (§57) — do not lower the boundary
 here without a second forcing product.
+**NOAA gauges are scored from the 6-min record on v3 and the v4 family** (2026-10-20, user;
+`data/gtsm/noaa_sandy_validation_6min.nc`, `download_noaa_sandy_wl.py --six-minute`, 13 stations): identical to the
+hourly product at every whole hour (0.000 m, all stations); between hours it holds the crest. Re-scored v4_refreeze
+naccs-premier peak error, hourly → 6-min: Atlantic City +0.529 → +0.491, Cape May −0.042 → −0.085, Ship John −0.067
+→ −0.083, Newbold −0.132 → −0.154, the rest ≤ 1 cm; **Sandy Hook** kept reporting to 23:36 (3.175 m vs the last
+hourly 2.808 at 23:00) → `record_ends` 23:36 and the pre-failure error −0.162 → −0.309. v1 / v1.5 / v2 keep hourly.
 **The premier's MOTF false alarms are mostly RAIN** (2026-10-20, `logs/fa_rain_2026-10-20/`; pixel split on the
 MOTF grid, same screens as `motf_metrics`, reproduces the row: 128.46 km², FAR 0.0979; unseeded engine, waves-on
 vs waves-off carries the §44 noise): of 128.5 km², **rain 79.0** (wet only with rain on: `naccs-nowaves` wet,
 `naccs-nowaves+rain-off+slr-0m` dry; 20.8 of it sea-connected — rain-fed creeks reach the bay), surge 27.4 (wet
 with no rain, no waves), waves 22.1. FAR without the rain pixels 0.040. Infiltration CUTS them: no-infiltration
 adds 75.4 km² and removes 0.7. Pits below 0 m (filled at t = 0 by the base-0 start) never enter the score
-(`land_in` needs ground > 0). ⚠️ `motf_km2_fa_rainonly` is 0 BY CONSTRUCTION (wet needs h ≥ 0.15 m, rainonly
+(`land_in` needs ground > 0). ⚠️ `motf_km2_fa_rainonly` (RETIRED 10-20) was 0 BY CONSTRUCTION (wet needs h ≥ 0.15 m, rainonly
 needs h ≤ the local storm total, 5–12 cm here; and it reads the v1-era AORC file, lat 39.66–40.57), and
 `fa_decomp.py`'s docstring still says infiltration is off; the connected / disconnected split cannot separate
 rain from surge either (a rain-fed creek is connected).
@@ -2019,6 +2038,35 @@ outputs with zs ≤ zb + 1 cm): `noaa_cape_may` zb +1.29 m 43 %, `usgs_tidal_cap
 flat at the bed until the land floods, so a tide or peak read there is the face, not the water. v3 premier:
 `noaa_cape_may` 27 %, `usgs_tidal_barnegat_light` 52 %, `usgs_tidal_absecon_creek` 28 %, `usgs_tidal_inside_thorofare`
 28 %, `sss_great_bay` 22 %.
+**NJ Delaware Bay marsh creeks: CUDEM holds the WATER SURFACE, so they cannot drain** (2026-10-20,
+`logs/sluice_creek_2026-10-20/`, `logs/de_bay_creeks_2026-10-20/`; bed `_subgrid_refreeze_lakes_min`; B = lowest sea
+level reaching a face, exact minimax over `z_zmin` + uv sills). Sluice Creek (USGS 01411435): Dennis Creek is −3…−5 m
+and connected up to ~4.5 km below the gauge, then CUDEM rises smoothly −0.9 → +0.1 at the confluence → +0.5…+0.6
+under the gauge; B there +0.68 (MHHW +0.88) and the model has NO tide (obs range 1.06 m, low water ≈ −0.2); the
+crest is fine (peak error +0.04 waves-off / +0.16 on). The sweep: **55 named creeks, ~123 km** of tidal channel with
+≥ 300 m held at CUDEM's water surface (biggest: Hope 7.7 km, Oranoaken 7.3, Dennis 7.0, Mad Horse 5.6, Little 5.3);
+every sill < +0.75 m under a +1.8…+2.1 m crest, so it is low-tide drainage / marsh tidal prism, not the peak; no
+USGS HWM within 1 km of any reach; a further 187 km is choked where NJ 10 ft is NOT hydro-flat. **The NJ 10 ft DEM
+fills tidal water with a CONSTANT, −1.067 m = −3.5 ft NAVD88** (≈ the USACE MLW plane; 119,000 pixels round Sluice
+alone; also local pool constants, −0.24 at the Sluice gauge, −1.332 on Alloway Creek) — a convention, not a water
+level observed at flight time. Fix (user 10-20): `creek_bed_nj10ft_v4` (`:min`) paints that fill along the named
+creeks — an ASSUMED bed at ≈ MLW, labelled so everywhere; all qualifying creeks except the Salem River and
+Mannington Creek (stepped −0.822 / −0.411 / −0.111 levels may mark gates); NHD lakes excluded (Clint Millpond, a
+dammed pond on Sluice Creek, is flat at its +0.859 pool). A tide match there afterwards partly reflects the
+assumption.
+**The v4 premier's 10 marks outside ±0.5 m, read against their USGS STN records** (2026-10-20,
+`logs/stn_marks_2026-10-20/` — JSON, photos, field sheets; per-mark table `logs/dry_mark_2026-10-20/`, median, 50 m;
+the STN API is now `https://api.waterdata.usgs.gov/stnservices/`). No datum / units problem: our `elev_m` = STN's ft ×
+0.3048 to 0.5 mm, all NAVD88, field sheets within 1.5 cm. **Sound marks, so model failures:** 6122 Deal Lake, 6124
+Wesley Lake, 6129 + 6130 Wreck Pond (debris lines ON THE GROUND at the lakes' inland ends; 6129/6130 agree within 3
+cm — one water surface): the lakes do not fill through their outlets or over the beach. **Upper bounds for a still-
+water model (wave run-up / splash / overwash):** 6121 Long Branch (debris on a lawn across Ocean Ave from the beach),
+6398 Breezy Point (pen line atop debris spatter on house trim; indoor 6397 3.26 m is the still-water value), 6188
+Ortley Beach (mid-island, 450 m behind the dune; no photos). **Behind a structure:** 6155 Keansburg is sound — a
+footbridge over Waackaack Creek inside the levee + tide gate; two other inside marks read 1.554 m; the model floods
+the pocket (+1.49). **Suspect marks (inference from photos):** 6202 West Creek (a faint smudge ~0.5 m up a
+foundation wall; open marsh to the bay at 0.8 m, no dike; no STN mark within 3 km) and 6169 Manasquan (a clear seed
+line, but ~1.0–1.3 m above a patio at ground ~1.5 m → ~2.6–2.9 m, like its neighbours, vs the stored 3.658).
 **The `lake_outlet_blocked` flag** (`nj_sfincs/validate/lake_flag.py`, 2026-10-17; never reads the
 observation): P = median `zsmax` on sea-connected faces within 1 km beyond the sea face nearest the
 mark; C = the lowest level at which the sea reaches any face in the 50 m scoring window (through

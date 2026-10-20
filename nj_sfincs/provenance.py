@@ -151,6 +151,7 @@ _VALIDATION = [
     (None, "USGS high-water marks"),
     ("validation/sandy_motf_extent.tif", "FEMA MOTF surge extent"),
     ("gtsm/noaa_sandy_validation.nc", "NOAA gauge water level"),
+    ("gtsm/noaa_sandy_validation_6min.nc", "NOAA gauge water level, 6-min (v3, v4)"),
     ("gtsm/usgs_sandy_tidal_nj.nc", "USGS tidal + interior bay gauges"),
     ("gtsm/sandy_storm_tide_nj.nc", "USGS storm-tide sensors"),
     ("wind/sandy_wind_obs.nc", "observed 10 m wind (NDBC + CO-OPS)"),
