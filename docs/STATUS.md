@@ -6,7 +6,7 @@ running, what is next, what is open. When an item closes, its durable fact goes 
 Git has the history. The campaign log this file grew into until 2026-09-29 (6,767 lines) is
 `git show d70dd1e:docs/STATUS.md`; FINDINGS cites it as "STATUS <date>".
 
-▶ **PICK UP (10-19 evening; running: 62734605 `sbg_nobldg` → ~22:00):**
+▶ **PICK UP (10-20; nothing running — the no-buildings bed is built, lake start + culvert closed; next: desk checks, then submit Phase 4):**
 1. ✅ **Wavemaker line DECIDED (user 10-19): `--snap-seaward-of-beach`** =
    `data/wavemakers_v4/v4_wavemaker_5m_mhw_snapbeach.geojson` (8 pieces, 157.7 km; Cape May / Wildwood
    left out as in v3). ✅ the v4 6 h-cut wavemaker repeat PASSED (62734681: bit-identical; a resumed copy
@@ -77,7 +77,8 @@ jobs read; FINAL AUDIT plan approved).
 ## Running (10-19)
 
 - ✅ **62734681 `wm_repeat`** COMPLETED (3 h 07, halc075): BIT-IDENTICAL; resume read in FINDINGS §44 (j).
-- ▶ **62734605 `sbg_nobldg`** (~15:00 → ~22:00): `_subgrid_refreeze_lakes_min_nobuildings`.
+- ✅ **62734605 `sbg_nobldg`** COMPLETED 10-20 02:29 (5 h 44, exit 0): `_subgrid_refreeze_lakes_min_nobuildings`
+  (`subgrid_diff.json`: 68,312 faces change `z_zmin`, median −2.3 m).
 - ✅ 10-17 jobs read and closed: `igcap` (FINDINGS §44 (e); user keeps `snapwave_niter` 200), the inflow
   re-stage (swapped in; 10-06 copy = `_template_sealed_pre_inflows_2026-10-06`; the hand-step trap is in
   CLAUDE.md §5), `sbg_lakes_min` + `sbg_breach` (checked 10-19, FINDINGS part 4 (h)). Clean-up done
@@ -103,12 +104,8 @@ reference re-run on the seeded engine; `cnb` stays the premier's infiltration (F
   design (user 10-17: Wreck 0.0 m main + 1.65 m bracket, Mantoloking post-storm EAARL-B, n 0.025) +
   overlays + beds (checked 10-19); the Deal overtopping arm (`Experiment.extra_discharge`); metrics label
   round-trip, env lock, README; the Phase 4 arms + PREREG (10-19). Details: FINDINGS part 4 (h), git log.
-  - ☐ **Coastal lakes start EMPTY:** `zsini` 0 vs normal pools ~0.5–0.65 m (Deal Lake bed 0.16–0.30 m
-    under a 0.61 m surface) — rain first fills a dry basin. Candidate fix: the Overpeck mechanism
-    (`sfincs_ini_regional.bin`) at each lake's pool — `data/normal_surface_v4/lake_pool_v4.tif` (10-19) now
-    holds those pools. A template change (re-stage + diff) — user's call.
-  - ☐ Optional, user's call: the open 7-ft Wreck Pond outfall pipe as a culvert (no drainage-file writer
-    yet); with the channel open, 6129 is controlled by the pond's internal band at 2.27 m.
+  - ✅ CLOSED 10-20 (user): no lake pool start (the lakes start within 5–75 cm of their pools — the lidar
+    bed is the water surface; FINDINGS part 4 (h)); no Wreck Pond culvert.
   - ☐ desk checks: Atlantic City datum, paved channels.
 - **Phase 4:** ONE 2-node job on the seeded engine. Node 1: new premier (seeded + `cnb` 1.5 + ERA5
   pressure + moved inflows + lake-fixed bed) + its repeat + `bed-breach` + waves-off + `cnb` 1.0 / 2.38

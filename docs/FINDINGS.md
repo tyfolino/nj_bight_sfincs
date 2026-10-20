@@ -1973,6 +1973,13 @@ USACE CZMIL crest 2.9–3.6 m on the north 110 m by the flume, 3.3–5.1 m south
 0.61 m pool to the mark's 3.14 m: level pool ~1.25 m (premier 0.77). Crest −0.5 m: 0.88 Mm³ (2.15 m);
 +0.5 m: 0.05; pre-storm crest: 0.017; Hm0 ±20 %: 0.21–0.39. Stockdon R2% 4.8–6.5 m — the REACH is there,
 the VOLUME is not. Untested: a failed / overtopped flume outfall (~20 m³/s for hours at a 2 m head).
+**The lakes do NOT start empty** (2026-10-20, `logs/lake_start_2026-10-20/`; bed `_subgrid_refreeze_lakes_min`,
+pools `data/normal_surface_v4`): the lidar bed under them is mostly the WATER SURFACE, so filling to the
+normal pool takes 5 cm spread over Deal Lake (35 × 10³ m³; median face `z_zmin` 0.61 m = the pool), 9 cm
+Wreck Pond, 20 cm Lake Como, 43 cm Wesley / Takanassee / Lilies, 75 cm Lake Louise — against 1.78 Mm³
+Deal Lake lacks to reach its mark. Lakes with a pool below 0 m (Wreck Pond −0.16, Louise −0.68) start
+ABOVE it (`sfincs_ini_regional.bin` base 0.0). User 10-20: no pool start; the Wreck Pond outfall
+culvert is not modelled either (the breach arms carry Sandy's route; 6129 is held by the 2.27 m band).
 **The `lake_outlet_blocked` flag** (`nj_sfincs/validate/lake_flag.py`, 2026-10-17; never reads the
 observation): P = median `zsmax` on sea-connected faces within 1 km beyond the sea face nearest the
 mark; C = the lowest level at which the sea reaches any face in the 50 m scoring window (through
