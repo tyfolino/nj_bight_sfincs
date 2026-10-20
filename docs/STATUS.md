@@ -6,7 +6,7 @@ running, what is next, what is open. When an item closes, its durable fact goes 
 Git has the history. The campaign log this file grew into until 2026-09-29 (6,767 lines) is
 `git show d70dd1e:docs/STATUS.md`; FINDINGS cites it as "STATUS <date>".
 
-▶ **PICK UP (10-20; nothing running — the no-buildings bed is built, lake start + culvert closed; next: desk checks, then submit Phase 4):**
+▶ **PICK UP (10-20; PHASE 4 = job 62757492, HELD by the user until the Beach Creek beds (62757958) are in; gauge comparisons to discuss before release):**
 1. ✅ **Wavemaker line DECIDED (user 10-19): `--snap-seaward-of-beach`** =
    `data/wavemakers_v4/v4_wavemaker_5m_mhw_snapbeach.geojson` (8 pieces, 157.7 km; Cape May / Wildwood
    left out as in v3). ✅ the v4 6 h-cut wavemaker repeat PASSED (62734681: bit-identical; a resumed copy
@@ -74,7 +74,10 @@ jobs read; FINAL AUDIT plan approved).
   model (part 4 (g)–(h)). Run B (`v4_hot_plus_walls`) stays as the pre-re-freeze record.
 - **Heading for:** ONE Phase 4 re-baseline job on the seeded engine (below), before maintenance 11-10.
 
-## Running (10-19)
+## Running (10-20)
+
+- ▶ **62757492 `phase4`** submitted 10-20 (EXPECT_MD5 `logs/rebaseline_2026-10-19/expected.md5` — 🔴 do not edit
+  the guarded code / lists / `hpc/sfincs_run.slurm` until it STARTS). `--check` 12/12 + 2/2, tests 367 OK.
 
 - ✅ **62734681 `wm_repeat`** COMPLETED (3 h 07, halc075): BIT-IDENTICAL; resume read in FINDINGS §44 (j).
 - ✅ **62734605 `sbg_nobldg`** COMPLETED 10-20 02:29 (5 h 44, exit 0): `_subgrid_refreeze_lakes_min_nobuildings`
@@ -106,7 +109,22 @@ reference re-run on the seeded engine; `cnb` stays the premier's infiltration (F
   round-trip, env lock, README; the Phase 4 arms + PREREG (10-19). Details: FINDINGS part 4 (h), git log.
   - ✅ CLOSED 10-20 (user): no lake pool start (the lakes start within 5–75 cm of their pools — the lidar
     bed is the water surface; FINDINGS part 4 (h)); no Wreck Pond culvert.
-  - ☐ desk checks: Atlantic City datum, paved channels.
+  - ✅ desk check Atlantic City (10-20): the +0.5 m is NACCS forcing, not datum or model (FINDINGS part 4 (h)).
+    ☐ AFTER 62757492 STARTS (md5-guarded code): score gauge peaks from the 6-min obs (hourly under-reads AC by 0.04 m).
+    ☐ AFTER 62757492 STARTS: `fa_decomp` rainonly key is dead by construction — replace with the twin-run split
+      (`logs/fa_rain_2026-10-20/fa_cause_split.py`: premier FA rain 79 / surge 27 / waves 22 km², FINDINGS part 4 (h)).
+  - ✅ desk check paved channels (10-20): federal channels clear; Beach Creek (N. Wildwood) still paved, 2 probable
+    CUDEM surfaces — none moves a mark (FINDINGS part 4 (h)); `audit_paved_channels.py` retired.
+  - ✅ **Gauges on dry faces** (10-20, user: move now): `noaa_cape_may`, `usgs_tidal_cape_may_harbor`,
+    `usgs_tidal_barnegat_light` NUDGED 15–39 m onto the nearest face the sea reaches at −0.5 m
+    (`domain._V4_REFREEZE_NUDGED_2026_10_20`, template `sfincs.obs` synced, `logs/gauge_nudge_2026-10-20/`);
+    `usgs_tidal_sluice_creek` NOT moved (nearest connected face 2.6 km) — crest only. Old v4_refreeze runs now
+    audit "OBS STALE" (true: their his points are the old ones); staging is clean.
+  - ▶ **Beach Creek unpave** (10-20, user: fix before Phase 4): box `beach_creek_nwildwood` added to
+    `usace_unpave_backbay_v4` (10 old boxes pixel-identical; 0.026 km², +1.22 → −1.78 m). Job **62757958** rebuilds
+    the four Phase 4 beds as `*_bc` (lakes_min, lakes_min_nobuildings, breach_wreck0/165) + `check_beds.py`
+    (`logs/beach_creek_2026-10-20/`). THEN: point `experiments.py` at the `_bc` beds, refresh Phase 4's md5, retire
+    the old four beds, user releases 62757492 (HELD by the user 10-20).
 - **Phase 4:** ONE 2-node job on the seeded engine. Node 1: new premier (seeded + `cnb` 1.5 + ERA5
   pressure + moved inflows + lake-fixed bed) + its repeat + `bed-breach` + waves-off + `cnb` 1.0 / 2.38
   + `bed-nobuildings` + a waves-off Horton (`hor`) arm. Node 2: v3 reference pair + TWO full-length null
@@ -178,8 +196,6 @@ heads may still be tidal (unpainted). Paerdegat: leave it (user).
   the cross-Narrows tilt at `sss_narrows_bkln`. Close: per-mark and Narrows Q(t).
 - **Great Kills sensor offset cause (§50).** Close: USGS STN deployment / survey records.
 - **12 USGS gauges empty over the storm day (§60f).** Close: NWISWeb 2012 / the USGS Sandy report.
-- **Atlantic City peak ~+0.5 m high on every run** (+0.47…+0.55). Close: NACCS at the nearest save
-  point vs the gauge; the gauge's datum (Phase 3 desk check).
 - **NY-bay waves-on crest = seiche phase** (§61 (g)): how much of the wave gain survives a fine
   `dtwave` is unmeasured (the dtwave-600 swing leg was never run).
 - **Unread from the 10-05 pre-registration:** do the Maurice / Mullica / Tuckahoe / Rancocas reaches

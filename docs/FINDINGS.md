@@ -1980,6 +1980,45 @@ Wreck Pond, 20 cm Lake Como, 43 cm Wesley / Takanassee / Lilies, 75 cm Lake Loui
 Deal Lake lacks to reach its mark. Lakes with a pool below 0 m (Wreck Pond −0.16, Louise −0.68) start
 ABOVE it (`sfincs_ini_regional.bin` base 0.0). User 10-20: no pool start; the Wreck Pond outfall
 culvert is not modelled either (the breach arms carry Sandy's route; 6129 is held by the 2.27 m band).
+**Atlantic City's +0.5 m peak is the FORCING** (2026-10-20 desk check, `logs/atlantic_city_check_2026-10-20/`;
+NOAA 8534720 verified, NAVD88): the 3 forced boundary points facing Atlantic City (3.1–3.6 km off, same on v3
+and v4_refreeze) peak +0.43…+0.47 m above the 6-min obs peak (1.915 m, 10-30 00:24 UTC), NACCS's own save
+point at the gauge +0.57; datum-free (minus each site's 10-28 quiet-window offset) NACCS's crest excess is
++0.56 at Atlantic City vs +0.17 Battery, +0.02 Cape May — LOCAL to Atlantic City; NACCS (and every run)
+crests at 23:00, 1.4 h before the gauge. Datum ~0 (cache = API to 0.000 m; NAVD88 − MLLW 0.797 m checks);
+the model adds +0.056 (waves; v4 waves-off +0.435, premier +0.491); obs-point placement ~0 (185 m seaward
+of today's gauge, zsmax 2.417 vs 2.421 m). The scorer's `peak_obs` is the HOURLY series (1.877 m), which
+inflates the error a further +0.04. Inferred: the AC HWM group's ~0 bias (+0.008, median, 50 m, n 9) is
+a too-high ocean standing in for the back-bay excess the model lacks (§57) — do not lower the boundary
+here without a second forcing product.
+**The premier's MOTF false alarms are mostly RAIN** (2026-10-20, `logs/fa_rain_2026-10-20/`; pixel split on the
+MOTF grid, same screens as `motf_metrics`, reproduces the row: 128.46 km², FAR 0.0979; unseeded engine, waves-on
+vs waves-off carries the §44 noise): of 128.5 km², **rain 79.0** (wet only with rain on: `naccs-nowaves` wet,
+`naccs-nowaves+rain-off+slr-0m` dry; 20.8 of it sea-connected — rain-fed creeks reach the bay), surge 27.4 (wet
+with no rain, no waves), waves 22.1. FAR without the rain pixels 0.040. Infiltration CUTS them: no-infiltration
+adds 75.4 km² and removes 0.7. Pits below 0 m (filled at t = 0 by the base-0 start) never enter the score
+(`land_in` needs ground > 0). ⚠️ `motf_km2_fa_rainonly` is 0 BY CONSTRUCTION (wet needs h ≥ 0.15 m, rainonly
+needs h ≤ the local storm total, 5–12 cm here; and it reads the v1-era AORC file, lat 39.66–40.57), and
+`fa_decomp.py`'s docstring still says infiltration is off; the connected / disconnected split cannot separate
+rain from surge either (a rain-fed creek is connected).
+**Paved channels Ocean City → Wildwood: the federal channels are clear** (2026-10-20 desk check,
+`logs/paved_channels_check_2026-10-20/`, bed `_subgrid_refreeze_lakes_min` = `_subgrid_refreeze` in this region;
+B = each face's lowest connection level to the forced boundary through `uv_zmin`, sampled every 10 m along NHD
+flowlines + USACE NCF centrelines): ICW IW_11–16, Cape May Canal, Cold Spring Inlet, Cape May Harbor — 0 of
+7,287 samples sill-held, worst B −0.80 m (≈ MLLW); the back-bay unpave boxes + Great Egg box connect below MLLW.
+Left: **Beach Creek, North Wildwood** (−74.7994, 39.0141; 2010 USACE lidar TIN across the creek at +1.1 m vs
+CUDEM −1.7; sill +0.85 m vs MHHW +0.65, 250 m of 3.6 m channel behind it; no unpave box), and probably CUDEM
+holding the water surface (§54 (j) class) at Cedar Swamp / Sluice Creek (−74.7047, 39.2678; sill +0.20 m,
+~1.4 km) and Patcong Creek (−74.6240, 39.3280; +0.05 m); real embankments with culverts on Mill, Jones (+0.85 m),
+Taylor, Run Creeks and the Cape May Harbor marsh road. Inferred: none moves a Sandy mark (every sill < +0.9 m
+under a +1.7…+2.1 m back-bay crest; nearest marks to the artefacts 4.8–11 km). Sea Isle's damped tide (0.66
+vs 1.21 m) is NOT a sill (its connection opens at −1.45 m). `audit_paved_channels.py` retired (v1 run dir only).
+**Four v4 gauges sit on mostly-DRY faces** (checked 10-20 on the v4_refreeze premier's `sfincs_his.nc`: fraction of
+outputs with zs ≤ zb + 1 cm): `noaa_cape_may` zb +1.29 m 43 %, `usgs_tidal_cape_may_harbor` +1.66 m 41 %,
+`usgs_tidal_barnegat_light` +0.92 m 42 %, `usgs_tidal_sluice_creek` +0.92 m 33 % — their modelled series are
+flat at the bed until the land floods, so a tide or peak read there is the face, not the water. v3 premier:
+`noaa_cape_may` 27 %, `usgs_tidal_barnegat_light` 52 %, `usgs_tidal_absecon_creek` 28 %, `usgs_tidal_inside_thorofare`
+28 %, `sss_great_bay` 22 %.
 **The `lake_outlet_blocked` flag** (`nj_sfincs/validate/lake_flag.py`, 2026-10-17; never reads the
 observation): P = median `zsmax` on sea-connected faces within 1 km beyond the sea face nearest the
 mark; C = the lowest level at which the sea reaches any face in the 50 m scoring window (through

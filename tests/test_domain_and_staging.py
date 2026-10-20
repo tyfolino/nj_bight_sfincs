@@ -1714,8 +1714,31 @@ class TestV4Refreeze(unittest.TestCase):
             self.assertFalse(rf[name].survives_crest, name)
         for g, w in zip(self.RF.obs_gauges, self.WALLS.obs_gauges):
             self.assertEqual(g.name, w.name)
-            if g.name not in self.HOLE:
+            if g.name not in self.HOLE and g.name not in self.NUDGED_10_20:
                 self.assertEqual(g, w, g.name)
+
+    NUDGED_10_20 = (
+        "noaa_cape_may",
+        "usgs_tidal_cape_may_harbor",
+        "usgs_tidal_barnegat_light",
+    )
+
+    def test_dry_face_gauges_are_nudged_not_moved(self):
+        from pyproj import Transformer
+
+        t = Transformer.from_crs(4326, 32618, always_xy=True)
+        rf = {g.name: g for g in self.RF.obs_gauges}
+        wl = {g.name: g for g in self.WALLS.obs_gauges}
+        for n in self.NUDGED_10_20:
+            (x0, y0), (x1, y1) = (
+                t.transform(wl[n].lon, wl[n].lat),
+                t.transform(rf[n].lon, rf[n].lat),
+            )
+            d = ((x1 - x0) ** 2 + (y1 - y0) ** 2) ** 0.5
+            self.assertGreater(d, 1.0, n)
+            self.assertLess(d, 130.0, f"{n}: a nudge, not a different station")
+            self.assertEqual(rf[n].obs_station, wl[n].obs_station, n)
+            self.assertEqual(rf[n].record_ends, wl[n].record_ends, n)
 
     def test_absecon_creek_is_nudged_not_moved(self):
         from pyproj import Transformer

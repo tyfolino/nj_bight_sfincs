@@ -22,8 +22,9 @@ lidar. It goes ON TOP.
 
 WHICH SURVEYS
 -------------
-Chosen by `scripts/audit_paved_channels.py`, which screens the whole domain for "model says
-land, CUDEM says >2 m of water" and then arbitrates each candidate by asking whether a boat
+Chosen by the v1.5 paved-channel audit (`audit_paved_channels.py`, retired 2026-10-20 — git
+history), which screened the whole domain for "model says
+land, CUDEM says >2 m of water" and then arbitrated each candidate by asking whether a boat
 actually sounded WATER at those cells. That audit's verdict was mostly NEGATIVE, and usefully
 so — the Sea Bright revetment patches were rejected (soundings there read +2.4 m: the seawall
 is real and the 1 m lidar has it right), Sandy Hook Channel was rejected (the patches sit on
@@ -110,7 +111,7 @@ PRESETS: dict[str, tuple] = {
         "v3 southern inlet + canal carving tier (Philadelphia district, +depth)",
         -1.0,
     ),
-    # The frozen v1_monmouth carving tier. Verdicts from scripts/audit_paved_channels.py
+    # The frozen v1_monmouth carving tier. Verdicts from the retired audit_paved_channels.py
     # (2026-07-14). Shrewsbury (NJ_14_SNR_20150902_CS_4368_15) is deliberately NOT here:
     # it ships as its own tier, `shrewsbury_ehydro_2015`, from the bridge-as-dam fix.
     "nj": (

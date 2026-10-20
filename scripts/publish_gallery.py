@@ -82,66 +82,62 @@ LABELS = (
 )
 
 CSS = """
-:root{color-scheme:dark;--bg:#111316;--surface:#171a1e;--rule:#2a2e34;--rule-2:#3a3f47;
---ink:#ebe7df;--ink-2:#b5b0a6;--ink-3:#8a857b;--water:#4fa8ff;--water-hi:#c8e6ff;
---under:#f28c3a;--over:#a98bf0;--gold:#e7c27a;--serious:#ff8a7a;
---display:"Source Serif 4",Georgia,serif;--body:"Source Sans 3","Segoe UI",system-ui,sans-serif;
---mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace}
+:root{color-scheme:dark;--bg:#16181d;--surface:#1f2228;--rule:#30343c;
+--ink:#e8eaf0;--ink-2:#b4b9c6;--ink-3:#8b91a0;
+--blue:#a8d0ff;--lavender:#cdb8ff;--mint:#a8e6c4;--peach:#ffc9a8;--pink:#ffa8b8;
+--body:"Atkinson Hyperlegible Next","Atkinson Hyperlegible",system-ui,sans-serif;
+--mono:"Atkinson Hyperlegible Mono",ui-monospace,Menlo,Consolas,monospace}
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 var(--body)}
-a{color:var(--water-hi);text-underline-offset:2px}
-.wrap{max-width:1500px;margin:0 auto;padding:0 max(16px,env(safe-area-inset-left,0px))}
-.kicker{font:500 12px/1.4 var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3)}
-.kicker b{color:var(--gold);font-weight:600}
-header.mast{padding:28px 0 14px;border-bottom:1px solid var(--rule);display:grid;gap:6px}
-header.mast h1{font:600 clamp(26px,3.6vw,40px)/1.1 var(--display);margin:0;letter-spacing:-.01em}
-header.mast .dek{margin:0;color:var(--ink-2);max-width:80ch}
-nav.crumbs{font:500 13px var(--mono);color:var(--ink-3);padding:10px 0}
-nav.crumbs a{color:var(--ink-2)}
-.prelim{border:1px solid var(--rule-2);color:var(--gold);font:500 12px/1.4 var(--mono);
-letter-spacing:.04em;padding:6px 10px;display:inline-block;margin:10px 0 0}
-section{padding:26px 0 6px}
-section>h2{font:600 22px/1.2 var(--display);margin:0 0 8px;padding-top:12px;border-top:1px solid var(--rule)}
-.note{color:var(--ink-3);font-size:14px;max-width:96ch}
-table{border-collapse:collapse;width:100%;font-size:14px}
-th,td{border-bottom:1px solid var(--rule);padding:6px 8px;text-align:left;vertical-align:top}
-th{font:500 12px/1.3 var(--mono);color:var(--ink-3);letter-spacing:.03em;text-transform:uppercase;
-cursor:pointer;user-select:none;white-space:nowrap;position:sticky;top:0;background:var(--bg)}
+body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.6 var(--body)}
+a{color:var(--blue);text-underline-offset:2px}
+code{font-family:var(--mono);font-size:.92em}
+.wrap{max-width:1300px;margin:0 auto;padding:0 16px}
+nav.crumbs{color:var(--ink-3);padding:14px 0 0;font-size:15px}
+header.mast{padding:10px 0 16px;border-bottom:1px solid var(--rule)}
+header.mast h1{font-size:30px;line-height:1.2;margin:0 0 6px;font-weight:700}
+header.mast p{margin:0 0 6px;color:var(--ink-2);max-width:80ch}
+.prelim{color:var(--lavender);font-size:15px}
+section{padding:22px 0 4px}
+section>h2{font-size:22px;margin:0 0 10px}
+.note{color:var(--ink-3);font-size:15px;max-width:90ch}
+table{border-collapse:collapse;width:100%;font-size:15px}
+th,td{border-bottom:1px solid var(--rule);padding:6px 10px;text-align:left;vertical-align:top}
+th{color:var(--ink-2);font-weight:700;white-space:nowrap;cursor:pointer}
+th.num,td.num{text-align:right}
+td.num{font-family:var(--mono);font-variant-numeric:tabular-nums;white-space:nowrap}
+td.lbl{color:var(--ink-2);overflow-wrap:anywhere}
 th[aria-sort=ascending]::after{content:" ▲"}th[aria-sort=descending]::after{content:" ▼"}
-td.num{font:500 13px var(--mono);font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap}
-td.lbl{font:400 12px var(--mono);color:var(--ink-2);max-width:26ch;overflow-wrap:anywhere}
 tr:hover td{background:var(--surface)}
-.scroll{overflow-x:auto;border-top:1px solid var(--rule)}
-.badge{display:inline-block;font:600 11px/1.5 var(--mono);padding:0 6px;margin:1px 3px 1px 0;
+.scroll{overflow-x:auto}
+.badge{display:inline-block;font-size:13px;padding:0 6px;margin:1px 4px 1px 0;border-radius:4px;
 border:1px solid currentColor;white-space:nowrap}
-.badge.serious{color:var(--serious)}.badge.caution{color:var(--gold)}.badge.info{color:var(--ink-3)}
-ul.flags{list-style:none;padding:0;margin:0;display:grid;gap:8px;max-width:110ch}
-ul.flags li{border-left:2px solid var(--rule-2);padding:2px 0 2px 12px;color:var(--ink-2)}
-ul.flags li.serious{border-color:var(--serious)}ul.flags li.caution{border-color:var(--gold)}
-.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));border-top:1px solid var(--rule)}
-.tile{padding:10px 16px 6px 0}.tile+.tile{padding-left:16px;border-left:1px solid var(--rule)}
-.tile .num{font:600 24px/1.15 var(--mono);font-variant-numeric:tabular-nums}
-.tile .lbl{color:var(--ink-3);font-size:13px}
-dl.card{display:grid;grid-template-columns:minmax(150px,max-content) 1fr;gap:4px 18px;margin:0;font-size:14px}
-dl.card dt{font:500 12px/1.6 var(--mono);color:var(--ink-3);text-transform:uppercase;letter-spacing:.03em}
-dl.card dd{margin:0;font:400 13px/1.6 var(--mono);color:var(--ink);overflow-wrap:anywhere}
-figure{margin:0 0 30px;border-top:1px solid var(--rule);padding-top:10px}
-figure h3{font:600 18px/1.3 var(--display);margin:0 0 6px}
-figure img{width:100%;height:auto;display:block;background:#f4f2ee;border:1px solid var(--rule)}
-figcaption{color:var(--ink-2);font-size:14px;max-width:110ch;margin-top:6px}
-.skip{border:1px dashed var(--rule-2);color:var(--ink-3);padding:14px;font-size:14px}
-details summary{cursor:pointer;color:var(--ink-2);font:500 13px var(--mono)}
-.ctl{display:flex;flex-wrap:wrap;gap:10px 22px;align-items:end;padding:12px 0;border-bottom:1px solid var(--rule)}
-.ctl label{display:grid;gap:4px;font:500 12px var(--mono);color:var(--ink-3);text-transform:uppercase}
-select,button{font:500 14px var(--body);background:var(--surface);color:var(--ink);
-border:1px solid var(--rule-2);border-radius:0;padding:7px 10px}
-button[aria-pressed=true]{background:var(--ink);color:var(--bg)}
-select:focus-visible,button:focus-visible,th:focus-visible{outline:2px solid var(--water);outline-offset:2px}
+.badge.serious{color:var(--pink)}.badge.caution{color:var(--peach)}.badge.info{color:var(--ink-3)}
+ul.flags{padding-left:20px;margin:0;max-width:100ch}
+ul.flags li{margin:4px 0;color:var(--ink-2)}
+ul.flags li.serious::marker{color:var(--pink)}ul.flags li.caution::marker{color:var(--peach)}
+.tiles{display:flex;flex-wrap:wrap;gap:8px 28px}
+.tile .num{font:700 22px var(--mono);font-variant-numeric:tabular-nums}
+.tile .lbl{color:var(--ink-3);font-size:14px}
+dl.card{display:grid;grid-template-columns:minmax(140px,max-content) 1fr;gap:4px 18px;margin:0;font-size:15px}
+dl.card dt{color:var(--ink-3)}
+dl.card dd{margin:0;overflow-wrap:anywhere}
+figure{margin:0 0 32px}
+figure h3{font-size:19px;margin:0 0 6px}
+figure img{width:100%;height:auto;display:block;border-radius:4px}
+figcaption{color:var(--ink-2);font-size:15px;max-width:100ch;margin-top:6px}
+.skip{border:1px dashed var(--rule);color:var(--ink-3);padding:14px}
+details summary{cursor:pointer;color:var(--blue)}
+.ctl{display:flex;flex-wrap:wrap;gap:10px 20px;align-items:end;padding:12px 0}
+.ctl label{display:grid;gap:4px;color:var(--ink-3);font-size:15px}
+select,button{font:16px var(--body);background:var(--surface);color:var(--ink);
+border:1px solid var(--rule);border-radius:4px;padding:6px 10px}
+button[aria-pressed=true]{background:var(--blue);color:var(--bg)}
+select:focus-visible,button:focus-visible,th:focus-visible,a:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
 .pair{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.pair .side h4{font:500 13px var(--mono);color:var(--ink-2);margin:0 0 4px}
+.pair .side h4{font-size:15px;color:var(--ink-2);margin:0 0 4px;font-weight:400}
 .pair.one{grid-template-columns:1fr}
-.diff.better{color:#9fd3a0}.diff.worse{color:var(--under)}
-footer{margin-top:40px;border-top:1px solid var(--rule);padding:18px 0 40px;color:var(--ink-3);font-size:13px}
+.diff.better{color:var(--mint)}.diff.worse{color:var(--pink)}
+footer{margin-top:40px;border-top:1px solid var(--rule);padding:16px 0 40px;color:var(--ink-3);font-size:14px}
 @media (max-width:820px){.pair{grid-template-columns:1fr}}
 """
 
@@ -190,7 +186,7 @@ function render(){
  head.innerHTML=`<p class="note">A <b>${esc(a)}</b> ${badges(A.flags)}<br>B <b>${esc(b)}</b> ${badges(B.flags)}</p>`+
   `<p class="note">${fa&&fa===fb?'Same domain fingerprint ('+esc(fa)+') — the two are on one mesh and bed.':'⚠️ Different fingerprints ('+esc(fa)+' vs '+esc(fb)+') — not the same model; do not difference.'}`+
   ` HWM numbers: estimator ${esc(A.metrics.hwm_estimator)} / ${esc(B.metrics.hwm_estimator)}, radius ${esc(A.metrics.hwm_radius_m)} / ${esc(B.metrics.hwm_radius_m)} m. A pooled difference is not a paired test — use scripts/paired_hwm_bootstrap.py.</p>`;
- let h='<thead><tr><th>metric</th><th>A</th><th>B</th><th>B − A</th></tr></thead><tbody>';
+ let h='<thead><tr><th>metric</th><th class="num">A</th><th class="num">B</th><th class="num">B − A</th></tr></thead><tbody>';
  D.headline.forEach(([k,l,f,better])=>{const x=A.metrics[k],y=B.metrics[k];
   let d='',cls='';if(typeof x==='number'&&typeof y==='number'&&isFinite(x)&&isFinite(y)){const dv=y-x;
    d=fmt(dv,f==='.0%'?'.0%':(f==='d'?'d':'+'+f.replace('+','')));
@@ -260,7 +256,10 @@ def page(title: str, body: str, depth: int, desc: str = "") -> str:
 <meta name="description" content="{esc(desc or PRELIM)}">
 <meta name="robots" content="noindex">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,500;8..60,600&family=Source+Sans+3:wght@400;600&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Next:wght@400;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="{up}assets/site.css">
 </head><body><div class="wrap">
 {body}
@@ -273,11 +272,11 @@ the arm's <code>metrics.csv</code> row. Built {datetime.now():%Y-%m-%d %H:%M}.</
 
 
 def mast(kicker: str, h1: str, dek: str, crumbs: str = "") -> str:
+    """``kicker`` is kept for the callers' signature; the simple layout does not show it."""
     return (
         (f'<nav class="crumbs">{crumbs}</nav>' if crumbs else "")
-        + f'<header class="mast"><div class="kicker">{kicker}</div><h1>{esc(h1)}</h1>'
-        f'<p class="dek">{dek}</p><div><span class="prelim">{esc(PRELIM)}</span></div>'
-        "</header>"
+        + f'<header class="mast"><h1>{esc(h1)}</h1><p>{dek}</p>'
+        f'<p class="prelim">{esc(PRELIM)}</p></header>'
     )
 
 
@@ -529,53 +528,75 @@ def arm_page(domain_name: str, arm: str, e: dict, ref: str | None) -> str:
 
 
 def domain_index(domain_name: str, arms: dict, ref: str) -> str:
-    heads = "".join(f"<th>{esc(lbl)}</th>" for _, lbl, _, _ in HEADLINE)
+    """The arm table, kept short: the per-arm labels (engine, meteo, subgrid, ...) live on
+    each arm's page. A measure every row shares is stated once above the table; it gets
+    a column only when the rows differ."""
+    rows = [e["row"] for e in arms.values()]
+
+    def measure(r):
+        return f"{r.get('hwm_estimator', '?')} · {fmt(r.get('hwm_radius_m'), 'g')} m"
+
+    measures = {measure(r) for r in rows}
+    excl = {fmt(r.get("motf_km2_excluded_boxes"), ",.0f") for r in rows}
+    cols = [
+        c
+        for c in HEADLINE
+        if not (c[0] == "motf_km2_excluded_boxes" and len(excl) == 1)
+        and any(num(r.get(c[0])) is not None for r in rows)  # no all-blank columns
+    ]
+    heads = "".join(f'<th class="num">{esc(lbl)}</th>' for _, lbl, _, _ in cols)
     trs = []
     for arm, e in arms.items():
         r = e["row"]
         cells = "".join(
             f'<td class="num" data-v="{num(r.get(k)) if num(r.get(k)) is not None else ""}">'
             f"{fmt(r.get(k), f)}</td>"
-            for k, _, f, _ in HEADLINE
+            for k, _, f, _ in cols
         )
         lab = e["card"].get("labels") or {}
         cfg = e["card"].get("config") or {}
         waves = "on" if cfg.get("waves_on") else ("off" if cfg else "?")
-        man = e["manifest"] or {}
         trs.append(
             f'<tr><td><a href="{esc(e["slug"])}/index.html">{esc(arm)}</a>'
             f"{' <span class=note>(reference)</span>' if arm == ref else ''}</td>"
             f"<td>{badges(e['flags'])}</td>"
-            f"<td class='lbl'>{esc(r.get('hwm_estimator', '?'))} · "
-            f"{fmt(r.get('hwm_radius_m'), 'g')} m</td>{cells}"
-            f"<td class='lbl'>{esc(waves)}</td>"
-            + "".join(
-                f"<td class='lbl'>{esc(lab.get(k, r.get(k)))}</td>"
-                for k in ("engine_seed", "meteo", "infiltration", "subgrid", "engine")
-            )
-            + f"<td class='lbl'>{esc((man.get('built') or '')[:16])}</td></tr>"
+            + (f"<td class='lbl'>{esc(measure(r))}</td>" if len(measures) > 1 else "")
+            + f"<td class='lbl'>{esc(waves)}</td>"
+            f"<td class='lbl'>{esc(lab.get('infiltration', r.get('infiltration')))}</td>"
+            f"{cells}</tr>"
+        )
+    shared = []
+    if len(measures) == 1:
+        shared.append(f"HWM measure for every row: <b>{esc(next(iter(measures)))}</b>.")
+    if len(excl) == 1:
+        shared.append(
+            f"CSI / POD / FAR exclude {esc(next(iter(excl)))} km² of boxes where the MOTF "
+            "sheet is not valid (<code>motf_km2_excluded_boxes</code>)."
         )
     body = (
         mast(
-            f"<b>{esc(domain_name)}</b> · runs",
+            "",
             f"{domain_name}: every arm",
-            "One row per arm in <code>metrics.csv</code> (or with a gallery). Click a column "
-            "to sort. Badges are warnings, never filters — hover one for its text. "
-            "<a href='compare.html'>Compare two arms →</a>",
+            "One row per model run (arm). Click a column header to sort. Badges are "
+            "warnings, not filters; hover one for its text. "
+            "<a href='compare.html'>Compare two arms</a>",
             '<a href="../index.html">runs</a> / ' + esc(domain_name),
         )
-        + '<section><div class="scroll"><table class="sortable"><thead><tr>'
-        "<th>arm</th><th>flags</th><th>HWM measure</th>"
+        + "<section>"
+        + (f'<p class="note">{" ".join(shared)}</p>' if shared else "")
+        + '<div class="scroll"><table class="sortable"><thead><tr>'
+        "<th>arm</th><th>flags</th>"
+        + ("<th>HWM measure</th>" if len(measures) > 1 else "")
+        + "<th>waves</th><th>infiltration</th>"
         + heads
-        + "<th>waves</th><th>engine_seed</th><th>meteo</th><th>infiltration</th>"
-        "<th>subgrid</th><th>engine</th><th>gallery built</th></tr></thead><tbody>"
+        + "</tr></thead><tbody>"
         + "".join(trs)
         + "</tbody></table></div>"
-        '<p class="note">HWM columns are the <code>_scored</code> keys (q ≤ 2, dry marks scored '
-        "at ground) under the estimator and radius in the HWM-measure column — never compare "
-        "a bias across differing measures. A waves-off CSI is flagged "
-        "<code>waves_off_extent</code>: kept, not on the same footing as a waves-on CSI. "
-        "Pooled differences are not paired tests (scripts/paired_hwm_bootstrap.py).</p>"
+        '<p class="note">HWM columns are the <code>_scored</code> keys (q ≤ 2, dry marks '
+        "scored at ground). A waves-off CSI is flagged <code>waves_off_extent</code>: kept, "
+        "but not on the same footing as a waves-on CSI. Differences between rows are not "
+        "paired tests (scripts/paired_hwm_bootstrap.py). Engine, meteo and bed labels are "
+        "on each arm's page.</p>"
         "</section>"
     )
     return page(f"{domain_name} · runs", body, 1)
@@ -656,8 +677,9 @@ def site_index(domains: dict) -> str:
             "compound-flood hindcast, per domain, so runs compare by eye. Each domain is a "
             "different model: compare arms within a domain.",
         )
-        + '<section><table class="sortable"><thead><tr><th>domain</th><th>arms</th>'
-        f"<th>with figures</th><th></th></tr></thead><tbody>{trs}</tbody></table></section>"
+        + '<section><table class="sortable"><thead><tr><th>domain</th><th class="num">arms</th>'
+        f'<th class="num">with figures</th><th></th></tr></thead><tbody>{trs}</tbody>'
+        "</table></section>"
     )
     return page("Run gallery", body, 0)
 

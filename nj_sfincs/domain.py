@@ -493,7 +493,9 @@ class Domain:
     #: comes from a DEM's data extent and cannot see them, so ``build_motf_valid_mask.py``
     #: writes these boxes as 0 too (they reach the score only through that raster). Axis-
     #: aligned in the render CRS because the holes are: straight seams on the render grid.
-    motf_gap_boxes_xy: tuple[tuple[str, tuple[float, float, float, float], str], ...] = ()
+    motf_gap_boxes_xy: tuple[
+        tuple[str, tuple[float, float, float, float], str], ...
+    ] = ()
     #: The subgrid level whose LATTICE ``subgrid/dep_subgrid_merged.tif`` (the scoring
     #: bed) is written on — ``scripts/build_merged_subgrid_dep.py --base-level``. 3 = the
     #: finest, as v1.5–v3 (3.125 m). v4 = 2 (2026-09-29): its 16 px lev3 is 1.56 m, a
@@ -1762,7 +1764,12 @@ V3 = Domain(
         "cape_may": (498_000, 524_000, 4_303_000, 4_328_000),
     },
     gallery_windows=(
-        "raritan", "sandy_hook", "barnegat", "great_bay", "absecon", "cape_may",
+        "raritan",
+        "sandy_hook",
+        "barnegat",
+        "great_bay",
+        "absecon",
+        "cape_may",
     ),
     # FROZEN 2026-08-26: data/frozen_mesh_v3 (no mesh_key — one boundary depth so far),
     # fingerprint premier.V3 — moved 2026-09-22 by the mask repair above (same mesh,
@@ -2981,6 +2988,28 @@ _V4_REFREEZE_HOLE_ENDS = {
 #: centre of the nearest active face below MLLW, 66 m ENE (z_zmin -1.09 on the re-freeze
 #: bed; logs/refreeze_2026-10-06/v4_refreeze/absecon_obs_face.py).
 _V4_REFREEZE_ABSECON_CREEK = (-74.49926, 39.42294)
+#: name → (lon, lat, published coordinate, the face it left): gauges whose published point
+#: sits on a mostly-dry face (zs at the bed for 33–43 % of the v4_refreeze premier's his
+#: output, 2026-10-20). Each goes to the centre of the nearest active face the sea reaches
+#: at −0.5 m through the subgrid sills (`sea_level.connected_initial_zs`) on the Phase 4 bed
+#: `_subgrid_refreeze_lakes_min` (logs/gauge_nudge_2026-10-20/pick_faces.py). NOT moved:
+#: usgs_tidal_sluice_creek — its nearest connected face is 2.6 km away (the creek's bed is
+#: missing, FINDINGS part 4 (h)); it stays crest-only, as its note says.
+_V4_REFREEZE_NUDGED_2026_10_20 = {
+    "noaa_cape_may": (-74.95975, 38.96809, "-74.9600, 38.9683", "z_zmin +1.29, 32 m"),
+    "usgs_tidal_cape_may_harbor": (
+        -74.88895,
+        38.94843,
+        "-74.8889, 38.9483",
+        "z_zmin +1.66, 15 m",
+    ),
+    "usgs_tidal_barnegat_light": (
+        -74.11105,
+        39.76088,
+        "-74.1106, 39.7608",
+        "z_zmin +0.92, 39 m",
+    ),
+}
 
 
 def _refreeze_gauge(g: ObsGauge) -> ObsGauge:
@@ -2990,7 +3019,8 @@ def _refreeze_gauge(g: ObsGauge) -> ObsGauge:
             g,
             survives_crest=False,
             record_ends=end,
-            note=g.note + f" v4_refreeze: crest in the record HOLE — record_ends {end}.",
+            note=g.note
+            + f" v4_refreeze: crest in the record HOLE — record_ends {end}.",
         )
     if g.name == "usgs_tidal_absecon_creek":
         lon, lat = _V4_REFREEZE_ABSECON_CREEK
@@ -3000,6 +3030,15 @@ def _refreeze_gauge(g: ObsGauge) -> ObsGauge:
             lat=lat,
             note=g.note + " v4_refreeze: NUDGED off the +2.92 m bank face "
             "(published -74.5000, 39.4231) into the creek channel.",
+        )
+    if g.name in _V4_REFREEZE_NUDGED_2026_10_20:
+        lon, lat, published, left = _V4_REFREEZE_NUDGED_2026_10_20[g.name]
+        g = replace(
+            g,
+            lon=lon,
+            lat=lat,
+            note=g.note + f" v4_refreeze: NUDGED 2026-10-20 off a mostly-dry face "
+            f"({left} away; published {published}) onto the nearest sea-connected face.",
         )
     return g
 

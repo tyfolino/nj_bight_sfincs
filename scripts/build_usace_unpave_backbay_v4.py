@@ -66,6 +66,12 @@ BOXES: dict[str, tuple[tuple[float, float, float, float], str]] = {
         (-74.8040, 39.0165, -74.7980, 39.0280),
         "4000094: Grassy Sound channel by the Ocean Drive bridge, lidar +0.73 over −1.9",
     ),
+    "beach_creek_nwildwood": (
+        (-74.8030, 39.0080, -74.7950, 39.0164),
+        "Beach Creek, North Wildwood: lidar TIN +1.1 across the creek over CUDEM −1.7, a "
+        "+0.85 m sill vs MHHW +0.65 (missed by the 10-05 F4 sweep; 2026-10-20 desk check "
+        "site 16, logs/paved_channels_check_2026-10-20/); south of grassy_sound, no overlap",
+    ),
     "sea_isle_south": (
         (-74.7225, 39.1080, -74.7130, 39.1160),
         "4000173: the channel round the marsh south of Sea Isle City (IW_14 −5.4 m)",

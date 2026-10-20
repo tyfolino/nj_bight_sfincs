@@ -80,7 +80,6 @@ Every script reads `NJ_DOMAIN` unless its row names a domain. Run from the repo 
 | `check_naccs_vs_sensors.py` | NACCS forcing product vs interior storm-tide sensors (forcing diagnostic) | live |
 | `check_buildings_adequacy.py` | Adequacy checks before burning building footprints | live |
 | `plot_waterlevel_boundary.py` | Map the built water-level boundary by arm (v1.5 layout) | frozen |
-| `audit_paved_channels.py` | Channels the top lidar paved over (v1.5 Workstream L) | frozen |
 
 ## Build model inputs
 

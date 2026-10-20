@@ -71,7 +71,7 @@
 # Download + process: python scripts/download_ehydro_shrewsbury.py
 
 # eHydro CARVING TIER — federal channel surveys that un-pave the 2010 lidar.
-# Built by scripts/download_ehydro_nj.py; surveys chosen by scripts/audit_paved_channels.py.
+# Built by scripts/download_ehydro_nj.py; surveys chosen by the retired audit_paved_channels.py (git history).
 #
 # WHY IT OUTRANKS usace_nj_2010: the 2010 lidar is green (bathymetric) and returns the real bed
 # in clear shallow water — but in deep or turbid water it FAILS TO PENETRATE and returns the
