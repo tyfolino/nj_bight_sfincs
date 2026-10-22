@@ -79,6 +79,13 @@ test, code; details FINDINGS part 4 (h), §44, git log). Desktop backup re-run 1
   `logs/one_pager_2026-10-20/`): ⚠️ Fig. 2 and the quoted HWM numbers DROP 5 marks for now — 6155 (Keansburg
   pocket), 6122, 6124, 6129, 6130 (Monmouth lakes). After Phase 4: bring them BACK (`REVISED` in
   `plot_scatter.py`), re-run `per_mark.py` + `compute_depth.py` on the new premier, refresh every number in the doc.
+  ▶ 10-22: the supervisor asked for a first-contact PITCH instead; the technical doc stays as the bona-fides sheet.
+  Pitch v1 = claude.ai doc "Compound-Flood Scenarios for New Jersey: A Proposal to NJDEP"
+  (https://claude.ai/artifact/CjNZXre5JJoq9QjSQ64UNh): aimed at DEP, statewide; problem → services (compound
+  flooding, mitigation screening, sea-level rise per the 2025 STAP + REAL rules) → why this model → the project
+  (the supervisor's one-pager checklist). Open: the figure (Phase 4's rain-off vs premier "only the combination
+  floods here" map), team names, cost, length (over a page). NACCS synthetic storms carry NO rain — never pitch
+  them as compound scenarios on their own.
 - **Gallery / site:** `~/sandy_flood_site` = `tyfolino/sandy-flood-model`, written by `scripts/publish_gallery.py`
   (user commits + pushes); figures by `nj_sfincs/gallery.py` in every validate (`--no-gallery` to skip),
   re-draw `scripts/build_gallery.py` / `hpc/build_gallery.slurm`. Depth convention: CLAUDE.md §6.
@@ -100,17 +107,19 @@ bed — never `--overlay` it. Premier-tier inconsistencies: `premier_tiers.csv`.
 `riverbeds_hierarchy_v4` (replaces the 10-05 Cohansey / GMRT / tidal builds). Paint order:
 buildings → lakes → channel fixes (later wins).
 
-**Cohansey bed sources (from the sfincs-nj-agri session, 10-20; unchecked here):** our Cohansey is the stated
-1.2 m-below-MLLW section (no soundings above the mouth). Candidates: USACE NCF federal channel `CENAP_CO_01_CRC`
-(6 ft authorized, 100 ft, 2.7 mi ≈ Fairton → Bridgeton; no eHydro, last dredging ~1985 — authorized ≠ actual);
-Coast Pilot 3 ch. 6 (controlling ~7 ft at the entrance); 1905–06 USACE survey sheets with soundings, Rutgers RUcore
-`rutgers-lib:56574` (mouth) / `56588` (Bridgeton → Lupton's Landing). Big Timber H09886 / Alloway H10112 / Cohansey
-mouth D00081 are already in the hierarchy; Oldmans (H10027) is outside the ring. After Phase 4.
-The sfincs-nj-agri session's test (10-20, its 100 m model, calm May 2023 week, beds only): soundings / a stated depth
-fixed most of its creek tide — Big Timber (H09886, MLW → MLLW −0.058) Westville 0.47 → 0.97 of the expected range;
-Cohansey at 7 ft below MLLW (Coast Pilot controlling depth) mouth → Fairton: Greenwich 0.55 → 0.72. Ours: Greenwich
-0.62 of observed on the 1.2 m-below-MLLW section — a deeper Cohansey section is the candidate fix (riverbeds_hierarchy
-rebuild).
+**Cohansey bed (10-22, `logs/cohansey_sources_2026-10-22/README.md`):** the model's LOWER river is several metres
+too shallow — crowdsourced soundings (2024, raw) read 5.4–8.4 m median over 39.345–39.36 N where the model's faces sit
+≈ 0.1–1.0 m below MLLW (the hierarchy kept CUDEM there: section mean 0.35–0.50 m below MLLW for 0.75–4.1 km); its
+shallowest point to Greenwich (~0.5 m below MLLW) is above the ENC's charted controlling depth (1.5 m, 1988–2014). No
+sill (Greenwich face reached at −1.4 m). Above 39.36 N: no soundings anywhere — only the 1906 USACE report ("30 and 40
+feet", one ~7 ft bar) and the ENC floors (1.5 → 1.2 → 0.3 m). Scans: 1905 USACE sheets (RUcore 56574 mouth, 56588
+Bridgeton, MLW). Greenwich tide 0.62 of observed. Candidate fix (after Phase 4, user's call): D00081 + tide-reduced CSB
+as tier 3 in the lower reach, ENC controlling depths as a thalweg floor, a deeper section from the 1905/06 material.
+✅ USER AGREED the fix 10-22 (build after Phase 4). Tide-reduced soundings (`csb_tide_reduce.py`, lower bounds, no
+draft): from 39.349 N to 39.361 N the river is ≥ 4.5–8.4 m below MLLW where the model's deepest face is 0.8–1.0 m.
+The sfincs-nj-agri session's test (10-20, its 100 m model, calm May 2023 week, beds only): Big Timber on NOS H09886
+took Westville 0.47 → 0.97 of the expected range; the Cohansey at 7 ft below MLLW mouth → Fairton took Greenwich
+0.55 → 0.72.
 
 **Still open on the bed:** the Schuylkill below Fairmount (fill bed + box-mean Manning;
 FINDINGS part 4 "Still open"); optional `jamaica_wall_mid` west of Paerdegat; Big Timber branch
