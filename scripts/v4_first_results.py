@@ -188,6 +188,65 @@ PRESETS: dict[str, dict] = {
             ("v3n_on", "v3n_off", "v3 wave contribution, NACCS wind"),
         ],
     ),
+    # 2026-10-22: the Phase 4 re-baseline (job 62827640; logs/rebaseline_2026-10-19/PREREG.md).
+    # Pairs follow the PREREG items; the null pairs give the band every waves-on Δ is read
+    # against (logs/rebaseline_2026-10-19/read/null_band.py). Run by read/read_phase4.slurm.
+    "phase4": dict(
+        date="2026-10-24",
+        runs=[
+            *(
+                (lab, f"experiments/v4_refreeze/{arm}", role)
+                for lab, arm, role in (
+                    ("p4", "p4-premier", "Phase 4 premier candidate"),
+                    ("rep", "p4-premier-repeat", "identical repeat"),
+                    ("n01", "null-rhoa1.2501+p4-premier", "null copy, rhoa 1.2501"),
+                    ("n99", "null-rhoa1.2499+p4-premier", "null copy, rhoa 1.2499"),
+                    ("nowm", "p4-premier+wave-nowavemaker", "wavemaker off"),
+                    ("nowv", "p4-nowaves", "SnapWave off"),
+                    ("cnb10", "p4-premier+rain-cnb1.0", "cnb 1.0 (wetter soil)"),
+                    ("cnb238", "p4-premier+rain-cnb2.38", "cnb 2.38 (drier soil)"),
+                    ("roff", "p4-premier+rain-off", "rain off, waves on"),
+                    ("nobld", "bed-nobuildings+p4-premier", "no building burn"),
+                    ("wk0", "bed-breach-wreck0+p4-premier", "breach, Wreck Pond 0.0"),
+                    ("wk165", "bed-breach-wreck165+p4-premier", "breach, Wreck 1.65"),
+                    ("deal", "p4-premier+src-deal-overtop", "Deal Lake overtopping"),
+                    ("old", "naccs-premier", "the 10-11 premier (unseeded engine)"),
+                )
+            ),
+            ("ref", "experiments/v3/p4-ref", "v3 reference, seeded engine"),
+            ("refoff", "experiments/v3/p4-ref-nowaves", "its waves-off twin"),
+            (
+                "v3on",
+                "experiments/v3/bed-v4fixes+wave-dt3600+wind-naccs",
+                "v3 reference, 10-11 unseeded run",
+            ),
+            (
+                "v3off",
+                "experiments/v3/bed-v4fixes+naccs-nowaves+wind-naccs",
+                "its waves-off twin, 10-11",
+            ),
+        ],
+        pairs=[
+            ("rep", "p4", "1. repeat (expect bit-identical)"),
+            ("n01", "p4", "2. null band, rhoa 1.2501"),
+            ("n99", "p4", "2. null band, rhoa 1.2499"),
+            ("n01", "n99", "2. null band, copy vs copy"),
+            ("p4", "old", "3. the re-baseline (many changes)"),
+            ("p4", "nowm", "4. wavemaker effect"),
+            ("p4", "nowv", "4. full wave contribution"),
+            ("cnb10", "p4", "4. wetter soil"),
+            ("cnb238", "p4", "4. drier soil"),
+            ("p4", "roff", "4. rain contribution, waves on"),
+            ("nobld", "p4", "4. building burn removed"),
+            ("wk0", "p4", "4. breach, Wreck Pond 0.0"),
+            ("wk165", "p4", "4. breach, Wreck Pond 1.65"),
+            ("deal", "p4", "4. Deal Lake overtopping"),
+            ("ref", "v3on", "5. v3 seeded vs unseeded, waves on"),
+            ("refoff", "v3off", "5. v3 seeded vs unseeded, waves off"),
+            ("ref", "refoff", "v3 wave contribution, seeded"),
+            ("p4", "ref", "v4 vs v3, the new baselines (shared marks)"),
+        ],
+    ),
     # (the `_pre_damcrest` run this preset also paired was deleted 2026-10-11 —
     # reports/cleanup/deletion_manifest_2026-10-11.md; its row stays in metrics.csv)
     "test": dict(

@@ -6,14 +6,17 @@ running, what is next, what is open. When an item closes, its durable fact goes 
 Git has the history. The campaign log this file grew into until 2026-09-29 (6,767 lines) is
 `git show d70dd1e:docs/STATUS.md`; FINDINGS cites it as "STATUS <date>".
 
-▶ **PICK UP (10-20 evening): Phase 4 = job 62757492, HELD by the user** until (a) the creek beds are rebuilt and
-checked (**job 62759318**) and (b) the Keansburg weir test reads (**job 62759323**). Then: nudge the Sluice gauge onto
-its opened channel face, adopt the weir if it passes, point the Phase 4 arms at the `*_creeks` beds, refresh
-`logs/rebaseline_2026-10-19/expected.md5`, `--check` + tests, retire the four old beds, user releases 62757492.
-Both jobs started ~15:00–15:10 on 10-20. Phase 4 now has 13 v4 arms (`p4-premier+rain-off` added 10-20, node 2,
-staging check + PREREG line + family test). DEP one-pager drafted (user is writing it up; item under Phase 5–6).
+▶ **PICK UP (10-22): Phase 4 = job 62827640, QUEUED** (submitted 12:28, `emeraldrapids` ×2, 40 h; SLURM's start
+estimate 10-24 ~01:30; stdout `logs/rebaseline_2026-10-19/phase4_62827640.out`). 🔴 Its EXPECT_MD5 is checked at START:
+edit NOTHING in `logs/rebaseline_2026-10-19/expected.md5`'s list (nj_sfincs/*, run_experiments.py, the arm lists)
+until it is running. Old beds deleted (scratch 704 G); 62757492 cancelled. **The read is queued behind it: 62831580
+`p4_read`** (afterany; `logs/rebaseline_2026-10-19/read/`, README there) — its own EXPECT_MD5 covers the read scripts +
+`scripts/v4_first_results.py` / `paired_hwm_bootstrap.py` / `logs/wm_repeat_2026-10-19/compare_wm.py`: leave those alone
+too, or rewrite `read/expected.md5` right after an edit. Then read `read/out/preflight.csv` FIRST (resumes, engine,
+weir, wavemaker), the report `reports/v4_first_results_2026-10-24/`, against PREREG.md. DEP one-pager drafted (item
+under Phase 5–6).
 
-Last updated: **2026-10-20** — desk checks done; gauge nudges; 6-min NOAA scoring; `fa_rainonly` retired; creek
+Last updated: **2026-10-22** — creek beds checked; Sluice nudged; Phase 4 ready. 10-21: Keansburg weir adopted. 10-20: desk checks done; gauge nudges; 6-min NOAA scoring; `fa_rainonly` retired; creek
 beds (Beach Creek + 52 Delaware Bay creek groups, an ASSUMED bed); Keansburg weir candidate; HWM inventory + STN
 records + noted marks; the run gallery simplified (view runs, next-premier list). Before: 10-19 (Phase 4 arms +
 job drafted; gallery + one public site; depth convention).
@@ -29,24 +32,29 @@ job drafted; gallery + one public site; depth convention).
   10 marks outside ±0.5 m, inventoried in FINDINGS part 4 (h).
 - **Heading for:** the Phase 4 re-baseline (below), before maintenance 11-10.
 
-## Running (10-20)
+## Running (10-22)
 
-- ▶ **62759318 `beds_creeks`** — rebuilds `_subgrid_refreeze_lakes_min` / `_nobuildings` / `_breach_wreck0` /
-  `_wreck165` as `*_creeks` (+ `usace_unpave_backbay_v4` with Beach Creek, + `creek_bed_nj10ft_v4:min`), then
-  `logs/creek_beds_2026-10-20/check_beds.py` (changes inside the fix boxes only; no raise outside Beach Creek;
-  the Sluice gauge's connection level before / after).
-- ▶ **62759323 `kburg_weir`** — base vs `logs/keansburg_pocket_2026-10-20/candidate_sfincs.weir` (railroad gap at
-  Pews OPEN), two 60 h waves-off cuts of naccs-nowaves (`/scratch/tpj8/engine_gate/keansburg_2026-10-20/`) →
-  `test_result.txt`. Adopt if 6155 / 6156 / 6133 drop and 6154 / 6157 / 6158 / 6132 hold: copy into
-  `data/structures_v4/sfincs.weir` AND the template (weir only — no fingerprint move; check the log's
-  "structure u/v points"). Next leak: the Thornes Creek marsh near Rt 36 (unmapped).
-- ⏸ **62757492 `phase4`** HELD (user). Its EXPECT_MD5 predates 10-20's code edits — refresh before release.
+- ✅ **`*_creeks` beds DONE 10-21** (62776026, hal0398, 5 h 18; pick 62778427): all four beds
+  changed identically — 9,486 faces, all within 245 m of a fix box, 0 raised; **Beach Creek's +0.85 m sill is gone**
+  (channel faces behind it: 22 needed > +0.85 m, now 253 of 261 connect below −0.5, 8 at +0.3). Sluice / Dennis paint
+  landed (corridor faces median +0.34 → −1.07) but the gauge pool is painted at NJ 10 ft's −0.24 constant, so the
+  gauge side connects at −0.23 m, not −0.5: nudged at −0.2 (obs low water) to face 3761273, 33 m
+  (`logs/creek_beds_2026-10-20/sluice_B.txt`). Its tide trough is the ASSUMED bed's −0.24 — read the trough with that:
+  observed lows reach −0.43 (10-28 06:00), so the deepest troughs cannot be matched there.
+- ✅ **Keansburg weir ADOPTED 10-21** (test 62759323, 60 h waves-off cuts, `test_result.txt`): pocket 6155 / 6156 /
+  6133 −0.46 / −0.91 / −0.93 m (still +0.4…+0.9 m over obs), outside 6154 +0.10, 6157 / 6158 / 6132 0.00.
+  `candidate_sfincs.weir` (Pews railroad gap OPEN) → `data/structures_v4/sfincs.weir` + the v4_refreeze template
+  (new inodes; old file `sfincs_2026-10-06.weir`; PROVENANCE updated; `frozen_mesh_v4` unchanged). Structure
+  u/v points 221 → 339 logged (emulator 338). Next leak: the Thornes Creek marsh near Rt 36 (unmapped).
+- ⏳ **62827640 `phase4`** queued 10-22 (replaces the held 62757492; `expected.md5` refreshed, old `.bak_2026-10-19`).
+  → **62831580 `p4_read`** (afterany, 240 G, ≤ 6 h): preflight, the repeat bit-for-bit, residuals for 18 runs (`phase4`
+  preset), 17 zsmax pairs, report, null band, nudged gauges, PREREG marks. Pieces tested 10-22 on the 10-11 runs.
 - 🔴 Side-by-side `engine_gate.py run` copies need `taskset` on disjoint cores (FINDINGS §44 (i)).
 
 ## ⭐ FINAL AUDIT → "the v4 premier is ready" (plan approved 10-15)
 
 Plan: `~/.claude/plans/i-think-i-m-ready-warm-trinket.md`. Phases 0–3 ✅ (seed patch, cleanup, seeded-engine
-test, code; details FINDINGS part 4 (h), §44, git log). 🔴 USER: re-run `scripts/desktop_pull_backup.sh` once.
+test, code; details FINDINGS part 4 (h), §44, git log). Desktop backup re-run 10-22 (user).
 
 - **Closed 10-20 (user; facts in FINDINGS part 4 (h)):** no lake pool start; no Wreck Pond culvert; Wreck Pond
   "band" = the 1st Ave bridge deck, already removed — no fix; Atlantic City +0.5 m = NACCS forcing; paved
@@ -206,7 +214,7 @@ heads may still be tidal (unpainted). Paerdegat: leave it (user).
 
 - **Home** (`/cache/home`, GPFS): 100 G soft / 110 G hard; **63.1 G on 2026-10-19**. Ask
   `/usr/lpp/mmfs/bin/mmlsquota -u $USER --block-size auto cache` (lags ~10 min).
-- **Scratch** (`/scratch/tpj8`): 1 T soft / 2 T hard, **689 G on 2026-10-19 before the 37 G delete** (the three new beds) (incl. the 39 G
+- **Scratch** (`/scratch/tpj8`): 1 T soft / 2 T hard, **704 G on 2026-10-22** (after the four pre-creek beds were deleted) (incl. the 39 G
   `_template_sealed_pre_inflows_2026-10-06` — deletable once Phase 4 has staged from the new one). 🔴 **Not backed up; files not accessed for 90 days are deleted.** `experiments/`
   and most of `data/` (the 10-05 swap is finished) live here; the durable copy is the desktop pull
   (`scripts/desktop_pull_backup.sh`) — re-run it whenever an arm is scored. The engine sources

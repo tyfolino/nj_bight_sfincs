@@ -3015,9 +3015,11 @@ _V4_REFREEZE_ABSECON_CREEK = (-74.49926, 39.42294)
 #: sits on a mostly-dry face (zs at the bed for 33–43 % of the v4_refreeze premier's his
 #: output, 2026-10-20). Each goes to the centre of the nearest active face the sea reaches
 #: at −0.5 m through the subgrid sills (`sea_level.connected_initial_zs`) on the Phase 4 bed
-#: `_subgrid_refreeze_lakes_min` (logs/gauge_nudge_2026-10-20/pick_faces.py). NOT moved:
-#: usgs_tidal_sluice_creek — its nearest connected face is 2.6 km away (the creek's bed is
-#: missing, FINDINGS part 4 (h)); it stays crest-only, as its note says.
+#: `_subgrid_refreeze_lakes_min` (logs/gauge_nudge_2026-10-20/pick_faces.py).
+#: usgs_tidal_sluice_creek (2026-10-22): on the `*_creeks` beds, which paint the creek at the
+#: NJ 10 ft fill (−0.24 m at the gauge pool, an ASSUMED bed); the face is reached at −0.2 m
+#: (the gauge's observed low water), not −0.5 — this creek's tide never goes that low
+#: (logs/creek_beds_2026-10-20/pick_faces_creeks.txt + sluice_B.txt).
 _V4_REFREEZE_NUDGED_2026_10_20 = {
     "noaa_cape_may": (-74.95975, 38.96809, "-74.9600, 38.9683", "z_zmin +1.29, 32 m"),
     "usgs_tidal_cape_may_harbor": (
@@ -3031,6 +3033,12 @@ _V4_REFREEZE_NUDGED_2026_10_20 = {
         39.76088,
         "-74.1106, 39.7608",
         "z_zmin +0.92, 39 m",
+    ),
+    "usgs_tidal_sluice_creek": (
+        -74.83227,
+        39.16199,
+        "-74.8322, 39.1617",
+        "z_zmin +0.92, 33 m",
     ),
 }
 

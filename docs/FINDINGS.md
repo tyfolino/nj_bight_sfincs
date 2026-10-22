@@ -2026,7 +2026,8 @@ B = each face's lowest connection level to the forced boundary through `uv_zmin`
 flowlines + USACE NCF centrelines): ICW IW_11–16, Cape May Canal, Cold Spring Inlet, Cape May Harbor — 0 of
 7,287 samples sill-held, worst B −0.80 m (≈ MLLW); the back-bay unpave boxes + Great Egg box connect below MLLW.
 Left: **Beach Creek, North Wildwood** (−74.7994, 39.0141; 2010 USACE lidar TIN across the creek at +1.1 m vs
-CUDEM −1.7; sill +0.85 m vs MHHW +0.65, 250 m of 3.6 m channel behind it; no unpave box), and probably CUDEM
+CUDEM −1.7; sill +0.85 m vs MHHW +0.65, 250 m of 3.6 m channel behind it; FIXED on the `*_creeks` beds by the
+`beach_creek_nwildwood` unpave box — 253 of 261 channel faces behind it now connect below −0.5 m, 2026-10-22), and probably CUDEM
 holding the water surface (§54 (j) class) at Cedar Swamp / Sluice Creek (−74.7047, 39.2678; sill +0.20 m,
 ~1.4 km) and Patcong Creek (−74.6240, 39.3280; +0.05 m); real embankments with culverts on Mill, Jones (+0.85 m),
 Taylor, Run Creeks and the Cape May Harbor marsh road. Inferred: none moves a Sandy mark (every sill < +0.9 m
@@ -2035,7 +2036,8 @@ vs 1.21 m) is NOT a sill (its connection opens at −1.45 m). `audit_paved_chann
 **Four v4 gauges sit on mostly-DRY faces** (checked 10-20 on the v4_refreeze premier's `sfincs_his.nc`: fraction of
 outputs with zs ≤ zb + 1 cm): `noaa_cape_may` zb +1.29 m 43 %, `usgs_tidal_cape_may_harbor` +1.66 m 41 %,
 `usgs_tidal_barnegat_light` +0.92 m 42 %, `usgs_tidal_sluice_creek` +0.92 m 33 % — their modelled series are
-flat at the bed until the land floods, so a tide or peak read there is the face, not the water. v3 premier:
+flat at the bed until the land floods, so a tide or peak read there is the face, not the water (all four NUDGED onto
+sea-connected faces for Phase 4 — Sluice 10-22 on the `*_creeks` bed, at −0.2 m, below). v3 premier:
 `noaa_cape_may` 27 %, `usgs_tidal_barnegat_light` 52 %, `usgs_tidal_absecon_creek` 28 %, `usgs_tidal_inside_thorofare`
 28 %, `sss_great_bay` 22 %.
 **NJ Delaware Bay marsh creeks: CUDEM holds the WATER SURFACE, so they cannot drain** (2026-10-20,
@@ -2053,7 +2055,9 @@ level observed at flight time. Fix (user 10-20): `creek_bed_nj10ft_v4` (`:min`) 
 creeks — an ASSUMED bed at ≈ MLW, labelled so everywhere; all qualifying creeks except the Salem River and
 Mannington Creek (stepped −0.822 / −0.411 / −0.111 levels may mark gates); NHD lakes excluded (Clint Millpond, a
 dammed pond on Sluice Creek, is flat at its +0.859 pool). A tide match there afterwards partly reflects the
-assumption.
+assumption. Built 10-21 (`*_creeks` beds): the Sluice / Dennis corridor fell from a median +0.34 to −1.07 m, but
+the gauge pool takes NJ 10 ft's local −0.24 constant, so the gauge side connects at −0.23 m — just under its observed
+low water (≈ −0.2); the modelled trough there is that assumed constant (`logs/creek_beds_2026-10-20/sluice_B.txt`).
 **The v4 premier's 10 marks outside ±0.5 m, read against their USGS STN records** (2026-10-20,
 `logs/stn_marks_2026-10-20/` — JSON, photos, field sheets; per-mark table `logs/dry_mark_2026-10-20/`, median, 50 m;
 the STN API is now `https://api.waterdata.usgs.gov/stnservices/`). No datum / units problem: our `elev_m` = STN's ft ×
