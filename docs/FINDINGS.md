@@ -1123,8 +1123,8 @@ CLAUDE.md §5.
     +0.4..+0.7 m through the storm; HWM 6102 (1.07 km from the cut) +0.57..+0.66. The Raritan
     cut alone is ~1/5 of the Arthur Kill gain and all of the lower-Raritan gain (cut-split
     test, 09-22). **What it leaves:** the repaired premier's Arthur Kill mouth peak is −0.22 m
-    against the gauge, Great Kills ~−0.25 (sensor-corrected; the raw −0.45 carries a ~+0.2 m
-    datum-like sensor offset), and the EAST bay sits ~0.2 m low in all three repaired runs
+    against the gauge, Great Kills ≈ −0.11 (the raw −0.45 with
+    the measured −0.34 m sensor correction, below), and the EAST bay sits ~0.2 m low in all three repaired runs
     (`sandy_hook_bay` −0.21..−0.27). ⚠️ **The old premier's good east-bay score was not
     robust**: on the drained mask its Sandy Hook Bay sat ~0.15 m above every other run
     (Sandy Hook gauge 3.48 vs 3.31–3.37; `sandy_hook_bay` −0.11 vs −0.21..−0.31), so its pair
@@ -1145,14 +1145,22 @@ CLAUDE.md §5.
     stand outside the model, and moving the edge inland puts NYC land in the model — a domain
     change. A wall ponds, so the walled run is the upper bound on the edge's worth and the
     drain the lower; the drain removed ~3 × 10⁸ m³ against ~2–3 × 10⁷ m³ of plausible SI storage.
-    **The Great Kills sensor offset:** `sss_great_kills` (STN site 7560, a bulkhead inside
-    Great Kills Harbor; no wave noise, surveyed 1.902 m and reads 1.893 dry) sits +0.25..+0.37 m
-    above Sandy Hook / AK / the Battery at pre-storm slack high water on the upwind shore for
-    3.5 h while those three agree to ~0.1; at the same site re-surveyed in 2015, during Jonas
-    2016, it sits only +0.10..+0.17 above them. NACCS is 0.35–0.39 low at Great Kills and
-    nowhere else in the bay, and the q1 HWM 6413 1.6 km away reads 3.81. Working value: treat
-    the observed Great Kills peak as ~3.75–3.85 m, not 3.99 (cause unproven — flag, do not
-    rewrite the file); Arthur Kill mouth is the cleaner number.
+    **The Great Kills sensor reads +0.34 m HIGH — its assigned elevation is wrong.**
+    `sss_great_kills` (STN site 7560, a bulkhead in Great Kills Harbor, assigned 1.902 m) is
+    +0.339 m above the co-located USGS rapid-deployment gage 403236074073983 on the SAME dock
+    (sd 0.016, n 21, 10-29 11:00–22:45 UTC, the same at 0.1–1.2 m of water; that gage vs Sandy
+    Hook −0.04, vs the Battery +0.10), and its wet/dry onsets — read off the gage and the AK-mouth
+    sensor, not its own elevation — put the orifice at 1.56–1.60 m, before and after the crest.
+    Baro (dry reading = assigned elevation; the two baros differ ~1 cm), water density (no depth
+    dependence), a GEOID / GNSS bias (OFR 2013-1043 T2: wrong sign, a third the size) and a
+    mid-storm move are ruled out; which step (RP survey, tape-down, mounting) failed is
+    untestable (no 2012 survey rows in STN). USGS never re-published (the file still reads
+    "provisional, 12/18/2012"); the 2014-bracket deployment reads right (Jonas 2016: −0.02 ±
+    0.04 vs Sandy Hook over the whole record). Scored CORRECTED since 2026-10-23
+    (`ObsGauge.obs_offset_m` −0.34 in v3 and the v4 family, applied in the obs loader; rows
+    carry `obs_offset_sss_great_kills_m`; earlier rows are raw): observed peak ≈ 3.65–3.69 m,
+    0.12–0.16 below HWM 6413 (1.6 km, q 1). NACCS's "0.35–0.39 m low at Great Kills and nowhere
+    else" was the sensor (≈ 0–0.05 corrected). `logs/great_kills_offset_2026-10-23/`.
 
 51. 🔴 **A NetCDF `inifile` is silently read as BINARY by SFINCS v2.3.3 (and `main`), and a
     `zsini` start floods every disconnected low spot — so a sea-level-offset run needs a
@@ -1397,8 +1405,19 @@ CLAUDE.md §5.
     test: 4 `v1_monmouth` `south_coast` marks moved 0.0005 m under a +0.115 m uniform boundary
     offset — detect it with that offset. (e) The q ≤ 2 cut removes the tallest open-coast marks
     (the 5.79 m mark is q 3; q ≤ 2 tops out at 4.18 m on v1.5). (f) 🔶 12 USGS tidal gauges have
-    NO data 2012-10-29 04:00 → 10-30 04:00 UTC in the published record (OGC `continuous`, all
-    Approved) — likely a USGS day-block gap; `gauge_series_frame` now leaves gaps as NaN instead
+    NO data 2012-10-29 04:00 → 10-30 04:00 UTC (the EDT day) in USGS's published archive —
+    legacy NWIS IV = OGC `continuous`, one water-level series per site, no revisions; not a
+    fetch artefact. Their PUBLISHED crests exist (USGS OFR 2013-1043 Table 4, NAVD88 / GMT; SIR
+    2016-5085 Table 3 and the NWIS peak file agree within 0.05 ft; SIR's times are partly EDT
+    despite the "GMT" label) and are scored since 2026-10-23 as `peak_err_pub_*` (model
+    FULL-window peak − published; `ObsGauge.published_peak`, v3 + the v4 family) for the 12 +
+    Shark River / Sea Bright / Absecon Channel, which only LOOK like they die (they restart
+    11-02 / 11-02 / 2013-01-16). Never take the 10-29 daily "tidal high" as a peak: at 6 of them
+    it is the first post-gap sample. Hydrographs through the gap exist only as SIR 2016-5085
+    Fig. 18 (vector-digitised, RMSE 1–4 cm on overlap, EDT clock, possibly USGS-reconstructed):
+    Tuckerton, Absecon Ck, Keansburg, Manasquan (+ Sea Bright) — shape / timing only, never tide
+    statistics. OFR's Waretown row (7.3 ft) contradicts NWIS / SIR (≈ 5.5): wrong.
+    `logs/usgs_gap_2026-10-23/`; `gauge_series_frame` now leaves gaps as NaN instead
     of bridging them (`_in_obs_gap`). 🔴 **Seven of them carry NO `record_ends`, so their
     `peak_err` is invalid on every arm, v3 and v4** (2026-10-06): Inside Thorofare, Tuckerton,
     Absecon Creek and Avalon score the first post-gap sample (already falling, e.g. Inside

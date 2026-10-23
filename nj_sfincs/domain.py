@@ -68,6 +68,17 @@ class ObsGauge:
     #: whatever the gauge missed, and reads as a model error.
     record_ends: str | None = None
 
+    #: A documented correction ADDED to the observed series when it is read (m); the
+    #: published file is never edited. Every scored row carries ``obs_offset_<name>_m``,
+    #: so a row without it was scored raw (2026-10-23, ``_GAUGE_FACTS_2026_10_23``).
+    obs_offset_m: float = 0.0
+
+    #: The PUBLISHED crest ``(m NAVD88, "YYYY-MM-DD HH:MM" UTC, source)`` of a gauge whose
+    #: served record misses it (the 2012-10-29 EDT hole, FINDINGS §60 (f)). Scored as
+    #: ``peak_err_pub_*`` against the model's FULL-window peak — never against a truncated
+    #: one — beside, not instead of, the ``record_ends`` pre-failure pair.
+    published_peak: tuple[float, str, str] | None = None
+
     #: Where this gauge's MODELLED series comes from — and the two are not
     #: interchangeable:
     #:   ``"his"``  the SFINCS observation point, 10-min. Resolves the crest.
@@ -1648,6 +1659,79 @@ def _six_min(g: ObsGauge) -> ObsGauge:
     return g
 
 
+#: Gauge facts established 2026-10-23 (user: apply both; v3 and the v4 family score with
+#: them, v1 / v1.5 / v2 keep their frozen gauges). Observed-series corrections, m:
+#:   sss_great_kills: STN site 7560's 2012 sensor elevation (1.902 m) is ~0.34 m HIGH — the
+#:   co-located USGS rapid-deployment gage 403236074073983 on the same dock reads it
+#:   +0.339 m (sd 0.016, n 21, 10-29 11:00–22:45 UTC; that gage vs Sandy Hook −0.04) and the
+#:   sensor's wet/dry onsets put its orifice at 1.56–1.60 m. Baro, density, GEOID and a
+#:   mid-storm move ruled out; which survey step failed is untestable. USGS never
+#:   re-published (file "provisional, 12/18/2012"). logs/great_kills_offset_2026-10-23/.
+_OBS_OFFSET_2026_10_23 = {"sss_great_kills": -0.34}
+#: Published crests (m NAVD88, UTC) for the gauges whose crest is in the served record's
+#: 2012-10-29 EDT hole (FINDINGS §60 (f)) or that merely LOOK like they die there (Shark
+#: River, Sea Bright, Absecon Channel restart 11-02 / 11-02 / 2013-01-16). USGS OFR
+#: 2013-1043 Table 4 (GMT); SIR 2016-5085 Table 3 and the NWIS peak file agree within
+#: 0.05 ft. Sea Bright = OFR's REVISED 9.56 ft (the PDF still prints 13.0).
+#: logs/usgs_gap_2026-10-23/peaks_recovered.csv.
+_PUBLISHED_PEAKS_2026_10_23 = {
+    "usgs_tidal_ship_bottom": (
+        1.966,
+        "2012-10-30 03:00",
+        "OFR 2013-1043 T4: 6.45 ft, ESTIMATED",
+    ),
+    "usgs_tidal_tuckerton": (2.530, "2012-10-29 23:48", "OFR 2013-1043 T4: 8.30 ft"),
+    "usgs_tidal_absecon_creek": (
+        2.295,
+        "2012-10-30 01:06",
+        "OFR 2013-1043 T4: 7.53 ft",
+    ),
+    "usgs_tidal_inside_thorofare": (
+        2.323,
+        "2012-10-30 01:42",
+        "OFR 2013-1043 T4: 7.62 ft",
+    ),
+    "usgs_tidal_sea_isle": (2.304, "2012-10-30 00:18", "OFR 2013-1043 T4: 7.56 ft"),
+    "usgs_tidal_avalon": (2.179, "2012-10-29 23:24", "OFR 2013-1043 T4: 7.15 ft"),
+    "usgs_tidal_stone_harbor": (2.051, "2012-10-30 01:36", "OFR 2013-1043 T4: 6.73 ft"),
+    "usgs_tidal_bivalve": (2.146, "2012-10-30 02:30", "OFR 2013-1043 T4: 7.04 ft"),
+    "usgs_tidal_greenwich": (1.801, "2012-10-30 05:00", "OFR 2013-1043 T4: 5.91 ft"),
+    "usgs_tidal_pt_pleasant_canal": (
+        1.710,
+        "2012-10-30 03:48",
+        "OFR 2013-1043 T4: 5.61 ft",
+    ),
+    "usgs_tidal_manasquan_pp": (2.896, "2012-10-30 00:36", "OFR 2013-1043 T4: 9.50 ft"),
+    "usgs_tidal_keansburg": (4.197, "2012-10-30 00:54", "OFR 2013-1043 T4: 13.77 ft"),
+    "usgs_tidal_shark_river": (3.335, "2012-10-29 23:18", "OFR 2013-1043 T4: 10.94 ft"),
+    "usgs_tidal_sea_bright": (
+        2.914,
+        "2012-10-30 00:54",
+        "OFR 2013-1043 T4: 9.56 ft (revised)",
+    ),
+    "usgs_tidal_absecon_channel": (
+        2.380,
+        "2012-10-30 00:54",
+        "OFR 2013-1043 T4: 7.81 ft",
+    ),
+}
+
+
+def _gauge_facts(g: ObsGauge) -> ObsGauge:
+    """The 2026-10-23 gauge facts (idempotent: a gauge already carrying them is left)."""
+    if g.name in _OBS_OFFSET_2026_10_23 and not g.obs_offset_m:
+        off = _OBS_OFFSET_2026_10_23[g.name]
+        g = replace(
+            g,
+            obs_offset_m=off,
+            note=g.note
+            + f" OBS CORRECTED {off:+.2f} m (sensor elevation; 2026-10-23).",
+        )
+    if g.name in _PUBLISHED_PEAKS_2026_10_23 and g.published_peak is None:
+        g = replace(g, published_peak=_PUBLISHED_PEAKS_2026_10_23[g.name])
+    return g
+
+
 V3 = Domain(
     name="v3",
     region=DATA / "region_v3_EDITED_inland.geojson",
@@ -1803,7 +1887,7 @@ V3 = Domain(
     discharge_geodataset="usgs_sandy_discharge_v3",
     hwm_geojson=DATA / "validation_v3" / "sandy_hwms_v3.geojson",
     obs_gauges=tuple(
-        _six_min(g)
+        _gauge_facts(_six_min(g))
         for g in (
             *V1_5_RARITAN.obs_gauges,
             _NOAA_ATLANTIC_CITY,
@@ -2724,7 +2808,7 @@ V4 = Domain(
     # v3's 25 (all on active v4 faces, 3–23 m) + the 23 above. The frozen mesh was
     # built with the 25; `scripts/sync_obs_points.py --apply` adds the rest to it —
     # observation points never move a water level, so no rebuild.
-    obs_gauges=(*V3.obs_gauges, *_V4_NEW_GAUGES),
+    obs_gauges=(*V3.obs_gauges, *(_gauge_facts(g) for g in _V4_NEW_GAUGES)),
     hwm_rules=_V4_BASIN_RULES + V3.hwm_rules,
     hwm_geojson=DATA / "validation_v4" / "sandy_hwms_v4.geojson",
     # RE-RENDERED 2026-09-29 on the drawn ring's bbox (the 09-24 render stopped at lat

@@ -602,10 +602,40 @@ def basins(runs: list[Run]) -> pd.DataFrame:
     )
 
 
+def fresh_gauge_keys(run: Run) -> dict:
+    """The gauge-peak keys re-scored NOW from the run's his output, under its own domain.
+
+    WHY (2026-10-23): the gauge rules changed (the Great Kills −0.34 m obs correction, the
+    published crests), and a ``metrics.csv`` row keeps the rules of the day it was written —
+    a run validated before 10-23 would read ~0.34 m worse at Great Kills than one after,
+    purely from scoring. Peaks need only the his file, so every run of a report is scored
+    by the same code here instead. ``{}`` when the run has no his output.
+    """
+    if not (run.path / "sfincs_his.nc").is_file():
+        return {}
+    with_domain(run.domain)
+    from nj_sfincs.validate.core import cache_clear, open_run
+    from nj_sfincs.validate.metrics import gauge_peak_metrics
+
+    try:
+        return gauge_peak_metrics(open_run(run.path), run.path)
+    except (OSError, KeyError, ValueError, RuntimeError) as e:  # fall back to the row
+        print(f"[gauges] {run.label}: fresh re-score failed ({e!r}); using metrics.csv")
+        return {}
+    finally:
+        cache_clear()
+
+
 def gauges(runs: list[Run]) -> pd.DataFrame:
     rows = []
     for r in runs:
         m = metrics_row(r) or {}
+        fresh = fresh_gauge_keys(r)
+        if fresh:  # no stale peak keys mixed with fresh ones
+            m = {
+                k: v for k, v in m.items() if not k.startswith(("peak_", "obs_offset_"))
+            }
+            m.update(fresh)
         for k in m:
             g = re.fullmatch(r"peak_obs_(.+)_m", k)
             if not g:
@@ -636,6 +666,14 @@ def gauges(runs: list[Run]) -> pd.DataFrame:
                     if prefail
                     else "",
                     lag_min=m.get(f"peak_lag_{name}_min", np.nan),
+                    # the PUBLISHED crest vs the model's full-window peak (2026-10-23;
+                    # gauges whose served record misses the crest), and an obs correction
+                    pub_m=m.get(f"peak_pub_{name}_m", np.nan),
+                    mod_full_m=m.get(f"peak_mod_full_{name}_m", np.nan),
+                    err_pub_m=m.get(f"peak_err_pub_{name}_m", np.nan),
+                    lag_pub_min=m.get(f"peak_lag_pub_{name}_min", np.nan),
+                    obs_offset_m=m.get(f"obs_offset_{name}_m", np.nan),
+                    rescored=bool(fresh),
                 )
             )
     return pd.DataFrame(rows)
@@ -1519,6 +1557,32 @@ def write_summary(
         piv.insert(0, "obs_peak", [obs.get(x.rstrip(" †"), np.nan) for x in piv.index])
         w("† = the gauge died mid-storm; model compared to its last good sample.\n\n")
         w(md_table(piv, "{:+.2f}", index=True))
+        stale = sorted(set(g[~g.rescored].label))
+        w(
+            "\nGauge peaks re-scored from each run's his file with today's rules"
+            + (
+                f" — ⚠️ NOT re-scored (metrics.csv rows): {', '.join(stale)}"
+                if stale
+                else ""
+            )
+            + ".\n"
+        )
+        off = g.dropna(subset=["obs_offset_m"]).drop_duplicates("gauge")
+        for _, r in off.iterrows():
+            w(
+                f"\n- obs CORRECTED {r.obs_offset_m:+.2f} m: {r.gauge} (domain.py, 10-23)\n"
+            )
+        pub = g.dropna(subset=["pub_m"])
+        if not pub.empty:
+            w(
+                "\n### Published crests (model FULL-window peak − USGS OFR 2013-1043 T4; "
+                "the served record misses the crest)\n\n"
+            )
+            pp = pub.pivot_table(index="gauge", columns="label", values="err_pub_m")
+            pp = pp.reindex(columns=[r.label for r in runs if r.label in pp.columns])
+            pm = pub.drop_duplicates("gauge").set_index("gauge").pub_m
+            pp.insert(0, "published", [pm.get(x, np.nan) for x in pp.index])
+            w(md_table(pp, "{:+.2f}", index=True))
     w("\nTODO — which gauges the waves move, and the worst misses.\n")
     w("\n## HWM by basin (metrics.csv, `_scored` keys)\n")
     if not bas.empty:

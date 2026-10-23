@@ -64,7 +64,9 @@ def _obs_series(g, data_dir: Path = DATA):
     if g.obs_station not in stations:
         return None
     o = ds[var].sel(stations=g.obs_station)
-    return o["time"].values, np.asarray(o.values, float).ravel()
+    # a documented correction (ObsGauge.obs_offset_m), applied here so every reader —
+    # peaks, tides, gauge_series_frame, plots, gallery — sees the same corrected series
+    return o["time"].values, np.asarray(o.values, float).ravel() + g.obs_offset_m
 
 
 def _model_series(mod, model_dir: Path, g, dom):
@@ -138,6 +140,20 @@ def gauge_peak_metrics(mod, model_dir: Path, data_dir: Path = DATA) -> dict:
         out[f"peak_mod_full_time_{n}"] = (
             str(m_full_t)[:16] if m_full_t is not None else ""
         )
+        if g.obs_offset_m:  # the row says it was scored corrected (absent = raw)
+            out[f"obs_offset_{n}_m"] = g.obs_offset_m
+        if g.published_peak is not None:
+            # the PUBLISHED crest of a gauge whose served record misses it: against the
+            # model's FULL-window peak (both are the true crest), beside the prefail pair
+            p_m, p_t, _src = g.published_peak
+            out[f"peak_pub_{n}_m"] = p_m
+            out[f"peak_pub_time_{n}"] = p_t
+            out[f"peak_err_pub_{n}_m"] = m_full - p_m
+            if m_full_t is not None:
+                out[f"peak_lag_pub_{n}_min"] = float(
+                    (m_full_t - np.datetime64(pd.Timestamp(p_t)))
+                    / np.timedelta64(1, "m")
+                )
 
         if g.record_ends:
             end = np.datetime64(pd.Timestamp(g.record_ends))

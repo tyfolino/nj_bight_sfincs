@@ -93,5 +93,103 @@ class TestV4Gauges(_V4):
                 self.assertIsNotNone(g.record_ends, g.name)
 
 
+class TestGaugeFacts20261023(unittest.TestCase):
+    """The Great Kills obs correction + published crests (2026-10-23): on v3 and the v4
+    family only, applied once in the shared obs loader, scored beside the prefail pair."""
+
+    PUB_V3 = (
+        "usgs_tidal_ship_bottom",
+        "usgs_tidal_tuckerton",
+        "usgs_tidal_absecon_creek",
+        "usgs_tidal_inside_thorofare",
+        "usgs_tidal_sea_isle",
+        "usgs_tidal_avalon",
+        "usgs_tidal_stone_harbor",
+        "usgs_tidal_shark_river",
+        "usgs_tidal_sea_bright",
+        "usgs_tidal_absecon_channel",
+    )
+    PUB_V4 = PUB_V3 + (
+        "usgs_tidal_bivalve",
+        "usgs_tidal_greenwich",
+        "usgs_tidal_pt_pleasant_canal",
+        "usgs_tidal_manasquan_pp",
+        "usgs_tidal_keansburg",
+    )
+
+    def test_which_domains_carry_them(self):
+        for dn, pub in (
+            ("v3", self.PUB_V3),
+            ("v4", self.PUB_V4),
+            ("v4_refreeze", self.PUB_V4),
+        ):
+            gs = {g.name: g for g in domain.DOMAINS[dn].obs_gauges}
+            self.assertEqual(gs["sss_great_kills"].obs_offset_m, -0.34, dn)
+            got = {n for n, g in gs.items() if g.published_peak is not None}
+            self.assertEqual(got, set(pub), dn)
+        for dn in ("v1_monmouth", "v1_5_raritan"):  # frozen, pinned by the port gate
+            for g in domain.DOMAINS[dn].obs_gauges:
+                self.assertEqual(g.obs_offset_m, 0.0, (dn, g.name))
+                self.assertIsNone(g.published_peak, (dn, g.name))
+
+    def test_published_crests_are_after_the_hole_opens(self):
+        for g in domain.DOMAINS["v4_refreeze"].obs_gauges:
+            if g.published_peak is None:
+                continue
+            m, t, src = g.published_peak
+            self.assertTrue(1.5 < m < 4.5, g.name)
+            self.assertGreaterEqual(t, "2012-10-29 04:00", g.name)
+            self.assertIn("OFR 2013-1043", src)
+
+    def test_offset_is_applied_once_in_the_loader(self):
+        from nj_sfincs.validate.metrics import _obs_series
+
+        raw = {g.name: g for g in domain.V1_5_RARITAN.obs_gauges}["sss_great_kills"]
+        cor = {g.name: g for g in domain.V3.obs_gauges}["sss_great_kills"]
+        if not (DATA / raw.obs_file).is_file():
+            self.skipTest("obs file not on disk")
+        (t0, v0), (t1, v1) = _obs_series(raw), _obs_series(cor)
+        np.testing.assert_array_equal(t0, t1)
+        ok = np.isfinite(v0)
+        np.testing.assert_allclose(v1[ok] - v0[ok], -0.34, atol=1e-9)
+
+    def test_scorer_writes_the_published_pair(self):
+        from dataclasses import replace
+        from types import SimpleNamespace
+        from unittest import mock
+
+        from nj_sfincs.validate import metrics
+
+        g = replace(
+            domain.ObsGauge("x", 0.0, 0.0, obs_file="f", obs_station=1),
+            record_ends="2012-10-29 03:54",
+            published_peak=(2.0, "2012-10-30 00:00", "test"),
+            obs_offset_m=-0.1,
+        )
+        t = np.arange(
+            "2012-10-28T00",
+            "2012-10-31T00",
+            np.timedelta64(1, "h"),
+            dtype="datetime64[s]",
+        )
+        crest = np.datetime64("2012-10-30T01:00", "s")
+        mv = 2.3 - np.abs((t - crest) / np.timedelta64(1, "h")) * 0.05
+        ov = np.where(t <= np.datetime64("2012-10-29T03:54"), mv - 0.5, np.nan)
+        with (
+            mock.patch.object(
+                metrics._domain, "active", return_value=SimpleNamespace(obs_gauges=[g])
+            ),
+            mock.patch.object(metrics, "_obs_series", return_value=(t, ov)),
+            mock.patch.object(metrics, "his_series", return_value=(t, mv)),
+            mock.patch.object(metrics, "his_bed", return_value=0.0),
+        ):
+            out = metrics.gauge_peak_metrics(None, None)
+        self.assertAlmostEqual(out["peak_pub_x_m"], 2.0)
+        self.assertAlmostEqual(out["peak_err_pub_x_m"], 0.3, places=6)  # full peak 2.3
+        self.assertAlmostEqual(out["peak_lag_pub_x_min"], 60.0)
+        self.assertEqual(out["obs_offset_x_m"], -0.1)
+        self.assertIn("peak_err_prefail_x_m", out)  # beside, not instead of
+
+
 if __name__ == "__main__":
     unittest.main()
