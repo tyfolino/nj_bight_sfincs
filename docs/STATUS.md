@@ -7,7 +7,7 @@ Git has the history. The campaign log this file grew into until 2026-09-29 (6,76
 `git show d70dd1e:docs/STATUS.md`; FINDINGS cites it as "STATUS <date>".
 
 ▶ **PICK UP (10-22): Phase 4 = job 62827640, QUEUED** (submitted 12:28, `emeraldrapids` ×2, 40 h; SLURM's start
-estimate 10-24 ~01:30; stdout `logs/rebaseline_2026-10-19/phase4_62827640.out`). 🔴 Its EXPECT_MD5 is checked at START:
+estimate 10-24 ~01:30, pulled forward to 10-23 ~17:20 on 10-23; stdout `logs/rebaseline_2026-10-19/phase4_62827640.out`). 🔴 Its EXPECT_MD5 is checked at START:
 edit NOTHING in `logs/rebaseline_2026-10-19/expected.md5`'s list (nj_sfincs/*, run_experiments.py, the arm lists)
 until it is running. Old beds deleted (scratch 704 G); 62757492 cancelled. **The read is queued behind it: 62831580
 `p4_read`** (afterany; `logs/rebaseline_2026-10-19/read/`, README there) — its own EXPECT_MD5 covers the read scripts +
@@ -45,7 +45,7 @@ job drafted; gallery + one public site; depth convention).
   6133 −0.46 / −0.91 / −0.93 m (still +0.4…+0.9 m over obs), outside 6154 +0.10, 6157 / 6158 / 6132 0.00.
   `candidate_sfincs.weir` (Pews railroad gap OPEN) → `data/structures_v4/sfincs.weir` + the v4_refreeze template
   (new inodes; old file `sfincs_2026-10-06.weir`; PROVENANCE updated; `frozen_mesh_v4` unchanged). Structure
-  u/v points 221 → 339 logged (emulator 338). Next leak: the Thornes Creek marsh near Rt 36 (unmapped).
+  u/v points 221 → 339 logged (emulator 338). Next: **`candidate_thornes.weir` (10-23, `logs/thornes_creek_2026-10-23/README.md`)** from the USACE NLD RTK centreline (our 10-20 traces match it to 1–7 m): + the Thornes Creek reach (1.93 km, incl. ~440 m I-wall, never drawn), the navigation gate moved onto the NLD line at ~5.5 m (old weir detoured inland at 2.90), the Pews railroad stop logs closed at the NLD 4.4 m. 🔴 Two ASSUMPTIONS (user 10-23), both pushing the pocket toward its marks, so those marks no longer test the levees: railroad stop logs IN (now the Henry Hudson Trail; NJDEP "no longer operable"), navigation gate CLOSED AND HELD (2013 wing-wall repair). Static fill at the pocket 2.09 → 3.28 (now over the Pews levee's real low spot, NLD 3.23); emulator 338 → 411 u/v. Test 62906516 (60 h waves-off, vs the 10-21 runs). Do not touch the template's weir until Phase 4 has STAGED.
 - ⏳ **62827640 `phase4`** queued 10-22 (replaces the held 62757492; `expected.md5` refreshed, old `.bak_2026-10-19`).
   → **62831580 `p4_read`** (afterany, 240 G, ≤ 6 h): preflight, the repeat bit-for-bit, residuals for 18 runs (`phase4`
   preset), 17 zsmax pairs, report, null band, nudged gauges, PREREG marks. Pieces tested 10-22 on the 10-11 runs.
@@ -115,7 +115,7 @@ sill (Greenwich face reached at −1.4 m). Above 39.36 N: no soundings anywhere 
 feet", one ~7 ft bar) and the ENC floors (1.5 → 1.2 → 0.3 m). Scans: 1905 USACE sheets (RUcore 56574 mouth, 56588
 Bridgeton, MLW). Greenwich tide 0.62 of observed. Candidate fix (after Phase 4, user's call): D00081 + tide-reduced CSB
 as tier 3 in the lower reach, ENC controlling depths as a thalweg floor, a deeper section from the 1905/06 material.
-✅ USER AGREED the fix 10-22 (build after Phase 4). Tide-reduced soundings (`csb_tide_reduce.py`, lower bounds, no
+✅ USER AGREED the fix 10-22. ▶ **10-23 BUILT as `riverbeds_hierarchy_v4c`** (`logs/cohansey_fix_2026-10-23/README.md`): the hierarchy gained opt-in survey checks (CSB + D00081 as tier 3; CUDEM not a bed above the ENC controlling depth or > 1 m above the soundings) and `--version` (v4 FROZEN). Lower 3.4 km section mean 0.4 → 2.5–4.9 m below MLLW; Greenwich 1.2 → ~3.0 (still the slope GUESS above 3.6 km). Job **62908942** builds `_subgrid_refreeze_lakes_min_creeks_cohansey` + the Greenwich tide test (waves-off, base = Phase 4 bed); its EXPECT_MD5 covers `data/data_catalog.yml` — don't edit the catalog until it starts. Tide-reduced soundings (`csb_tide_reduce.py`, lower bounds, no
 draft): from 39.349 N to 39.361 N the river is ≥ 4.5–8.4 m below MLLW where the model's deepest face is 0.8–1.0 m.
 The sfincs-nj-agri session's test (10-20, its 100 m model, calm May 2023 week, beds only): Big Timber on NOS H09886
 took Westville 0.47 → 0.97 of the expected range; the Cohansey at 7 ft below MLLW mouth → Fairton took Greenwich

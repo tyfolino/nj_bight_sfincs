@@ -1602,6 +1602,30 @@ riverbeds_hierarchy_v4:
       bed: never an overlay). logs/refreeze_2026-10-05/bed_hierarchy/.
       scripts/build_riverbeds_hierarchy_v4.py build
 
+riverbeds_hierarchy_v4c:
+  data_type: RasterDataset
+  uri: elevation_v4/riverbeds/riverbeds_hierarchy_v4c.vrt
+  driver:
+    name: rasterio
+    options: {}
+  metadata:
+    category: topography
+    crs: 32618
+    nodata: -9999.0
+    unit: m+NAVD88
+    source: >-
+      riverbeds_hierarchy_v4 with the COHANSEY rebuilt (2026-10-23; user agreed the fix
+      10-22): the same 18 reaches and files, Cohansey's swapped for
+      riverbed_hier_cohansey_v4c.tif. On the Cohansey only: tide-reduced crowdsourced
+      soundings (CSB AquaMap 2024-26, Ship John; lower bounds, no draft) + NOS D00081 as
+      tier 3; CUDEM is not a bed where its p5 is shallower than the ENC controlling depth
+      (1.5 / 1.2 / 0.3 m below MLLW) or > 1 m above the soundings; tiers 3-4 never put the
+      axis above the controlling depth. Lower 3.4 km: section mean 0.4-0.5 -> 2.5-4.9 m below
+      MLLW; the guessed section above slopes from that measured 3.5 m to 1.2 m at Bridgeton
+      (Greenwich ~3.0 m, was 1.2). logs/cohansey_fix_2026-10-23/,
+      logs/cohansey_sources_2026-10-22/. scripts/build_riverbeds_hierarchy_v4.py build
+      --reach cohansey --version v4c
+
 riverbed_cohansey_v4:
   data_type: RasterDataset
   uri: elevation_v4/riverbeds/riverbed_cohansey_v4.tif

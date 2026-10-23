@@ -63,6 +63,21 @@ approximation." Consistency is the point, not perfection. Per pixel of a reach's
   ``ONREACH_M`` of the channel) where one exists, else the mean of the two nearest to the
   reach's mouth.
 
+OPT-IN SURVEY CHECKS (2026-10-23; a reach sets them, every other reach is unchanged): the
+fill test cannot see a CUDEM water surface held below MLLW - 0.5 m, so where a reach has
+the evidence, CUDEM at a station is also NOT a bed when (a) its p5 is shallower than the
+charted CONTROLLING depth (``HReach.controlling``: the ENC's "controlling depth" notes — the
+shallowest centreline depth, a floor), or (b) its tier-3 bed is more than
+``survey_over_cudem_m`` deeper than CUDEM's p5. ``HReach.points`` adds tier-3 point sets
+(crowdsourced soundings, digitised NOS) BEFORE the reach's own, old reaches included, and
+re-measures the branch's kind on them. Tiers 3 and 4 never put the axis above a charted
+controlling depth. Station tables gain ``cudem_demoted`` / ``controlling_m``.
+
+VERSIONS (``--version``, 2026-10-23): outputs carry the tag; ``v4`` is FROZEN (the Phase 4
+beds and every bed before were built from it) and is never rewritten. ``build --reach X
+--version v4c`` writes X's ``_v4c`` rasters and a FULL ``riverbeds_hierarchy_v4c.vrt`` = the
+v4 members with X's swapped in. The Cohansey's checks exist only from ``v4c`` on.
+
 PAINTING. The hierarchy value is painted over the premier's untouched merge
 (``rebuild_subgrid.py --overlay``) only where it DIFFERS from the bed the model will
 otherwise see by more than ``TOL_M`` = 0.10 m — so where the merge already follows the
@@ -124,7 +139,10 @@ DATA = ROOT / "data"
 SRC = Path("/scratch/tpj8/nj_bight_sfincs_data/elevation_v4/bed_hierarchy")
 LOG_DIR = ROOT / "logs" / "refreeze_2026-10-05" / "bed_hierarchy"
 OUT = rb.RB  # data/elevation_v4/riverbeds (a symlink into scratch)
-TEMPLATE = gm.MODEL_BED  # v4_hot_plus/_template_sealed: the A+ merged bed (rotated)
+# the A+ merged bed (rotated): gm.MODEL_BED was v4_hot_plus/_template_sealed's copy, deleted
+# 10-11; A+ is a mask-only variant, so its merged bed IS the frozen mesh's (same inode as
+# v4_hot_plus_walls' template, checked 2026-10-23)
+TEMPLATE = DATA / "frozen_mesh_v4" / "subgrid" / "dep_subgrid_merged.tif"
 CUDEM = (
     DATA / "elevation_v3" / "cudem_nj_v3.vrt",  # the premier's order: NJ set first
     DATA / "elevation_v4" / "cudem_delaware_v4.vrt",
@@ -244,10 +262,25 @@ SANDY_YEAR = 2012
 _OWN_PREFIXES = ("riverbed_hier_", "riverbeds_hierarchy_")
 
 
+#: output version tag (``--version``): file names carry it, ``riverbed_hier_<reach>_<VER>.tif``
+VER = "v4"
+#: versions whose files a finished bed was built from — never rewritten (Phase 4's beds
+#: and everything before them read ``v4``; 2026-10-23)
+FROZEN_VERSIONS = ("v4",)
+
+
 def _out(name: str) -> Path:
     if not name.startswith(_OWN_PREFIXES):
         raise SystemExit(f"🔴 refusing to write {name}: not this tier's file")
-    return OUT / name
+    out = OUT / name
+    if out.exists() and any(
+        name.endswith(f"_{v}{out.suffix}") for v in FROZEN_VERSIONS
+    ):
+        raise SystemExit(
+            f"🔴 refusing to overwrite {name}: version frozen (built beds read it); "
+            "build a new one with --version <tag>"
+        )
+    return out
 
 
 # ── reach definitions ─────────────────────────────────────────────────────────────
@@ -263,6 +296,16 @@ class Nos:
     block: str  # NCEI block, e.g. "H10001-H12000"
     year: int
     plane: str  # "MLLW" | "MLW"
+
+
+@dataclass(frozen=True)
+class PointSet:
+    """Tier-3 soundings from a CSV (lon, lat, depth below MLLW) — CSB, a digitised NOS."""
+
+    path: str  # relative to ROOT
+    label: str
+    year: int  # epoch correction as ``_nos_points``
+    depth_col: str = "depth_m"
 
 
 @dataclass(frozen=True)
@@ -286,11 +329,49 @@ class HReach:
     nos: tuple[Nos, ...] = ()  # tier 3, nearest Sandy first
     enc: bool = True  # tier 3: ENC SOUNDG after the NOS surveys
     why: str = ""
+    # ── opt-in survey checks on CUDEM (2026-10-23; inert unless set) ──
+    points: tuple[PointSet, ...] = ()  # extra tier 3, before any other, old reaches too
+    #: CUDEM is NOT a bed at a station whose tier-3 bed is this much DEEPER than CUDEM's p5
+    survey_over_cudem_m: float | None = None
+    #: charted CONTROLLING depths (m below MLLW), mouth upward: ((lon, lat), depth) — each
+    #: holds from the previous end (or the mouth) to the station nearest (lon, lat). CUDEM
+    #: whose p5 is shallower is not a bed; tiers 3 and 4 never put the axis above it.
+    controlling: tuple[tuple[tuple[float, float], float], ...] = ()
 
 
 REACHES: tuple[HReach, ...] = (
     # ── the 10-05 reaches (same NHD polygons, centrelines and spans) ─────────────────
-    HReach("cohansey", "Cohansey River, mouth -> Bridgeton", old="cohansey"),
+    # 2026-10-23 (user agreed the fix 10-22; logs/cohansey_sources_2026-10-22/): CUDEM's
+    # lower Cohansey passes the fill test by a narrow strip but sits 4-7 m above the
+    # tide-reduced crowdsourced soundings (lower bounds: no draft offset) and above the
+    # ENC controlling depth (CTNARE, surveys 1988-2014). Only ``--version v4c`` builds
+    # it as such; the v4 overlay (Phase 4's beds) was built without these fields.
+    HReach(
+        "cohansey",
+        "Cohansey River, mouth -> Bridgeton",
+        old="cohansey",
+        points=(
+            PointSet(
+                "logs/cohansey_sources_2026-10-22/csb_mllw.csv",
+                "CSB AquaMap 2024-26 (tide-reduced, Ship John)",
+                2025,
+                "depth_mllw_min_m",
+            ),
+            PointSet(
+                "logs/cohansey_sources_2026-10-22/cohansey_D00081_in_river.csv",
+                "NOS D00081 (1987, MLLW)",
+                1987,
+            ),
+        ),
+        survey_over_cudem_m=1.0,
+        controlling=(
+            # "1.5 m to ~3450 m W of Tindalls Wharf (CO-OPS 8537353, -75.235 39.3783),
+            # then 1.2 m to 3573 m N of Fairton, thence 0.3 m to Bridgeton"
+            ((-75.235 - 3450 / 86000, 39.3783), 1.5),
+            ((-75.2196, 39.3815 + 3573 / 111000), 1.2),
+            ((-75.2340, 39.4300), 0.3),
+        ),
+    ),
     HReach("maurice", "Maurice River, Mauricetown -> Millville", old="gmrt"),
     HReach("mullica", "Mullica River, below Lower Bank -> Batsto", old="gmrt"),
     HReach("tuckahoe", "Tuckahoe River, above Tuckahoe", old="gmrt"),
@@ -1146,6 +1227,63 @@ def tier3_trace(r: HReach, br: Br, dat: Datum) -> None:
     br.kind = _measured_kind(br, xi_pts)
 
 
+def _pointset(s: PointSet, dat: Datum):
+    import pandas as pd
+
+    d = pd.read_csv(ROOT / s.path, usecols=["lon", "lat", s.depth_col]).dropna()
+    d = d[d[s.depth_col] > 0]
+    epoch = -nos.SLR_M_PER_YR * (nos.EPOCH_MID - s.year)
+    return (
+        d.lon.to_numpy(),
+        d.lat.to_numpy(),
+        dat.mllw + epoch - d[s.depth_col].to_numpy(),
+    )
+
+
+def tier3_points(r: HReach, br: Br, dat: Datum) -> None:
+    """``r.points`` as tier 3, BEFORE the branch's own (old-build / NOS / ENC) values; the
+    branch's kind is then measured on the new points (``_measured_kind``)."""
+    n = len(br.grid)
+    old = br.t3 if br.t3 is not None else np.full(n, np.nan)
+    oldsrc = br.t3src if br.t3src is not None else np.full(n, "", dtype=object)
+    t3 = np.full(n, np.nan)
+    src = np.full(n, "", dtype=object)
+    deep = np.full(n, np.nan)
+    xi_pts = []
+    for s in r.points:
+        prof, xy, npts, dp = _profile(br, *_pointset(s, dat))
+        new = np.isfinite(prof) & ~np.isfinite(t3)
+        t3[new], src[new], deep[new] = prof[new], s.label, dp[new]
+        if new.any() and xy is not None:
+            xi_pts.append(xy)
+        br.extra.setdefault("t3_notes", []).append(
+            f"{s.label}: {npts} soundings near the channel, {int(new.sum())} stations"
+        )
+    keep = ~np.isfinite(t3) & np.isfinite(old)
+    t3[keep], src[keep] = old[keep], oldsrc[keep]
+    if br.deep is not None:
+        deep = np.where(np.isfinite(deep), deep, br.deep)
+    br.t3, br.t3src, br.deep = t3, src, deep
+    if xi_pts:
+        br.kind = _measured_kind(br, xi_pts)
+
+
+def _controlling(r: HReach, br: Br) -> np.ndarray:
+    """Charted controlling depth (m below MLLW) per station; NaN where none is charted."""
+    c = np.full(len(br.grid), np.nan)
+    s0 = 0.0
+    for i, ((lon, lat), depth) in enumerate(r.controlling):
+        s1 = br.line.project(_utm(lon, lat))
+        if i == len(r.controlling) - 1:
+            s1 = br.grid[-1]
+        c[(br.grid >= s0) & (br.grid <= s1)] = depth
+        br.extra.setdefault("ctrl_notes", []).append(
+            f"controlling {depth:.1f} m below MLLW, stations {s0:.0f}..{s1:.0f} m"
+        )
+        s0 = s1
+    return c
+
+
 def _measured_kind(br: Br, xi_pts) -> str:
     """'section' when the soundings spread bank to bank (xi p25 < XI_SECTION)."""
     if not xi_pts:
@@ -1256,6 +1394,15 @@ def evaluate(r: HReach) -> Result:
                 notes.append(
                     f"{b.name}: soundings xi p25 {b.extra['xi_p25']:.2f} -> {b.kind}"
                 )
+    if r.points:
+        for b in brs:
+            b.extra.pop("t3_notes", None)
+            tier3_points(r, b, dat)
+            notes += [f"{b.name}: {x}" for x in b.extra.get("t3_notes", [])]
+            notes.append(
+                f"{b.name}: point sets -> kind {b.kind}"
+                + (f" (xi p25 {b.extra['xi_p25']:.2f})" if "xi_p25" in b.extra else "")
+            )
     val = np.full(ref.shape, np.nan, "float32")
     tier = np.zeros(ref.shape, "uint8")
     inspan = np.zeros(ref.shape, bool)
@@ -1305,6 +1452,24 @@ def evaluate(r: HReach) -> Result:
                 continue
             fill, relief[i], p5[i] = is_fill(v, dat.mllw)
             real[i] = not fill
+        # opt-in survey checks (2026-10-23): a CUDEM "bed" a survey or the chart
+        # contradicts is a water surface — the fill test alone cannot see it (§54 (j))
+        cdep = _controlling(r, b) if r.controlling else np.full(n, np.nan)
+        demoted = np.full(n, "", dtype=object)
+        if r.controlling:
+            bad = real & np.isfinite(cdep) & (p5 > dat.mllw - cdep)
+            real[bad], demoted[bad] = False, "controlling"
+            notes += [f"{b.name}: {x}" for x in b.extra.get("ctrl_notes", [])]
+            notes.append(
+                f"{b.name}: CUDEM above the controlling depth: {bad.sum()} st."
+            )
+        if r.survey_over_cudem_m is not None and b.t3 is not None:
+            bad = real & np.isfinite(b.t3) & (b.t3 < p5 - r.survey_over_cudem_m)
+            real[bad], demoted[bad] = False, "survey"
+            notes.append(
+                f"{b.name}: CUDEM > {r.survey_over_cudem_m:.1f} m above the soundings: "
+                f"{bad.sum()} st."
+            )
         has1 = np.isfinite(z1)
         has2 = ~has1 & np.isfinite(zc) & real[k]
         f1 = np.bincount(k, has1, minlength=n) / np.maximum(npx, 1)
@@ -1328,6 +1493,7 @@ def evaluate(r: HReach) -> Result:
             dc3 = np.where(
                 np.isfinite(cap), np.minimum(dc3, np.maximum(cap, dep3)), dc3
             )
+        dc3 = np.where(np.isfinite(cdep), np.maximum(dc3, cdep), dc3)  # charted floor
         d3 = dc3[k] * gg
         v3 = np.where(dep3[k] > 0, dat.mllw - d3, t3[k])
         tz[s3], v[s3] = 3, v3[s3]
@@ -1395,6 +1561,7 @@ def evaluate(r: HReach) -> Result:
             )
         s4 = (tz == 0) & np.isfinite(D4[k])
         dc4 = D4 / np.clip(mg, 0.4, 1.0)
+        dc4 = np.where(np.isfinite(cdep), np.maximum(dc4, cdep), dc4)  # charted floor
         v4 = dat.mllw - dc4[k] * gg
         tz[s4], v[s4] = 4, v4[s4]
         # station table
@@ -1412,6 +1579,8 @@ def evaluate(r: HReach) -> Result:
                 "cudem_flat_p25_p5": relief,
                 "cudem_p5": p5,
                 "cudem_real": real,
+                "cudem_demoted": demoted,
+                "controlling_m": cdep,
                 "t3_bed": t3,
                 "t3_src": b.t3src if b.t3src is not None else np.full(n, ""),
                 "section_mean_depth": Dsec,
@@ -1603,8 +1772,10 @@ def write_reach(res: Result) -> tuple[Path, Path]:
         "mllw_navd88": res.dat.mllw,
         "datum": res.dat.note,
     }
-    a = _write_tif(z, res.g, f"riverbed_hier_{r.name}_v4.tif", "float32", NODATA, tags)
-    b = _write_tif(t, res.g, f"riverbed_hier_{r.name}_tier_v4.tif", "uint8", 0, tags)
+    a = _write_tif(
+        z, res.g, f"riverbed_hier_{r.name}_{VER}.tif", "float32", NODATA, tags
+    )
+    b = _write_tif(t, res.g, f"riverbed_hier_{r.name}_tier_{VER}.tif", "uint8", 0, tags)
     return a, b
 
 
@@ -1642,17 +1813,41 @@ def build(names: list[str] | None) -> None:
                 print(f"   {k}: {v}")
         print("   " + "\n   ".join(res.notes))
         print(f"   ({time.time() - t0:.0f} s)")
-    tag = "" if names is None else "_subset"
+    tag = ("" if names is None else "_subset") + ("" if VER == "v4" else f"_{VER}")
     _atomic_csv(LOG_DIR / f"reaches{tag}.csv", pd.DataFrame(rows))
     prof = pd.concat(prof_rows, ignore_index=True)
     _atomic_csv(LOG_DIR / f"stations{tag}.csv", prof)
     _atomic_bytes(LOG_DIR / f"notes{tag}.md", ("\n\n".join(notes) + "\n").encode())
+    if names is not None and VER != "v4":
+        # a new VERSION of a subset: the full overlay = the v4 members, rebuilt ones swapped
+        for kind, built, nodata in (("", tifs, NODATA), ("tier_", tiers, 0)):
+            members = _vrt_members(OUT / f"riverbeds_hierarchy_{kind}v4.vrt")
+            swap = {
+                f"riverbed_hier_{r.name}_{kind}v4.tif": p for r, p in zip(todo, built)
+            }
+            new = [swap.get(m.name, m) for m in members]
+            assert sum(m.name in swap for m in members) == len(swap), "reach not in v4"
+            _write_vrt(f"riverbeds_hierarchy_{kind}{VER}.vrt", new, nodata)
     if names is None:
         cols = ["reach", "branch", "station_m", "tier", "section_mean_depth", "d_c"]
-        _atomic_csv(_out("riverbeds_hierarchy_v4_profiles.csv"), prof[cols])
-        _write_vrt("riverbeds_hierarchy_v4.vrt", tifs, NODATA)
-        _write_vrt("riverbeds_hierarchy_tier_v4.vrt", tiers, 0)
+        _atomic_csv(_out(f"riverbeds_hierarchy_{VER}_profiles.csv"), prof[cols])
+        _write_vrt(f"riverbeds_hierarchy_{VER}.vrt", tifs, NODATA)
+        _write_vrt(f"riverbeds_hierarchy_tier_{VER}.vrt", tiers, 0)
         fill_cases()
+
+
+def _cache_name(reach: str) -> str:
+    return f"{reach}.npz" if VER == "v4" else f"{reach}_{VER}.npz"
+
+
+def _vrt_members(vrt: Path) -> list[Path]:
+    import xml.etree.ElementTree as ET
+
+    root = ET.parse(vrt).getroot()
+    return [
+        (vrt.parent / e.text) if e.get("relativeToVRT") == "1" else Path(e.text)
+        for e in root.iter("SourceFilename")
+    ]
 
 
 def _save_npz(res: Result) -> None:
@@ -1661,7 +1856,7 @@ def _save_npz(res: Result) -> None:
     d.mkdir(parents=True, exist_ok=True)
     lines = [np.asarray(b.line.coords) for b in res.brs]
     np.savez_compressed(
-        d / f"{res.reach.name}.npz",
+        d / _cache_name(res.reach.name),
         ref=res.ref,
         val=res.val,
         tier=res.tier,
@@ -1797,7 +1992,7 @@ def maps(names: list[str] | None) -> None:
     (LOG_DIR / "maps").mkdir(parents=True, exist_ok=True)
     tcmap = ListedColormap(["#1f77b4", "#2ca02c", "#ff7f0e", "#d62728"])
     for r in [BY_NAME[n] for n in names] if names else REACHES:
-        f = SRC / "cache" / f"{r.name}.npz"
+        f = SRC / "cache" / _cache_name(r.name)
         if not f.exists():
             continue
         d = np.load(f)
@@ -1894,9 +2089,10 @@ def maps(names: list[str] | None) -> None:
         axp.set_ylabel("m NAVD88")
         axp.legend(ncol=8, fontsize=8)
         axp.grid(alpha=0.3)
-        fig.savefig(LOG_DIR / "maps" / f"{r.name}.png", dpi=70)
+        png = f"{r.name}.png" if VER == "v4" else f"{r.name}_{VER}.png"
+        fig.savefig(LOG_DIR / "maps" / png, dpi=70)
         plt.close(fig)
-        print(f"wrote maps/{r.name}.png")
+        print(f"wrote maps/{png}")
 
 
 # ── the fill test, domain-wide (a screen for reaches not built here) ─────────────
@@ -1983,7 +2179,7 @@ def _built_footprint():
 
     polys = []
     for r in REACHES:
-        f = SRC / "cache" / f"{r.name}.npz"
+        f = SRC / "cache" / _cache_name(r.name)
         if not f.exists():
             continue
         d = np.load(f)
@@ -2096,7 +2292,14 @@ def main() -> int:
         "stage", choices=["fetch", "build", "maps", "screen", "premier", "cases"]
     )
     ap.add_argument("--reach", action="append", choices=sorted(BY_NAME))
+    ap.add_argument(
+        "--version",
+        default="v4",
+        help="output tag (riverbed_hier_<reach>_<tag>.tif); v4 is frozen — 2026-10-23",
+    )
     a = ap.parse_args()
+    global VER  # noqa: PLW0603 (a CLI-wide output tag, read by the writers)
+    VER = a.version
     if a.stage == "fetch":
         fetch()
     elif a.stage == "build":
