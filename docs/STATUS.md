@@ -6,19 +6,22 @@ running, what is next, what is open. When an item closes, its durable fact goes 
 Git has the history. The campaign log this file grew into until 2026-09-29 (6,767 lines) is
 `git show d70dd1e:docs/STATUS.md`; FINDINGS cites it as "STATUS <date>".
 
-▶ **PICK UP (10-23 evening):** **Phase 4 = 62827640 RUNNING** since 13:41 (hal0383 + hal0399), staged 15:25 from the
-NEW template (verified: inflows / obs / weir match it in all 15 arms; Deal arm = the 61 + 1), solves on. → **62831580
-`p4_read`** (afterany). Both `expected.md5` re-written deliberately 10-23 after the gauge edits (backups
-`.bak_2026-10-23`) — re-write again after any edit to a listed file. **62908942 `cohansey_bed`** RUNNING (bed → check →
-two waves-off cuts → `logs/cohansey_fix_2026-10-23/tide_result.txt`, ~8 h). Then read `read/out/preflight.csv` FIRST,
-the report `reports/v4_first_results_2026-10-24/` against PREREG.md (gauge peaks there are RE-SCORED fresh from each
-run's his with the 10-23 rules — Great Kills −0.34, published crests — so the 10-11 `old` / `v3on` / `v3off` rows are
-comparable). **After the read, as ONE premier change (user 10-23):** adopt `candidate_thornes.weir` (full Keansburg
-system) + the Cohansey bed (if its tide test holds), and flag the three pocket marks 6155 / 6156 / 6133 as NOTED (leak
-path unknown; `metrics.py` noted list ~line 782 — NOT yet done). User to run: `rm -rf
-experiments/v4_refreeze/_template_sealed_pre_inflows_2026-10-06` (auto-mode refused; frees only ~0.1 G — hard links).
+▶ **PICK UP (10-24): PHASE 4 ATTEMPT 2 = 62963088 (2 nodes) + beds/tide 62954752 (1 node).** Attempt 1
+(62827640) lost all 12 rain-on v4 arms at STARTUP: quadtree `cnb` must come as netCDF, not the binaries
+(FINDINGS §59 (4); evidence `logs/rebaseline_2026-10-19/failed_62827640/`). **User 10-24: fold the planned premier
+change into the re-run** — all DONE in code: cnb → `sfincs_cnb.nc` (`nj_sfincs/infiltration.py`; engine-gated: log
+"Curve Number method - B"); `candidate_thornes.weir` ADOPTED (`logs/thornes_creek_2026-10-23/adopt_weir.sh`; 412 u/v);
+the Cohansey bed in every v4 bed (`_P4_BED` + the three bed arms → `*_creeks_cohansey`); 6133 / 6155 / 6156 NOTED
+(`leak` kind, `metrics.HWM_MARK_NOTES`; gallery draws □). **What runs:** 62954752 (`logs/cohansey_fix_2026-10-23/
+beds_and_tide.slurm`) = recipe check + `check_bed.py`, then the TIDE TEST FIRST (two 38 h waves-off cuts, base vs
+cand → `tide_result.txt`, a few hours in) beside the 3 bed builds (~5–6 h; each → `.bed_ok`). Phase 4: 10 arms
+staged in step A; the 3 bed arms (`arms_v4_late.txt`) are staged LATE by `pack_worker.sh` in wave 2 once their
+`.bed_ok` exists (24 h wait cap → SKIPPED). v3 pair NOT re-run (finished in attempt 1). Then `p4_read` 62963089
+(afterany). ✅ **TIDE RESULT IN (10-24 11:11, `tide_result.txt`, 38 h waves-off cuts):** Greenwich pre-storm range 0.752 → **1.405 m** vs obs 1.244 (ratio 0.605 → **1.129**: 0.49 m short → 0.16 m over); lag +7.7 → **−26.6 min** (model now EARLY); NO other gauge moved > 1 cm. Range much closer, timing worse — the overshoot + early tide point at the upper reach (still the slope GUESS above 3.6 km) being too deep / too smooth. ✅ **User 10-24: KEEP v4c in Phase 4** (range matters more than phase for peaks); tune the guessed upper reach later as its own change. Phase 4 SLURM start estimate 10-26 05:58. Attempt-1 files: `attempt1_62827640/` (the partial
+read report too). Old Cohansey job script `cohansey_bed_test.slurm` superseded by `beds_and_tide.slurm`. User to
+run: `rm -rf experiments/v4_refreeze/_template_sealed_pre_inflows_2026-10-06` (auto-mode refused; ~0.1 G).
 
-Last updated: **2026-10-23** — Thornes / NLD weir tested (watertight); Cohansey v4c bed built + in test; Great Kills −0.34 m sensor correction + 15 published USGS crests scored; Phase 4 running. 10-22: creek beds checked; Sluice nudged; Phase 4 ready. 10-21: Keansburg weir adopted. 10-20: desk checks done; gauge nudges; 6-min NOAA scoring; `fa_rainonly` retired; creek
+Last updated: **2026-10-24** — Phase 4 attempt 1 lost 12 arms (cnb binaries); re-run with the premier change folded in (cnb netCDF, NLD Keansburg weir, Cohansey bed, pocket marks noted). 10-23: Thornes / NLD weir tested (watertight); Cohansey v4c bed built + in test; Great Kills −0.34 m sensor correction + 15 published USGS crests scored; Phase 4 running. 10-22: creek beds checked; Sluice nudged; Phase 4 ready. 10-21: Keansburg weir adopted. 10-20: desk checks done; gauge nudges; 6-min NOAA scoring; `fa_rainonly` retired; creek
 beds (Beach Creek + 52 Delaware Bay creek groups, an ASSUMED bed); Keansburg weir candidate; HWM inventory + STN
 records + noted marks; the run gallery simplified (view runs, next-premier list). Before: 10-19 (Phase 4 arms +
 job drafted; gallery + one public site; depth convention).
@@ -66,14 +69,14 @@ test, code; details FINDINGS part 4 (h), §44, git log). Desktop backup re-run 1
   (MOTF false alarms: rain 79 / surge 27 / waves 22 of 128.5 km², twin-run split); creek beds = an ASSUMED bed at
   ≈ MLW (Salem River + Mannington Creek left out); HWM marks 6169 / 6202 (questioned) and 6121 / 6398 / 6188
   (run-up) kept, drawn hollow, `hwm_*_scored_excl_noted` beside the headline.
-- **Phase 4 (job 62757492, `logs/rebaseline_2026-10-19/`):** ONE 2-node emeraldrapids job, seeded engine
-  `…igseed-wmseed-1-gf11`, 40 h: stage 13 v4_refreeze + 2 v3 arms, 4 × 16-thread slots per node, each node
-  validates its own. Node 1 (`node1.txt`): v3 `p4-ref`, `p4-premier`, its repeat, the two `rhoa` null copies,
-  `bed-breach-wreck0`, `p4-nowaves`. Node 2: `+wave-nowavemaker`, `cnb` 1.0 / 2.38, `bed-nobuildings`,
-  `bed-breach-wreck165`, `src-deal-overtop`, `+rain-off` (added 10-20: the waves-ON rain / coastal twin; node 2
-  ends ~20 h), v3 `p4-ref-nowaves`. PREREG `PREREG.md`. Budget: v4 waves-on
-  ≈ 10 h on emeraldrapids. 🔴 A preempted-and-RESUMED waves-on arm is a different run (§44 (j)): check every
-  `restart_history.txt` before pairing; re-run a resumed premier / repeat / `rhoa` copy.
+- **Phase 4 (attempt 2 62963088, `logs/rebaseline_2026-10-19/`):** ONE 2-node emeraldrapids job, seeded engine
+  `…igseed-wmseed-1-gf11`, 40 h: stage 10 v4_refreeze arms, 4 × 16-thread slots per node, each node validates
+  its own. Node 1 (`node1.txt`): `p4-premier`, its repeat, the two `rhoa` null copies | wave 2: `bed-breach-wreck0`
+  (late-staged), `cnb` 1.0, `p4-nowaves`. Node 2: `+wave-nowavemaker`, `cnb` 2.38, `+rain-off`, `src-deal-overtop` |
+  wave 2: `bed-nobuildings`, `bed-breach-wreck165` (late-staged). v3 `p4-ref` / `p4-ref-nowaves` = attempt 1's.
+  PREREG `PREREG.md` (+ attempt-2 addendum). Budget: v4 waves-on ≈ 13 h at 16 threads (attempt 1's rain-off:
+  12.7 h) → two waves ≈ 27 h + staging + scoring. 🔴 A preempted-and-RESUMED waves-on arm is a different run
+  (§44 (j)): check every `restart_history.txt` before pairing; re-run a resumed premier / repeat / `rhoa` copy.
 - **Phase 5–6:** ⚠️ update `scripts/publish_gallery.py` `NEXT_PREMIER` when the new premier lands. Reads →
   frozen premier (user tags git), `docs/MODEL.md`, validation summary, research-group brief (incl. the
   status-notebook "rise above normal water" fig., `logs/notebook_qc_2026-10-11/baseline_check.py`), docs, backup.
