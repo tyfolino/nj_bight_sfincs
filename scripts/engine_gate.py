@@ -67,6 +67,7 @@ INPUT_GLOBS = (
     "sfincs.weir",
     "sfincs.crs",
     "sfincs_ini*",  # inifile (sea_level.py binary start); missed until 2026-10-11
+    "sfincs_cnb*",  # cnb infiltration netCDF + its meta (nj_sfincs/infiltration.py, 10-24)
     "sfincs.thd",
     "sfincs.drn",
     # regular-grid (binary-input) models, e.g. the hydromt example

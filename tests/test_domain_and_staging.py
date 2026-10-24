@@ -1808,7 +1808,7 @@ class TestV4Refreeze(unittest.TestCase):
 
         arms = EXPERIMENTS_BY_DOMAIN["v4_refreeze"]
         p4, old = arms["p4-premier"], arms["naccs-premier"]
-        self.assertEqual(p4.subgrid_from, "_subgrid_refreeze_lakes_min_creeks")
+        self.assertEqual(p4.subgrid_from, "_subgrid_refreeze_lakes_min_creeks_cohansey")
         self.assertEqual(p4.meteo_from, domain.DATA / "wind_v4" / "naccs_blend_p_era5")
         self.assertEqual(p4.cnb_effective, 1.5)
         self.assertTrue(p4.waves.wavemaker)

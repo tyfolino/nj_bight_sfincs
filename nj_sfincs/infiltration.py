@@ -4,11 +4,15 @@
 bands; ``cnb`` carries ``scs_Se`` in its restart file (rsttype 4) and recovers S during dry
 spells (SWMM eqs. 4-36 / 4-37). Read from v2.3.3 ``sfincs_infiltration.f90``:
 
-* inputs per ACTIVE point: ``smax`` [m] (the maximum retention), ``seff`` [m] (S at the
+* inputs per point: ``smax`` [m] (the maximum retention), ``seff`` [m] (S at the
   start of the first rain event) and ``ks`` [mm/h] (sets the recovery rate
-  ``kr = sqrt(ks / 25.4) / 75`` per hour). We write them as three binary ``real*4`` files in
-  the active-point order of ``sea_level.py`` (keys ``smaxfile`` / ``sefffile`` /
-  ``ksfile``), so the 2.2 GB quadtree file is never rewritten per arm.
+  ``kr = sqrt(ks / 25.4) / 75`` per hour). We write them into a small netCDF of their own
+  (``CNB_NC``, one value per quadtree face on ``mesh2d_nFaces``, 0 on inactive faces;
+  keys ``infiltration_file`` + ``infiltration_type = cnb``), so the 2.2 GB quadtree file is
+  never rewritten per arm. 🔴 NOT the binary ``smaxfile`` / ``sefffile`` / ``ksfile``: the
+  engine reads those on a REGULAR grid only and stops a quadtree model at startup
+  (``sfincs_infiltration.f90`` "can only be specified using the infiltrationfile Netcdf
+  format") — 12 Phase 4 arms died that way on 2026-10-23.
 * ``smax`` = the premier's own CN retention, ``scs`` [in] in the staged qtrfile x 0.0254, so
   the soil MAP is the premier's (NLCD 2012 x SSURGO HSG, CN II, water CN 100 -> S 0).
 * ``effective`` is the antecedent-moisture knob (logs/soil_moisture_2026-10-11/README.md §5:
@@ -30,9 +34,7 @@ from pathlib import Path
 
 import numpy as np
 
-SMAX_FILE = "sfincs_cnb_smax.bin"
-SEFF_FILE = "sfincs_cnb_seff.bin"
-KS_FILE = "sfincs_cnb_ks.bin"
+CNB_NC = "sfincs_cnb.nc"
 CNB_META = "sfincs_cnb.json"
 KSAT_CAP_UM_S = 100.0
 
@@ -77,10 +79,11 @@ def sample_ksat(
 def write_cnb_inputs(
     model_dir: Path | str, effective: float, ksat_path: Path | str, epsg: int, qtr: str
 ) -> dict:
-    """Write the three binaries + ``CNB_META`` into a STAGED dir; returns the meta.
+    """Write ``CNB_NC`` + ``CNB_META`` into a STAGED dir; returns the meta.
 
-    New inodes (write tmp + replace), so a hard-linked staged input is never written
-    through (CLAUDE.md §5).
+    The engine maps ``mesh2d_nFaces`` onto its points itself and refuses a length other
+    than the qtrfile's face count. New inodes (write tmp + replace), so a hard-linked
+    staged input is never written through (CLAUDE.md §5).
     """
     import xarray as xr
 
@@ -94,10 +97,16 @@ def write_cnb_inputs(
         fy = g["mesh2d_face_y"].values[act]
     ksat = sample_ksat(ksat_path, fx, fy, epsg)
     smax, seff, ks = cnb_arrays(scs, ksat, effective)
-    for name, arr in ((SMAX_FILE, smax), (SEFF_FILE, seff), (KS_FILE, ks)):
-        tmp = d / (name + ".tmp")
-        arr.tofile(tmp)
-        tmp.replace(d / name)
+    full = {}
+    for name, arr in (("smax", smax), ("seff", seff), ("ks", ks)):
+        v = np.zeros(act.shape, "<f4")
+        v[act] = arr
+        full[name] = ("mesh2d_nFaces", v)
+    tmp = d / (CNB_NC + ".tmp")
+    xr.Dataset(full).to_netcdf(
+        tmp, encoding={k: {"dtype": "float32", "_FillValue": None} for k in full}
+    )
+    tmp.replace(d / CNB_NC)
     land = smax > 0
     meta = {
         "effective": float(effective),
@@ -119,14 +128,12 @@ def write_cnb_inputs(
     return meta
 
 
-def cnb_keys(lines: list[str]) -> list[str]:
-    """The ``sfincs.inp`` lines that select ``cnb`` from the binaries. The engine picks
-    ``cnb`` from ``sefffile`` only when no ``infiltration_file`` / ``scsfile`` /
-    ``qinf`` > 0 / ``qinffile`` precedes it — the caller strips those."""
+def cnb_keys() -> list[str]:
+    """The ``sfincs.inp`` lines that select ``cnb`` from ``CNB_NC`` (the caller strips any
+    other infiltration keys first)."""
     return [
-        f"{'smaxfile':<21}= {SMAX_FILE}",
-        f"{'sefffile':<21}= {SEFF_FILE}",
-        f"{'ksfile':<21}= {KS_FILE}",
+        f"{'infiltration_file':<21}= {CNB_NC}",
+        f"{'infiltration_type':<21}= cnb",
     ]
 
 

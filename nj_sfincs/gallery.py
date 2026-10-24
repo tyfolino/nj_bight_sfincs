@@ -1441,8 +1441,8 @@ def fig_hwm(c: _Ctx) -> tuple[dict, dict]:
     from .validate.metrics import HWM_MARK_NOTES
 
     kind = np.array([HWM_MARK_NOTES.get(i, ("", ""))[0] for i in ids])
-    qn, ru = kind == "questioned", kind == "runup"
-    noted = qn | ru
+    qn, ru, lk = kind == "questioned", kind == "runup", kind == "leak"
+    noted = qn | ru | lk
     keepn = ~noted
     r_ex = res[keepn]
     ex_line = (
@@ -1452,8 +1452,14 @@ def fig_hwm(c: _Ctx) -> tuple[dict, dict]:
         else ""
     )
     note_ids = (
-        "questioned: " + ", ".join(sorted(ids[qn])) + "; " if qn.any() else ""
-    ) + ("wave run-up (upper bound): " + ", ".join(sorted(ids[ru])) if ru.any() else "")
+        ("questioned: " + ", ".join(sorted(ids[qn])) + "; " if qn.any() else "")
+        + (
+            "wave run-up (upper bound): " + ", ".join(sorted(ids[ru]))
+            if ru.any()
+            else ""
+        )
+        + ("; unmodelled leak: " + ", ".join(sorted(ids[lk])) if lk.any() else "")
+    )
     _norm_col = cmap_diverging()
 
     def _rgba(v):
@@ -1462,7 +1468,7 @@ def fig_hwm(c: _Ctx) -> tuple[dict, dict]:
         )
 
     def _hollow(ax, x, y, v, k, s):
-        for sel, mk in ((k & qn, "o"), (k & ru, "^")):
+        for sel, mk in ((k & qn, "o"), (k & ru, "^"), (k & lk, "s")):
             if sel.any():
                 ax.scatter(
                     x[sel],
@@ -1575,6 +1581,16 @@ def fig_hwm(c: _Ctx) -> tuple[dict, dict]:
                 mec=INK,
                 mew=1.4,
                 label="wave run-up mark (upper bound)",
+            ),
+            Line2D(
+                [],
+                [],
+                marker="s",
+                ls="",
+                mfc="none",
+                mec=INK,
+                mew=1.4,
+                label="behind a watertight levee (leak unmodelled)",
             ),
         ],
         loc="outside lower left",
@@ -1709,7 +1725,7 @@ def fig_hwm(c: _Ctx) -> tuple[dict, dict]:
         "caption": (
             f"Left: measured vs modelled level at each scored mark ({label}); dotted = "
             "±0.5 m; ✕ = model dry (scored at the lowest ground in the window); ring = "
-            f"lake_outlet_blocked; hollow ○ questioned / △ wave run-up ({note_ids or 'none'})"
+            f"lake_outlet_blocked; hollow ○ questioned / △ wave run-up / □ leak ({note_ids or 'none'})"
             ", kept in the score. Right: per-basin bias (bar) and RMSE (tick), basins "
             "from Domain.hwm_rules (first match wins), sorted by bias."
         ),

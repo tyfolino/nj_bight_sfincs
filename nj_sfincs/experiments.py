@@ -702,8 +702,10 @@ _V3.update(
 #   null-rhoa1.2501 / 1.2499+p4-premier   the waves-on noise band through the peak (10-17)
 # Horton infiltration: dropped from Phase 4 (user 10-19; the cnb ladder brackets infiltration).
 # The *_creeks beds (2026-10-21): each Phase 4 bed + Beach Creek + the Delaware Bay creek beds
-# (logs/creek_beds_2026-10-20/; FINDINGS part 4 (h)).
-_P4_BED = "_subgrid_refreeze_lakes_min_creeks"
+# (logs/creek_beds_2026-10-20/; FINDINGS part 4 (h)). The *_creeks_cohansey beds (2026-10-24,
+# user: folded into the Phase 4 re-run with the NLD Keansburg weir and the cnb netCDF fix):
+# the same recipes with riverbeds_hierarchy_v4c (logs/cohansey_fix_2026-10-23/).
+_P4_BED = "_subgrid_refreeze_lakes_min_creeks_cohansey"
 _NACCS_BLEND_P_ERA5 = DATA / "wind_v4" / "naccs_blend_p_era5"
 _P4_WAVES = replace(
     _V4_PREMIER_WAVES,
@@ -718,7 +720,8 @@ _p4 = replace(
     name="p4-premier",
     waves=_P4_WAVES,
     description="The new v4 premier candidate: naccs-premier on the lower-only lake-fixed bed "
-    "(_subgrid_refreeze_lakes_min_creeks), curve number with recovery (cnb, AMC factor 1.5), the "
+    "(_subgrid_refreeze_lakes_min_creeks_cohansey), the Keansburg levee system on the "
+    "USACE NLD line (data/structures_v4/sfincs.weir, 10-24), curve number with recovery (cnb, AMC factor 1.5), the "
     "NACCS-blend wind with ERA5 pressure inside the blend (data/wind_v4/naccs_blend_p_era5), "
     "the moved inflows (template 10-17) and the snap-seaward-of-beach wavemaker line "
     "(8 pieces, 157.7 km; logs/wavemaker_v4_2026-10-17/)." + _P4_WHY,
@@ -771,18 +774,19 @@ _V4_REFREEZE.update(
         "bed-nobuildings+p4-premier": _p4_arm(
             "bed-nobuildings+p4-premier",
             "p4-premier on the same bed WITHOUT the building burn "
-            "(_subgrid_refreeze_lakes_min_nobuildings_creeks: the 10-17 recipe minus "
-            "bed_buildings_v4_cap10; logs/nobuildings_2026-10-19/). Pair: p4-premier.",
-            subgrid_from="_subgrid_refreeze_lakes_min_nobuildings_creeks",
+            "(_subgrid_refreeze_lakes_min_nobuildings_creeks_cohansey: the premier's recipe "
+            "minus bed_buildings_v4_cap10; logs/nobuildings_2026-10-19/). Pair: p4-premier.",
+            subgrid_from="_subgrid_refreeze_lakes_min_nobuildings_creeks_cohansey",
         ),
         **{
             f"bed-breach-{v}+p4-premier": _p4_arm(
                 f"bed-breach-{v}+p4-premier",
-                f"p4-premier on the breach bed _subgrid_breach_{v}_creeks: Wreck Pond channel at "
+                f"p4-premier on the breach bed _subgrid_breach_{v}_creeks_cohansey: Wreck Pond "
+                "channel at "
                 f"{'0.0' if v == 'wreck0' else '1.65'} m NAVD88 + the Mantoloking cuts "
                 "(post-storm EAARL-B), n 0.025 on the cut, open all run — an upper bound "
                 "(FINDINGS part 4 (h)). Pair: p4-premier.",
-                subgrid_from=f"_subgrid_breach_{v}_creeks",
+                subgrid_from=f"_subgrid_breach_{v}_creeks_cohansey",
             )
             for v in ("wreck0", "wreck165")
         },

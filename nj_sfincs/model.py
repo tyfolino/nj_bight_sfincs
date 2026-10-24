@@ -1912,9 +1912,9 @@ def _infiltration_keys(
 
 
 def _cnb_keys(lines: list[str], model_dir: Path, qtr: str, effective: float) -> str:
-    """``cnb`` from three binaries (``nj_sfincs.infiltration``); the qtrfile keeps ``scs``
-    but no ``infiltration_file`` points at it, so the engine selects ``cnb`` via
-    ``sefffile``. ``storecumprcp = 1`` keeps the cumulative maps the scorer reads."""
+    """``cnb`` from its own small netCDF (``nj_sfincs.infiltration.CNB_NC``); the qtrfile
+    keeps ``scs`` but no key points at it. ``storecumprcp = 1`` keeps the cumulative maps
+    the scorer reads."""
     from nj_sfincs import infiltration as _inf
     from nj_sfincs.provenance import catalog_uri
 
@@ -1934,7 +1934,7 @@ def _cnb_keys(lines: list[str], model_dir: Path, qtr: str, effective: float) -> 
         f"{meta['ks_missing_on_land']:.0%} of infiltrating points",
         flush=True,
     )
-    lines = lines + _inf.cnb_keys(lines) + [f"{'storecumprcp':<21}= 1"]
+    lines = lines + _inf.cnb_keys() + [f"{'storecumprcp':<21}= 1"]
     return "\n".join(lines) + "\n"
 
 

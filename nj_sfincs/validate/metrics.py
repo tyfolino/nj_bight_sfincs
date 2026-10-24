@@ -777,7 +777,9 @@ def hwm_metrics(
 #: part 4 (h); user: keep them, mark them, report a score without them BESIDE the headline).
 #: "questioned" = the mark's level is doubtful on the evidence (an inference — USGS rates both
 #: Good / Excellent); "runup" = wave run-up / splash / overwash, an UPPER bound a still-water
-#: model should not reach. A fact about the MARK, so not per domain. Never drops a mark.
+#: model should not reach; "leak" = a sound mark behind a structure the model holds WATERTIGHT
+#: when reality leaked (path unknown) — a fact about the MODEL, on the domains with that
+#: structure only (user 2026-10-23/24). Never drops a mark.
 HWM_MARK_NOTES: dict[str, tuple[str, str]] = {
     "6169": (
         "questioned",
@@ -801,6 +803,21 @@ HWM_MARK_NOTES: dict[str, tuple[str, str]] = {
     "6188": (
         "runup",
         "Ortley Beach: mid-island, 450 m behind the dune (overwash); no photos",
+    ),
+    # the Keansburg pocket behind the full NLD levee system (adopted 10-24,
+    # logs/thornes_creek_2026-10-23/): watertight as drawn, fills by rain only; observed
+    # ~1.55 m — reality leaked ~1 m (press: dunes breached; dune erosion not modelled)
+    "6155": (
+        "leak",
+        "Keansburg pocket: behind the NLD levee system, leak path unknown",
+    ),
+    "6156": (
+        "leak",
+        "Keansburg pocket: behind the NLD levee system, leak path unknown",
+    ),
+    "6133": (
+        "leak",
+        "Keansburg pocket: behind the NLD levee system, leak path unknown",
     ),
 }
 

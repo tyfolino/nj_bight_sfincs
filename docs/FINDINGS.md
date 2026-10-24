@@ -463,6 +463,14 @@ CLAUDE.md §5.
       rounded file. `model.restore_weir` now puts the pre-write bytes back
       (`tests/test_weir_restore.py`); the 7 `v4_refreeze` arms were restored by hand before
       their solves. A v3 arm staged after 10-07 differs from the premier by this rounding.
+    - **v4 since 2026-10-24 (user): the full Keansburg system on the USACE NLD centreline**
+      (`data/structures_v4/sfincs.weir` = `keansburg_thornes_nld_2026-10-23.weir`; why:
+      `logs/thornes_creek_2026-10-23/README.md`) — + the Thornes Creek reach, the navigation gate
+      on the NLD line, the Pews railroad stop logs CLOSED. Two ASSUMPTIONS: stop logs in, gate
+      closed. Engine: 412 structure u/v points. As drawn the pocket is WATERTIGHT (it fills by
+      rain only; observed ~1 m more — dune breaching is not modelled), so its three marks
+      6133 / 6155 / 6156 are NOTED `leak` marks (`metrics.HWM_MARK_NOTES`): they no longer test
+      the levees.
     The nowaves weir run scores HWM RMSE 0.3867 (`extent_admissible=False`). The weir
     lives in the TEMPLATE, not in the premier alone, because a premier-only weir would
     confound premier-vs-nowaves forever.
@@ -1385,7 +1393,13 @@ CLAUDE.md §5.
     staging refuses any active face with S ≥ 900 in. (3) Restart files do not carry `cumprcp`
     / `cuminf`, so a solve resumed during the rain restarts with an empty soil (warned, not
     gated). `cna` only ever subtracts from RAIN, never from surge or river water. Check the log
-    for "Curve Number method - A".
+    for "Curve Number method - A". (4) On a QUADTREE mesh every spatial infiltration input must
+    come through `infiltration_file` (netCDF, one value per face on `mesh2d_nFaces`, ALL faces) +
+    `infiltration_type`; the binary `scsfile` / `smaxfile` / `sefffile` / `ksfile` are
+    regular-grid only and STOP the run at startup ("can only be specified using the
+    infiltrationfile Netcdf format"). `cnb` reads `smax` / `seff` / `ks` from its own small
+    `sfincs_cnb.nc` (`nj_sfincs/infiltration.py`); its soil state survives a restart (rsttype 4).
+    Log: "Curve Number method - B". Phase 4's first attempt lost 12 arms to the binaries (10-23).
     **Which methods drain STANDING water (engine source, `sfincs_infiltration.f90`, 2026-10-15):**
     `cna`, `cnb` and `gai` (Green-Ampt) act on each step's RAIN only — infiltration stops when
     the rain stops, so no curve-number premier drains surge or ponded rain; `hor` (Horton)

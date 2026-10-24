@@ -72,19 +72,27 @@ class TestCnbArrays(unittest.TestCase):
 
 
 class TestCnbFiles(unittest.TestCase):
-    def test_binaries_are_active_points_in_face_order(self):
+    def test_netcdf_is_every_face_zero_where_inactive(self):
+        # the engine (quadtree) reads smax / seff / ks on mesh2d_nFaces, ALL faces, and
+        # stops at startup on the binary smaxfile / sefffile / ksfile (2026-10-23)
+        import xarray as xr
+
         from nj_sfincs import infiltration as inf
 
         with tempfile.TemporaryDirectory() as t:
             d, tif = _toy_dir(Path(t))
             meta = inf.write_cnb_inputs(d, 1.0, tif, 32618, "sfincs.nc")
-            smax = np.fromfile(d / inf.SMAX_FILE, "<f4")
-            ks = np.fromfile(d / inf.KS_FILE, "<f4")
-        # active = faces 0, 1, 3, 4 (mask > 0), in that order
-        np.testing.assert_allclose(smax, [0.0254, 0.0508, 0.0, 0.0], rtol=1e-6)
+            with xr.open_dataset(d / inf.CNB_NC) as nc:
+                self.assertEqual(set(nc.data_vars), {"smax", "seff", "ks"})
+                self.assertEqual(nc["smax"].dims, ("mesh2d_nFaces",))
+                self.assertEqual(nc["smax"].dtype, np.float32)
+                self.assertNotIn("_FillValue", nc["smax"].encoding)
+                smax, ks = nc["smax"].values, nc["ks"].values
+        # faces 0, 1, 3, 4 active (mask > 0); face 2 inactive -> 0
+        np.testing.assert_allclose(smax, [0.0254, 0.0508, 0.0, 0.0, 0.0], rtol=1e-6)
         # face 0 -> pixel (row 0, col 0) = 1; face 1 -> (1, 1) = 500 -> cap 100;
         # face 3 -> (0, 2) = 3; face 4 off the raster -> 0
-        np.testing.assert_allclose(ks, [3.6, 360.0, 10.8, 0.0], rtol=1e-6)
+        np.testing.assert_allclose(ks, [3.6, 360.0, 0.0, 10.8, 0.0], rtol=1e-6)
         self.assertEqual(meta["active_points"], 4)
         self.assertEqual(meta["infiltrating_points"], 2)
 
@@ -116,11 +124,10 @@ class TestCnbInpKeys(unittest.TestCase):
             }
             (d / "sfincs.inp").write_text(out)
             label = provenance.infiltration_label(d)
-        for gone in ("infiltration_file", "infiltration_type", "scsfile"):
+        for gone in ("scsfile", "smaxfile", "sefffile", "ksfile"):
             self.assertNotIn(gone, keys)
-        self.assertEqual(keys["sefffile"], "sfincs_cnb_seff.bin")
-        self.assertEqual(keys["smaxfile"], "sfincs_cnb_smax.bin")
-        self.assertEqual(keys["ksfile"], "sfincs_cnb_ks.bin")
+        self.assertEqual(keys["infiltration_file"], "sfincs_cnb.nc")
+        self.assertEqual(keys["infiltration_type"], "cnb")
         self.assertEqual(keys["storecumprcp"], "1")
         self.assertEqual(label, "cnb:e1.5")
 
