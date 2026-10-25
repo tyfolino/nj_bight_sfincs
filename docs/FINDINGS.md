@@ -1313,6 +1313,12 @@ CLAUDE.md §5.
     (the Cohansey above its mouth: no eHydro, NOS stops at the mouth, ENC shows one 0–1.8 m
     band) a stated depth below MLLW is the only material; VDatum's API returns HTTP 412 along
     this whole coast, so MLLW comes from the CO-OPS stations that publish both datums.
+    **The Cohansey fix (`riverbeds_hierarchy_v4c`, 2026-10-23; in every Phase 4 bed, user
+    10-24; `logs/cohansey_fix_2026-10-23/`):** crowdsourced soundings + D00081 as a third tier
+    and the ENC controlling depths as a thalweg floor take the lower 3.4 km from 0.4 to
+    2.5–4.9 m below MLLW. Greenwich pre-storm range 0.605 → 1.129 of observed (1.244 m), lag
+    +7.7 → −26.6 min, no other gauge moved > 1 cm (38 h waves-off cuts). Above 3.6 km the bed
+    is still a SLOPE GUESS — the overshoot and early tide point at it being too deep / smooth.
     (k) **CUDEM has none of the dredged harbour trench**: the Kill van Kull, Newark Bay and the
     port channels read 4–16 m shallower than the 2012 surveys (~56 Mm³ of channel missing).
     (l) **The main federal channels are fine**: the Delaware from the mouth to Trenton, the C&D,
@@ -1733,6 +1739,10 @@ correction on a boundary that waves already push up. The builder still supports
 **Two things the builder now emits that it did not before:** per-arm coverage (aggregate
 coverage hides an empty arm) and a **support-geometry sha16**, so a run can be traced to the
 point set that forced it the way the domain fingerprint traces it to a mesh.
+
+**The NACCS synthetic storms carry NO rain** — surge (and waves) only. A run forced by one
+alone is a surge scenario, not a compound one; rain must come from somewhere else, and any
+outward description (a proposal, a pitch) must say so.
 
 ---
 

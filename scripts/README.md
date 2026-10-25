@@ -20,6 +20,7 @@ Every script reads `NJ_DOMAIN` unless its row names a domain. Run from the repo 
 
 | script | what it does | status |
 |---|---|---|
+| `campaign_check.py` | ⭐ The morning check-in, READ-ONLY: queue + start estimates, every pending job's EXPECT_MD5 checked now, finished jobs (non-COMPLETED / `halk` flagged), maintenance overlap, home quota; `--guarded` = JSON of files queued jobs will check (feeds `.claude/hooks/guard.py`) | live |
 | `accept_domain.py` | One read-only command: is this domain fit to run? | live |
 | `freeze_mesh.py` | Build the static mesh once and freeze it (via `hpc/freeze_mesh.slurm`) | live |
 | `probe_mesh_size.py` | Cell counts per size before paying for the subgrid | live |

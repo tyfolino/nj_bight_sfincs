@@ -112,7 +112,13 @@ python scripts/verify_port.py                   # ⭐ the port gate (see STATUS)
 python run_experiments.py --experiments <arm> --check       # READ-ONLY
 python run_experiments.py --experiments <arm> --slurm --slurm-args "--time=12:00:00"
 python run_experiments.py --experiments <arm> --validate-only
+
+python scripts/campaign_check.py                # ⭐ the check-in: queue, md5 guards, halk, maintenance, quota
 ```
+
+✅ **`.claude/hooks/guard.py` (2026-10-25) enforces three traps below** on every Bash / Edit / Write:
+ASK before an edit to a file a PENDING job's EXPECT_MD5 will check, DENY `run_experiments.py`
+`--inputs-only` / `--no-run` / `--dry-run`, DENY `git commit`. A guard bug lets the call through.
 
 ⚠️ **This session may be on a LOGIN node** (`hostname` = `amarel*`). Anything heavier than
 a grep — scoring, floodmaps, figures, the test suite — goes through `srun` on an

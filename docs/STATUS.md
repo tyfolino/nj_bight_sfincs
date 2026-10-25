@@ -6,25 +6,15 @@ running, what is next, what is open. When an item closes, its durable fact goes 
 Git has the history. The campaign log this file grew into until 2026-09-29 (6,767 lines) is
 `git show d70dd1e:docs/STATUS.md`; FINDINGS cites it as "STATUS <date>".
 
-▶ **PICK UP (10-24): PHASE 4 ATTEMPT 2 = 62963088 (2 nodes) + beds/tide 62954752 (1 node).** Attempt 1
-(62827640) lost all 12 rain-on v4 arms at STARTUP: quadtree `cnb` must come as netCDF, not the binaries
-(FINDINGS §59 (4); evidence `logs/rebaseline_2026-10-19/failed_62827640/`). **User 10-24: fold the planned premier
-change into the re-run** — all DONE in code: cnb → `sfincs_cnb.nc` (`nj_sfincs/infiltration.py`; engine-gated: log
-"Curve Number method - B"); `candidate_thornes.weir` ADOPTED (`logs/thornes_creek_2026-10-23/adopt_weir.sh`; 412 u/v);
-the Cohansey bed in every v4 bed (`_P4_BED` + the three bed arms → `*_creeks_cohansey`); 6133 / 6155 / 6156 NOTED
-(`leak` kind, `metrics.HWM_MARK_NOTES`; gallery draws □). **What runs:** 62954752 (`logs/cohansey_fix_2026-10-23/
-beds_and_tide.slurm`) = recipe check + `check_bed.py`, then the TIDE TEST FIRST (two 38 h waves-off cuts, base vs
-cand → `tide_result.txt`, a few hours in) beside the 3 bed builds (~5–6 h; each → `.bed_ok`). Phase 4: 10 arms
-staged in step A; the 3 bed arms (`arms_v4_late.txt`) are staged LATE by `pack_worker.sh` in wave 2 once their
-`.bed_ok` exists (24 h wait cap → SKIPPED). v3 pair NOT re-run (finished in attempt 1). Then `p4_read` 62963089
-(afterany). ✅ **TIDE RESULT IN (10-24 11:11, `tide_result.txt`, 38 h waves-off cuts):** Greenwich pre-storm range 0.752 → **1.405 m** vs obs 1.244 (ratio 0.605 → **1.129**: 0.49 m short → 0.16 m over); lag +7.7 → **−26.6 min** (model now EARLY); NO other gauge moved > 1 cm. Range much closer, timing worse — the overshoot + early tide point at the upper reach (still the slope GUESS above 3.6 km) being too deep / too smooth. ✅ **User 10-24: KEEP v4c in Phase 4** (range matters more than phase for peaks); tune the guessed upper reach later as its own change. Phase 4 SLURM start estimate 10-26 05:58. Attempt-1 files: `attempt1_62827640/` (the partial
-read report too). Old Cohansey job script `cohansey_bed_test.slurm` superseded by `beds_and_tide.slurm`. User to
-run: `rm -rf experiments/v4_refreeze/_template_sealed_pre_inflows_2026-10-06` (auto-mode refused; ~0.1 G).
+▶ **PICK UP (10-25): wait for PHASE 4 ATTEMPT 2 = 62963088** (PENDING, Priority; start est. **10-26 22:52**, 40 h
+limit → done by ~10-28 15:00), then `p4_read` 62963089 (afterany). Every input is ready: the 3 late beds built
+10-24 (62954752, `.bed_ok` present); both EXPECT_MD5 files pass (10-25). 🔴 **Don't edit a guarded file until
+62963088 STARTS** (`python scripts/campaign_check.py` lists them). When it starts: check `sacct` NodeList, then each
+arm's `restart_history.txt` before pairing (Phase 4 below).
 
-Last updated: **2026-10-24** — Phase 4 attempt 1 lost 12 arms (cnb binaries); re-run with the premier change folded in (cnb netCDF, NLD Keansburg weir, Cohansey bed, pocket marks noted). 10-23: Thornes / NLD weir tested (watertight); Cohansey v4c bed built + in test; Great Kills −0.34 m sensor correction + 15 published USGS crests scored; Phase 4 running. 10-22: creek beds checked; Sluice nudged; Phase 4 ready. 10-21: Keansburg weir adopted. 10-20: desk checks done; gauge nudges; 6-min NOAA scoring; `fa_rainonly` retired; creek
-beds (Beach Creek + 52 Delaware Bay creek groups, an ASSUMED bed); Keansburg weir candidate; HWM inventory + STN
-records + noted marks; the run gallery simplified (view runs, next-premier list). Before: 10-19 (Phase 4 arms +
-job drafted; gallery + one public site; depth convention).
+Last updated: **2026-10-25** — queue check; STATUS cleaned (stale attempt-1 / weir-decision entries removed);
+Cohansey v4c result → FINDINGS §54 (j). 10-24: Phase 4 attempt 1 lost 12 arms (cnb binaries); re-run with the
+premier change folded in (cnb netCDF, NLD Keansburg + Thornes weir, Cohansey v4c bed, pocket marks noted).
 
 ---
 
@@ -37,23 +27,17 @@ job drafted; gallery + one public site; depth convention).
   10 marks outside ±0.5 m, inventoried in FINDINGS part 4 (h).
 - **Heading for:** the Phase 4 re-baseline (below), before maintenance 11-10.
 
-## Running (10-22)
+## Running (10-25)
 
-- ✅ **`*_creeks` beds DONE 10-21** (62776026, hal0398, 5 h 18; pick 62778427): all four beds
-  changed identically — 9,486 faces, all within 245 m of a fix box, 0 raised; **Beach Creek's +0.85 m sill is gone**
-  (channel faces behind it: 22 needed > +0.85 m, now 253 of 261 connect below −0.5, 8 at +0.3). Sluice / Dennis paint
-  landed (corridor faces median +0.34 → −1.07) but the gauge pool is painted at NJ 10 ft's −0.24 constant, so the
-  gauge side connects at −0.23 m, not −0.5: nudged at −0.2 (obs low water) to face 3761273, 33 m
-  (`logs/creek_beds_2026-10-20/sluice_B.txt`). Its tide trough is the ASSUMED bed's −0.24 — read the trough with that:
-  observed lows reach −0.43 (10-28 06:00), so the deepest troughs cannot be matched there.
-- ✅ **Keansburg weir ADOPTED 10-21** (test 62759323, 60 h waves-off cuts, `test_result.txt`): pocket 6155 / 6156 /
-  6133 −0.46 / −0.91 / −0.93 m (still +0.4…+0.9 m over obs), outside 6154 +0.10, 6157 / 6158 / 6132 0.00.
-  `candidate_sfincs.weir` (Pews railroad gap OPEN) → `data/structures_v4/sfincs.weir` + the v4_refreeze template
-  (new inodes; old file `sfincs_2026-10-06.weir`; PROVENANCE updated; `frozen_mesh_v4` unchanged). Structure
-  u/v points 221 → 339 logged (emulator 338). Next: **`candidate_thornes.weir` (10-23, `logs/thornes_creek_2026-10-23/README.md`)** from the USACE NLD RTK centreline (our 10-20 traces match it to 1–7 m): + the Thornes Creek reach (1.93 km, incl. ~440 m I-wall, never drawn), the navigation gate moved onto the NLD line at ~5.5 m (old weir detoured inland at 2.90), the Pews railroad stop logs closed at the NLD 4.4 m. 🔴 Two ASSUMPTIONS (user 10-23), both pushing the pocket toward its marks, so those marks no longer test the levees: railroad stop logs IN (now the Henry Hudson Trail; NJDEP "no longer operable"), navigation gate CLOSED AND HELD (2013 wing-wall repair). Static fill at the pocket 2.09 → 3.28 (now over the Pews levee's real low spot, NLD 3.23); emulator 338 → 411 u/v. Test 62906516 DONE: 412 u/v logged (emulator 411), outside marks ≤ +0.02 — but the pocket now fills by RAIN only (~0.44 m at its channel faces by h60; mark faces at their ground) vs observed 1.55: the system as drawn is WATERTIGHT, reality leaked ~1 m (press: dunes breached; dune erosion not modelled). The test's `compare.py` used max-within-50 m, which reads dry high faces' rain film (6155 "2.44" = zb 2.43) — the standard HWM scorer's median is not affected. Decision pending (user): adopt as is + flag the pocket marks, or not. Do not touch the template's weir until Phase 4 has STAGED.
-- ⏳ **62827640 `phase4`** queued 10-22 (replaces the held 62757492; `expected.md5` refreshed, old `.bak_2026-10-19`).
-  → **62831580 `p4_read`** (afterany, 240 G, ≤ 6 h): preflight, the repeat bit-for-bit, residuals for 18 runs (`phase4`
-  preset), 17 zsmax pairs, report, null band, nudged gauges, PREREG marks. Pieces tested 10-22 on the 10-11 runs.
+- ⏳ **62963088 `phase4`** (attempt 2, `logs/rebaseline_2026-10-19/phase4.slurm`, EXPECT_MD5 `expected.md5`) →
+  **62963089 `p4_read`** (`read/read_phase4.slurm`, afterany, 240 G, ≤ 6 h; EXPECT_MD5 `read/expected.md5`):
+  preflight, the repeat bit-for-bit, residuals (`phase4` preset), zsmax pairs, report, null band, nudged gauges,
+  PREREG marks. Attempt 1 (62827640 + its read 62831580): `attempt1_62827640/`, `failed_62827640/`.
+- ⚠️ **Sluice Creek gauge** reads an ASSUMED bed (pool painted at −0.24 m; nudged 10-22, FINDINGS part 4): observed
+  lows reach −0.43 m, so its deepest troughs cannot be matched — read Phase 4's Sluice trough with that.
+- ⚠️ **Keansburg pocket** (weir = NLD centreline, ADOPTED 10-24, FINDINGS §38): as drawn it is watertight
+  and fills by rain only; 6133 / 6155 / 6156 are noted `leak` marks. The two weir ASSUMPTIONS (railroad stop logs in,
+  navigation gate held) push the pocket toward its marks — those marks do not test the levees.
 - 🔴 Side-by-side `engine_gate.py run` copies need `taskset` on disjoint cores (FINDINGS §44 (i)).
 
 ## ⭐ FINAL AUDIT → "the v4 premier is ready" (plan approved 10-15)
@@ -84,13 +68,8 @@ test, code; details FINDINGS part 4 (h), §44, git log). Desktop backup re-run 1
   `logs/one_pager_2026-10-20/`): ⚠️ Fig. 2 and the quoted HWM numbers DROP 5 marks for now — 6155 (Keansburg
   pocket), 6122, 6124, 6129, 6130 (Monmouth lakes). After Phase 4: bring them BACK (`REVISED` in
   `plot_scatter.py`), re-run `per_mark.py` + `compute_depth.py` on the new premier, refresh every number in the doc.
-  ▶ 10-22: the supervisor asked for a first-contact PITCH instead; the technical doc stays as the bona-fides sheet.
-  Pitch v1 = claude.ai doc "Compound-Flood Scenarios for New Jersey: A Proposal to NJDEP"
-  (https://claude.ai/artifact/CjNZXre5JJoq9QjSQ64UNh): aimed at DEP, statewide; problem → services (compound
-  flooding, mitigation screening, sea-level rise per the 2025 STAP + REAL rules) → why this model → the project
-  (the supervisor's one-pager checklist). Open: the figure (Phase 4's rain-off vs premier "only the combination
-  floods here" map), team names, cost, length (over a page). NACCS synthetic storms carry NO rain — never pitch
-  them as compound scenarios on their own.
+  The technical doc is the bona-fides sheet behind the NJDEP pitch (✅ pitch CLOSED 10-25: finished by the user +
+  supervisor).
 - **Gallery / site:** `~/sandy_flood_site` = `tyfolino/sandy-flood-model`, written by `scripts/publish_gallery.py`
   (user commits + pushes); figures by `nj_sfincs/gallery.py` in every validate (`--no-gallery` to skip),
   re-draw `scripts/build_gallery.py` / `hpc/build_gallery.slurm`. Depth convention: CLAUDE.md §6.
