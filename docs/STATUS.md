@@ -67,11 +67,9 @@ test, code; details FINDINGS part 4 (h), §44, git log). Desktop backup re-run 1
   frozen premier (user tags git), `docs/MODEL.md`, validation summary, research-group brief (incl. the
   status-notebook "rise above normal water" fig., `logs/notebook_qc_2026-10-11/baseline_check.py`), docs, backup.
 - **DEP one-pager** (claude.ai doc "A Compound-Flood Model of the New Jersey Coast", 10-20; figures + scripts
-  `logs/one_pager_2026-10-20/`): ⚠️ Fig. 2 and the quoted HWM numbers DROP 5 marks for now — 6155 (Keansburg
-  pocket), 6122, 6124, 6129, 6130 (Monmouth lakes). After Phase 4: bring them BACK (`REVISED` in
-  `plot_scatter.py`), re-run `per_mark.py` + `compute_depth.py` on the new premier, refresh every number in the doc.
-  The technical doc is the bona-fides sheet behind the NJDEP pitch (✅ pitch CLOSED 10-25: finished by the user +
-  supervisor).
+  `logs/one_pager_2026-10-20/`): essentially done — no post-Phase-4 refresh planned (user 10-26). Its Fig. 2 and
+  quoted HWM numbers are the 10-11 premier WITHOUT 5 marks (6155 Keansburg pocket; 6122, 6124, 6129, 6130 Monmouth
+  lakes). The bona-fides sheet behind the NJDEP pitch (✅ pitch CLOSED 10-25: finished by the user + supervisor).
 - **Gallery / site:** `~/sandy_flood_site` = `tyfolino/sandy-flood-model`, written by `scripts/publish_gallery.py`
   (user commits + pushes); figures by `nj_sfincs/gallery.py` in every validate (`--no-gallery` to skip),
   re-draw `scripts/build_gallery.py` / `hpc/build_gallery.slurm`. Depth convention: CLAUDE.md §6.
@@ -207,10 +205,10 @@ heads may still be tidal (unpainted). Paerdegat: leave it (user).
 
 ## Disk and cluster
 
-- **Home** (`/cache/home`, GPFS): 100 G soft / 110 G hard; **63.1 G on 2026-10-19**. Ask
+- **Home** (`/cache/home`, GPFS): 100 G soft / 110 G hard; **85.6 G on 2026-10-26**. Ask
   `/usr/lpp/mmfs/bin/mmlsquota -u $USER --block-size auto cache` (lags ~10 min).
-- **Scratch** (`/scratch/tpj8`): 1 T soft / 2 T hard, **704 G on 2026-10-22** (after the four pre-creek beds were deleted) (incl. the 39 G
-  `_template_sealed_pre_inflows_2026-10-06` — deletable once Phase 4 has staged from the new one). 🔴 **Not backed up; files not accessed for 90 days are deleted.** `experiments/`
+- **Scratch** (`/scratch/tpj8`): 1 T soft / 2 T hard, **704 G on 2026-10-22** (after the four pre-creek beds were deleted; the 39 G pre-inflows template is
+  gone too). 🔴 **Not backed up; files not accessed for 90 days are deleted.** `experiments/`
   and most of `data/` (the 10-05 swap is finished) live here; the durable copy is the desktop pull
   (`scripts/desktop_pull_backup.sh`) — re-run it whenever an arm is scored. The engine sources
   (`/scratch/tpj8/sfincs-build/`) live here too; the patches are in `hpc/patches/` + `docs/upstream/`.
