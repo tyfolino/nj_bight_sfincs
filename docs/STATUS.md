@@ -6,15 +6,15 @@ running, what is next, what is open. When an item closes, its durable fact goes 
 Git has the history. The campaign log this file grew into until 2026-09-29 (6,767 lines) is
 `git show d70dd1e:docs/STATUS.md`; FINDINGS cites it as "STATUS <date>".
 
-▶ **PICK UP (10-25): wait for PHASE 4 ATTEMPT 2 = 62963088** (PENDING, Priority; start est. **10-26 22:52**, 40 h
-limit → done by ~10-28 15:00), then `p4_read` 62963089 (afterany). Every input is ready: the 3 late beds built
-10-24 (62954752, `.bed_ok` present); both EXPECT_MD5 files pass (10-25). 🔴 **Don't edit a guarded file until
-62963088 STARTS** (`python scripts/campaign_check.py` lists them). When it starts: check `sacct` NodeList, then each
-arm's `restart_history.txt` before pairing (Phase 4 below).
+▶ **PICK UP (10-26): wait for PHASE 4 ATTEMPT 3 = 63094139** (PENDING, Priority; start est. **10-29 11:01**, 40 h
+limit → done by ~10-31 03:00), then `p4_read` 63094140 (afterany). Every input is ready: the 3 late beds built
+10-24 (62954752, `.bed_ok` present); both EXPECT_MD5 files pass (10-26). 🔴 **Don't edit a guarded file until
+63094139 STARTS** (`/checkin` or `python scripts/campaign_check.py` lists them). When it starts: check `sacct`
+NodeList, then each arm's `restart_history.txt` before pairing (Phase 4 below).
 
-Last updated: **2026-10-25** — queue check; STATUS cleaned (stale attempt-1 / weir-decision entries removed);
-Cohansey v4c result → FINDINGS §54 (j). 10-24: Phase 4 attempt 1 lost 12 arms (cnb binaries); re-run with the
-premier change folded in (cnb netCDF, NLD Keansburg + Thornes weir, Cohansey v4c bed, pocket marks noted).
+Last updated: **2026-10-26** — Phase 4 attempt 2 (62963088) stopped at the staging checks: `check_staged.sh`
+required `cnb` on `p4-premier+rain-off`, which correctly has no infiltration (no rain). Check fixed (rain-off must
+carry NO infiltration keys), `expected.md5` re-written, resubmitted as attempt 3. `/checkin` skill added.
 
 ---
 
@@ -27,12 +27,14 @@ premier change folded in (cnb netCDF, NLD Keansburg + Thornes weir, Cohansey v4c
   10 marks outside ±0.5 m, inventoried in FINDINGS part 4 (h).
 - **Heading for:** the Phase 4 re-baseline (below), before maintenance 11-10.
 
-## Running (10-25)
+## Running (10-26)
 
-- ⏳ **62963088 `phase4`** (attempt 2, `logs/rebaseline_2026-10-19/phase4.slurm`, EXPECT_MD5 `expected.md5`) →
-  **62963089 `p4_read`** (`read/read_phase4.slurm`, afterany, 240 G, ≤ 6 h; EXPECT_MD5 `read/expected.md5`):
+- ⏳ **63094139 `phase4`** (attempt 3, `logs/rebaseline_2026-10-19/phase4.slurm`, EXPECT_MD5 `expected.md5`) →
+  **63094140 `p4_read`** (`read/read_phase4.slurm`, afterany, 240 G, ≤ 6 h; EXPECT_MD5 `read/expected.md5`):
   preflight, the repeat bit-for-bit, residuals (`phase4` preset), zsmax pairs, report, null band, nudged gauges,
-  PREREG marks. Attempt 1 (62827640 + its read 62831580): `attempt1_62827640/`, `failed_62827640/`.
+  PREREG marks. Attempt 1 (62827640 + its read 62831580): `attempt1_62827640/`, `failed_62827640/`. Attempt 2
+  (62963088 + read 62963089, 10-26): never solved; what its read wrote from older runs is filed in
+  `attempt2_62963088/` — **not Phase 4 results**.
 - ⚠️ **Sluice Creek gauge** reads an ASSUMED bed (pool painted at −0.24 m; nudged 10-22, FINDINGS part 4): observed
   lows reach −0.43 m, so its deepest troughs cannot be matched — read Phase 4's Sluice trough with that.
 - ⚠️ **Keansburg pocket** (weir = NLD centreline, ADOPTED 10-24, FINDINGS §38): as drawn it is watertight
@@ -53,7 +55,7 @@ test, code; details FINDINGS part 4 (h), §44, git log). Desktop backup re-run 1
   (MOTF false alarms: rain 79 / surge 27 / waves 22 of 128.5 km², twin-run split); creek beds = an ASSUMED bed at
   ≈ MLW (Salem River + Mannington Creek left out); HWM marks 6169 / 6202 (questioned) and 6121 / 6398 / 6188
   (run-up) kept, drawn hollow, `hwm_*_scored_excl_noted` beside the headline.
-- **Phase 4 (attempt 2 62963088, `logs/rebaseline_2026-10-19/`):** ONE 2-node emeraldrapids job, seeded engine
+- **Phase 4 (attempt 3 63094139, `logs/rebaseline_2026-10-19/`):** ONE 2-node emeraldrapids job, seeded engine
   `…igseed-wmseed-1-gf11`, 40 h: stage 10 v4_refreeze arms, 4 × 16-thread slots per node, each node validates
   its own. Node 1 (`node1.txt`): `p4-premier`, its repeat, the two `rhoa` null copies | wave 2: `bed-breach-wreck0`
   (late-staged), `cnb` 1.0, `p4-nowaves`. Node 2: `+wave-nowavemaker`, `cnb` 2.38, `+rain-off`, `src-deal-overtop` |
