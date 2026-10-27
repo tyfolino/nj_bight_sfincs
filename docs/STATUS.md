@@ -199,6 +199,30 @@ heads may still be tidal (unpainted). Paerdegat: leave it (user).
   survey tier; raising `bay_fringe` past zmax 2.0; §49's pre-repair beach numbers; the 12-creek
   refinement band (next mesh).
 
+## Future: make the model faster (user 10-27 — after we are happy with the v4 simulations)
+
+SnapWave is ~97 % of a waves-on run (§20) and its sweep is SERIAL: a 64-thread solve averages ~6 busy cores. No OpenMP
+around the sweep loop on `main` (checked 10-26). Don't write our own SnapWave (months to validate).
+
+- **(b) Parallel SnapWave, bit-identical → no new engine gate, no re-baseline.** In this order:
+  1. *Warm-up:* OpenMP on the dependency-free per-node loops (energy → wave height, the convergence check); a few
+     lines, maybe 1.2–1.3×.
+  2. *The big one:* level-scheduled ("wavefront") sweep — build each sweep's upwind dependency graph once per call,
+     group nodes into levels, run each level in parallel; every node reads the same values as in serial order.
+     Sweep ≈ 70–80 % of a call (§20 fit) → estimated 3–5× per run (13 h premier → a few h). Estimate, not measured.
+     A few hundred lines of Fortran.
+  3. *Memory order:* renumber nodes so sweep order = memory order (no arithmetic change; gain unknown).
+  4. *Per-call setup:* each call re-sorts all nodes four times (part of the fixed ~42 s/call) — cache it.
+  Check each against the toy and a 6 h v4 cut (bit-for-bit). A natural upstream contribution, and the same level
+  structure is what a GPU port of SnapWave would need. *Number-changing* speed-ups (`-march=native`, fixing the Sandy
+  Hook limit cycle — capped calls cost ~2×, §44 (g)) need a new engine label + re-baseline: separate decision.
+- **(a) GPU build, timed on a waves-off arm.** SFINCS's flow solver is ported (OpenACC, maintained on `main`);
+  SnapWave is NOT (no directives) — it stays on the CPU, so waves-on runs gain ~nothing until (b) or an upstream port.
+  Waves-off runs (rain / river / SLR sweeps, forecast-style) could drop from hours to minutes. Needs NVIDIA's
+  `nvfortran` (HPC SDK, self-installed — Amarel has only `pgi/19.4`) or a Deltares GPU container if one exists; GPU
+  arithmetic is not bit-identical → engine-gate it. First: ask Deltares (reproducibility thread) whether SnapWave on
+  GPU is planned; then build + time one waves-off v4 arm vs the CPU build.
+
 ## Evidence index
 
 | topic | logs | scripts | FINDINGS |
