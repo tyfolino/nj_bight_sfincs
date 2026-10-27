@@ -149,8 +149,13 @@ heads may still be tidal (unpainted). Paerdegat: leave it (user).
 - **Delaware low-water deficit (10-27 triage, p4-premier `his`, rough high/low picker):** pre-storm the model sits
   0.2–0.4 m low at highs AND lows from Lewes to Newbold (a level deficit, lows a little worse); the storm low
   (10-29 22:00 → 10-30 01:00) misses by −0.36 at Lewes, −0.6…−0.7 Ship John → Philadelphia, −0.7…−1.0 at Newbold;
-  after the storm the model runs 0.1–0.2 m high. Lewes already carries it → a mouth-forcing question first.
-  Close: NACCS boundary series vs Lewes / Brandywine observed; then Phase 4's per-gauge tide + residual reads.
+  after the storm the model runs 0.1–0.2 m high. ✅ **At the mouth it is the NACCS forcing** (10-27,
+  `logs/delaware_lowwater_2026-10-27/`; NACCS save points ON the Lewes / Cape May gauges + VDatum, vs CO-OPS 6-min
+  NAVD88): calm 10-12 → 10-25 NACCS − obs mean +0.07 / +0.04, range ratio 0.99 / 0.95, but its 12.4 h-mean error
+  wanders ±0.2–0.3 m with the weather; from 10-27 it runs −0.15…−0.25 (−0.26 / −0.33 at the 10-29 evening low), peaks
+  −0.18 / −0.22, then +0.1 after; model − obs tracks NACCS − obs at both. Still open: the growth upriver
+  (−0.3 at the mouth → −0.6…−1.0 Ship John → Newbold at the storm low, part of it a late low at Newbold, +100 min).
+  Close: Phase 4's per-gauge tide + residual reads; mouth-deficit-corrected (`BRACKET+`) test only if the user wants it.
 - **Southern back-bay deficit (§57):** the Great Egg inlet sill (§54 h) a candidate share. Close: the
   v3 re-run's Great Egg / Ocean City pre-storm bay-minus-pier; calm-month datum check of the seven
   southern USGS stations.
