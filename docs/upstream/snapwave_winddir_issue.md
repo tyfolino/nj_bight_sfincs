@@ -1,4 +1,4 @@
-<!-- Draft GitHub issue for github.com/Deltares/SFINCS (2026-09-14, FINDINGS §43). The user files it. -->
+<!-- FILED 2026-09-14 as Deltares/SFINCS #362 (+ PR #363); FIXED upstream by PR #371, merged 2026-10-08. Kept as the record behind scripts/make_snapwave_reproducer.py. -->
 
 # SnapWave: with `snapwave_wind = 1` the imposed boundary spectrum is rotated to the mean wind direction
 

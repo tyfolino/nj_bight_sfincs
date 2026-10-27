@@ -735,7 +735,8 @@ CLAUDE.md §5.
     on either engine, wind on or off:** each boundary point is launched in ONE mean
     direction (`thetamean`), not its own `wdt_bwv(ib)`, so CORA's along-boundary spread
     (≈140–182° at one hour) collapses to its mean — mild, but real. Filed upstream as
-    Deltares/SFINCS issue #362 and PR #363 (2026-09-14; `docs/upstream/`). Bay wind-sea on
+    Deltares/SFINCS issue #362 and PR #363 (2026-09-14; `docs/upstream/`); FIXED upstream by Deltares
+    PR #371 (merged 2026-10-08; spectra built on the final grid, centred on `wdmean_bwv`). Bay wind-sea on
     the fixed engine is physically sized (Lower + Raritan Bay subtidal median hm0
     0.26–0.51 m, 0.65–0.68 once the wind passes 10 m/s; wind-off 0.06–0.10), and wind-off
     removes a real process: every back-bay gauge reads hm0 0.00–0.07 m against 0.2–0.5 m
@@ -752,8 +753,9 @@ CLAUDE.md §5.
     `sfincs_snapwave.f90:644`; the solver's "0=default" comment is stale), so the sample reaches
     breaking, the wave force and zs. Every bit-identical repeat on record had IG off (G1: no
     SnapWave; the `repro/` cuts incl. `G3_patched_rep`: `snapwave_igwaves = 0`); every
-    non-repeating one had IG on. The bug is on upstream `main` too (issue draft
-    `docs/upstream/snapwave_igseed*`).
+    non-repeating one had IG on. The bug is on upstream `main` too, still on `f3647fc` (2026-10-22), with the wavemaker draws of (j)
+    (issue draft `docs/upstream/sfincs_reproducibility_issue.md`, tested on `main`:
+    `logs/upstream_repro_2026-10-26/`).
     (b) **What the unseeded noise looks like** (engine `…winddir-fix-1…`, v4). Packing test
     (`logs/pack_test_2026-10-07/`, 3 h cut of run B, 13 byte-identical copies): copies differ from
     each other at the FIRST wave solve (t = 0: point hm0 Sea Bright 1.7 m, Ship John Shoal 1.0 m)

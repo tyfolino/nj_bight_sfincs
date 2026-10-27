@@ -88,10 +88,10 @@ Upstream SFINCS v2.3.3 ("Faber"), built natively with `hpc/build_sfincs_native.s
 | `nj-igseed-1` | the Herbers IG draw used unseeded `RANDOM_NUMBER`: IG-on runs never repeated. Fixed seed, re-set every call | §44 (a)–(d) |
 | `nj-wmseed-1` | fixed seed for the wavemaker phases + phase in closed form from model time (real*8), so a resume sees the same IG forcing | §44 (j) |
 
-v2.4.x (Galibier) was gated and refused (§47). Upstream: issue #362 / PR #363 (wind direction) open,
-unreviewed; Deltares PR #371 includes the #363 fix. **Not yet filed:** the IG seed issue (draft
-`docs/upstream/snapwave_igseed_issue.md`), the wavemaker phase fix, the dead-corner rule (§52), the
-wavemaker IG frequency shift (`dphi = 2π·1e-6/f`). The run reads a patched hydromt-sfincs too
+v2.4.x (Galibier) was gated and refused (§47). Upstream: the wind-direction bug (issue #362) is fixed in Deltares PR #371
+(merged 2026-10-08). **Not yet filed:** the IG seed + wavemaker phase issue (draft
+`docs/upstream/sfincs_reproducibility_issue.md`, patch against `main`), the wavemaker IG frequency shift
+(`dphi = 2π·1e-6/f`; draft `docs/upstream/wavemaker_freq_offset_issue.md`), the dead-corner rule (§52). The run reads a patched hydromt-sfincs too
 (`hpc/patches/quadtree_mixin_pad2.patch`, one-cell sliver padding).
 
 ## 4. What is OUT (or crude)

@@ -1,0 +1,94 @@
+diff --git a/source/src/sfincs_wavemaker.f90 b/source/src/sfincs_wavemaker.f90
+index de53989..61551f2 100644
+--- a/source/src/sfincs_wavemaker.f90
++++ b/source/src/sfincs_wavemaker.f90
+@@ -92,6 +92,8 @@
+    real*4    :: phip
+    !
+    real*4    :: r
++   integer   :: nseed, iseed
++   integer, dimension(:), allocatable :: seed
+    !
+    character :: cdummy
+    !
+@@ -1499,6 +1501,16 @@
+    allocate(wavemaker_phi_ig(wavemaker_nfreqs_ig))
+    allocate(wavemaker_dphi_ig(wavemaker_nfreqs_ig))
+    wavemaker_dfreq_ig = (wavemaker_freqmax_ig - wavemaker_freqmin_ig) / wavemaker_nfreqs_ig
++   !
++   ! Seed the generator with a fixed value before drawing the random phases (IG, then
++   ! incident), so that a run reproduces and a restarted run draws the same phases.
++   !
++   call random_seed(size=nseed)
++   allocate(seed(nseed))
++   seed = (/(7654321 + 7919*iseed, iseed=1,nseed)/)
++   call random_seed(put=seed)
++   deallocate(seed)
++   !
+    do ifreq = 1, wavemaker_nfreqs_ig
+       wavemaker_freq_ig(ifreq) = wavemaker_freqmin_ig + ifreq * wavemaker_dfreq_ig - 0.5 * wavemaker_dfreq_ig
+       call random_number(r)
+@@ -1558,16 +1570,16 @@
+    alpha = min(dt / wavemaker_filter_time, 1.0)
+    beta  = min(dt / (0.2 * wavemaker_filter_time), 1.0)
+    !
+-   ! Advance the random phases and evaluate the cosine terms of the wave signal.
+-   ! This must happen exactly once per time step, also when both wave maker forcing sources are
+-   ! active, because the phases advance with dt.
++   ! Evaluate the cosine terms of the wave signal, once per time step. The phase is computed
++   ! from the model time t (s since tref) instead of being accumulated with dt from tstart,
++   ! so that a run restarted from a restart file continues the same signal. wavemaker_phi_ig
++   ! and wavemaker_phi_inc keep the initial random phases.
+    !
+    if (wavemaker_spectrum) then
+       !
+       do ifreq = 1, wavemaker_nfreqs_ig
+          !
+-         wavemaker_phi_ig(ifreq)  = modulo(wavemaker_phi_ig(ifreq) + wavemaker_dphi_ig(ifreq) * dt, 2 * pi)
+-         wavemaker_cost_ig(ifreq) = cos(2 * pi * t * wavemaker_freq_ig(ifreq) + wavemaker_phi_ig(ifreq))         
++         wavemaker_cost_ig(ifreq) = cos(2 * pi * t * wavemaker_freq_ig(ifreq) + wavemaker_phi_ig(ifreq) + wavemaker_dphi_ig(ifreq) * t)
+          !
+       enddo
+       !
+@@ -1575,8 +1587,7 @@
+          !
+          do ifreq = 1, wavemaker_nfreqs_inc
+             !
+-            wavemaker_phi_inc(ifreq)  = modulo(wavemaker_phi_inc(ifreq) + wavemaker_dphi_inc(ifreq) * dt, 2 * pi)
+-            wavemaker_cost_inc(ifreq) = cos(2 * pi * t * wavemaker_freq_inc(ifreq) + wavemaker_phi_inc(ifreq))
++            wavemaker_cost_inc(ifreq) = cos(2 * pi * t * wavemaker_freq_inc(ifreq) + wavemaker_phi_inc(ifreq) + wavemaker_dphi_inc(ifreq) * t)
+             !
+          enddo
+          !
+diff --git a/source/src/snapwave/snapwave_infragravity.f90 b/source/src/snapwave/snapwave_infragravity.f90
+index aee3904..1215465 100644
+--- a/source/src/snapwave/snapwave_infragravity.f90
++++ b/source/src/snapwave/snapwave_infragravity.f90
+@@ -211,6 +211,8 @@ module snapwave_infragravity
+     real*4, dimension(:,:), allocatable     :: S_array    
+     integer                                 :: i=0, ii, nang, nfreq, peakf
+     integer                                 :: firstp, lastp, M, K    
++    integer                                 :: nseed, iseed
++    integer, dimension(:), allocatable      :: seed
+     real*4                                  :: pi, g, sprdthr
+     !
+     ! Internal variables - for part 2: build_etdir    
+@@ -361,6 +363,18 @@ module snapwave_infragravity
+     enddo
+     !
+     ! Define random number between 0 and 1 for each wave component
++    !
++    ! Seed the generator with a fixed value first, on every call. Unseeded, gfortran seeds
++    ! RANDOM_NUMBER from the operating system, so every run drew a different set of
++    ! components and IG-on runs did not reproduce. Re-seeding on every call gives every
++    ! boundary point and every wave update the same sample, independent of run history.
++    !
++    call random_seed(size=nseed)
++    allocate(seed(nseed))
++    seed = (/(1234567 + 7919*iseed, iseed=1,nseed)/)
++    call random_seed(put=seed)
++    deallocate(seed)
++    !
+     do i=1,K
+         call RANDOM_NUMBER(P0(i)) 
+         P0(i)=0.99*P0(i)+0.01/2 ! TL: as in Matlab: Define random number between ~0.025 and 0975 for each wave component

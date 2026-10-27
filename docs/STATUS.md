@@ -6,15 +6,17 @@ running, what is next, what is open. When an item closes, its durable fact goes 
 Git has the history. The campaign log this file grew into until 2026-09-29 (6,767 lines) is
 `git show d70dd1e:docs/STATUS.md`; FINDINGS cites it as "STATUS <date>".
 
-▶ **PICK UP (10-26): wait for PHASE 4 ATTEMPT 3 = 63094139** (PENDING, Priority; start est. **10-29 11:01**, 40 h
-limit → done by ~10-31 03:00), then `p4_read` 63094140 (afterany). Every input is ready: the 3 late beds built
-10-24 (62954752, `.bed_ok` present); both EXPECT_MD5 files pass (10-26). 🔴 **Don't edit a guarded file until
-63094139 STARTS** (`/checkin` or `python scripts/campaign_check.py` lists them). When it starts: check `sacct`
-NodeList, then each arm's `restart_history.txt` before pairing (Phase 4 below).
+▶ **PICK UP (10-27 am): PHASE 4 ATTEMPT 3 = 63094139 — WAVE 1 DONE CLEAN, WAVE 2 SOLVING** on hal[0384,0419]
+(emeraldrapids, no halk). All 9 wave-1 arms ended exit 0 between 10-27 03:14 and 07:57 (waves-on ≈ 13–14 h at 16
+threads, `p4-nowaves` 3.7 h): every `restart_history.txt` says `segments: 0` (no resume → nothing to re-run), engine
+`bin:v2.3.3-winddir-igk-igseed-wmseed-1-gf11@e15ed916`, audit `output WHOLE`. Wave 2 (`bed-breach-wreck0`,
+`bed-nobuildings`, `bed-breach-wreck165`, `cnb` 1.0) started 03:15–03:59 → ends ~10-27 17:30–18:00, then each node
+scores its arms, then `p4_read` 63094140 (afterany, EXPECT_MD5 10/10 OK) ~10-28. **Next:** ~10-27 18:00, read wave 2's
+`restart_history.txt` (Phase 4 below); ⚠️ watch node 1's scoring against the 40 h limit (Running). 🔴 **Hold the `nj_sfincs/experiments.py` (rain-off description) and
+`provenance.py` (v4 forcing labels) fixes until `p4_read` ends:** neither is md5-guarded any more, but validation
+inside 63094139 writes `provenance.py`'s labels into each arm's `metrics.csv` — edit after, then relabel all rows.
 
-Last updated: **2026-10-26** — Phase 4 attempt 2 (62963088) stopped at the staging checks: `check_staged.sh`
-required `cnb` on `p4-premier+rain-off`, which correctly has no infiltration (no rain). Check fixed (rain-off must
-carry NO infiltration keys), `expected.md5` re-written, resubmitted as attempt 3. `/checkin` skill added.
+Last updated: **2026-10-27** — Phase 4 wave 1 finished uninterrupted (9 arms); wave 2 solving.
 
 ---
 
@@ -27,12 +29,18 @@ carry NO infiltration keys), `expected.md5` re-written, resubmitted as attempt 3
   10 marks outside ±0.5 m, inventoried in FINDINGS part 4 (h).
 - **Heading for:** the Phase 4 re-baseline (below), before maintenance 11-10.
 
-## Running (10-26)
+## Running (10-27)
 
-- ⏳ **63094139 `phase4`** (attempt 3, `logs/rebaseline_2026-10-19/phase4.slurm`, EXPECT_MD5 `expected.md5`) →
+- ⏳ **63094139 `phase4`** (attempt 3, `logs/rebaseline_2026-10-19/phase4.slurm`, EXPECT_MD5 `expected.md5`;
+  wave 1 ✅, wave 2 solving, limit **10-28 05:09**) →
   **63094140 `p4_read`** (`read/read_phase4.slurm`, afterany, 240 G, ≤ 6 h; EXPECT_MD5 `read/expected.md5`):
   preflight, the repeat bit-for-bit, residuals (`phase4` preset), zsmax pairs, report, null band, nudged gauges,
-  PREREG marks. Attempt 1 (62827640 + its read 62831580): `attempt1_62827640/`, `failed_62827640/`. Attempt 2
+  PREREG marks.
+- ⚠️ **Node 1's scoring may hit the 40 h limit.** Each node validates its arms one at a time after ITS solves end, in
+  `node1.txt` / `node2.txt` order; attempt 1's one full v4 validation took 1 h 42 min (rain-off). Node 1: 7 arms from
+  ~18:00 → ~06:00 at that pace, past 05:09 — the last ones (`cnb` 1.0, `p4-nowaves`) may get no `metrics.csv` row.
+  Node 2: 6 arms → ~03:30. Solve output is safe either way and `p4_read` still runs; fill a missing row with a
+  `--validate-only` job (one arm per process). Attempt 1 (62827640 + its read 62831580): `attempt1_62827640/`, `failed_62827640/`. Attempt 2
   (62963088 + read 62963089, 10-26): never solved; what its read wrote from older runs is filed in
   `attempt2_62963088/` — **not Phase 4 results**.
 - ⚠️ **Sluice Creek gauge** reads an ASSUMED bed (pool painted at −0.24 m; nudged 10-22, FINDINGS part 4): observed
@@ -158,9 +166,12 @@ heads may still be tidal (unpainted). Paerdegat: leave it (user).
 - **Flux cross-sections never read** (Narrows prism, Rockaway throat). Close: `crosssection_discharge`.
 - **Wavemaker IG spectrum shift (upstream, untouched):** `dphi = 2π·1e-6/f` moves each component's
   frequency up by 1e-6/f Hz — with `freqminig` 0 the lowest bin goes 0.0005 → 0.0025 Hz, distorting
-  the low end. Changing it changes physics; report upstream with the seed issue.
+  the low end (slowest component 462 s instead of 2000 s at the defaults; bulk period unchanged at Tp_ig ≤ 100 s).
+  Draft question `docs/upstream/wavemaker_freq_offset_issue.md` (10-26) — filing = user.
 - **Engine follow-ups:** the interior initial-guess remap and per-point boundary direction (§43/§44)
-  never built; the dead-corner rule not reported upstream; PR #363 open; the igseed issue not filed.
+  never built; the dead-corner rule not reported upstream (re-check on `main` first: #300 / #351 / #382 reworked
+  that code). Wind direction FIXED upstream (#371, merged 10-08). Seed + wavemaker-resume issue drafted 10-26
+  (`docs/upstream/sfincs_reproducibility_issue.md` + `…_main.patch`, tested on `main` f3647fc) — filing = user.
 - **`accept_domain.py` FAILS on v3** (15 inflows on dry ground, 1 inactive; pre-existing); on a mask
   variant it needs `--mesh <template>`.
 - **Basin labels on v4 inherit v1's `shark_river` box** (x < 584,300, y < 4,450,800 in `domain.py`
@@ -205,7 +216,7 @@ heads may still be tidal (unpainted). Paerdegat: leave it (user).
 
 ## Disk and cluster
 
-- **Home** (`/cache/home`, GPFS): 100 G soft / 110 G hard; **85.6 G on 2026-10-26**. Ask
+- **Home** (`/cache/home`, GPFS): 100 G soft / 110 G hard; **89.0 G on 2026-10-27**. Ask
   `/usr/lpp/mmfs/bin/mmlsquota -u $USER --block-size auto cache` (lags ~10 min).
 - **Scratch** (`/scratch/tpj8`): 1 T soft / 2 T hard, **704 G on 2026-10-22** (after the four pre-creek beds were deleted; the 39 G pre-inflows template is
   gone too). 🔴 **Not backed up; files not accessed for 90 days are deleted.** `experiments/`
