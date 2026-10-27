@@ -141,8 +141,16 @@ heads may still be tidal (unpainted). Paerdegat: leave it (user).
 - **Waves-on noise band (§44 (e)):** not the cap (10-17); how wide is it through the peak? One
   null copy is ONE draw of the band. Close: Phase 4's two full-length null copies (`rhoa` 1.2501 /
   1.2499; user 10-17).
-- **Capped calls inject river pulses on v4 (§44 (h)).** Close: count capped calls in every v4 log;
-  check whether any face's `zsmax` is set inside a capped hour (niter 800 still caps the t = 0 call).
+- **Capped calls inject river pulses on v4 (§44 (h)).** ✅ Counted 10-27 (Phase 4 wave 1, `snapwave_niter` 200
+  sweeps = 50 logged iterations): premier 26 / 73 calls capped (repeat: the same 26), nulls 20 / 25, other
+  waves-on arms 22–34; 10-30 00:00 capped in every arm (%ok 88–90, the worst call), 01:00–02:00 in nearly all.
+  ✅ Delaware gauges clean on the Phase 4 premier vs `p4-nowaves` (10-27, `logs/capped_calls_2026-10-27/`).
+  Close: whether any face's `zsmax` is set inside a capped hour (map read; fold into the Phase 4 reads).
+- **Delaware low-water deficit (10-27 triage, p4-premier `his`, rough high/low picker):** pre-storm the model sits
+  0.2–0.4 m low at highs AND lows from Lewes to Newbold (a level deficit, lows a little worse); the storm low
+  (10-29 22:00 → 10-30 01:00) misses by −0.36 at Lewes, −0.6…−0.7 Ship John → Philadelphia, −0.7…−1.0 at Newbold;
+  after the storm the model runs 0.1–0.2 m high. Lewes already carries it → a mouth-forcing question first.
+  Close: NACCS boundary series vs Lewes / Brandywine observed; then Phase 4's per-gauge tide + residual reads.
 - **Southern back-bay deficit (§57):** the Great Egg inlet sill (§54 h) a candidate share. Close: the
   v3 re-run's Great Egg / Ocean City pre-storm bay-minus-pier; calm-month datum check of the seven
   southern USGS stations.

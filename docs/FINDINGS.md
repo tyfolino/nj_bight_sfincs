@@ -813,14 +813,22 @@ CLAUDE.md §5.
     v3 run — and the period-floor lever `snapwave_sigmax` (2 s and 3 s cuts) relocates the
     blow-ups onto the open shelf rather than removing them; the engine-side interior
     initial-guess remap is the open follow-up.
-    (h) 🔴 **On v4 a capped call puts a ~1 m pulse into the Delaware River (2026-10-11).** In the
+    (h) 🔴 **On v4 a capped call CAN put a ~1 m pulse into the Delaware River (2026-10-11).** In the
     premier the 10-29 18:00 call ended at the cap (error 0.88, %ok 96.1; 606 s vs ~300) and its
     field held for the hour: hm0 up to 11.3 m, 50,730 faces > 3 m within 40–50 km of Reedy Point
     (17:00 / 19:00: max 2.5–2.8 m); 20:00 capped again (error 0.32; max 6.6 m). The water answers
     with a long wave from Reedy Point / Delaware City at ~19:30 (+0.8…+1.3 m in an hour) to
     Philadelphia at ~21:30–22:00 (~8 m/s); the waves-off twin falls smoothly through it and
     observations show nothing. It rides the ebb 0.3–0.5 m under the crest at these gauges, so
-    their PEAKS are unaffected; elsewhere unchecked.
+    their PEAKS are unaffected; elsewhere unchecked. **Capping alone does not make a pulse
+    (2026-10-27, `logs/capped_calls_2026-10-27/`):** the Phase 4 premier (seeded wavemaker engine,
+    creek beds) caps 26 of 73 calls — 10-29 20:00 at %ok 93.0, 10-30 00:00 at 88.1 (capped in
+    every Phase 4 waves-on arm) — yet against `p4-nowaves` the eight Delaware gauges show no
+    hump: Δ ≤ 0.10–0.20 m, all on the steep flood rise after the 10-30 low, and +0.01…+0.09 m at
+    the peaks (the 10-11 pair, same read: +1.25…+1.62 m). The log does not say WHERE a call's
+    unconverged nodes sit, so which capped call pulses is not predictable from the log.
+    ⚠️ `snapwave_niter` counts SWEEPS; the log prints `iteration` = sweep / 4, so niter 200 caps
+    at a logged 50 (and prints `ended at iteration 50`).
     (i) **Pace when sharing a node** (packing test, 3 h cut of run B, one emeraldrapids node):
     1×64 threads 56 min, 4×16 copies 58–60 min each, 8×8 65–72 min each. 🔴 Side-by-side copies
     need DISJOINT cores: `engine_gate.py run` sets `OMP_PROC_BIND=spread` + `OMP_PLACES=cores`,
