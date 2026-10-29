@@ -15,17 +15,21 @@ scored before the `meteo` column existed left blank); site re-published locally 
 retired 10-11 side runs lose their figures, rows kept) — user commits + pushes `~/sandy_flood_site`; scratch D1 + D2
 done (63.8 G). **Next:** (1) the null band + the LAKE side arms on swz (breach ×2, Deal overtop, no wavemaker): their
 lake answers came from the old wave bed — hold lake conclusions until then (job 63231557); (2) ✅ Phase 4 read
-written up 10-29 (FINDINGS part 4 (i), §44 (e), §55; lakes held); (3) ✅ lakes explained (§63 (h)) — buildings-in-wave-bed is the user's call; (4) **FIAT
-re-export for the student** once the user accepts the swz premier: `export_share_floodmap.py --ground
-<…_nobuildings_creeks_cohansey>` (depth from BARE ground; the run's own bed leaves every footprint NaN, so the v3
-export she has biased her damages LOW — user 10-29); revise the README's v3-specific caveats; big-memory node.
+written up 10-29 (FINDINGS part 4 (i), §44 (e), §55; lakes held); (3) ✅ lakes explained (§63 (h)) — buildings-in-wave-bed is the user's call; (4) **FIAT export for the student** (user 10-29: from
+the swz premier) — job 63246191 (`logs/fiat_export_2026-10-29/`): depth from BARE ground, faces fully covered by buildings
+(roof = their lowest pixel → phantom 9.5 m) and dry faces dropped first. CHECK before handing over: off-footprint ==
+gallery tif, no > 5 m clusters on roofs, footprint depths sane; then give the user the file + README. (5) SnapWave
+wavefront cut 63242704 (bit check + speed; `logs/snapwave_wavefront_2026-10-29/`). (6) **Waiting on the user:** OK to
+delete the swomp-1 cuts `/scratch/tpj8/engine_gate/swomp_*6h` (~56 G)? Queue a bare-ground-face-z side arm (buildings
+in the WAVES, unmeasured — §55) once `swz_band` has started (it guards `domain.py`)? (7) MHHW + 2/4 ft static + tidal on
+the modern bed; GPU feasibility.
 `p4_read2` 63177634 finished 10-28 ("failed steps: none"); its "Error reading variable ini" lines are benign.
 
 **Phase 4 (10-28) → FINDINGS part 4 (i):** 13 arms whole, seeded, uninterrupted; repeat bit-identical; waves
 ΔRMSE −0.150, wavemaker −0.108 (mostly lakes — held), rain nothing on marks / most false alarms, buildings neutral in the FLOW (not measured in the waves),
 cnb 1.0 a marks-vs-false-alarm trade-off. Still to read from it: capped-hour `zsmax` (open question below).
 
-Last updated: **2026-10-29** — premier → `v4_refreeze_swz` (§63 (g)); `p4_read2` done; swomp 6 h cut bit-identical (SnapWave 1.28×); modern-bed download complete (all 272 3DEP tiles verified).
+Last updated: **2026-10-29 eve** — FIAT export + wavefront cut queued; premier → `v4_refreeze_swz` (§63 (g)); `p4_read2` done; swomp 6 h cut bit-identical (SnapWave 1.28×); modern-bed download complete (all 272 3DEP tiles verified).
 
 ---
 
@@ -47,6 +51,10 @@ Last updated: **2026-10-29** — premier → `v4_refreeze_swz` (§63 (g)); `p4_r
   `run_experiments.py`, `hpc/sfincs_run.slurm`: 🔴 don't edit them until it STARTS. Scratch will pass its 1 T soft
   limit while it runs → afterwards retire the 7 v4_refreeze twins (`retire_arm.py`, user OK 10-29); `sfincs-nj-agri`
   jobs share the quota. Then: null-band read on swz, the repeat check (`repeat_swz.json`).
+- ⏳ **63242704 `swomp2_v4cut`** (10-29): 6 h cut of the swz premier, production engine vs `sfincs-swomp2-43cf6bfb` at
+  16 threads side by side + swomp-2 at 64; must be BIT-IDENTICAL (`v4cut_compare_*.json`, byte check in the .out).
+- ⏳ **63246191 `fiat_export`** (10-29, 3rd try: OOM at 250 G, then a `_FillValue` write error, then the roof fix):
+  `share/sandy_hmax_v4_refreeze_swz_p4-premier_bareground_*` — not handed over until checked (PICK UP (4)).
 - ✅ **Modern-bed download 63180978 complete:** all 11 lists, 3DEP 272 / 272. The log's "partial files left: 99"
   predates the 10-28 fix (USGS re-staged those tiles; renamed in after a server-size match,
   `raw/usgs_3dep_1m/_server_size_ok.txt`); 10-29: all 99 size-ok + open in GDAL.
