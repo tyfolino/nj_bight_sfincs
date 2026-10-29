@@ -22,7 +22,7 @@ export she has biased her damages LOW — user 10-29); revise the README's v3-sp
 `p4_read2` 63177634 finished 10-28 ("failed steps: none"); its "Error reading variable ini" lines are benign.
 
 **Phase 4 (10-28) → FINDINGS part 4 (i):** 13 arms whole, seeded, uninterrupted; repeat bit-identical; waves
-ΔRMSE −0.150, wavemaker −0.108 (mostly lakes — held), rain nothing on marks / most false alarms, buildings neutral,
+ΔRMSE −0.150, wavemaker −0.108 (mostly lakes — held), rain nothing on marks / most false alarms, buildings neutral in the FLOW (not measured in the waves),
 cnb 1.0 a marks-vs-false-alarm trade-off. Still to read from it: capped-hour `zsmax` (open question below).
 
 Last updated: **2026-10-29** — premier → `v4_refreeze_swz` (§63 (g)); `p4_read2` done; swomp 6 h cut bit-identical (SnapWave 1.28×); modern-bed download complete (all 272 3DEP tiles verified).
@@ -191,7 +191,8 @@ heads may still be tidal (unpainted). Paerdegat: leave it (user).
   engine `…igseed-wmseed-1…`, repeat test passed — §44 (j)) with a no-wavemaker arm beside it.
   ⚠️ `dep_subgrid_lev0.tif` is NaN over the Cape May peninsula block (no level-1 faces there).
 - **Test 8 (setup-only wavemaker line):** evidence says don't run it as designed (§62); user's call.
-- **Buildings on the apex band: CLOSED 10-28** (§55: neutral, NY bays inside the band). ⚠️ `motf_metrics` does not
+- **Buildings on the apex band, in the FLOW: CLOSED 10-28** (§55: neutral, NY bays inside the band). NOT closed:
+  buildings in the WAVE bed (swz) — Phase 4's SnapWave never saw buildings; that is the open choice below (§63 (h)). ⚠️ `motf_metrics` does not
   mask footprints, so `bed-nobuildings`' CSI is inflated; mask them if buildings are ever ranked on extent.
 - **No model M2 test** of the interior amplification (part 2). Close: modelled M2 at Port Reading /
   Keasbey / South Amboy / Great Kills vs the NOAA harcon table.
@@ -231,7 +232,7 @@ OpenMP — checked loop by loop (`vec_compare.py`). ✅ **6 h v4 cut (63182232, 
 threads (`engine_gate` STRICT + byte check, 229 iteration lines). **SnapWave 3,091 → 2,421 s = 1.28×** — quote that,
 not the 1.6× wall (5,983 → 3,679 s): the old copy's input phase took 1,785 s vs 143 s (cold cache / disk contention
 side by side, not the patch). 64 threads add nothing to SnapWave (2,424 s). A sequential cold-cache pair would settle
-the wall figure — fold into the wavefront test. Next: the wavefront sweep. GPU flow + parallel SnapWave together: ~14 h → ~1.5–2 h (estimate; needs
+the wall figure — fold into the wavefront test. ▶ **Wavefront sweep (nj-swomp-2) 10-29** (`logs/snapwave_wavefront_2026-10-29/README.md`): prototype `sfincs-swomp2-43cf6bfb` (level schedule, one sweep body, serial fallback); vectorization gate ✅; **toy BIT-IDENTICAL** at 1 / 4 / 16 threads AND with the schedule forced on at 1 thread (a different node order); 6 h swz-premier cut **63242704** queued (bit check + timing). GPU flow + parallel SnapWave together: ~14 h → ~1.5–2 h (estimate; needs
 SnapWave to run beside a GPU flow build — ask Deltares).
 SnapWave is ~97 % of a v3 64-thread waves-on run (§20) and its sweep is SERIAL: a 64-thread solve averages ~6 busy cores. No OpenMP
 around the sweep loop on `main` (checked 10-26). Don't write our own SnapWave (months to validate).

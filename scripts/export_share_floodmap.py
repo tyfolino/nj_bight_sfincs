@@ -63,31 +63,55 @@ DEFAULT_OUT = ROOT / "share"
 
 def bare_ground_hmax(model_dir: Path, ground: Path) -> tuple[xr.DataArray, dict]:
     """North-up peak depth from BARE ground (module docstring, ``--ground``), with
-    permanent water dropped exactly as the gallery tif does, plus a footprint count."""
+    permanent water dropped as the gallery tif does, plus a footprint count.
+
+    ``downscale_floodmap`` works on the bed's first OVERVIEW (6.25 m on v4, 2x the 3.125 m
+    merged raster), so the water mask and the footprint count are taken on that same rotated
+    lattice (asserted), before the one de-rotation. Reading the full 3.125 m beds instead
+    was OOM-killed at 250 G (job 63237278, 2026-10-29). The downscale is cached atomically
+    beside the gallery tifs (scratch) and reused while newer than the run and the bed.
+    """
     own = model_dir / "subgrid" / "dep_subgrid_merged.tif"
     bare = Path(ground) / "subgrid" / "dep_subgrid_merged.tif"
     with rasterio.open(own) as o, rasterio.open(bare) as b:
         if (o.shape, o.transform, o.crs) != (b.shape, b.transform, b.crs):
             raise SystemExit(f"{bare} is not on the run's subgrid lattice ({own})")
-    zsmax = open_run(model_dir).output.data["zsmax"].max(dim="timemax")
     # on scratch, not beside the share file: the rotated raster is GBs and home is GPFS-tight
-    tmp = exp_root() / "floodmaps" / f".{model_dir.name}_bare.partial.tif"
-    tmp.parent.mkdir(parents=True, exist_ok=True)
-    utils.downscale_floodmap(
-        zsmax=zsmax, dep=str(bare), hmin=0.05, floodmap_fn=str(tmp), nrmax=1000
+    cache = exp_root() / "floodmaps" / f".{model_dir.name}_bare_hmax.tif"
+    newest = max((model_dir / "sfincs_map.nc").stat().st_mtime, bare.stat().st_mtime)
+    if not (cache.is_file() and cache.stat().st_mtime >= newest):
+        zsmax = open_run(model_dir).output.data["zsmax"].max(dim="timemax")
+        tmp = cache.with_name(
+            cache.stem + ".partial.tif"
+        )  # .tif: build_overviews asserts it
+        cache.parent.mkdir(parents=True, exist_ok=True)
+        utils.downscale_floodmap(
+            zsmax=zsmax, dep=str(bare), hmin=0.05, floodmap_fn=str(tmp), nrmax=1000
+        )
+        os.replace(
+            tmp, cache
+        )  # atomic: a truncated depth map reads back clean (CLAUDE §5)
+    with rasterio.open(cache) as h, rasterio.open(bare, overview_level=0) as b:
+        same = h.shape == b.shape and np.allclose(
+            tuple(h.transform), tuple(b.transform), rtol=0, atol=1e-6
+        )
+        if not same:
+            raise SystemExit(f"{cache} is not on {bare}'s first overview lattice")
+        dep_b = b.read(1, masked=True).filled(np.nan)
+    with rasterio.open(own, overview_level=0) as o:
+        # footprint = where the burn raised the bed (the two recipes differ only there)
+        fp = (o.read(1, masked=True).filled(np.nan) - dep_b) > 0.5
+    da = rioxarray.open_rasterio(cache, masked=True).squeeze(drop=True).load()
+    a = da.values
+    a[~(dep_b > -0.5)] = np.nan  # drop deep ocean, as load_floodmap does
+    del dep_b
+    stats = dict(
+        n_footprint=int(fp.sum()),
+        n_footprint_wet=int((fp & (a >= validate.DEPTH_MIN)).sum()),
     )
-    da = rioxarray.open_rasterio(tmp, masked=True).squeeze(drop=True)
-    da = da.rio.reproject(da.rio.crs).load()  # de-rotate to north-up (CLAUDE.md §5)
-    tmp.unlink()
-    dep_b = rioxarray.open_rasterio(bare, masked=True).squeeze(drop=True)
-    dep_b = dep_b.rio.reproject_match(da).values
-    da = da.where(dep_b > -0.5)  # drop deep ocean, as load_floodmap does
-    dep_o = rioxarray.open_rasterio(own, masked=True).squeeze(drop=True)
-    # footprint = where the burn raised the bed (the two recipes differ only there)
-    fp = (dep_o.rio.reproject_match(da).values - dep_b) > 0.5
-    del dep_o, dep_b
-    wet = da.values >= validate.DEPTH_MIN
-    return da, dict(n_footprint=int(fp.sum()), n_footprint_wet=int((fp & wet).sum()))
+    del fp
+    da.values = a
+    return da.rio.reproject(da.rio.crs), stats  # de-rotate to north-up (CLAUDE.md §5)
 
 
 def export(arm: str, out_tif: Path, ground: Path | None = None) -> dict:

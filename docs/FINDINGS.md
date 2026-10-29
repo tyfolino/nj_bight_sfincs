@@ -1443,7 +1443,10 @@ CLAUDE.md §5.
     (seeded, 2026-10-28, old wave bed):** `bed-nobuildings` − `p4-premier` ΔRMSE −0.003 [−0.057, +0.039]
     (n 110, median, 50 m); NY bays Δmean −0.067 m — INSIDE their null band (§44 (e)); other basins
     ≤ 1 cm. Its CSI 0.807 vs 0.785 is not a skill gain: `motf_metrics` does NOT mask footprints,
-    so bare-ground footprints that MOTF calls wet score as hits. Buildings stay (decision above).
+    so bare-ground footprints that MOTF calls wet score as hits. ⚠️ **FLOW only:** on that bed SnapWave
+    read face `z` from `bed_v4_coarse_25m`, which has no buildings (§63), so neither arm had buildings in
+    the WAVES. Buildings in SnapWave's bed (the swz premier) are a separate, unmeasured choice — they
+    lower the Monmouth lakes ~0.1 m (§63 (h)); only a bare-ground face-`z` side arm measures them.
 
 56. **SnapWave bottom friction: `fw` 0.01 is the premier's, and the engine's default.** Every
     arm before 2026-09-11 wrote 0.02, double the default. One-flag pair on the fixed engine
@@ -2249,7 +2252,7 @@ re-runs. The repeat is bit-identical; the null band is §44 (e).
 - **Soil** (cnb): wetter (1.0) fits the marks better, ΔRMSE −0.022 [−0.046, −0.004], partly at the rain-fed lakes
   (non-lake RMSE 0.252 vs 0.261, unpaired), and adds false alarms (FAR 0.098, CSI 0.779); drier (2.38) +0.007
   [+0.002, +0.011]. A trade-off, not a winner.
-- **Buildings**: §55.
+- **Buildings** (flow only — no arm had buildings in the waves): §55.
 - **Re-baseline** (`p4-premier` − the 10-11 `naccs-premier`, many changes): ΔRMSE −0.028 [−0.073, +0.034], not
   resolved; inlets −0.051 [−0.128, −0.002]; open coast median +0.009 m. Atlantic City's peak still +0.50 m
   (the forcing, above). **The four nudged gauges now see the tide** (modelled/observed range, old → p4): Cape May
