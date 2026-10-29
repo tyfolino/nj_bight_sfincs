@@ -44,6 +44,7 @@ import os
 from datetime import date
 from pathlib import Path
 
+import netCDF4
 import numpy as np
 import pandas as pd
 import rasterio
@@ -59,6 +60,7 @@ from nj_sfincs.config import ROOT, exp_root
 from nj_sfincs.validate.core import open_run
 
 DEFAULT_OUT = ROOT / "share"
+HMIN = 0.05  # the downscale floor, as validate.load_floodmap
 
 
 def bare_ground_hmax(model_dir: Path, ground: Path) -> tuple[xr.DataArray, dict]:
@@ -81,12 +83,33 @@ def bare_ground_hmax(model_dir: Path, ground: Path) -> tuple[xr.DataArray, dict]
     newest = max((model_dir / "sfincs_map.nc").stat().st_mtime, bare.stat().st_mtime)
     if not (cache.is_file() and cache.stat().st_mtime >= newest):
         zsmax = open_run(model_dir).output.data["zsmax"].max(dim="timemax")
+        # Two kinds of face have no street-level water to measure a building against, and
+        # read as PHANTOM depth on bare ground (2026-10-29: 9.5 m on Atlantic City / Newark
+        # roofs): a face the burn covers ENTIRELY (its lowest pixel = a roof, ~10 m above the
+        # bare bed; its zsmax = rain on that roof), and a face that never got wet (zsmax
+        # within hmin of its lowest pixel; the gallery tif is blank there anyway). Both are
+        # dropped before the downscale, so a fully covered building stays blank.
+        zmin = {}
+        for k, p in (("own", model_dir), ("bare", Path(ground))):
+            with netCDF4.Dataset(p / "sfincs_subgrid.nc") as n:
+                zmin[k] = np.ma.filled(n["z_zmin"][:], np.nan)
+        if zmin["own"].shape != zsmax.shape:
+            raise SystemExit("sfincs_subgrid.nc is not in the map's face order")
+        covered = (zmin["own"] - zmin["bare"]) > 0.5
+        dry = ~((zsmax.values - zmin["own"]) >= HMIN)
+        print(
+            f"[bare ground] faces dropped: {int(covered.sum())} fully covered by buildings "
+            f"({int((covered & ~dry).sum())} with water on the roof), "
+            f"{int((dry & ~covered).sum())} dry",
+            flush=True,
+        )
+        zsmax = zsmax.where(~covered & ~dry)
         tmp = cache.with_name(
             cache.stem + ".partial.tif"
         )  # .tif: build_overviews asserts it
         cache.parent.mkdir(parents=True, exist_ok=True)
         utils.downscale_floodmap(
-            zsmax=zsmax, dep=str(bare), hmin=0.05, floodmap_fn=str(tmp), nrmax=1000
+            zsmax=zsmax, dep=str(bare), hmin=HMIN, floodmap_fn=str(tmp), nrmax=1000
         )
         os.replace(
             tmp, cache
