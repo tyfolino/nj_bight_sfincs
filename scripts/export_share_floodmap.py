@@ -111,7 +111,12 @@ def bare_ground_hmax(model_dir: Path, ground: Path) -> tuple[xr.DataArray, dict]
     )
     del fp
     da.values = a
-    return da.rio.reproject(da.rio.crs), stats  # de-rotate to north-up (CLAUDE.md §5)
+    da = da.rio.reproject(da.rio.crs)  # de-rotate to north-up (CLAUDE.md §5)
+    # the masked open leaves _FillValue in attrs; export()'s write_nodata(NaN) then refuses to
+    # write (job 63242844, 2026-10-29) -- the gallery tif carries none
+    da.attrs.pop("_FillValue", None)
+    da.encoding.pop("_FillValue", None)
+    return da, stats
 
 
 def export(arm: str, out_tif: Path, ground: Path | None = None) -> dict:
