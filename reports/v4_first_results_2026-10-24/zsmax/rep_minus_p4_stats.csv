@@ -1,0 +1,28 @@
+basin,n_faces,median_m,mean_m,p05_m,p95_m,max_abs_m
+ALL wet faces,3463149,0.0,0.0,0.0,0.0,0.0
+absecon_atlantic_city,259029,0.0,0.0,0.0,0.0,0.0
+arthur_kill_nj,40702,0.0,0.0,0.0,0.0,0.0
+atlantic_oceanfront,14615,0.0,0.0,0.0,0.0,0.0
+barnegat_barrier,24738,0.0,0.0,0.0,0.0,0.0
+barnegat_bay,102522,0.0,0.0,0.0,0.0,0.0
+brooklyn_breezy,18165,0.0,0.0,0.0,0.0,0.0
+cape_may,248828,0.0,0.0,0.0,0.0,0.0
+cape_may_back_bays,170152,0.0,0.0,0.0,0.0,0.0
+delaware_bay_de,706678,0.0,0.0,0.0,0.0,0.0
+delaware_bay_nj_upper,130831,0.0,0.0,0.0,0.0,0.0
+delaware_bay_shore,338088,0.0,0.0,0.0,0.0,0.0
+delaware_river,270077,0.0,0.0,0.0,0.0,0.0
+delaware_river_upper,31282,0.0,0.0,0.0,0.0,0.0
+great_bay_mullica,269436,0.0,0.0,0.0,0.0,0.0
+great_egg,164740,0.0,0.0,0.0,0.0,0.0
+lbi_barrier,205165,0.0,0.0,0.0,0.0,0.0
+lower_bay_si_shore,77281,0.0,0.0,0.0,0.0,0.0
+manasquan,31794,0.0,0.0,0.0,0.0,0.0
+newark_bay,62734,0.0,0.0,0.0,0.0,0.0
+raritan_bay,75405,0.0,0.0,0.0,0.0,0.0
+raritan_river,14036,0.0,0.0,0.0,0.0,0.0
+sandy_hook_bay,121332,0.0,0.0,0.0,0.0,0.0
+shark_river,13073,0.0,0.0,0.0,0.0,0.0
+shrewsbury_navesink,63072,0.0,0.0,0.0,0.0,0.0
+south_coast,9374,0.0,0.0,0.0,0.0,0.0
+(active in only one run),0,,,,,

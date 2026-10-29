@@ -136,6 +136,23 @@ def _meteo_source_key(path: Path, default: str) -> str:
     return default
 
 
+def _blend_pressure(path: Path) -> str | None:
+    """The ``(pressure: <blend|era5>)`` tag in a blend file's stamp
+    (``scripts/build_wind_naccs_blend.py --pressure``); ``None`` when absent (older
+    builds blended the pressure). Never raises."""
+    import re
+
+    try:
+        import netCDF4
+
+        with netCDF4.Dataset(path) as nc:
+            stamp = str(getattr(nc, "nj_sfincs_meteo_blend", ""))
+    except Exception:  # noqa: BLE001
+        return None
+    m = re.search(r"\(pressure: (\w+)\)", stamp)
+    return m.group(1) if m else None
+
+
 def _validation_rows():
     """`_VALIDATION` with the domain-dependent HWM file filled in."""
     from . import domain as _domain
@@ -574,6 +591,10 @@ def meteo_label(model_dir: Path | str) -> str:
         if not f.is_file():
             continue
         src = _meteo_source_key(f, "era5").split(" ")[0]
+        # A blend file built with ``--pressure era5`` carries ERA5 bilinear pressure, not
+        # the blend (the Phase 4 arms, 2026-10-19): its stamp says so.
+        if tag == "pres" and src == "naccs_blend" and _blend_pressure(f) == "era5":
+            src = "era5-bilinear"
         try:
             st = meteo_grid.file_state(f)
             grids.append("engine" if st["fixed"] else "centres")
@@ -673,4 +694,3 @@ def extra_discharge_label(model_dir: Path | str) -> str:
         for n, pk, v in zip(r["names"], r["peak_m3s"], r["volume_m3"])
     ]
     return "; ".join(parts) + f" @{r['sha256'][:8]}"
-

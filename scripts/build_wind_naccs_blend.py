@@ -38,7 +38,8 @@ sys.path.insert(0, str(ROOT))
 from nj_sfincs import meteo_blend as mb  # noqa: E402
 from nj_sfincs import meteo_grid  # noqa: E402
 
-DEF_TEMPLATE = ROOT / "experiments/v4_hot_plus_walls/_template_sealed"
+# v4_hot_plus_walls' template (the 10-06 build's) was removed 2026-10-28; same mesh.
+DEF_TEMPLATE = ROOT / "experiments/v4_refreeze/_template_sealed"
 DEF_NACCS = ROOT / "data/NACCS/naccs_repack_ADCIRC01.zip"
 DEF_ERA5 = ROOT / "data/era5/era5_nj_sandy_2012_10_28_31.nc"
 DEF_POS = ROOT / "logs/wind_products_2026-10-06/naccs_savepoints_all.csv"

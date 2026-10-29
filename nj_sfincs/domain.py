@@ -560,6 +560,13 @@ class Domain:
     #: — no bearing on the mesh or the fingerprint.
     normal_surface_dir: Path | None = None
 
+    #: FACE-Z VARIANT (2026-10-28, FINDINGS §63): the ``subgrid_from`` dir (of the domain
+    #: this one is a copy of) whose subgrid MEAN ground replaced the mesh's face ``z`` on
+    #: active faces — ``scripts/setup_face_z.py``. SnapWave reads its whole bed from face
+    #: ``z``; the flow never does. ``None`` = the frozen mesh's own ``z``. Half of the
+    #: fingerprint, so a sibling that differs only here is still a different domain.
+    face_z_from: str | None = None
+
     # ── Water-level boundary support points ──────────────────────────────────
     # hydromt selects the forcing gauges by BUFFERING the model region, so the number
     # of support points is a function of the DOMAIN, not of the forcing file. That makes
@@ -3191,6 +3198,30 @@ V4_REFREEZE = replace(
     ksat_dataset="ksat_v4_refreeze",  # cnb arms (2026-10-15)
 )
 
+#: v4_refreeze with SnapWave on the bed the flow uses (FINDINGS §63, user 2026-10-28): the
+#: same mesh, mask and inputs; only the mesh's face ``z`` changes, to the Phase 4 bed's
+#: subgrid mean ground on active faces (``scripts/setup_face_z.py``). ``z`` is half the
+#: fingerprint, so this is a domain (new sha, same counts), not an arm.
+V4_REFREEZE_SWZ = replace(
+    V4_REFREEZE,
+    name="v4_refreeze_swz",
+    face_z_from="_subgrid_refreeze_lakes_min_creeks_cohansey",
+)
+
+#: The Wreck Pond breach arms with SnapWave on THEIR bed (user 2026-10-29): face ``z`` from
+#: each breach bed's subgrid mean ground, so the waves see the breach too — on
+#: ``v4_refreeze_swz`` they would see the intact dune (§63 (e)). One domain per bed.
+V4_REFREEZE_SWZ_WK0 = replace(
+    V4_REFREEZE_SWZ,
+    name="v4_refreeze_swz_wk0",
+    face_z_from="_subgrid_breach_wreck0_creeks_cohansey",
+)
+V4_REFREEZE_SWZ_WK165 = replace(
+    V4_REFREEZE_SWZ,
+    name="v4_refreeze_swz_wk165",
+    face_z_from="_subgrid_breach_wreck165_creeks_cohansey",
+)
+
 DOMAINS: dict[str, Domain] = {
     d.name: d
     for d in (
@@ -3203,6 +3234,9 @@ DOMAINS: dict[str, Domain] = {
         V4_HOT_PLUS,
         V4_HOT_PLUS_WALLS,
         V4_REFREEZE,
+        V4_REFREEZE_SWZ,
+        V4_REFREEZE_SWZ_WK0,
+        V4_REFREEZE_SWZ_WK165,
     )
 }
 

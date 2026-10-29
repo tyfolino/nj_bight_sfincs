@@ -1,0 +1,12 @@
+{
+ "label": "deal",
+ "n": 110,
+ "rmse": 0.3865239933961067,
+ "bias": -0.10549459530656986,
+ "metrics_n": 110,
+ "metrics_rmse": 0.3865239933961067,
+ "metrics_bias": -0.1054945953065698,
+ "metrics_estimator": "median",
+ "metrics_radius": 50.0,
+ "reproduces_metrics_4dp": true
+}

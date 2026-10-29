@@ -6,21 +6,24 @@ running, what is next, what is open. When an item closes, its durable fact goes 
 Git has the history. The campaign log this file grew into until 2026-09-29 (6,767 lines) is
 `git show d70dd1e:docs/STATUS.md`; FINDINGS cites it as "STATUS <date>".
 
-▶ **PICK UP (10-28): PHASE 4 SOLVES ALL DONE CLEAN; THE READ CONTINUES AS `p4_read2` 63177634.** All 13 v4
-arms of 63094139 ended exit 0 (wave 2 at 10-27 16:26–17:24); preflight (`read/out/preflight.csv`): every arm `output
-WHOLE`, seeded engine, hal (no halk), `segments: 0` — nothing to re-run. ✅ `p4-premier` vs `p4-premier-repeat`:
-**BIT-IDENTICAL** (`read/out/repeat_p4.json`). 63094139 TIMED OUT at 05:09 validating `p4-nowaves` (the node-1 risk) →
-no `metrics.csv` row / gallery for it. `p4_read` 63094140 ran preflight, repeat and residuals `p4` … `wk0`, then hit
-its 6 h limit in `res_wk165`. **63177634 `p4_read2`** (`read/read_phase4_cont.slurm`, afterany 63094140, 16 h,
-EXPECT_MD5 `read/expected_cont.md5`): validate `p4-nowaves`, then the read from the step 63094140 died in (`wk165`) to
-the end (residuals, 17 zsmax pairs, report, null band, Sluice, PREREG marks). First numbers (median, 50 m, n 110, not
-paired): `p4-premier` RMSE 0.408 / bias −0.099 / CSI 0.785 vs the 10-11 `naccs-premier` 0.436 / −0.110 / 0.780.
-**Next:** read `p4_read2`'s output; re-publish the site for `p4-nowaves`. 🔴 **Hold the `nj_sfincs/experiments.py`
-(rain-off description) and `provenance.py` (v4 forcing labels: the meteo label says `pres:naccs_blend` where the run
-used ERA5 pressure inside the blend) fixes until `p4_read2` ends:** both are in its EXPECT_MD5, and its `p4-nowaves`
-validation writes `provenance.py`'s labels into `metrics.csv` — edit after, then relabel all rows.
+▶ **PICK UP (10-29): THE PREMIER MOVES TO `v4_refreeze_swz` (user 10-29, FINDINGS §63 (g)).** SnapWave on the
+subgrid mean ground: the water moves a few cm, coherently; HWM skill unchanged on the 105 non-lake marks (ΔRMSE
+−0.003 [−0.009, +0.005]); the all-mark loss (0.408 → 0.439) is five Monmouth lake marks. The candidate is
+`v4_refreeze_swz/p4-premier` as run (63181564, uninterrupted, seeded). ✅ 10-29: label fixes applied (`provenance.meteo_label` reads the blend's `(pressure: era5)` tag →
+`pres:era5-bilinear`; rain-off description) and 15 rows + manifests relabelled (`logs/relabel_2026-10-29/`; 7 rows
+scored before the `meteo` column existed left blank); site re-published locally (swz premier + `p4-nowaves`; the 6
+retired 10-11 side runs lose their figures, rows kept) — user commits + pushes `~/sandy_flood_site`; scratch D1 + D2
+done (63.8 G). **Next:** (1) the null band + the LAKE side arms on swz (breach ×2, Deal overtop, no wavemaker): their
+lake answers came from the old wave bed — hold lake conclusions until then; plan → user OKs; (2) write up `p4_read2`'s
+read (`read/out/`); (3) the lakes' beach-face `z`, old vs new (6121 −0.6 m).
+`p4_read2` 63177634 finished 10-28 ("failed steps: none"); its "Error reading variable ini" lines are benign.
 
-Last updated: **2026-10-28** — Phase 4 solves done + repeat bit-identical; read continues (63177634); site shows `p4-premier`.
+**Phase 4 record (10-28):** all 13 v4 arms of 63094139 exit 0, every arm `output WHOLE`, seeded, hal, `segments: 0`
+(`read/out/preflight.csv`); `p4-premier` vs its repeat **BIT-IDENTICAL** (`read/out/repeat_p4.json`). First numbers
+(median, 50 m, n 110, not paired): `p4-premier` RMSE 0.408 / bias −0.099 / CSI 0.785 vs the 10-11 `naccs-premier`
+0.436 / −0.110 / 0.780.
+
+Last updated: **2026-10-29** — premier → `v4_refreeze_swz` (§63 (g)); `p4_read2` done; swomp 6 h cut bit-identical (SnapWave 1.28×); modern-bed download complete (all 272 3DEP tiles verified).
 
 ---
 
@@ -28,17 +31,25 @@ Last updated: **2026-10-28** — Phase 4 solves done + repeat bit-identical; rea
 
 - **v3 is DONE** (2026-09-24). Reference `naccs-premier` — HWM RMSE 0.329 / bias −0.143 (median, 50 m, n 94),
   MOTF CSI 0.706; re-run on the seeded engine in Phase 4 (`p4-ref` / `p4-ref-nowaves`).
-- **v4 = `v4_refreeze`** (`378014e154b4ff41`). Premier `naccs-premier` (NACCS-blend wind, CN infiltration,
+- **v4 premier → `v4_refreeze_swz`** (`90cc7468614a5814`, user 10-29; the Phase 4 arms are on `v4_refreeze`
+  `378014e154b4ff41`). The 10-11 premier `naccs-premier` (NACCS-blend wind, CN infiltration,
   unseeded engine): RMSE 0.436 / bias −0.110 (n 110), CSI 0.780; without the 5 noted marks 0.408 / −0.095 (n 105);
   10 marks outside ±0.5 m, inventoried in FINDINGS part 4 (h).
 - **Heading for:** the Phase 4 re-baseline (below), before maintenance 11-10.
 
-## Running (10-28)
+## Running (10-29)
 
-- ⏳ **63177634 `p4_read2`** (`logs/rebaseline_2026-10-19/read/read_phase4_cont.slurm`, afterany `p4_read` 63094140,
-  240 G, ≤ 16 h; EXPECT_MD5 `read/expected_cont.md5`, which also covers `run_experiments.py`, `nj_sfincs/provenance.py`,
-  `nj_sfincs/experiments.py`): validate `p4-nowaves`, then the rest of the read (PICK UP). The zsmax pairs were never
-  timed (attempts 1–2 skipped them). `res_nowv` ran before `p4-nowaves` had a row, so its self-check is blank; the marks
+- ⏳ **63231557 `swz_band`** (submitted 10-29; `logs/swz_band_2026-10-29/README.md`): 2 emeraldrapids nodes, ≤ 30 h —
+  on `v4_refreeze_swz` the repeat, the two `rhoa` nulls, Deal overtop, no wavemaker; the two Wreck Pond breaches on
+  their own face-z domains (`v4_refreeze_swz_wk0` / `_wk165`). EXPECT_MD5 `expected.md5` covers `nj_sfincs/*.py`,
+  `run_experiments.py`, `hpc/sfincs_run.slurm`: 🔴 don't edit them until it STARTS. Scratch will pass its 1 T soft
+  limit while it runs → afterwards retire the 7 v4_refreeze twins (`retire_arm.py`, user OK 10-29); `sfincs-nj-agri`
+  jobs share the quota. Then: null-band read on swz, the repeat check (`repeat_swz.json`).
+- ✅ **Modern-bed download 63180978 complete:** all 11 lists, 3DEP 272 / 272. The log's "partial files left: 99"
+  predates the 10-28 fix (USGS re-staged those tiles; renamed in after a server-size match,
+  `raw/usgs_3dep_1m/_server_size_ok.txt`); 10-29: all 99 size-ok + open in GDAL.
+
+- **Phase 4 read notes:** `res_nowv` ran before `p4-nowaves` had a row, so its self-check is blank; the marks
   file does not depend on the row. Attempt 1 (62827640 + its read 62831580): `attempt1_62827640/`, `failed_62827640/`.
   Attempt 2 (62963088 + read 62963089, 10-26): never solved; what its read wrote from older runs is filed in
   `attempt2_62963088/` — **not Phase 4 results**.
@@ -167,6 +178,9 @@ heads may still be tidal (unpainted). Paerdegat: leave it (user).
 - **Unread from the 10-05 pre-registration:** do the Maurice / Mullica / Tuckahoe / Rancocas reaches
   wet; hm0 vs depth at the SnapWave band's 53 boundary cells shallower than −20 m. Close: one read of
   the premier's map output.
+- **Monmouth lakes under the swz premier (§63 (g)):** 6121 −1.43 → −2.03, 6124 −0.50 → −0.69, 6130 −1.94 → −2.09
+  (6129 better, −0.31 → −0.05) once SnapWave reads the subgrid mean ground. Close: face `z` old vs new on the beach /
+  dune faces in front of Deal, Wesley, Wreck Pond and 6121's lake, beside each run's hm0 there.
 - **IG in the water:** the v3 / old v4 premiers compute IG but do not couple it (`snapwave_igwaves = 1`, no
   `wvmfile`; §45). ✅ The Phase 4 premier carries the wavemaker (user 10-17; line `snapbeach`, user 10-19;
   engine `…igseed-wmseed-1…`, repeat test passed — §44 (j)) with a no-wavemaker arm beside it.
@@ -200,7 +214,20 @@ heads may still be tidal (unpainted). Paerdegat: leave it (user).
 
 ## Future: make the model faster (user 10-27 — after we are happy with the v4 simulations)
 
-SnapWave is ~97 % of a waves-on run (§20) and its sweep is SERIAL: a 64-thread solve averages ~6 busy cores. No OpenMP
+▶ **10-28 anatomy + prototype** (`logs/snapwave_parallel_2026-10-28/README.md`): on the v4 `p4-premier` (16 threads)
+SnapWave is **8.6 of 14.1 h (61 %)**, not 97 % (that was v3 at 64 threads); the sweep is 6.7 h of it. Ceiling at 16
+threads: ~2.6× (the flow is ~5 h). Step 1 patched + compiled (`…-gf11-swomp/`, tag `nj-swomp-1`): ✅ **toy
+BIT-IDENTICAL 10-28** (old 1 thread vs new 1 / 4 / 16, three cases incl. wind-on 5° bins; his + map + restart files +
+iteration lines; the comparator catches a wind-on/off difference: `toy_compare.txt`); ~1.1× estimated. ⚠️ that test
+binary was built by hand, so its log says `svn 197-branch:SnapWave_IG` — install through `hpc/build_sfincs_native.sh`. Wavefront levels measured on the v4 mesh (8–21 k levels per direction, median width 116–351) → ~2.3×
+estimated. 🔴 glibc `libmvec`: restructuring a vectorized sin/cos/exp/pow loop changes the last bit even with exact
+OpenMP — checked loop by loop (`vec_compare.py`). ✅ **6 h v4 cut (63182232, 10-28): BIT-IDENTICAL** at 16 and 64
+threads (`engine_gate` STRICT + byte check, 229 iteration lines). **SnapWave 3,091 → 2,421 s = 1.28×** — quote that,
+not the 1.6× wall (5,983 → 3,679 s): the old copy's input phase took 1,785 s vs 143 s (cold cache / disk contention
+side by side, not the patch). 64 threads add nothing to SnapWave (2,424 s). A sequential cold-cache pair would settle
+the wall figure — fold into the wavefront test. Next: the wavefront sweep. GPU flow + parallel SnapWave together: ~14 h → ~1.5–2 h (estimate; needs
+SnapWave to run beside a GPU flow build — ask Deltares).
+SnapWave is ~97 % of a v3 64-thread waves-on run (§20) and its sweep is SERIAL: a 64-thread solve averages ~6 busy cores. No OpenMP
 around the sweep loop on `main` (checked 10-26). Don't write our own SnapWave (months to validate).
 
 - **(b) Parallel SnapWave, bit-identical → no new engine gate, no re-baseline.** In this order:
@@ -208,7 +235,7 @@ around the sweep loop on `main` (checked 10-26). Don't write our own SnapWave (m
      lines, maybe 1.2–1.3×.
   2. *The big one:* level-scheduled ("wavefront") sweep — build each sweep's upwind dependency graph once per call,
      group nodes into levels, run each level in parallel; every node reads the same values as in serial order.
-     Sweep ≈ 70–80 % of a call (§20 fit) → estimated 3–5× per run (13 h premier → a few h). Estimate, not measured.
+     Sweep ≈ 78 % of SnapWave on v4 (10-28 fit) → estimated ~2.3× per v4 run (14 h → ~6 h). Estimate, not measured.
      A few hundred lines of Fortran.
   3. *Memory order:* renumber nodes so sweep order = memory order (no arithmetic change; gain unknown).
   4. *Per-call setup:* each call re-sorts all nodes four times (part of the fixed ~42 s/call) — cache it.
@@ -254,7 +281,7 @@ around the sweep loop on `main` (checked 10-26). Don't write our own SnapWave (m
 
 - **Home** (`/cache/home`, GPFS): 100 G soft / 110 G hard; **89.2 G on 2026-10-28**. Ask
   `/usr/lpp/mmfs/bin/mmlsquota -u $USER --block-size auto cache` (lags ~10 min).
-- **Scratch** (`/scratch/tpj8`): 1 T soft / 2 T hard, **704 G on 2026-10-22** (after the four pre-creek beds were deleted; the 39 G pre-inflows template is
+- 🔴 **Scratch** (`/scratch/tpj8`): 1 T soft / 2 T hard. **Over the soft limit 10-28: 1.169 T, grace → ~11-03**; cleanup 10-28 (user OK; `logs/scratch_survey_2026-10-28/`): tiers A + B, run B retired, the 6 10-11 side runs retired → 1.008 T with the download landing. ✅ **tier A-deferred D1 + D2 DONE 10-29** (`snapwave.upw` of the 12 Phase 4 v4 runs + `p4-ref`, 63.8 G; the shadow dir) (commands: `logs/scratch_survey_2026-10-28/candidates.sh` D1; write the paths out literally — the rm safety check refuses `$VAR/…` targets). `sfincs-nj-agri` shares this quota (324 G). Earlier: **704 G on 2026-10-22** (after the four pre-creek beds were deleted; the 39 G pre-inflows template is
   gone too). 🔴 **Not backed up; files not accessed for 90 days are deleted.** `experiments/`
   and most of `data/` (the 10-05 swap is finished) live here; the durable copy is the desktop pull
   (`scripts/desktop_pull_backup.sh`) — re-run it whenever an arm is scored. The engine sources

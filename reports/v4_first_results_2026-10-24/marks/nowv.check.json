@@ -1,0 +1,12 @@
+{
+ "label": "nowv",
+ "n": 110,
+ "rmse": 0.5583972350914047,
+ "bias": -0.2835789508992975,
+ "metrics_n": null,
+ "metrics_rmse": null,
+ "metrics_bias": null,
+ "metrics_estimator": null,
+ "metrics_radius": null,
+ "reproduces_metrics_4dp": null
+}

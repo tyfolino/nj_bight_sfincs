@@ -1,0 +1,12 @@
+{
+ "label": "n01",
+ "n": 110,
+ "rmse": 0.407254040812833,
+ "bias": -0.11305823616114528,
+ "metrics_n": 110,
+ "metrics_rmse": 0.407254040812833,
+ "metrics_bias": -0.1130582361611452,
+ "metrics_estimator": "median",
+ "metrics_radius": 50.0,
+ "reproduces_metrics_4dp": true
+}

@@ -332,6 +332,8 @@ class TestMeshKeySharing(_DomainEnv):
         "mask_overrides",
         "no_waterlevel_boxes",
         "discharge_geodataset",
+        # 2026-10-28: face z is the other half of the fingerprint (FINDINGS §63)
+        "face_z_from",
     )
 
     def _groups(self):
@@ -519,6 +521,11 @@ class TestWaterlevelSupportOverride(_DomainEnv):
             "v4_hot_plus_walls": 3,
             # THE re-frozen v4 (10-06): run B's domain + the Lewes edge; same line.
             "v4_refreeze": 3,
+            # v4_refreeze with SnapWave on the flow's bed (10-28): only face z differs.
+            "v4_refreeze_swz": 3,
+            # …and its two breach-bed siblings (10-29): face z only, again.
+            "v4_refreeze_swz_wk0": 3,
+            "v4_refreeze_swz_wk165": 3,
         }
         self.assertEqual(
             set(PINNED),

@@ -1,0 +1,12 @@
+{
+ "label": "cnb238",
+ "n": 110,
+ "rmse": 0.4144520103025148,
+ "bias": -0.09537001217061822,
+ "metrics_n": 110,
+ "metrics_rmse": 0.4144520103025148,
+ "metrics_bias": -0.0953700121706182,
+ "metrics_estimator": "median",
+ "metrics_radius": 50.0,
+ "reproduces_metrics_4dp": true
+}

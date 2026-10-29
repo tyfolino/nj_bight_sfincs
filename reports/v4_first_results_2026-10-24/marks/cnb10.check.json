@@ -1,0 +1,12 @@
+{
+ "label": "cnb10",
+ "n": 110,
+ "rmse": 0.3862682323676442,
+ "bias": -0.09112567541382528,
+ "metrics_n": 110,
+ "metrics_rmse": 0.3862682323676442,
+ "metrics_bias": -0.0911256754138252,
+ "metrics_estimator": "median",
+ "metrics_radius": 50.0,
+ "reproduces_metrics_4dp": true
+}

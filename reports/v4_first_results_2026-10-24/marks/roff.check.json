@@ -1,0 +1,12 @@
+{
+ "label": "roff",
+ "n": 110,
+ "rmse": 0.4074598532807576,
+ "bias": -0.10676098051504654,
+ "metrics_n": 110,
+ "metrics_rmse": 0.4074598532807576,
+ "metrics_bias": -0.1067609805150465,
+ "metrics_estimator": "median",
+ "metrics_radius": 50.0,
+ "reproduces_metrics_4dp": true
+}

@@ -765,8 +765,9 @@ _V4_REFREEZE.update(
         },
         "p4-premier+rain-off": _p4_arm(
             "p4-premier+rain-off",
-            "p4-premier with the rain forcing removed (netamprfile stripped; infiltration "
-            "keys stay and act on nothing). The waves-ON twin for splitting flooding into "
+            "p4-premier with the rain forcing removed (netamprfile and the infiltration "
+            "keys stripped: SFINCS infiltration acts only on rain, model.py). The waves-ON "
+            "twin for splitting flooding into "
             "rain and coastal: the 10-20 split had only waves-off twins (user 10-20). "
             "Pair: p4-premier.",
             rain=False,
@@ -864,6 +865,30 @@ EXPERIMENTS_BY_DOMAIN: dict[str, dict[str, Experiment]] = {
     "v4_hot_plus_walls": _V4_HOT_PLUS_WALLS,
     # Re-baselined 2026-10-11: naccs-premier = the NACCS-blend wind pair (above).
     "v4_refreeze": _V4_REFREEZE,
+    # 2026-10-28 (FINDINGS §63): the Phase 4 premier and its waves-off twin with SnapWave on
+    # the flow's bed. Pairs: p4-premier vs v4_refreeze's (the effect); p4-nowaves vs
+    # v4_refreeze's must be BIT-IDENTICAL (the flow never reads face z, §63 (a)).
+    # 2026-10-29 (user): the premier moved here; the null band and the lake arms re-run on it
+    # (their lake answers came from the old wave bed).
+    "v4_refreeze_swz": {
+        k: _V4_REFREEZE[k]
+        for k in (
+            "p4-premier",
+            "p4-nowaves",
+            "p4-premier-repeat",
+            "null-rhoa1.2501+p4-premier",
+            "null-rhoa1.2499+p4-premier",
+            "p4-premier+src-deal-overtop",
+            "p4-premier+wave-nowavemaker",
+        )
+    },
+    # The breach arms, each on a domain whose face z comes from its own breach bed.
+    "v4_refreeze_swz_wk0": {
+        k: _V4_REFREEZE[k] for k in ("bed-breach-wreck0+p4-premier",)
+    },
+    "v4_refreeze_swz_wk165": {
+        k: _V4_REFREEZE[k] for k in ("bed-breach-wreck165+p4-premier",)
+    },
 }
 
 

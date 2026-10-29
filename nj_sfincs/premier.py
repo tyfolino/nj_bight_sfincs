@@ -192,6 +192,16 @@ V4_HOT_PLUS_WALLS = DomainFingerprint(4881654, 4388, "77b5eda1fcd51cf6")
 #: test staging 62283012 (active 3,965,068 → 3,965,303, +235); CONFIRMED by the template
 #: staging 62312113 (same sha, active 3,965,303, 61 sources; logs/refreeze_2026-10-06/v4_refreeze/).
 V4_REFREEZE = DomainFingerprint(4881654, 4388, "378014e154b4ff41")
+#: v4_refreeze_swz STAGED 2026-10-28 (scripts/setup_face_z.py, user; FINDINGS §63): v4_refreeze
+#: with the mesh's face z = the Phase 4 bed's subgrid mean ground on 3,936,632 active faces
+#: (28,671 on hydromt's −20 m volume floor kept), so SnapWave sees the bed the flow uses.
+#: Same mesh, mask and counts — the sha is the only tell.
+V4_REFREEZE_SWZ = DomainFingerprint(4881654, 4388, "90cc7468614a5814")
+#: v4_refreeze_swz_wk0 / _wk165 STAGED 2026-10-29 (setup_face_z.py, user): face z from each
+#: Wreck Pond breach bed, so SnapWave sees the breach. Against v4_refreeze_swz face z differs
+#: on 202 / 174 faces, all at Mantoloking (40.04–40.05 N) and Wreck Pond (40.14 N).
+V4_REFREEZE_SWZ_WK0 = DomainFingerprint(4881654, 4388, "9c525ca93e9ede73")
+V4_REFREEZE_SWZ_WK165 = DomainFingerprint(4881654, 4388, "68286d6ef7c3dd66")
 
 EXPECTED: dict[str, DomainFingerprint] = {
     "v1_monmouth": V1_MONMOUTH,
@@ -203,6 +213,9 @@ EXPECTED: dict[str, DomainFingerprint] = {
     "v4_hot_plus": V4_HOT_PLUS,
     "v4_hot_plus_walls": V4_HOT_PLUS_WALLS,
     "v4_refreeze": V4_REFREEZE,
+    "v4_refreeze_swz": V4_REFREEZE_SWZ,
+    "v4_refreeze_swz_wk0": V4_REFREEZE_SWZ_WK0,
+    "v4_refreeze_swz_wk165": V4_REFREEZE_SWZ_WK165,
 }
 
 KNOWN = {
@@ -231,6 +244,18 @@ KNOWN = {
     V4_REFREEZE: (
         "v4_refreeze STAGED 2026-10-06 — THE re-frozen v4: v4_hot_plus_walls + the Lewes "
         "ring edit; bed _subgrid_refreeze, Keansburg + Overpeck weirs, Overpeck pool start"
+    ),
+    V4_REFREEZE_SWZ: (
+        "v4_refreeze_swz STAGED 2026-10-28 — v4_refreeze with face z = the Phase 4 bed's "
+        "subgrid mean ground (SnapWave on the flow's bed, FINDINGS §63)"
+    ),
+    V4_REFREEZE_SWZ_WK0: (
+        "v4_refreeze_swz_wk0 STAGED 2026-10-29 — v4_refreeze_swz with face z from the "
+        "Wreck Pond breach bed at 0.0 m (SnapWave sees the breach)"
+    ),
+    V4_REFREEZE_SWZ_WK165: (
+        "v4_refreeze_swz_wk165 STAGED 2026-10-29 — v4_refreeze_swz with face z from the "
+        "Wreck Pond breach bed at 1.65 m (SnapWave sees the breach)"
     ),
     V4_HOT_PLUS: "v4_hot_plus RE-STAGED 2026-10-05, RETIRED 2026-10-15 (records in _retired/)"
     " (Maurice cut on the Union Lake dam crest)"

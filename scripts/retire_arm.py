@@ -72,16 +72,23 @@ KEEP_FILES = {
     "mask_repair_diff.json",
     "overflow_check.csv",  # SLR containment gate results (overflow_check.py)
     "overflow_check.png",
+    "sfincs_cnb.nc",  # curve-number-with-recovery inputs (nj_sfincs.infiltration; ~60 MB)
+    "sfincs_cnb.json",
+    "face_z_report.json",  # a face_z_from domain's swap record (setup_face_z.py, §63)
 }
 KEEP_GLOBS = (
     "provenance*.txt",
+    "solve_*.log",  # a Phase 4 slot's solver / validate stdout
+    "validate_*.log",
+    ".staged_*",  # a staging job's marker
+
     "sfincs_ini_*",  # a sea_level.py start (binary inifile + its json sidecar; MB-sized)
     "snapwave.b??",
     "snapwave.bnd",
     "subgrid_*diff.json",
     "sfincs_net*.nc",
 )
-KEEP_DIRS = {"gis"}
+KEEP_DIRS = {"gis", "gallery"}  # gallery: the PNG figures (nj_sfincs/gallery.py), small
 DELETE_FILES = {
     "sfincs_map.nc",
     "snapwave.upw",

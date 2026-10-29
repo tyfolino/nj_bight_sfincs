@@ -1,0 +1,12 @@
+{
+ "label": "wk165",
+ "n": 110,
+ "rmse": 0.3775566838738709,
+ "bias": -0.07582402140010483,
+ "metrics_n": 110,
+ "metrics_rmse": 0.3775566838738709,
+ "metrics_bias": -0.0758240214001048,
+ "metrics_estimator": "median",
+ "metrics_radius": 50.0,
+ "reproduces_metrics_4dp": true
+}

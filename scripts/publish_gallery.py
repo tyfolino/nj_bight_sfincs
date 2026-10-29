@@ -236,18 +236,26 @@ render();
 
 #: The arm the SITE marks "(reference)" and compares against, per domain, where it is not
 #: ``premier.PREMIER_NAME`` (user 10-28: show the Phase 4 premier now, before Phase 5's tag).
-SITE_REFERENCE = {"v4_refreeze": "p4-premier"}
+#: 10-29: the premier moved to ``v4_refreeze_swz`` (FINDINGS §63 (g)); ``v4_refreeze`` keeps
+#: the Phase 4 side runs, compared against their own ``p4-premier``.
+SITE_REFERENCE = {"v4_refreeze_swz": "p4-premier", "v4_refreeze": "p4-premier"}
 
 #: The plain-language "what is new in the premier" list, shown at the bottom of the home page
 #: and of that domain's runs page. ⚠️ Edit it whenever the premier changes: a stale list
 #: here gets believed.
 NEXT_PREMIER = {
-    "domain": "v4_refreeze",
+    "domain": "v4_refreeze_swz",
     "arm": "p4-premier",
-    "as_of": "2026-10-28",
-    "status": "Run 2026-10-27 and scored. The side runs are scored too; comparing them "
-    "against it is still under way.",
+    "as_of": "2026-10-29",
+    "status": "Run 2026-10-28 and scored. It is the Phase 4 premier with the wave model "
+    "reading the corrected bed (first item below). The side runs (v4_refreeze) were run "
+    "on the previous version, with the wave model on the old bed; comparing them is "
+    "still under way.",
     "items": (
+        "The wave model reads the corrected bed: it used to compute waves on the 09-28 "
+        "elevation, missing every bed fix since (deeper rivers, creeks and inlet channels). "
+        "Water levels move a few centimetres; the high-water-mark score is unchanged except "
+        "at the Monmouth coastal lakes, where it is worse (under study).",
         "Repeatable waves: the wave model's random part is now seeded, so the same inputs "
         "give the same answer every time.",
         "Infragravity (IG) waves move the water: the long, slow waves under groups of "
@@ -749,7 +757,9 @@ def site_index(domains: dict) -> str:
             'A standard set of figures for every model run ("arm") of the Hurricane Sandy '
             "compound-flood hindcast, per domain, so runs compare by eye. Each domain is a "
             "different model: compare arms within a domain. Start with "
-            "<b><a href='v4_refreeze/compare.html'>view runs (v4)</a></b>.",
+            "<b><a href='v4_refreeze_swz/compare.html'>view runs (v4 premier)</a></b>; "
+            "the Phase 4 side runs are under "
+            "<a href='v4_refreeze/compare.html'>v4_refreeze</a>.",
         )
         + '<section><table class="sortable"><thead><tr><th>domain</th><th class="num">arms</th>'
         f'<th class="num">with figures</th><th></th></tr></thead><tbody>{trs}</tbody>'

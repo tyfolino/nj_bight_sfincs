@@ -1,0 +1,12 @@
+{
+ "label": "nowm",
+ "n": 110,
+ "rmse": 0.5156597640900766,
+ "bias": -0.14602653403282165,
+ "metrics_n": 110,
+ "metrics_rmse": 0.5156597640900766,
+ "metrics_bias": -0.1460265340328216,
+ "metrics_estimator": "median",
+ "metrics_radius": 50.0,
+ "reproduces_metrics_4dp": true
+}

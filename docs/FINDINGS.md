@@ -1124,6 +1124,59 @@ CLAUDE.md §5.
     jettied entrances; no setup-only nearshore forcing with back-bay skill is published):
     `reports/literature_review_2026-10/B2_back_bay_setup_followup.md`, 2026-10-03.
 
+63. 🔴 **SnapWave takes its WHOLE bed from the mesh's face `z`, never from the subgrid — so a
+    subgrid-only bed edit reaches the flow but not the waves.** Read in the v2.3.3 source of the
+    premier's engine (`…igseed-wmseed-1-gf11`; none of its 4 patches touch `zb` / `quadtree_zz` /
+    `z_zmin`), 2026-10-28, `logs/modern_bed_2026-10-28/engine_face_z.md`. (a) **Flow:** with a
+    subgrid and `nonh` off (default, `sfincs_input.f90:190`) SFINCS never copies face `z` into its
+    `zb` (`sfincs_domain.f90:1605-1726`); continuity, momentum, initial conditions, boundaries,
+    weirs (`sfincs_structures.f90:277-284`), infiltration, meteo and obs points all take the
+    subgrid tables; the map file's `zb` is `subgrid_z_zmin` (`sfincs_ncoutput.F90:1488-1497`).
+    (b) **Waves:** `snapwave_domain.f90:2102` sets `zb(nac) = quadtree_zz(ip)` (the `depfile` line
+    above it is commented out); wave depth is `zs − face z` (`sfincs_snapwave.f90:120`, `:353-367`),
+    refraction bed slopes (`snapwave_domain.f90:249`) and the IG source slope
+    (`snapwave_solver.f90:1082`) are face-`z` slopes. That reaches the WATER through the wave force
+    (`Fx·rho·depth`, `sfincs_snapwave.f90:559-560`) and the hm0 / hm0_ig handed to the wavemaker
+    (`:422-423`; the wavemaker's own geometry uses the subgrid, `sfincs_wavemaker.f90:1628`).
+    (c) **The slopes are CACHED in `snapwave.upw`** and read back unchecked
+    (`snapwave_domain.f90:220-238`): a new face `z` needs that file deleted. (d) **Build time** reads
+    face `z` too: the SnapWave mask (`model.py:1532-1590`) and the wave-boundary support points
+    (`z < −5`, `model.py:1641-1647`). (e) **On the v4 premier:** face `z` is bit-identical to
+    `data/frozen_mesh_v4/sfincs.nc` (0 of 4,881,654 faces differ) = the 09-28 `bed_v4_coarse_25m`.
+    None of the 11 subgrid overlays since (eHydro, the river hierarchy and the Cohansey, lakes,
+    Little Egg, Sayreville, unpave, buildings) reach SnapWave; face `z` − subgrid `z_zmin`: median
+    0.21 m, p95 1.49 m, p99 3.34 m (`z_zmin` is the face's LOWEST pixel, so part of that gap is
+    definitional, not stale). **Measured against the subgrid's MEAN ground** (`z_zmax − z_volmax /
+    area`; `logs/snapwave_bed_2026-10-28/face_z_gap.py`, 10-28), on SnapWave-active faces with mean
+    ground < 2 m (4,631 km²): p5 / p50 / p95 **−0.13 / 0.00 / +0.20 m**; 96 km² (2.1 %) off by > 0.5 m,
+    52 km² by > 1 m. The big gaps are the post-freeze bed fixes, face `z` too HIGH: the river
+    hierarchy (Maurice at Port Elizabeth: face `z` +3.6…+3.9 m on a −1.3…−1.8 m river; the Mullica;
+    Great Egg), the Delaware-shore creeks (Cohansey mouth, ~−0.1 vs −3…−5 m), and the **Little Egg
+    Inlet channel** (−2 vs −6…−7 m) — the one that sits where back-bay setup is made (§62). The open
+    coast, the NY bays and the open Delaware Bay agree to ±0.2 m. ⚠️ hydromt floors the VOLUME table at
+    −20 m (`workflows/subgrid.py:58`; conveyance uses true depths), so mean ground reads −20 on the
+    289,715 faces deeper than that, where SnapWave's face `z` (to −37 m at the Delaware mouth) is the
+    right one — leave them out of any such comparison. Same for every `bed-*` arm (the breach, `bed-nobuildings`): their
+    waves see the unedited bed. How much this moves the water is UNMEASURED (it needs a waves-on
+    pair; §44 (e): a few cm in the bays is inside the noise). (f) **A waves-OFF run is a complete
+    bed swap via `subgrid_from`**; a waves-ON bed change needs a new face `z` — half the fingerprint
+    (`premier.py:449-463`), so a new registered domain (CLAUDE.md §2), plus a fresh `snapwave.upw`.
+    (g) **Measured (10-29): face `z` = the subgrid mean ground (`v4_refreeze_swz`, `90cc7468614a5814`)
+    moves the water a few cm, coherently, and changes HWM skill only at the Monmouth coastal lakes.**
+    `p4-premier` on both domains, seeded engine, 16 threads, uninterrupted (`logs/snapwave_bed_2026-10-28/`,
+    read in `read/`). Control: `p4-nowaves` BIT-IDENTICAL across the two (the swap reaches SnapWave only).
+    Gauges (Δpeak, window 10-29 12:00 → 10-30 12:00 UTC): median |Δ| 0.017 m, max 0.085; 30 / 48 outside
+    the Phase 4 null band (the back-bay band is 0–6 mm). Face `zsmax` (wet faces, median per basin): NJ
+    back bays −0.02…0 (Barnegat −0.021 against a 0.218 wave contribution), Delaware Bay / river
+    +0.01…+0.04, Raritan / Sandy Hook Bays −0.05…−0.08 (inside their 0.12 band); 16 / 26 basins outside
+    the band (as many as `p4 − old`). HWM (median, 50 m, n 110, paired): RMSE 0.408 → 0.439, ΔRMSE
+    +0.031 [−0.002, +0.075]; **on the 105 marks not `lake_outlet_blocked`: 0.261 → 0.259, ΔRMSE −0.003
+    [−0.009, +0.005]**. The whole loss is five lake-flagged marks — 6121 −1.43 → −2.03, 6130 −1.94 →
+    −2.09, 6124 −0.50 → −0.69, 6122 −2.23 → −2.27, 6129 −0.31 → −0.05 — lakes filled by waves over the
+    beach; mechanism unread (the beach / dune face `z` SnapWave now sees). ⚠️ `barnegat_bay`'s ΔRMSE
+    +0.06 is 6130 (Wreck Pond, mislabelled by the v1 basin box), not the bay. **The premier moves to
+    `v4_refreeze_swz`** (user 10-29: no premier on a SnapWave bed known to be wrong).
+
 50. ⭐ **An outflow edge on HIGH GROUND is a drain too, once the surge tops it — v3's NY edge
     was leaking the Raritan / Lower Bay surge, and walling it closes about half of the
     west-bay deficit.** v3 left 629 `mask==3` faces along the Staten Island and
@@ -1336,6 +1389,23 @@ CLAUDE.md §5.
     NJIWW sit within ±0.2 m of their surveys and keep 96–100 % of the section. **The fix route
     for every one of these** is an overlay raster painted over the untouched merge
     (`rebuild_subgrid.py --overlay`), never a tier inserted in the list (CLAUDE.md §5).
+    (m) 🔴 **The Sandy hindcast's BACK BAYS are post-storm ground (2013–14), and CUDEM's tile
+    labels are build years, not survey years** (2026-10-28, `logs/modern_bed_2026-10-28/
+    cudem_survey_dates.md`). NCEI published no per-pixel source metadata for our tiles; the dates
+    are INFERRED from NCEI's source lists (the NJ 2018 report table, the 2014 Sandy 1/9″ lineage
+    XML) + source footprints + a CUDEM-vs-lidar match at 11,331 points. Where CUDEM sets the
+    `p4-premier` bed (9,587 km²): **61 % pre-Sandy, 1.6 % 2012–13, 36 % 2014 on**. The back bays
+    (845 km², 98 %: marsh and shallow water) and the BAY SIDE of the barrier islands are the NOAA NGS
+    topobathy of Nov 2013 – Jun 2014 (median |Δ| 2.0–2.4 cm), so Sandy's overwash fans, bay-side
+    scour and first repairs are in the hindcast's bed in their 2013–14 state; the Raritan Bay floor
+    and part of the nearshore are NOS 2013–14; NE NJ / NYC land is USGS CMGP 2013–14. Pre-Sandy as
+    intended: the ocean beach and dune (the 2010 USACE tier sits above CUDEM) and the whole Delaware
+    estuary (2014v1: 2004–11 lidar, NOS 1930–2012). 41 % of the "2018v2" tiles are pre-Sandy surveys
+    (2008 Cumberland lidar, 2010 Ocean / Atlantic mainland, NOS 1951–2010). **No pre-Sandy topobathy
+    covers the back-bay floor**; partial pre-storm sources exist (USGS EAARL-B Oct 2012 topo lidar,
+    the 2010 ARRA land lidar, USGS DS-937 Barnegat swath sonar 2011–13, depth > 1.5 m only). User
+    2026-10-28: **a known limitation of the Sandy test case, not to be fixed** — quote it beside the
+    hindcast's scores, which do not show it by themselves.
 
 55. **Buildings are subgrid POROSITY, and for Sandy they barely matter.** Decision in force
     (user + supervisor, 2026-09-03): footprints burned into the fine subgrid DEM (Building
