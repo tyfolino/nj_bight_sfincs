@@ -6,17 +6,21 @@ running, what is next, what is open. When an item closes, its durable fact goes 
 Git has the history. The campaign log this file grew into until 2026-09-29 (6,767 lines) is
 `git show d70dd1e:docs/STATUS.md`; FINDINGS cites it as "STATUS <date>".
 
-▶ **PICK UP (10-27 am): PHASE 4 ATTEMPT 3 = 63094139 — WAVE 1 DONE CLEAN, WAVE 2 SOLVING** on hal[0384,0419]
-(emeraldrapids, no halk). All 9 wave-1 arms ended exit 0 between 10-27 03:14 and 07:57 (waves-on ≈ 13–14 h at 16
-threads, `p4-nowaves` 3.7 h): every `restart_history.txt` says `segments: 0` (no resume → nothing to re-run), engine
-`bin:v2.3.3-winddir-igk-igseed-wmseed-1-gf11@e15ed916`, audit `output WHOLE`. Wave 2 (`bed-breach-wreck0`,
-`bed-nobuildings`, `bed-breach-wreck165`, `cnb` 1.0) started 03:15–03:59 → ends ~10-27 17:30–18:00, then each node
-scores its arms, then `p4_read` 63094140 (afterany, EXPECT_MD5 10/10 OK) ~10-28. **Next:** ~10-27 18:00, read wave 2's
-`restart_history.txt` (Phase 4 below); ⚠️ watch node 1's scoring against the 40 h limit (Running). 🔴 **Hold the `nj_sfincs/experiments.py` (rain-off description) and
-`provenance.py` (v4 forcing labels) fixes until `p4_read` ends:** neither is md5-guarded any more, but validation
-inside 63094139 writes `provenance.py`'s labels into each arm's `metrics.csv` — edit after, then relabel all rows.
+▶ **PICK UP (10-28): PHASE 4 SOLVES ALL DONE CLEAN; THE READ CONTINUES AS `p4_read2` 63177634.** All 13 v4
+arms of 63094139 ended exit 0 (wave 2 at 10-27 16:26–17:24); preflight (`read/out/preflight.csv`): every arm `output
+WHOLE`, seeded engine, hal (no halk), `segments: 0` — nothing to re-run. ✅ `p4-premier` vs `p4-premier-repeat`:
+**BIT-IDENTICAL** (`read/out/repeat_p4.json`). 63094139 TIMED OUT at 05:09 validating `p4-nowaves` (the node-1 risk) →
+no `metrics.csv` row / gallery for it. `p4_read` 63094140 ran preflight, repeat and residuals `p4` … `wk0`, then hit
+its 6 h limit in `res_wk165`. **63177634 `p4_read2`** (`read/read_phase4_cont.slurm`, afterany 63094140, 16 h,
+EXPECT_MD5 `read/expected_cont.md5`): validate `p4-nowaves`, then the read from the step 63094140 died in (`wk165`) to
+the end (residuals, 17 zsmax pairs, report, null band, Sluice, PREREG marks). First numbers (median, 50 m, n 110, not
+paired): `p4-premier` RMSE 0.408 / bias −0.099 / CSI 0.785 vs the 10-11 `naccs-premier` 0.436 / −0.110 / 0.780.
+**Next:** read `p4_read2`'s output; re-publish the site for `p4-nowaves`. 🔴 **Hold the `nj_sfincs/experiments.py`
+(rain-off description) and `provenance.py` (v4 forcing labels: the meteo label says `pres:naccs_blend` where the run
+used ERA5 pressure inside the blend) fixes until `p4_read2` ends:** both are in its EXPECT_MD5, and its `p4-nowaves`
+validation writes `provenance.py`'s labels into `metrics.csv` — edit after, then relabel all rows.
 
-Last updated: **2026-10-27** — Phase 4 wave 1 finished uninterrupted (9 arms); wave 2 solving.
+Last updated: **2026-10-28** — Phase 4 solves done + repeat bit-identical; read continues (63177634); site shows `p4-premier`.
 
 ---
 
@@ -29,19 +33,14 @@ Last updated: **2026-10-27** — Phase 4 wave 1 finished uninterrupted (9 arms);
   10 marks outside ±0.5 m, inventoried in FINDINGS part 4 (h).
 - **Heading for:** the Phase 4 re-baseline (below), before maintenance 11-10.
 
-## Running (10-27)
+## Running (10-28)
 
-- ⏳ **63094139 `phase4`** (attempt 3, `logs/rebaseline_2026-10-19/phase4.slurm`, EXPECT_MD5 `expected.md5`;
-  wave 1 ✅, wave 2 solving, limit **10-28 05:09**) →
-  **63094140 `p4_read`** (`read/read_phase4.slurm`, afterany, 240 G, ≤ 6 h; EXPECT_MD5 `read/expected.md5`):
-  preflight, the repeat bit-for-bit, residuals (`phase4` preset), zsmax pairs, report, null band, nudged gauges,
-  PREREG marks.
-- ⚠️ **Node 1's scoring may hit the 40 h limit.** Each node validates its arms one at a time after ITS solves end, in
-  `node1.txt` / `node2.txt` order; attempt 1's one full v4 validation took 1 h 42 min (rain-off). Node 1: 7 arms from
-  ~18:00 → ~06:00 at that pace, past 05:09 — the last ones (`cnb` 1.0, `p4-nowaves`) may get no `metrics.csv` row.
-  Node 2: 6 arms → ~03:30. Solve output is safe either way and `p4_read` still runs; fill a missing row with a
-  `--validate-only` job (one arm per process). Attempt 1 (62827640 + its read 62831580): `attempt1_62827640/`, `failed_62827640/`. Attempt 2
-  (62963088 + read 62963089, 10-26): never solved; what its read wrote from older runs is filed in
+- ⏳ **63177634 `p4_read2`** (`logs/rebaseline_2026-10-19/read/read_phase4_cont.slurm`, afterany `p4_read` 63094140,
+  240 G, ≤ 16 h; EXPECT_MD5 `read/expected_cont.md5`, which also covers `run_experiments.py`, `nj_sfincs/provenance.py`,
+  `nj_sfincs/experiments.py`): validate `p4-nowaves`, then the rest of the read (PICK UP). The zsmax pairs were never
+  timed (attempts 1–2 skipped them). `res_nowv` ran before `p4-nowaves` had a row, so its self-check is blank; the marks
+  file does not depend on the row. Attempt 1 (62827640 + its read 62831580): `attempt1_62827640/`, `failed_62827640/`.
+  Attempt 2 (62963088 + read 62963089, 10-26): never solved; what its read wrote from older runs is filed in
   `attempt2_62963088/` — **not Phase 4 results**.
 - ⚠️ **Sluice Creek gauge** reads an ASSUMED bed (pool painted at −0.24 m; nudged 10-22, FINDINGS part 4): observed
   lows reach −0.43 m, so its deepest troughs cannot be matched — read Phase 4's Sluice trough with that.
@@ -71,7 +70,7 @@ test, code; details FINDINGS part 4 (h), §44, git log). Desktop backup re-run 1
   PREREG `PREREG.md` (+ attempt-2 addendum). Budget: v4 waves-on ≈ 13 h at 16 threads (attempt 1's rain-off:
   12.7 h) → two waves ≈ 27 h + staging + scoring. 🔴 A preempted-and-RESUMED waves-on arm is a different run
   (§44 (j)): check every `restart_history.txt` before pairing; re-run a resumed premier / repeat / `rhoa` copy.
-- **Phase 5–6:** ⚠️ update `scripts/publish_gallery.py` `NEXT_PREMIER` when the new premier lands. Reads →
+- **Phase 5–6:** ✅ site (10-28, user's ask): `publish_gallery.py` `SITE_REFERENCE` marks `p4-premier` as the v4 reference and `NEXT_PREMIER` now reads "New in the premier" — site-only; `premier.PREMIER_NAME` stays `naccs-premier` until the Phase 5 tag (then drop `SITE_REFERENCE`). Reads →
   frozen premier (user tags git), `docs/MODEL.md`, validation summary, research-group brief (incl. the
   status-notebook "rise above normal water" fig., `logs/notebook_qc_2026-10-11/baseline_check.py`), docs, backup.
 - **DEP one-pager** (claude.ai doc "A Compound-Flood Model of the New Jersey Coast", 10-20; figures + scripts
@@ -253,7 +252,7 @@ around the sweep loop on `main` (checked 10-26). Don't write our own SnapWave (m
 
 ## Disk and cluster
 
-- **Home** (`/cache/home`, GPFS): 100 G soft / 110 G hard; **89.0 G on 2026-10-27**. Ask
+- **Home** (`/cache/home`, GPFS): 100 G soft / 110 G hard; **89.2 G on 2026-10-28**. Ask
   `/usr/lpp/mmfs/bin/mmlsquota -u $USER --block-size auto cache` (lags ~10 min).
 - **Scratch** (`/scratch/tpj8`): 1 T soft / 2 T hard, **704 G on 2026-10-22** (after the four pre-creek beds were deleted; the 39 G pre-inflows template is
   gone too). 🔴 **Not backed up; files not accessed for 90 days are deleted.** `experiments/`

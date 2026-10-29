@@ -234,13 +234,19 @@ render();
 """
 
 
-#: The plain-language "coming in the next premier" list, shown at the bottom of the home page
-#: and of that domain's runs page. ⚠️ Edit it when the next premier lands (Phase 4, STATUS):
-#: a stale list here gets believed.
+#: The arm the SITE marks "(reference)" and compares against, per domain, where it is not
+#: ``premier.PREMIER_NAME`` (user 10-28: show the Phase 4 premier now, before Phase 5's tag).
+SITE_REFERENCE = {"v4_refreeze": "p4-premier"}
+
+#: The plain-language "what is new in the premier" list, shown at the bottom of the home page
+#: and of that domain's runs page. ⚠️ Edit it whenever the premier changes: a stale list
+#: here gets believed.
 NEXT_PREMIER = {
     "domain": "v4_refreeze",
-    "as_of": "2026-10-20",
-    "status": "Planned; queued as one batch of runs, not yet run.",
+    "arm": "p4-premier",
+    "as_of": "2026-10-28",
+    "status": "Run 2026-10-27 and scored. The side runs are scored too; comparing them "
+    "against it is still under way.",
     "items": (
         "Repeatable waves: the wave model's random part is now seeded, so the same inputs "
         "give the same answer every time.",
@@ -252,6 +258,10 @@ NEXT_PREMIER = {
         "Air pressure from the ERA5 weather reanalysis, blended with the storm's wind field.",
         "Rivers enter in their channels: 12 river inflows moved off the banks and into "
         "the water.",
+        "The Keansburg levees follow the federal levee database's line (USACE National "
+        "Levee Database).",
+        "A deeper lower Cohansey River: the elevation data had it several metres too "
+        "shallow; its new bed comes from depth soundings and nautical charts.",
         "Lake beds fixed: 14 coastal lakes had a false ridge of land across them from an "
         "old elevation survey; it is removed.",
         "Creeks reopened: Beach Creek in North Wildwood (an old survey laid a false bank "
@@ -261,7 +271,7 @@ NEXT_PREMIER = {
         "Their new bottoms are an assumption (about mean low water), not a survey.",
         "Tide gauges moved off dry ground: Cape May, Cape May Harbor and Barnegat Light sat "
         "on land in the model; each moved a few tens of metres into the water.",
-        "Side runs in the same batch: two copies with a tiny change to measure the noise, "
+        "Side runs in the same batch: an identical repeat (it matched bit for bit), two copies with a tiny change to measure the noise, "
         "waves off, no IG waves in the water, wetter and drier soil, no buildings, the Wreck Pond dune "
         "breach at two depths, waves overtopping into Deal Lake, and the older v3 model "
         "re-run on the same settings.",
@@ -273,7 +283,7 @@ def next_premier_section() -> str:
     n = NEXT_PREMIER
     items = "".join(f"<li>{esc(t)}</li>" for t in n["items"])
     return (
-        f"<section><h2>Coming in the next premier ({esc(n['domain'])})</h2>"
+        f"<section><h2>New in the premier ({esc(n['domain'])} / {esc(n['arm'])})</h2>"
         f'<p class="note">{esc(n["status"])} As of {esc(n["as_of"])}.</p>'
         f'<ul class="next">{items}</ul></section>'
     )
@@ -804,7 +814,7 @@ def main(argv=None) -> int:
         domains[d] = arms
         ddir = site / d
         ddir.mkdir(exist_ok=True)
-        ref = PREMIER_NAME
+        ref = SITE_REFERENCE.get(d, PREMIER_NAME)
         n_png = 0
         for arm, e in arms.items():
             adir = ddir / e["slug"]
