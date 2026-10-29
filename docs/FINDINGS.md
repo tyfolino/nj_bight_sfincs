@@ -790,7 +790,14 @@ CLAUDE.md §5.
     0.18 mm; 2 of 48 points > 1 cm (Great Kills 4.7, Narrows Bkln 3.9 cm), growing after hour
     3.5. ⇒ **Seeding makes a run REPEATABLE; it does not make two waves-on ARMS comparable to
     the centimetre.** A waves-on paired Δ in the NY bays carries mm–cm on the map and cm–dm at
-    single gauges in the calm first 6 h; the band through the peak is unmeasured.
+    single gauges in the calm first 6 h. **Through the peak (Phase 4, 2026-10-28, two full-length
+    null copies `rhoa` 1.2501 / 1.2499 on `v4_refreeze` `p4-premier`, `logs/rebaseline_2026-10-19/read/out/`):**
+    gauge PEAK band median 1.4 cm, max 9.5 cm (Lower Bay / Raritan / Sandy Hook 6–9 cm, Delaware
+    2–6 cm, open coast and NJ back bays ≤ 2 mm); the band over the whole SERIES is larger (up to
+    0.3 m mid-storm, Delaware upper river, Cape May). HWM: copy − copy ΔRMSE −0.0015 [−0.0046,
+    +0.0009]; per basin, NY bays Δmean −0.03 / −0.08 m (copy − premier) — **a NY-bay mark shift
+    under ~8 cm is noise**; open coast, inlets and back bays ≤ 4 mm. Face `zsmax`, all wet faces:
+    p05–p95 band 0.081 m. ⚠️ Measured on the old wave bed; the swz band is re-measuring (STATUS).
     **Not the iteration cap** (2026-10-17, job 62678718 on Camden, `logs/ig_cap_2026-10-17/`; same
     cut, seeded, one null pair per setting — one draw of the noise each). `snapwave_niter` 800
     (the log's 200): calls 0 and 4 still end at the cap (the t = 0 limit cycle), the `rhoa` pair
@@ -1176,6 +1183,19 @@ CLAUDE.md §5.
     beach; mechanism unread (the beach / dune face `z` SnapWave now sees). ⚠️ `barnegat_bay`'s ΔRMSE
     +0.06 is 6130 (Wreck Pond, mislabelled by the v1 basin box), not the bay. **The premier moves to
     `v4_refreeze_swz`** (user 10-29: no premier on a SnapWave bed known to be wrong).
+    (h) **Why the lakes drop: SnapWave now sees the BUILDING BURN as ground** (10-29,
+    `logs/lakes_facez_2026-10-29/transects.py`; 150 m strips from each lake mark to 2 km offshore).
+    Seaward of the beach crest face `z` and peak hm0 barely change (≤ 0.1 m / few cm). Landward, between
+    lake and crest, the new face `z` is higher — median +1.19 m (6124, Asbury Park) / +1.22 m (6129),
+    of which the building burn (`bed_buildings_v4_cap10`: premier bed − the same recipe without
+    buildings, mean ground) is +1.13 m; the no-buildings mean ground matches the old face `z` to ±0.05 m.
+    At 6121 / 6122 / 6130 the land rise is 0.16–0.25 m, mostly not buildings. The small overwash waves
+    over that ground die out (e.g. Wreck Pond town 0.09 → 0.04 m hm0) and the lakes peak lower: Wreck
+    Pond and Wesley Lake ~0.12 m, Deal Lake 0.02–0.04 m. 6121 sits on high ground (its face's `z_zmin`
+    3.5 m); its 50 m window takes a closed hollow 50 m south (floor ~1.7 m, hm0 0 in both runs) whose
+    peak fell 2.42 → 2.11 m — overland supply, not waves. So the swz loss is the waves meeting the
+    burned blocks on the developed barrier, a modelling choice (face mean ground includes buildings),
+    not a bed error.
 
 50. ⭐ **An outflow edge on HIGH GROUND is a drain too, once the surge tops it — v3's NY edge
     was leaking the Raritan / Lower Bay surge, and walling it closes about half of the
@@ -1419,8 +1439,11 @@ CLAUDE.md §5.
     footprints masked out of BOTH rasters (they are dry by construction in the model and wet
     in MOTF): v3 fixed engine, masked CSI 0.721 vs 0.723 without buildings. HWM:
     `bed-nobuildings` − premier ΔRMSE −0.021 [−0.048, +0.008] (fixed engine, old band; the
-    only measurement — never re-run on the apex band); container-era, the whole effect sat in
-    the Raritan seiche basins (Δbias +0.196) and was zero on the other 56 marks.
+    v3; container-era, the whole effect sat in the Raritan seiche basins, Δbias +0.196). **v4, Phase 4
+    (seeded, 2026-10-28, old wave bed):** `bed-nobuildings` − `p4-premier` ΔRMSE −0.003 [−0.057, +0.039]
+    (n 110, median, 50 m); NY bays Δmean −0.067 m — INSIDE their null band (§44 (e)); other basins
+    ≤ 1 cm. Its CSI 0.807 vs 0.785 is not a skill gain: `motf_metrics` does NOT mask footprints,
+    so bare-ground footprints that MOTF calls wet score as hits. Buildings stay (decision above).
 
 56. **SnapWave bottom friction: `fw` 0.01 is the premier's, and the engine's default.** Every
     arm before 2026-09-11 wrote 0.02, double the default. One-flag pair on the fixed engine
@@ -2208,6 +2231,32 @@ y < 4,450,800) and share P 2.799 / C 2.819 — the outfall-beach sill above; an 
 (connected components, no spanning tree) reproduces C to the mm. Flagged by 2 cm, inside the §44
 waves-on noise: a paired comparison holds ONE mark set on both sides (the reference run's
 `hwm_lake_outlet_blocked_ids`).
+
+(i) **The Phase 4 reads** (2026-10-28, job 63094139 + read 63177634; `reports/v4_first_results_2026-10-24/`,
+`logs/rebaseline_2026-10-19/read/out/`; `v4_refreeze`, seeded wavemaker engine, 13 arms, every one uninterrupted
+and `output WHOLE`; median, 50 m, n 110, paired B 200 000). ⚠️ **On the OLD wave bed**: the premier has since moved
+to `v4_refreeze_swz` (§63 (g)), which moves the water a few cm and the Monmouth lakes ~0.1 m. Non-lake effects below
+should carry over; **every LAKE answer (wavemaker, breach, Deal overtopping, cnb at the lakes) is HELD** until the swz
+re-runs. The repeat is bit-identical; the null band is §44 (e).
+- **Waves** (`p4-premier` − `p4-nowaves`): ΔRMSE −0.150 [−0.244, −0.070]; marks rise +0.32 m open coast, +0.19
+  inlets, +0.20 NJ back bays, +0.13 NY bays, +0.06 rivers (Δmean). Larger than v3's seeded −0.054 [−0.084, −0.025]
+  on its 94 marks.
+- **Wavemaker** (− `+wave-nowavemaker`): ΔRMSE −0.108 [−0.193, −0.022], nearly all at the lake marks (open-coast
+  Δmean +0.15, median +0.02); NY bays +0.006, inside the band.
+- **Rain**: on the marks, nothing (− `+rain-off` ΔRMSE +0.0005 [−0.019, +0.033]) except the NJ back bays (+0.04 m,
+  ΔRMSE −0.021 [−0.042, −0.008]); on the extent, most of the false alarms (FAR 0.084 → 0.035 without rain, CSI
+  0.785 → 0.798), as pre-registered.
+- **Soil** (cnb): wetter (1.0) fits the marks better, ΔRMSE −0.022 [−0.046, −0.004], partly at the rain-fed lakes
+  (non-lake RMSE 0.252 vs 0.261, unpaired), and adds false alarms (FAR 0.098, CSI 0.779); drier (2.38) +0.007
+  [+0.002, +0.011]. A trade-off, not a winner.
+- **Buildings**: §55.
+- **Re-baseline** (`p4-premier` − the 10-11 `naccs-premier`, many changes): ΔRMSE −0.028 [−0.073, +0.034], not
+  resolved; inlets −0.051 [−0.128, −0.002]; open coast median +0.009 m. Atlantic City's peak still +0.50 m
+  (the forcing, above). **The four nudged gauges now see the tide** (modelled/observed range, old → p4): Cape May
+  0.07 → 1.05, Cape May Harbor 0.01 → 1.33, Barnegat Light 0.39 → 1.15, Sluice Creek 0.01 → 0.43 (an assumed creek
+  bed, above).
+- **v3 reference repeats**: seeded − unseeded waves-off identical; waves-on ΔRMSE +0.003 [+0.001, +0.006] — one IG
+  draw vs another (§44), not a change.
 
 **Usual surface for depth maps (2026-10-19; CLAUDE.md §6).** v4 "flood depth" = water level −
 pixel ground, drawn only where the ground is normally dry: ground ≥ W, W = the normal pool of a

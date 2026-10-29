@@ -14,14 +14,16 @@ subgrid mean ground: the water moves a few cm, coherently; HWM skill unchanged o
 scored before the `meteo` column existed left blank); site re-published locally (swz premier + `p4-nowaves`; the 6
 retired 10-11 side runs lose their figures, rows kept) — user commits + pushes `~/sandy_flood_site`; scratch D1 + D2
 done (63.8 G). **Next:** (1) the null band + the LAKE side arms on swz (breach ×2, Deal overtop, no wavemaker): their
-lake answers came from the old wave bed — hold lake conclusions until then; plan → user OKs; (2) write up `p4_read2`'s
-read (`read/out/`); (3) the lakes' beach-face `z`, old vs new (6121 −0.6 m).
+lake answers came from the old wave bed — hold lake conclusions until then (job 63231557); (2) ✅ Phase 4 read
+written up 10-29 (FINDINGS part 4 (i), §44 (e), §55; lakes held); (3) ✅ lakes explained (§63 (h)) — buildings-in-wave-bed is the user's call; (4) **FIAT
+re-export for the student** once the user accepts the swz premier: `export_share_floodmap.py --ground
+<…_nobuildings_creeks_cohansey>` (depth from BARE ground; the run's own bed leaves every footprint NaN, so the v3
+export she has biased her damages LOW — user 10-29); revise the README's v3-specific caveats; big-memory node.
 `p4_read2` 63177634 finished 10-28 ("failed steps: none"); its "Error reading variable ini" lines are benign.
 
-**Phase 4 record (10-28):** all 13 v4 arms of 63094139 exit 0, every arm `output WHOLE`, seeded, hal, `segments: 0`
-(`read/out/preflight.csv`); `p4-premier` vs its repeat **BIT-IDENTICAL** (`read/out/repeat_p4.json`). First numbers
-(median, 50 m, n 110, not paired): `p4-premier` RMSE 0.408 / bias −0.099 / CSI 0.785 vs the 10-11 `naccs-premier`
-0.436 / −0.110 / 0.780.
+**Phase 4 (10-28) → FINDINGS part 4 (i):** 13 arms whole, seeded, uninterrupted; repeat bit-identical; waves
+ΔRMSE −0.150, wavemaker −0.108 (mostly lakes — held), rain nothing on marks / most false alarms, buildings neutral,
+cnb 1.0 a marks-vs-false-alarm trade-off. Still to read from it: capped-hour `zsmax` (open question below).
 
 Last updated: **2026-10-29** — premier → `v4_refreeze_swz` (§63 (g)); `p4_read2` done; swomp 6 h cut bit-identical (SnapWave 1.28×); modern-bed download complete (all 272 3DEP tiles verified).
 
@@ -49,10 +51,7 @@ Last updated: **2026-10-29** — premier → `v4_refreeze_swz` (§63 (g)); `p4_r
   predates the 10-28 fix (USGS re-staged those tiles; renamed in after a server-size match,
   `raw/usgs_3dep_1m/_server_size_ok.txt`); 10-29: all 99 size-ok + open in GDAL.
 
-- **Phase 4 read notes:** `res_nowv` ran before `p4-nowaves` had a row, so its self-check is blank; the marks
-  file does not depend on the row. Attempt 1 (62827640 + its read 62831580): `attempt1_62827640/`, `failed_62827640/`.
-  Attempt 2 (62963088 + read 62963089, 10-26): never solved; what its read wrote from older runs is filed in
-  `attempt2_62963088/` — **not Phase 4 results**.
+- **Phase 4 read notes:** attempts 1–2 are filed under `logs/rebaseline_2026-10-19/attempt*/` — **not Phase 4 results**.
 - ⚠️ **Sluice Creek gauge** reads an ASSUMED bed (pool painted at −0.24 m; nudged 10-22, FINDINGS part 4): observed
   lows reach −0.43 m, so its deepest troughs cannot be matched — read Phase 4's Sluice trough with that.
 - ⚠️ **Keansburg pocket** (weir = NLD centreline, ADOPTED 10-24, FINDINGS §38): as drawn it is watertight
@@ -73,14 +72,20 @@ test, code; details FINDINGS part 4 (h), §44, git log). Desktop backup re-run 1
   (MOTF false alarms: rain 79 / surge 27 / waves 22 of 128.5 km², twin-run split); creek beds = an ASSUMED bed at
   ≈ MLW (Salem River + Mannington Creek left out); HWM marks 6169 / 6202 (questioned) and 6121 / 6398 / 6188
   (run-up) kept, drawn hollow, `hwm_*_scored_excl_noted` beside the headline.
-- **Phase 4 (attempt 3 63094139, `logs/rebaseline_2026-10-19/`):** ONE 2-node emeraldrapids job, seeded engine
-  `…igseed-wmseed-1-gf11`, 40 h: stage 10 v4_refreeze arms, 4 × 16-thread slots per node, each node validates
-  its own. Node 1 (`node1.txt`): `p4-premier`, its repeat, the two `rhoa` null copies | wave 2: `bed-breach-wreck0`
-  (late-staged), `cnb` 1.0, `p4-nowaves`. Node 2: `+wave-nowavemaker`, `cnb` 2.38, `+rain-off`, `src-deal-overtop` |
-  wave 2: `bed-nobuildings`, `bed-breach-wreck165` (late-staged). v3 `p4-ref` / `p4-ref-nowaves` = attempt 1's.
-  PREREG `PREREG.md` (+ attempt-2 addendum). Budget: v4 waves-on ≈ 13 h at 16 threads (attempt 1's rain-off:
-  12.7 h) → two waves ≈ 27 h + staging + scoring. 🔴 A preempted-and-RESUMED waves-on arm is a different run
-  (§44 (j)): check every `restart_history.txt` before pairing; re-run a resumed premier / repeat / `rhoa` copy.
+- **Phase 4 ✅ (63094139, 10-28; `logs/rebaseline_2026-10-19/`, PREREG `PREREG.md`):** 13 v4 arms + the v3 seeded pair,
+  read in FINDINGS part 4 (i). Its lake arms re-run on swz in 63231557.
+- **First 1.x simulations (user 10-28, re-confirmed 10-29): calm still water at MHHW + 2 ft / + 4 ft on the MODERN
+  bed, waves off**, for the collaborator's comparison (their own 2 ft / 4 ft maps disagree — negatives on every coast;
+  they suspect their data). Plan + data: `logs/modern_bed_2026-10-28/README.md` (download ✅; next: bed-recipe code,
+  `_subgrid_modern2026` build ~7 h, buildings + fixes re-checked). Still water = the SLOPED VDatum MHHW surface + s
+  (MHHW ~0.8 m at the mouth → ~1.5 m at Trenton), sea-connected via `sea_level.py` — not one flat boundary level.
+  **AND a tidal twin (user 10-29: both):** same bed, waves/wind/rain off, astronomical tide + 0.61 / 1.22 m at the
+  boundary over ≥ one spring–neap cycle (a lunar month is better); report the model's mean higher-high + the max.
+  Tide source: a tidal database at the boundary points (default); NACCS's calm 10-12 → 10-25 only as the fallback.
+- **v1.0.0 = the swz premier, frozen + tagged (user 10-29).** Gate: `swz_band` 63231557 (bit-identical repeat
+  + the swz noise band + lake arms), the buildings-in-wave-bed call, Phase 5 (`PREMIER_NAME` + fingerprint → swz,
+  `MODEL.md`, validation summary, user tags). Ship WITH a known-limits list (Monmouth lakes; Delaware lows + 3
+  marks; Cape May back bays; coarse-face inflow pile-ups incl. Salem R.; building cap overtopped at +3 m SLR).
 - **Phase 5–6:** ✅ site (10-28, user's ask): `publish_gallery.py` `SITE_REFERENCE` marks `p4-premier` as the v4 reference and `NEXT_PREMIER` now reads "New in the premier" — site-only; `premier.PREMIER_NAME` stays `naccs-premier` until the Phase 5 tag (then drop `SITE_REFERENCE`). Reads →
   frozen premier (user tags git), `docs/MODEL.md`, validation summary, research-group brief (incl. the
   status-notebook "rise above normal water" fig., `logs/notebook_qc_2026-10-11/baseline_check.py`), docs, backup.
@@ -148,9 +153,8 @@ heads may still be tidal (unpainted). Paerdegat: leave it (user).
   (NJ)**; every one on a COARSE face (100–200 m) over a narrow creek valley, stepping down 2–3.5 m in
   2 km on rain-off alone (`logs/notebook_qc_2026-10-11/inflow_pileups.py`). Close: read on the Phase 4
   premier; a refinement band is the next-mesh fix.
-- **Waves-on noise band (§44 (e)):** not the cap (10-17); how wide is it through the peak? One
-  null copy is ONE draw of the band. Close: Phase 4's two full-length null copies (`rhoa` 1.2501 /
-  1.2499; user 10-17).
+- **Waves-on noise band (§44 (e)): MEASURED 10-28** on the old wave bed — gauge peaks ≤ 9.5 cm (NY bays), NY-bay marks
+  ~8 cm, the rest mm. Re-measuring on swz (63231557).
 - **Capped calls inject river pulses on v4 (§44 (h)).** ✅ Counted 10-27 (Phase 4 wave 1, `snapwave_niter` 200
   sweeps = 50 logged iterations): premier 26 / 73 calls capped (repeat: the same 26), nulls 20 / 25, other
   waves-on arms 22–34; 10-30 00:00 capped in every arm (%ok 88–90, the worst call), 01:00–02:00 in nearly all.
@@ -178,15 +182,17 @@ heads may still be tidal (unpainted). Paerdegat: leave it (user).
 - **Unread from the 10-05 pre-registration:** do the Maurice / Mullica / Tuckahoe / Rancocas reaches
   wet; hm0 vs depth at the SnapWave band's 53 boundary cells shallower than −20 m. Close: one read of
   the premier's map output.
-- **Monmouth lakes under the swz premier (§63 (g)):** 6121 −1.43 → −2.03, 6124 −0.50 → −0.69, 6130 −1.94 → −2.09
-  (6129 better, −0.31 → −0.05) once SnapWave reads the subgrid mean ground. Close: face `z` old vs new on the beach /
-  dune faces in front of Deal, Wesley, Wreck Pond and 6121's lake, beside each run's hm0 there.
+- **Monmouth lakes under the swz premier — EXPLAINED 10-29 (§63 (h)):** the new face `z` carries the building burn
+  (mean ground incl. `bed_buildings_v4_cap10`, +1.1 m on Asbury Park / Wreck Pond town), so SnapWave's overwash dies
+  over the burned blocks and the lakes peak ~0.1 m lower. Open: keep (waves see buildings, one bed) or take face `z`
+  from the no-buildings bed (waves on bare ground + the channel fixes) — user's call; the latter is another domain.
 - **IG in the water:** the v3 / old v4 premiers compute IG but do not couple it (`snapwave_igwaves = 1`, no
   `wvmfile`; §45). ✅ The Phase 4 premier carries the wavemaker (user 10-17; line `snapbeach`, user 10-19;
   engine `…igseed-wmseed-1…`, repeat test passed — §44 (j)) with a no-wavemaker arm beside it.
   ⚠️ `dep_subgrid_lev0.tif` is NaN over the Cape May peninsula block (no level-1 faces there).
 - **Test 8 (setup-only wavemaker line):** evidence says don't run it as designed (§62); user's call.
-- **Buildings never re-run on the apex band (§55).** Close: `bed-nobuildings` in Phase 4.
+- **Buildings on the apex band: CLOSED 10-28** (§55: neutral, NY bays inside the band). ⚠️ `motf_metrics` does not
+  mask footprints, so `bed-nobuildings`' CSI is inflated; mask them if buildings are ever ranked on extent.
 - **No model M2 test** of the interior amplification (part 2). Close: modelled M2 at Port Reading /
   Keasbey / South Amboy / Great Kills vs the NOAA harcon table.
 - **Flux cross-sections never read** (Narrows prism, Rockaway throat). Close: `crosssection_discharge`.

@@ -18,6 +18,17 @@ This script starts from the gallery tif and additionally:
   * writes a README beside it recording CRS, units, thresholds, the scored bias
     (with its estimator and radius — never without) and the model's caveats.
 
+``--ground <subgrid dir>`` (2026-10-29, for FIAT): measure depth from BARE ground. The
+run's own bed raises every building footprint 4 m (FINDINGS §55), so its depth map is NaN
+on every building, and a damage model that reads depth AT a building (FIAT, centroid or
+footprint) scores it undamaged — the v3 export biased the student's damages low. With
+``--ground`` the run's face ``zsmax`` (the water in the streets around the buildings) is
+downscaled onto that dir's ``subgrid/dep_subgrid_merged.tif`` instead — the same bed
+recipe without the burn, on the same lattice (asserted) — so a footprint carries the
+depth against its building. The hydrodynamics stay the run's, buildings included. On v4:
+    --ground experiments/v4_refreeze/_subgrid_refreeze_lakes_min_nobuildings_creeks_cohansey
+v4's merged bed is ~4x v3's pixels: give it a big-memory node.
+
 The CRS stays the model's native UTM 18N (metres). Reproject downstream if degrees are
 needed; doing it here would resample depths for no reason.
 
@@ -37,26 +48,61 @@ import numpy as np
 import pandas as pd
 import rasterio
 import rioxarray
+import xarray as xr
 from rasterio.enums import Resampling
 from rasterio.warp import transform_bounds
 
 import nj_sfincs  # noqa: F401  (PROJ primer — must precede hydromt_sfincs)
+from hydromt_sfincs import utils
 from nj_sfincs import domain, validate
 from nj_sfincs.config import ROOT, exp_root
+from nj_sfincs.validate.core import open_run
 
 DEFAULT_OUT = ROOT / "share"
 
 
-def export(arm: str, out_tif: Path) -> dict:
+def bare_ground_hmax(model_dir: Path, ground: Path) -> tuple[xr.DataArray, dict]:
+    """North-up peak depth from BARE ground (module docstring, ``--ground``), with
+    permanent water dropped exactly as the gallery tif does, plus a footprint count."""
+    own = model_dir / "subgrid" / "dep_subgrid_merged.tif"
+    bare = Path(ground) / "subgrid" / "dep_subgrid_merged.tif"
+    with rasterio.open(own) as o, rasterio.open(bare) as b:
+        if (o.shape, o.transform, o.crs) != (b.shape, b.transform, b.crs):
+            raise SystemExit(f"{bare} is not on the run's subgrid lattice ({own})")
+    zsmax = open_run(model_dir).output.data["zsmax"].max(dim="timemax")
+    # on scratch, not beside the share file: the rotated raster is GBs and home is GPFS-tight
+    tmp = exp_root() / "floodmaps" / f".{model_dir.name}_bare.partial.tif"
+    tmp.parent.mkdir(parents=True, exist_ok=True)
+    utils.downscale_floodmap(
+        zsmax=zsmax, dep=str(bare), hmin=0.05, floodmap_fn=str(tmp), nrmax=1000
+    )
+    da = rioxarray.open_rasterio(tmp, masked=True).squeeze(drop=True)
+    da = da.rio.reproject(da.rio.crs).load()  # de-rotate to north-up (CLAUDE.md §5)
+    tmp.unlink()
+    dep_b = rioxarray.open_rasterio(bare, masked=True).squeeze(drop=True)
+    dep_b = dep_b.rio.reproject_match(da).values
+    da = da.where(dep_b > -0.5)  # drop deep ocean, as load_floodmap does
+    dep_o = rioxarray.open_rasterio(own, masked=True).squeeze(drop=True)
+    # footprint = where the burn raised the bed (the two recipes differ only there)
+    fp = (dep_o.rio.reproject_match(da).values - dep_b) > 0.5
+    del dep_o, dep_b
+    wet = da.values >= validate.DEPTH_MIN
+    return da, dict(n_footprint=int(fp.sum()), n_footprint_wet=int((fp & wet).sum()))
+
+
+def export(arm: str, out_tif: Path, ground: Path | None = None) -> dict:
     root = exp_root()
     gallery = root / "floodmaps" / f"{arm}_hmax_lev3.tif"
     model_dir = root / arm
-    if not gallery.is_file():
-        raise SystemExit(f"no gallery tif for {arm!r}: {gallery}")
     if not (model_dir / "sfincs_map.nc").is_file():
         raise SystemExit(f"no sfincs_map.nc under {model_dir}")
-
-    da = rioxarray.open_rasterio(gallery, masked=True).squeeze(drop=True).load()
+    fp_stats = {}
+    if ground is None:
+        if not gallery.is_file():
+            raise SystemExit(f"no gallery tif for {arm!r}: {gallery}")
+        da = rioxarray.open_rasterio(gallery, masked=True).squeeze(drop=True).load()
+    else:
+        da, fp_stats = bare_ground_hmax(model_dir, ground)
     a = da.values.astype("float32", copy=False)
     n_before = int(np.isfinite(a).sum())
 
@@ -74,6 +120,7 @@ def export(arm: str, out_tif: Path) -> dict:
         units="m",
         note="permanent water (subgrid bed <= -0.5 m) and unsimulated ground masked; "
         "NaN = dry / no data",
+        ground="bare earth (buildings not burned)" if ground else "model bed",
     )
 
     out_tif.parent.mkdir(parents=True, exist_ok=True)
@@ -120,6 +167,7 @@ def export(arm: str, out_tif: Path) -> dict:
             km2_ge_015=wet.size * px_km2,
             p50=float(np.percentile(wet, 50)),
             p99=float(np.percentile(wet, 99)),
+            **fp_stats,
         )
     return stats
 
@@ -146,14 +194,12 @@ def score_row(arm: str) -> dict:
     )
 
 
-README = """# Hurricane Sandy (2012) maximum flood depth — New Jersey coast, model v3
+README = """# Hurricane Sandy (2012) maximum flood depth — New Jersey coast, model {domain}
 
 `{fname}`
 
-Modelled maximum water depth during Hurricane Sandy (28–31 Oct 2012) over the whole
-New Jersey ocean coast — Cape May to Raritan Bay and the Verrazzano Narrows, including
-the back bays, the Delaware Bay shore near Cape May, and the Staten Island shore of
-Lower Bay. SFINCS compound-flood hindcast: storm surge, wave setup, wind, rain and river
+Modelled maximum water depth during Hurricane Sandy (28–31 Oct 2012) over {scope}
+SFINCS compound-flood hindcast: storm surge, wave setup, wind, rain and river
 discharge together. **This is a working dataset from a model still under development,
 not a validated hazard layer** — read the caveats before drawing any conclusion from it.
 
@@ -186,7 +232,7 @@ da = da.where(da >= 0.15)          # see "wet threshold" below
 ```
 
 The file has overviews, so it opens instantly in QGIS at any zoom. Reading the full
-band into memory takes about 2.5 GB.
+band into memory takes about {gb:.1f} GB.
 
 ## What the values mean
 
@@ -225,22 +271,52 @@ values are left in rather than silently deleted, so the choice stays yours.
    non-linearly so, because damage curves are steep near the low end.
 2. **Hindcast, not a design event.** This is one storm reconstructed after the fact.
    It is not a return-period product and must not be read as one.
-3. **Model still in development, and lowest in the NY bays.** Raritan Bay, Sandy Hook
+{regional}
+5. **Depth only.** No velocity, no duration, no wave runup on the beach face, no
+   debris — all of which matter for real damage estimation.
+6. {buildings_note}
+
+Questions to Ty.
+"""
+
+
+# What the map covers and where it is weak: a per-MESH fact (v3 vs v4), keyed on the domain
+# name's prefix. The v4 weak spots are the swz premier's marks (FINDINGS §63, 2026-10-29).
+SCOPE = {
+    "v3": dict(
+        scope="""the whole
+New Jersey ocean coast — Cape May to Raritan Bay and the Verrazzano Narrows, including
+the back bays, the Delaware Bay shore near Cape May, and the Staten Island shore of
+Lower Bay.""",
+        regional="""3. **Model still in development, and lowest in the NY bays.** Raritan Bay, Sandy Hook
    Bay and the Arthur Kill still read about 0.1–0.2 m low against surveyed marks —
    more than the coast-wide figure above. Treat depths north of Sandy Hook as a floor.
    South of Sandy Hook the ocean coast and back bays are the better-scored part of the
    map.
 4. **New York land is out of scope.** The Staten Island and Brooklyn shorelines are
    in the grid only as the model's northern edge; do not read flooding there as a
-   result. Jamaica Bay and Manhattan are not modelled at all.
-5. **Depth only.** No velocity, no duration, no wave runup on the beach face, no
-   debris — all of which matter for real damage estimation.
-6. **Buildings are burned into the terrain** (footprints raised), so depths inside
-   footprints are NaN or shallow by construction; read depth at the building's
-   perimeter, not its centroid.
-
-Questions to Ty.
-"""
+   result. Jamaica Bay and Manhattan are not modelled at all.""",
+    ),
+    "v4": dict(
+        scope="""the New
+Jersey coast and its tidal waters — the ocean coast from Cape May to the Verrazzano
+Narrows with its back bays; Lower, Raritan and Sandy Hook Bays; the Arthur Kill and
+Newark Bay; the tidal Raritan; and Delaware Bay with the tidal Delaware River. The far
+shores (Delaware, Pennsylvania, Staten Island) are computed as part of those waters.""",
+        regional="""3. **Where it is weakest.** A few places are known to read low against surveyed marks:
+   the Monmouth County coastal lakes (Deal Lake, Wreck Pond and their neighbours) by
+   about 0.7–2.3 m — in Sandy they filled through dune breaches and overwash that the
+   model reproduces only in part, so treat depths around them as a floor — and Cape
+   May's back bays by about 0.3 m. Delaware Bay and the tidal Delaware are checked
+   against only three marks: the least-tested part of the map. Raritan Bay, Sandy Hook
+   Bay and the Arthur Kill, weak in earlier versions, now score like the ocean coast.
+4. **Outside New Jersey, and upriver, is out of scope.** The Staten Island, Brooklyn,
+   Delaware and Pennsylvania shores are in the grid so the bays and rivers behave
+   correctly, but the FEMA extent the model is scored against is New Jersey only, so
+   flooding there is unchecked. Each river stops at its present-day head of tide (the
+   Cohansey and Neshaminy reach a little further); ground upstream is not modelled.""",
+    ),
+}
 
 
 def _score_block(s: dict) -> str:
@@ -259,19 +335,40 @@ def _score_block(s: dict) -> str:
     )
 
 
+BUILDINGS_BED = """**Buildings are burned into the terrain** (footprints raised), so depths inside
+   footprints are NaN or shallow by construction; read depth at the building's
+   perimeter, not its centroid."""
+
+BUILDINGS_BARE = """**Depth is measured from the BARE ground, buildings included.** The model
+   represents buildings as raised ground that water flows around; this map takes the
+   peak water level around each building and subtracts the bare ground under it, so a
+   footprint carries the depth of water against that building — read it at the
+   centroid or over the footprint, and subtract the first-floor height as usual.
+   {n_footprint_wet:,} of {n_footprint:,} footprint pixels are wet (>= 0.15 m). A
+   building large enough to fill a whole model cell can still read dry."""
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--arm", required=True, help="experiment name on the active domain")
     ap.add_argument("--out-dir", type=Path, default=DEFAULT_OUT)
     ap.add_argument("--stem", default=None, help="default sandy_hmax_<domain>_<arm>")
+    ap.add_argument(
+        "--ground",
+        type=Path,
+        default=None,
+        help="subgrid dir of the bare-earth bed: depth from bare ground (for FIAT)",
+    )
     a = ap.parse_args()
 
     dom = domain.active().name
-    stem = a.stem or f"sandy_hmax_{dom}_{a.arm.replace('+', '_')}"
+    stem = a.stem or (
+        f"sandy_hmax_{dom}_{a.arm.replace('+', '_')}" + ("_bareground" * bool(a.ground))
+    )
     out_tif = a.out_dir / f"{stem}_EPSG32618.tif"
     print(f"domain : {dom}\narm    : {a.arm}\ntarget : {out_tif}", flush=True)
 
-    st = export(a.arm, out_tif)
+    st = export(a.arm, out_tif, a.ground)
     sc = score_row(a.arm)
 
     readme = a.out_dir / f"{stem}_README.md"
@@ -282,6 +379,9 @@ def main() -> int:
             arm=a.arm,
             today=date.today().isoformat(),
             score_block=_score_block(sc),
+            buildings_note=(BUILDINGS_BARE.format(**st) if a.ground else BUILDINGS_BED),
+            gb=st["width"] * st["height"] * 4 / 1e9,
+            **SCOPE[dom[:2]],
             **st,
         )
     )
