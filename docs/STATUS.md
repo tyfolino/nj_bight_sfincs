@@ -77,9 +77,8 @@ test, code; details FINDINGS part 4 (h), §44, git log). Desktop backup re-run 1
   (MHHW ~0.8 m at the mouth → ~1.5 m at Trenton), sea-connected via `sea_level.py` — not one flat boundary level.
   **AND a tidal twin (user 10-29: both):** same bed, waves/wind/rain off, astronomical tide + 0.61 / 1.22 m at the
   boundary over ≥ one spring–neap cycle (a lunar month is better); report the model's mean higher-high + the max.
-  Tide source: a tidal database at the boundary points (default); NACCS's calm 10-12 → 10-25 only as the fallback.
-- **v1.0.0 = the swz premier, frozen + tagged (user 10-29).** Gate: `swz_band` 63231557 (bit-identical repeat
-  + the swz noise band + lake arms), the buildings-in-wave-bed call, Phase 5 (`PREMIER_NAME` + fingerprint → swz,
+  Tide source: ✅ EC2015 forcing written 10-30, checked, not yet read by SFINCS (`logs/modern_bed_2026-10-30/tide/README.md`; window 10-12 → 11-13, analysis month from 10-14 12:00). **User 10-30, first run:** unscaled, C&D Canal point as is, rivers OFF, restarts on. **Deficiencies to revisit:** tide 5.6 % (Sandy Hook) to 12 % (the Battery) low in M2, mean higher-high 3–6 cm below VDatum MHHW on most arms; C&D Canal point +32 % range vs NACCS; no river baseflow, so levels near Trenton read a little low; ~42 h estimated, so it may resume after a timeout.
+- **v1.0.0 = the swz premier, frozen + tagged (user 10-29).** 10-30 (user): the tag waits for the `swz_bare` read, which may change which fingerprint is 1.0 (then the FIAT maps are re-exported); nobody else signs off. ✅ Repeat BIT-IDENTICAL 10-30 (`logs/swz_band_2026-10-29/repeat_swz_early.json`; map + his, the restart files were already removed). Gate: the swz noise band + lake arms (63231557), the buildings-in-wave-bed call, Phase 5 (`PREMIER_NAME` + fingerprint → swz,
   `MODEL.md`, validation summary, user tags). Ship WITH a known-limits list (Monmouth lakes; Delaware lows + 3
   marks; Cape May back bays; coarse-face inflow pile-ups incl. Salem R.; building cap overtopped at +3 m SLR).
 - **Phase 5–6:** ✅ site (10-28, user's ask): `publish_gallery.py` `SITE_REFERENCE` marks `p4-premier` as the v4 reference and `NEXT_PREMIER` now reads "New in the premier" — site-only; `premier.PREMIER_NAME` stays `naccs-premier` until the Phase 5 tag (then drop `SITE_REFERENCE`). Reads →

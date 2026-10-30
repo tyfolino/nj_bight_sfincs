@@ -1803,3 +1803,22 @@ bed_v4_coarse_25m:
       50/100/200 m overviews. 🔴 FOR QUADTREE REFINEMENT GATING AND FACE z ONLY, never the subgrid.
       scripts/build_coarse_bed.py (reads the tier order FROM domain.py — v3's hand-typed shell list
       had drifted), hpc/build_coarse_bed.slurm.
+
+modern_land_2026:
+  data_type: RasterDataset
+  uri: elevation_modern_2026/modern_land_2026.tif
+  driver:
+    name: rasterio
+    options: {}
+  metadata:
+    category: topography
+    crs: 32618
+    nodata: -9999.0
+    unit: m+NAVD88
+    source: >-
+      Modern land + beach overlay for the 2026 bed (scripts/build_modern_land.py, 2026-10-30), painted
+      FIRST so the premier's channels and bed fixes stay on top. Newest survey wins, 2015-2025: USGS 3DEP
+      1 m (NE6County 2023-25, DE 2023, South NJ 2019, DVRPC 2015), PA 17-County 2024, Philadelphia 2022,
+      USACE topobathy (NCMP 2022 + 2017, Cape May / AC 2020, NAN 2020), NYC 2017. Land lidar only where
+      today's bed is not water (>= -0.25 m); it draws water as a flat surface. Geoid generations differ
+      (12A / 12B / 18), a few cm. Bare earth, so built works appear only as ground.
