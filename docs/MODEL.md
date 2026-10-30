@@ -130,6 +130,7 @@ Mark residuals here are model − observed, **median estimator, 50 m radius**; `
 
 - **Monmouth coastal lakes.** The five `lake_outlet_blocked` marks read 6121 −2.03, 6122 −2.27, 6124 −0.69, 6129 −0.05,
   6130 −2.09 m and set the headline RMSE (§6) `[PENDING swz_bare]` `[PENDING swz_band]`. Do not use these lakes' peaks.
+- **Peak wave heights are not all physical.** `hm0` reaches 27.55 m at the Narrows (40.606 N, −74.045) at hour 11 of the run, well before the storm, against 9.98 m at the wave boundary; 3,131 faces reach ≥ 12 m, 2,765 of them at the Delaware Bay mouth. On the previous wave bed: 26.67 m, 5,974 faces, so it did not come with this bed. The Narrows and Sandy Hook cells are the SnapWave limit cycle (FINDINGS §44 (g)); the Delaware mouth is unexplained. Its effect on water level is unmeasured. Do not publish a peak-`hm0` map unclipped.
 - **Delaware: low water, and few marks.** The storm low misses by −0.36 m at Lewes, −0.6…−0.7 m Ship John → Philadelphia,
   −0.7…−1.0 m at Newbold (rough high/low pick on the previous wave bed). At the mouth it is the NACCS forcing; the growth
   upriver is unexplained. Peaks are better (§6), bar the Christina gauges (−0.80 m Newport, −0.54 m Wilmington).
