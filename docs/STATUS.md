@@ -19,6 +19,8 @@ written up 10-29 (FINDINGS part 4 (i), §44 (e), §55; lakes held); (3) ✅ lake
 the modern bed; GPU feasibility.
 `p4_read2` 63177634 finished 10-28 ("failed steps: none"); its "Error reading variable ini" lines are benign.
 
+**Northern Arthur Kill sill (10-30, `logs/akn_sill_2026-10-30/`):** the premier's bed is CUDEM at −2…−6 m for ~1.3 km north of Shooters Island (40.646 N, −74.174…−74.162), between −14…−18 m channels; no 2012–14 survey we hold reaches it (2014 NJ_05_AKN stops at −74.193; NJ_07_SSI covers the south side), so the catalog's "filled by NJ_05_AKN" misleads. Unknown whether it moves any gauge or mark. Test: `akn_bed` 63310360 builds `_subgrid_p4_aknsill` (carve from the 2026 footprint capped at the nearest 2014 median −12.85 m, ASSUMED), then submits `bed-aknsill+p4-nowaves`; pair against swz `p4-nowaves`, watch Newark Bay and the Arthur Kill mouth. Decide before the 1.0 tag.
+
 **Phase 4 (10-28) → FINDINGS part 4 (i):** 13 arms whole, seeded, uninterrupted; repeat bit-identical; waves
 ΔRMSE −0.150, wavemaker −0.108 (mostly lakes — held), rain nothing on marks / most false alarms, buildings neutral in the FLOW (not measured in the waves),
 cnb 1.0 a marks-vs-false-alarm trade-off. Still to read from it: capped-hour `zsmax` (open question below).

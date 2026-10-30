@@ -1822,3 +1822,20 @@ modern_land_2026:
       USACE topobathy (NCMP 2022 + 2017, Cape May / AC 2020, NAN 2020), NYC 2017. Land lidar only where
       today's bed is not water (>= -0.25 m); it draws water as a flat surface. Geoid generations differ
       (12A / 12B / 18), a few cm. Bare earth, so built works appear only as ground.
+
+akn_sill_sandy_v4:
+  data_type: RasterDataset
+  uri: elevation_v4/ehydro/akn_sill_sandy_v4.tif
+  driver:
+    name: rasterio
+    options: {}
+  metadata:
+    category: topography
+    crs: 32618
+    nodata: -9999.0
+    unit: m+NAVD88
+    source: >-
+      TEST (2026-10-30, logs/akn_sill_2026-10-30/): a Sandy-era channel through the northern Arthur Kill
+      sill, where the premier's bed is CUDEM at -2..-6 m and no 2012-14 survey reaches. Footprint = the 2026
+      survey NJ_05_AKN in that reach; depth capped at the median of the nearest 2014 soundings. ASSUMED
+      depth, lower-only (`:min`).

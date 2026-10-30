@@ -881,6 +881,17 @@ EXPERIMENTS_BY_DOMAIN: dict[str, dict[str, Experiment]] = {
             "p4-premier+src-deal-overtop",
             "p4-premier+wave-nowavemaker",
         )
+    }
+    | {
+        # 2026-10-30: the northern Arthur Kill sill test (logs/akn_sill_2026-10-30/), waves-off
+        # so a bed swap is complete and the pair against p4-nowaves is well-conditioned.
+        "bed-aknsill+p4-nowaves": replace(
+            _V4_REFREEZE["p4-nowaves"],
+            name="bed-aknsill+p4-nowaves",
+            description="p4-nowaves with a Sandy-era channel carved through the northern Arthur "
+            "Kill sill (_subgrid_p4_aknsill; akn_sill_sandy_v4, ASSUMED depth). Pair: p4-nowaves.",
+            subgrid_from="_subgrid_p4_aknsill",
+        ),
     },
     # The breach arms, each on a domain whose face z comes from its own breach bed.
     "v4_refreeze_swz_wk0": {
