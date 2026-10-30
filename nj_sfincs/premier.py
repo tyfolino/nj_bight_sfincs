@@ -202,6 +202,10 @@ V4_REFREEZE_SWZ = DomainFingerprint(4881654, 4388, "90cc7468614a5814")
 #: on 202 / 174 faces, all at Mantoloking (40.04–40.05 N) and Wreck Pond (40.14 N).
 V4_REFREEZE_SWZ_WK0 = DomainFingerprint(4881654, 4388, "9c525ca93e9ede73")
 V4_REFREEZE_SWZ_WK165 = DomainFingerprint(4881654, 4388, "68286d6ef7c3dd66")
+#: v4_refreeze_swz_bare STAGED 2026-10-30 (setup_face_z.py, user): face z from the same bed
+#: WITHOUT the building burn, so SnapWave crosses the blocks; the flow keeps them unless an arm
+#: drops them. Measures buildings in the waves (FINDINGS §55, §63 (h)).
+V4_REFREEZE_SWZ_BARE = DomainFingerprint(4881654, 4388, "aa543d5b17e5ed2c")
 
 EXPECTED: dict[str, DomainFingerprint] = {
     "v1_monmouth": V1_MONMOUTH,
@@ -216,6 +220,7 @@ EXPECTED: dict[str, DomainFingerprint] = {
     "v4_refreeze_swz": V4_REFREEZE_SWZ,
     "v4_refreeze_swz_wk0": V4_REFREEZE_SWZ_WK0,
     "v4_refreeze_swz_wk165": V4_REFREEZE_SWZ_WK165,
+    "v4_refreeze_swz_bare": V4_REFREEZE_SWZ_BARE,
 }
 
 KNOWN = {
@@ -256,6 +261,10 @@ KNOWN = {
     V4_REFREEZE_SWZ_WK165: (
         "v4_refreeze_swz_wk165 STAGED 2026-10-29 — v4_refreeze_swz with face z from the "
         "Wreck Pond breach bed at 1.65 m (SnapWave sees the breach)"
+    ),
+    V4_REFREEZE_SWZ_BARE: (
+        "v4_refreeze_swz_bare STAGED 2026-10-30 — v4_refreeze_swz with face z from the bed "
+        "without the building burn (SnapWave on bare ground; flow bed per arm)"
     ),
     V4_HOT_PLUS: "v4_hot_plus RE-STAGED 2026-10-05, RETIRED 2026-10-15 (records in _retired/)"
     " (Maurice cut on the Union Lake dam crest)"

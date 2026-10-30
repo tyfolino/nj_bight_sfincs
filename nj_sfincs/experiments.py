@@ -889,6 +889,12 @@ EXPERIMENTS_BY_DOMAIN: dict[str, dict[str, Experiment]] = {
     "v4_refreeze_swz_wk165": {
         k: _V4_REFREEZE[k] for k in ("bed-breach-wreck165+p4-premier",)
     },
+    # 2026-10-30 (user): buildings in the waves, measured. SnapWave on bare ground; p4-premier
+    # keeps buildings in the flow (pair: v4_refreeze_swz's p4-premier = buildings in the waves),
+    # bed-nobuildings drops them from the flow too (pair: this domain's p4-premier).
+    "v4_refreeze_swz_bare": {
+        k: _V4_REFREEZE[k] for k in ("p4-premier", "bed-nobuildings+p4-premier")
+    },
 }
 
 

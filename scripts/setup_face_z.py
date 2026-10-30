@@ -9,6 +9,10 @@ subgrid's MEAN ground (``z_zmax − z_volmax / area``, CLAUDE.md §6), taken fro
     NJ_DOMAIN=<target> python scripts/setup_face_z.py --from v4_refreeze \\
         --bed _subgrid_refreeze_lakes_min_creeks_cohansey
 
+``--also-bed <dir>`` carries another ``subgrid_from`` dir over unchanged, for an arm whose FLOW
+bed is not the one the waves read (``v4_refreeze_swz_bare``: bare ground in the waves, the
+premier's bed in the flow).
+
 Writes ``experiments/<target>/_template_sealed`` and ``experiments/<target>/<bed>``. Both are
 HARD-LINK copies of the source domain's dirs except ``sfincs.nc`` (one fresh file, the two
 dirs share it) and its ``snapwave.upw`` (the cached face-``z`` bed slopes,
@@ -82,6 +86,12 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument(
         "--bed", required=True, help="subgrid_from dir of the source domain"
     )
+    ap.add_argument(
+        "--also-bed",
+        action="append",
+        default=[],
+        help="another subgrid_from dir of the source domain to carry over on the new face z",
+    )
     a = ap.parse_args(argv)
 
     dom = _domain.active()
@@ -96,16 +106,16 @@ def main(argv: list[str] | None = None) -> int:
     dst_root = exp_root()
     src_t, src_b = src_root / premier.TEMPLATE_NAME, src_root / a.bed
     dst_t, dst_b = dst_root / premier.TEMPLATE_NAME, dst_root / a.bed
-    for d in (dst_t, dst_b):
+    also = [(src_root / b, dst_root / b) for b in a.also_bed]
+    for d in (dst_t, dst_b, *(q for _, q in also)):
         if d.exists():
             sys.exit(f"{d} exists — move it aside first; this script never overwrites")
-    for d in (src_t, src_b):
+    for d in (src_t, src_b, *(p for p, _ in also)):
         if not (d / "sfincs.nc").exists():
             sys.exit(f"no sfincs.nc in {d}")
     fp_src = premier.domain_fingerprint(src_t)
-    if (
-        fp_src != premier.EXPECTED[a.src_domain]
-        or premier.domain_fingerprint(src_b) != fp_src
+    if fp_src != premier.EXPECTED[a.src_domain] or any(
+        premier.domain_fingerprint(d) != fp_src for d in (src_b, *(p for p, _ in also))
     ):
         sys.exit(
             f"source template / bed not on the sealed {a.src_domain} mesh ({fp_src})"
@@ -145,8 +155,9 @@ def main(argv: list[str] | None = None) -> int:
                 sys.exit(
                     f"🔴 {v} differs after the z write — refusing ({dst_t} left for inspection)"
                 )
-    link_tree(src_b, dst_b)
-    os.link(dst_t / "sfincs.nc", dst_b / "sfincs.nc")
+    for src, dst in ((src_b, dst_b), *also):
+        link_tree(src, dst)
+        os.link(dst_t / "sfincs.nc", dst / "sfincs.nc")
     fp = premier.domain_fingerprint(dst_t)
     if (fp.n_faces, fp.n_boundary_edges) != (fp_src.n_faces, fp_src.n_boundary_edges):
         sys.exit(f"🔴 counts moved: {fp} vs {fp_src}")
@@ -155,7 +166,7 @@ def main(argv: list[str] | None = None) -> int:
         f"active faces ({int(changed.sum()):,} changed); source {a.src_domain} {fp_src}; "
         f"→ {dom.name} {fp}; snapwave.upw dropped\n"
     )
-    for d_ in (dst_t, dst_b):
+    for d_ in (dst_t, dst_b, *(dst for _, dst in also)):
         prov = d_ / "provenance.txt"
         text = prov.read_text() if prov.exists() else ""
         prov.unlink(missing_ok=True)  # break the hard link before writing

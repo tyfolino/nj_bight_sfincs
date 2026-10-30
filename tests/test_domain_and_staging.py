@@ -526,6 +526,8 @@ class TestWaterlevelSupportOverride(_DomainEnv):
             # …and its two breach-bed siblings (10-29): face z only, again.
             "v4_refreeze_swz_wk0": 3,
             "v4_refreeze_swz_wk165": 3,
+            # …and SnapWave on bare ground (10-30): face z only, again.
+            "v4_refreeze_swz_bare": 3,
         }
         self.assertEqual(
             set(PINNED),

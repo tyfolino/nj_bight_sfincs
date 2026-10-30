@@ -3222,6 +3222,15 @@ V4_REFREEZE_SWZ_WK165 = replace(
     face_z_from="_subgrid_breach_wreck165_creeks_cohansey",
 )
 
+#: SnapWave on BARE ground (user 2026-10-30, FINDINGS §55, §63 (h)): face ``z`` from the same
+#: bed without the building burn, so the waves cross the blocks while the flow keeps them
+#: (``p4-premier`` here keeps the premier's flow bed). Measures buildings in the WAVES.
+V4_REFREEZE_SWZ_BARE = replace(
+    V4_REFREEZE_SWZ,
+    name="v4_refreeze_swz_bare",
+    face_z_from="_subgrid_refreeze_lakes_min_nobuildings_creeks_cohansey",
+)
+
 DOMAINS: dict[str, Domain] = {
     d.name: d
     for d in (
@@ -3237,6 +3246,7 @@ DOMAINS: dict[str, Domain] = {
         V4_REFREEZE_SWZ,
         V4_REFREEZE_SWZ_WK0,
         V4_REFREEZE_SWZ_WK165,
+        V4_REFREEZE_SWZ_BARE,
     )
 }
 

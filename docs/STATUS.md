@@ -15,13 +15,7 @@ scored before the `meteo` column existed left blank); site re-published locally 
 retired 10-11 side runs lose their figures, rows kept) — user commits + pushes `~/sandy_flood_site`; scratch D1 + D2
 done (63.8 G). **Next:** (1) the null band + the LAKE side arms on swz (breach ×2, Deal overtop, no wavemaker): their
 lake answers came from the old wave bed — hold lake conclusions until then (job 63231557); (2) ✅ Phase 4 read
-written up 10-29 (FINDINGS part 4 (i), §44 (e), §55; lakes held); (3) ✅ lakes explained (§63 (h)) — buildings-in-wave-bed is the user's call; (4) **FIAT export for the student** (user 10-29: from
-the swz premier) — job 63246191 (`logs/fiat_export_2026-10-29/`): depth from BARE ground, faces fully covered by buildings
-(roof = their lowest pixel → phantom 9.5 m) and dry faces dropped first. CHECK before handing over: off-footprint ==
-gallery tif, no > 5 m clusters on roofs, footprint depths sane; then give the user the file + README. (5) SnapWave
-wavefront cut 63242704 (bit check + speed; `logs/snapwave_wavefront_2026-10-29/`). (6) **Waiting on the user:** OK to
-delete the swomp-1 cuts `/scratch/tpj8/engine_gate/swomp_*6h` (~56 G)? Queue a bare-ground-face-z side arm (buildings
-in the WAVES, unmeasured — §55) once `swz_band` has started (it guards `domain.py`)? (7) MHHW + 2/4 ft static + tidal on
+written up 10-29 (FINDINGS part 4 (i), §44 (e), §55; lakes held); (3) ✅ lakes explained (§63 (h)) — buildings-in-wave-bed is the user's call; (4) ✅ **FIAT export for the student 10-30** (`logs/fiat_export_2026-10-30/`, job 63302759): two maps from the swz premier in `share/`, bare-ground + uncorrected (student: does the footprint treatment change FIAT?). QC caught faces a building ALMOST covers: roof rain fills the leftover sliver towards roof height (Atlantic City 11.76 m NAVD88, 0.5 m in the streets) → `roof_rain_faces` drops 258 faces; footprints now ≤ 5 m, median 0.62; off-footprint identical where both have a value. Hudson waterfront (Hoboken, east Jersey City) is NOT in the model — README says so. The two maps share one water surface, so their difference is the depth convention, not the buildings' effect on the flow, and the uncorrected map's blank footprints (97% of wet footprint pixels) read as undamaged in FIAT. **To test the bed itself:** export `v4_refreeze_swz_bare/bed-nobuildings+p4-premier` when `swz_bare` ends (its own bed is bare, so no `--ground`) and compare with the bare-ground premier map. (5) ✅ SnapWave wavefront cut 63242704: bit-identical, see "make the model faster". (6) ✅ 10-30: swomp cuts deleted; **`swz_bare` 63302336** running (buildings in the WAVES). (7) MHHW + 2/4 ft static + tidal on
 the modern bed; GPU feasibility.
 `p4_read2` 63177634 finished 10-28 ("failed steps: none"); its "Error reading variable ini" lines are benign.
 
@@ -29,7 +23,7 @@ the modern bed; GPU feasibility.
 ΔRMSE −0.150, wavemaker −0.108 (mostly lakes — held), rain nothing on marks / most false alarms, buildings neutral in the FLOW (not measured in the waves),
 cnb 1.0 a marks-vs-false-alarm trade-off. Still to read from it: capped-hour `zsmax` (open question below).
 
-Last updated: **2026-10-29 eve** — FIAT export + wavefront cut queued; premier → `v4_refreeze_swz` (§63 (g)); `p4_read2` done; swomp 6 h cut bit-identical (SnapWave 1.28×); modern-bed download complete (all 272 3DEP tiles verified).
+Last updated: **2026-10-30** — FIAT maps + QC done; wavefront SnapWave 5.3× and bit-identical on the 6 h cut; `swz_bare` running; `swz_band` solves finishing.
 
 ---
 
@@ -43,7 +37,7 @@ Last updated: **2026-10-29 eve** — FIAT export + wavefront cut queued; premier
   10 marks outside ±0.5 m, inventoried in FINDINGS part 4 (h).
 - **Heading for:** the Phase 4 re-baseline (below), before maintenance 11-10.
 
-## Running (10-29)
+## Running (10-30)
 
 - ⏳ **63231557 `swz_band`** (submitted 10-29; `logs/swz_band_2026-10-29/README.md`): 2 emeraldrapids nodes, ≤ 30 h —
   on `v4_refreeze_swz` the repeat, the two `rhoa` nulls, Deal overtop, no wavemaker; the two Wreck Pond breaches on
@@ -51,13 +45,7 @@ Last updated: **2026-10-29 eve** — FIAT export + wavefront cut queued; premier
   `run_experiments.py`, `hpc/sfincs_run.slurm`: 🔴 don't edit them until it STARTS. Scratch will pass its 1 T soft
   limit while it runs → afterwards retire the 7 v4_refreeze twins (`retire_arm.py`, user OK 10-29); `sfincs-nj-agri`
   jobs share the quota. Then: null-band read on swz, the repeat check (`repeat_swz.json`).
-- ⏳ **63242704 `swomp2_v4cut`** (10-29): 6 h cut of the swz premier, production engine vs `sfincs-swomp2-43cf6bfb` at
-  16 threads side by side + swomp-2 at 64; must be BIT-IDENTICAL (`v4cut_compare_*.json`, byte check in the .out).
-- ⏳ **63246191 `fiat_export`** (10-29, 3rd try: OOM at 250 G, then a `_FillValue` write error, then the roof fix):
-  `share/sandy_hmax_v4_refreeze_swz_p4-premier_bareground_*` — not handed over until checked (PICK UP (4)).
-- ✅ **Modern-bed download 63180978 complete:** all 11 lists, 3DEP 272 / 272. The log's "partial files left: 99"
-  predates the 10-28 fix (USGS re-staged those tiles; renamed in after a server-size match,
-  `raw/usgs_3dep_1m/_server_size_ok.txt`); 10-29: all 99 size-ok + open in GDAL.
+- ⏳ **63302336 `swz_bare`** (10-30; `logs/swz_bare_2026-10-30/`): 1 emeraldrapids node, ≤ 24 h. New domain `v4_refreeze_swz_bare` (`aa543d5b17e5ed2c`): SnapWave on bare ground (350,108 faces lower, none higher, vs swz). `p4-premier` = buildings in the flow only (pair: `v4_refreeze_swz/p4-premier`, buildings in both); `bed-nobuildings+p4-premier` = none anywhere (pair: this domain's `p4-premier`). Read paired, then the buildings call for 1.0 (§55, §63 (h)).
 
 - **Phase 4 read notes:** attempts 1–2 are filed under `logs/rebaseline_2026-10-19/attempt*/` — **not Phase 4 results**.
 - ⚠️ **Sluice Creek gauge** reads an ASSUMED bed (pool painted at −0.24 m; nudged 10-22, FINDINGS part 4): observed
@@ -240,7 +228,7 @@ OpenMP — checked loop by loop (`vec_compare.py`). ✅ **6 h v4 cut (63182232, 
 threads (`engine_gate` STRICT + byte check, 229 iteration lines). **SnapWave 3,091 → 2,421 s = 1.28×** — quote that,
 not the 1.6× wall (5,983 → 3,679 s): the old copy's input phase took 1,785 s vs 143 s (cold cache / disk contention
 side by side, not the patch). 64 threads add nothing to SnapWave (2,424 s). A sequential cold-cache pair would settle
-the wall figure — fold into the wavefront test. ▶ **Wavefront sweep (nj-swomp-2) 10-29** (`logs/snapwave_wavefront_2026-10-29/README.md`): prototype `sfincs-swomp2-43cf6bfb` (level schedule, one sweep body, serial fallback); vectorization gate ✅; **toy BIT-IDENTICAL** at 1 / 4 / 16 threads AND with the schedule forced on at 1 thread (a different node order); 6 h swz-premier cut **63242704** queued (bit check + timing). GPU flow + parallel SnapWave together: ~14 h → ~1.5–2 h (estimate; needs
+the wall figure — fold into the wavefront test. ▶ **Wavefront sweep (nj-swomp-2) 10-29** (`logs/snapwave_wavefront_2026-10-29/README.md`): prototype `sfincs-swomp2-43cf6bfb` (level schedule, one sweep body, serial fallback); vectorization gate ✅; **toy BIT-IDENTICAL** at 1 / 4 / 16 threads AND with the schedule forced on at 1 thread (a different node order); ✅ **6 h swz-premier cut 63242704 (10-29): BIT-IDENTICAL** to production at 16 and 64 threads (`engine_gate` STRICT + byte check, 198 iteration lines). **SnapWave 2,858 → 539 s = 5.3× at 16 threads, 282 s = 10× at 64.** Quote those, not the 3.2× wall (old copy's input 1,810 s vs 141 s again). Whole-run estimate ~14 h → ~7 h (16) / ~3.5 h (64): the cut is the quiet first 6 h (7 calls), no storm peak — **next: full 72 h bit-for-bit run, install via `hpc/build_sfincs_native.sh`.** GPU flow + parallel SnapWave together: ~14 h → ~1.5–2 h (estimate; needs
 SnapWave to run beside a GPU flow build — ask Deltares).
 SnapWave is ~97 % of a v3 64-thread waves-on run (§20) and its sweep is SERIAL: a 64-thread solve averages ~6 busy cores. No OpenMP
 around the sweep loop on `main` (checked 10-26). Don't write our own SnapWave (months to validate).
@@ -296,7 +284,7 @@ around the sweep loop on `main` (checked 10-26). Don't write our own SnapWave (m
 
 - **Home** (`/cache/home`, GPFS): 100 G soft / 110 G hard; **89.2 G on 2026-10-28**. Ask
   `/usr/lpp/mmfs/bin/mmlsquota -u $USER --block-size auto cache` (lags ~10 min).
-- 🔴 **Scratch** (`/scratch/tpj8`): 1 T soft / 2 T hard. **Over the soft limit 10-28: 1.169 T, grace → ~11-03**; cleanup 10-28 (user OK; `logs/scratch_survey_2026-10-28/`): tiers A + B, run B retired, the 6 10-11 side runs retired → 1.008 T with the download landing. ✅ **tier A-deferred D1 + D2 DONE 10-29** (`snapwave.upw` of the 12 Phase 4 v4 runs + `p4-ref`, 63.8 G; the shadow dir) (commands: `logs/scratch_survey_2026-10-28/candidates.sh` D1; write the paths out literally — the rm safety check refuses `$VAR/…` targets). `sfincs-nj-agri` shares this quota (324 G). Earlier: **704 G on 2026-10-22** (after the four pre-creek beds were deleted; the 39 G pre-inflows template is
+- 🔴 **Scratch** (`/scratch/tpj8`): 1 T soft / 2 T hard. **Over the soft limit: 1.159 T on 10-30 after deleting the swomp cuts (75 G), `mmlsquota` grace 6 days; `sfincs-nj-agri` is now 421 G**; cleanup 10-28 (user OK; `logs/scratch_survey_2026-10-28/`): tiers A + B, run B retired, the 6 10-11 side runs retired → 1.008 T with the download landing. ✅ **tier A-deferred D1 + D2 DONE 10-29** (`snapwave.upw` of the 12 Phase 4 v4 runs + `p4-ref`, 63.8 G; the shadow dir) (commands: `logs/scratch_survey_2026-10-28/candidates.sh` D1; write the paths out literally — the rm safety check refuses `$VAR/…` targets). `sfincs-nj-agri` shares this quota. Earlier: **704 G on 2026-10-22** (after the four pre-creek beds were deleted; the 39 G pre-inflows template is
   gone too). 🔴 **Not backed up; files not accessed for 90 days are deleted.** `experiments/`
   and most of `data/` (the 10-05 swap is finished) live here; the durable copy is the desktop pull
   (`scripts/desktop_pull_backup.sh`) — re-run it whenever an arm is scored. The engine sources

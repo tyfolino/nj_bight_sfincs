@@ -52,6 +52,7 @@ import rioxarray
 import xarray as xr
 from rasterio.enums import Resampling
 from rasterio.warp import transform_bounds
+from scipy.spatial import cKDTree
 
 import nj_sfincs  # noqa: F401  (PROJ primer — must precede hydromt_sfincs)
 from hydromt_sfincs import utils
@@ -61,6 +62,58 @@ from nj_sfincs.validate.core import open_run
 
 DEFAULT_OUT = ROOT / "share"
 HMIN = 0.05  # the downscale floor, as validate.load_floodmap
+# A building-heavy face is roof rain, not flood, when its water stands this far above the open
+# ground around it (bare_ground_hmax; 2026-10-30, logs/fiat_export_2026-10-30/).
+ROOF_COVER, OPEN_COVER, ALL_ROOF_COVER = 0.25, 0.25, 0.9
+ROOF_EXCESS_M, OPEN_RADIUS_M = 1.0, 100.0
+
+
+def roof_rain_faces(
+    model_dir: Path, ground: Path, zsmax: np.ndarray, wet: np.ndarray
+) -> np.ndarray:
+    """Faces whose ``zsmax`` is rain held by a building, not water from outside it.
+
+    A face a building ALMOST covers keeps a sliver of low ground, so its lowest pixel looks
+    like street and the fully-covered test misses it; the rain on its roof area drains into
+    that sliver and fills it towards roof height (Atlantic City, 2026-10-30: 11.76 m NAVD88
+    with 0.5 m in the streets). Cover = the burn's rise in mean ground / the roof's rise in top
+    ground. Dropped: cover >= ``ROOF_COVER`` with water > ``ROOF_EXCESS_M`` above the median of
+    the wet open faces (cover < ``OPEN_COVER``) within ``OPEN_RADIUS_M``, and cover >=
+    ``ALL_ROOF_COVER`` with no open face that close to compare against.
+    """
+    with netCDF4.Dataset(model_dir / "sfincs.nc") as m:
+        dx = float(m.getncattr("dx"))
+        area = (dx / 2.0 ** (m["level"][:].filled(1) - 1)) ** 2
+    tab = {}
+    for k, p in (("own", model_dir), ("bare", Path(ground))):
+        with netCDF4.Dataset(p / "sfincs_subgrid.nc") as n:
+            zmax = np.ma.filled(n["z_zmax"][:], np.nan)
+            tab[k] = zmax, zmax - np.ma.filled(n["z_volmax"][:], np.nan) / area
+    roof = tab["own"][0] - tab["bare"][0]
+    cover = np.where(
+        roof > 0.5,
+        np.clip((tab["own"][1] - tab["bare"][1]) / np.maximum(roof, 0.5), 0, 1),
+        0.0,
+    )
+    with netCDF4.Dataset(model_dir / "sfincs_map.nc") as m:
+        fn = m["mesh2d_face_nodes"]
+        nodes = np.ma.filled(fn[:], -1).astype("int64") - int(
+            getattr(fn, "start_index", 0)
+        )
+        x = np.ma.filled(m["mesh2d_node_x"][:], np.nan)[nodes].mean(axis=1)
+        y = np.ma.filled(m["mesh2d_node_y"][:], np.nan)[nodes].mean(axis=1)
+    open_ = np.flatnonzero(wet & (cover < OPEN_COVER))
+    cand = np.flatnonzero(wet & (cover >= ROOF_COVER))
+    near = cKDTree(np.c_[x[open_], y[open_]]).query_ball_point(
+        np.c_[x[cand], y[cand]], r=OPEN_RADIUS_M
+    )
+    drop = np.zeros(zsmax.shape, bool)
+    for f, i in zip(cand, near):
+        if i:
+            drop[f] = zsmax[f] - np.median(zsmax[open_[i]]) > ROOF_EXCESS_M
+        else:
+            drop[f] = cover[f] >= ALL_ROOF_COVER
+    return drop
 
 
 def bare_ground_hmax(model_dir: Path, ground: Path) -> tuple[xr.DataArray, dict]:
@@ -97,13 +150,14 @@ def bare_ground_hmax(model_dir: Path, ground: Path) -> tuple[xr.DataArray, dict]
             raise SystemExit("sfincs_subgrid.nc is not in the map's face order")
         covered = (zmin["own"] - zmin["bare"]) > 0.5
         dry = ~((zsmax.values - zmin["own"]) >= HMIN)
+        roof_rain = roof_rain_faces(model_dir, ground, zsmax.values, ~covered & ~dry)
         print(
             f"[bare ground] faces dropped: {int(covered.sum())} fully covered by buildings "
             f"({int((covered & ~dry).sum())} with water on the roof), "
-            f"{int((dry & ~covered).sum())} dry",
+            f"{int((dry & ~covered).sum())} dry, {int(roof_rain.sum())} holding roof rain",
             flush=True,
         )
-        zsmax = zsmax.where(~covered & ~dry)
+        zsmax = zsmax.where(~covered & ~dry & ~roof_rain)
         tmp = cache.with_name(
             cache.stem + ".partial.tif"
         )  # .tif: build_overviews asserts it
@@ -262,7 +316,7 @@ Model run: domain `{domain}`, experiment `{arm}`, exported {today}.
 | | |
 |---|---|
 | Format | GeoTIFF, single band, float32, DEFLATE-compressed, tiled, with overviews |
-| **CRS** | **{crs} (EPSG:{epsg})** — UTM zone 18N, coordinates in **metres**, *not* degrees |
+| **CRS** | **EPSG:{epsg}** — UTM zone 18N, coordinates in **metres**, *not* degrees |
 | Resolution | {res:.3f} m |
 | Size | {width} x {height} px, {mb:.0f} MB |
 | NoData | NaN (tagged in the header) — dry land, permanent water, and ground outside the model |
@@ -328,6 +382,11 @@ values are left in rather than silently deleted, so the choice stays yours.
    debris — all of which matter for real damage estimation.
 6. {buildings_note}
 
+Comparing this map with its sibling (`..._bareground_...` / the plain `..._p4-premier_...`):
+the same water, so depths match exactly off the footprints. About 7.5 km² of each map's
+wet ground is blank in the other: a thin shoreline strip where the permanent-water cutoff
+(ground near -0.5 m) falls on different pixels. It is not a flood difference; ignore it.
+
 Questions to Ty.
 """
 
@@ -366,7 +425,11 @@ shores (Delaware, Pennsylvania, Staten Island) are computed as part of those wat
    Delaware and Pennsylvania shores are in the grid so the bays and rivers behave
    correctly, but the FEMA extent the model is scored against is New Jersey only, so
    flooding there is unchecked. Each river stops at its present-day head of tide (the
-   Cohansey and Neshaminy reach a little further); ground upstream is not modelled.""",
+   Cohansey and Neshaminy reach a little further); ground upstream is not modelled.
+   **The Hudson waterfront and the Upper Bay shore are outside the model:** Hoboken, the
+   east side of Jersey City and Bayonne's Upper Bay side are blank because they were not
+   simulated, NOT because they stayed dry. Sandy flooded them badly, so exclude them from
+   any damage total rather than counting them as undamaged.""",
     ),
 }
 
@@ -389,7 +452,12 @@ def _score_block(s: dict) -> str:
 
 BUILDINGS_BED = """**Buildings are burned into the terrain** (footprints raised), so depths inside
    footprints are NaN or shallow by construction; read depth at the building's
-   perimeter, not its centroid."""
+   perimeter, not its centroid. **A FIAT run reading depth at the building will score
+   most flooded buildings as undamaged** (footprints are mostly blank here), so a damage drop against that map is mostly this blank-map effect.
+   Both maps share one water surface: comparing them does not test a change to the model's
+   bed; that takes two runs with different beds, read with the same depth method. A few cells beside large buildings are too deep: rain on
+   a roof drains into the sliver of ground left in that model cell (up to ~15 m near Port
+   Newark, ~10 m in Atlantic City). They are kept here as the model has them; the bare-ground map drops them."""
 
 BUILDINGS_BARE = """**Depth is measured from the BARE ground, buildings included.** The model
    represents buildings as raised ground that water flows around; this map takes the
@@ -397,7 +465,8 @@ BUILDINGS_BARE = """**Depth is measured from the BARE ground, buildings included
    footprint carries the depth of water against that building — read it at the
    centroid or over the footprint, and subtract the first-floor height as usual.
    {n_footprint_wet:,} of {n_footprint:,} footprint pixels are wet (>= 0.15 m). A
-   building large enough to fill a whole model cell can still read dry."""
+   building large enough to fill a whole model cell can still read dry, and so can one
+   that fills most of a cell where the only water in the model is rain off its own roof."""
 
 
 def main() -> int:
