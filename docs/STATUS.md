@@ -6,26 +6,11 @@ running, what is next, what is open. When an item closes, its durable fact goes 
 Git has the history. The campaign log this file grew into until 2026-09-29 (6,767 lines) is
 `git show d70dd1e:docs/STATUS.md`; FINDINGS cites it as "STATUS <date>".
 
-▶ **PICK UP (10-29): THE PREMIER MOVES TO `v4_refreeze_swz` (user 10-29, FINDINGS §63 (g)).** SnapWave on the
-subgrid mean ground: the water moves a few cm, coherently; HWM skill unchanged on the 105 non-lake marks (ΔRMSE
-−0.003 [−0.009, +0.005]); the all-mark loss (0.408 → 0.439) is five Monmouth lake marks. The candidate is
-`v4_refreeze_swz/p4-premier` as run (63181564, uninterrupted, seeded). ✅ 10-29: label fixes applied (`provenance.meteo_label` reads the blend's `(pressure: era5)` tag →
-`pres:era5-bilinear`; rain-off description) and 15 rows + manifests relabelled (`logs/relabel_2026-10-29/`; 7 rows
-scored before the `meteo` column existed left blank); site re-published locally (swz premier + `p4-nowaves`; the 6
-retired 10-11 side runs lose their figures, rows kept) — user commits + pushes `~/sandy_flood_site`; scratch D1 + D2
-done (63.8 G). **Next:** (1) the null band + the LAKE side arms on swz (breach ×2, Deal overtop, no wavemaker): their
-lake answers came from the old wave bed — hold lake conclusions until then (job 63231557); (2) ✅ Phase 4 read
-written up 10-29 (FINDINGS part 4 (i), §44 (e), §55; lakes held); (3) ✅ lakes explained (§63 (h)) — buildings-in-wave-bed is the user's call; (4) ✅ **FIAT export for the student 10-30** (`logs/fiat_export_2026-10-30/`, job 63302759): two maps from the swz premier in `share/`, bare-ground + uncorrected (student: does the footprint treatment change FIAT?). QC caught faces a building ALMOST covers: roof rain fills the leftover sliver towards roof height (Atlantic City 11.76 m NAVD88, 0.5 m in the streets) → `roof_rain_faces` drops 258 faces; footprints now ≤ 5 m, median 0.62; off-footprint identical where both have a value. Hudson waterfront (Hoboken, east Jersey City) is NOT in the model — README says so. The two maps share one water surface, so their difference is the depth convention, not the buildings' effect on the flow, and the uncorrected map's blank footprints (97% of wet footprint pixels) read as undamaged in FIAT. **To test the bed itself:** export `v4_refreeze_swz_bare/bed-nobuildings+p4-premier` when `swz_bare` ends (its own bed is bare, so no `--ground`) and compare with the bare-ground premier map. (5) ✅ SnapWave wavefront cut 63242704: bit-identical, see "make the model faster". (6) ✅ 10-30: swomp cuts deleted; **`swz_bare` 63302336** running (buildings in the WAVES). (7) MHHW + 2/4 ft static + tidal on
-the modern bed; GPU feasibility.
-`p4_read2` 63177634 finished 10-28 ("failed steps: none"); its "Error reading variable ini" lines are benign.
+▶ **PICK UP (11-01): MODEL 1.0.0 = `p4-premier` on `v4_refreeze_swz` (`90cc7468614a5814`, user 11-01).** Read in FINDINGS part 4 (j) (`logs/swz_read_2026-11-01/`): buildings stay in flow and waves, the Arthur Kill sill does nothing, breach and Deal stay sensitivities. FIAT closed (user 11-01; the 10-30 maps in `share/` stand). **Next:** (1) ✋ user commits + tags `v1.0.0`, pushes the site after `publish_gallery.py`; (2) read `swomp2_full` 16 threads (63385524) and decide the production engine; (3) tidal twin 63390889 + 63390890 → `logs/modern_bed_2026-11-01/tide_stats.py <dir>`, first run of that script on real output; (4) user's call: still-water maps by mapping the sloped surface without a solve (recommended; `still-*` arms staged, not submitted, part 4 (k)); check the modern bed's untested overlays + the +70 m and pits before anything goes to the collaborator; (5) RCC talk 11-02: `reports/rcc_talk_2026-10-30.pptx`, 14 slides, patched by `logs/rcc_talk_2026-10-30/deck/patch*_2026-11-01.py` (`build_deck.js` is older), present from real PowerPoint.
 
-**Northern Arthur Kill sill (10-30, `logs/akn_sill_2026-10-30/`):** the premier's bed is CUDEM at −2…−6 m for ~1.3 km north of Shooters Island (40.646 N, −74.174…−74.162), between −14…−18 m channels; no 2012–14 survey we hold reaches it (2014 NJ_05_AKN stops at −74.193; NJ_07_SSI covers the south side), so the catalog's "filled by NJ_05_AKN" misleads. Unknown whether it moves any gauge or mark. Test: `akn_bed` 63310360 builds `_subgrid_p4_aknsill` (carve from the 2026 footprint capped at the nearest 2014 median −12.85 m, ASSUMED), then submits `bed-aknsill+p4-nowaves`; pair against swz `p4-nowaves`, watch Newark Bay and the Arthur Kill mouth. Decide before the 1.0 tag.
+**Phase 4 still to read:** capped-hour `zsmax` (open question below).
 
-**Phase 4 (10-28) → FINDINGS part 4 (i):** 13 arms whole, seeded, uninterrupted; repeat bit-identical; waves
-ΔRMSE −0.150, wavemaker −0.108 (mostly lakes — held), rain nothing on marks / most false alarms, buildings neutral in the FLOW (not measured in the waves),
-cnb 1.0 a marks-vs-false-alarm trade-off. Still to read from it: capped-hour `zsmax` (open question below).
-
-Last updated: **2026-10-30** — FIAT maps + QC done; wavefront SnapWave 5.3× and bit-identical on the 6 h cut; `swz_bare` running; `swz_band` solves finishing.
+Last updated: **2026-11-01** — 1.0.0 chosen; swz reads done; wavefront 2.51 h and bit-identical at 64 threads; scratch back under its soft limit.
 
 ---
 
@@ -33,21 +18,12 @@ Last updated: **2026-10-30** — FIAT maps + QC done; wavefront SnapWave 5.3× a
 
 - **v3 is DONE** (2026-09-24). Reference `naccs-premier` — HWM RMSE 0.329 / bias −0.143 (median, 50 m, n 94),
   MOTF CSI 0.706; re-run on the seeded engine in Phase 4 (`p4-ref` / `p4-ref-nowaves`).
-- **v4 premier → `v4_refreeze_swz`** (`90cc7468614a5814`, user 10-29; the Phase 4 arms are on `v4_refreeze`
-  `378014e154b4ff41`). The 10-11 premier `naccs-premier` (NACCS-blend wind, CN infiltration,
-  unseeded engine): RMSE 0.436 / bias −0.110 (n 110), CSI 0.780; without the 5 noted marks 0.408 / −0.095 (n 105);
-  10 marks outside ±0.5 m, inventoried in FINDINGS part 4 (h).
-- **Heading for:** the Phase 4 re-baseline (below), before maintenance 11-10.
+- **Model 1.0.0: `v4_refreeze_swz` / `p4-premier`** (`90cc7468614a5814`, job 63181564): RMSE 0.439 / bias −0.128 (median, 50 m, n 110), CSI 0.784; without the 6 noted marks 0.354 / −0.093 (n 104). `docs/MODEL.md`.
 
-## Running (10-30)
+## Running (11-01)
 
-- ⏳ **63231557 `swz_band`** (submitted 10-29; `logs/swz_band_2026-10-29/README.md`): 2 emeraldrapids nodes, ≤ 30 h —
-  on `v4_refreeze_swz` the repeat, the two `rhoa` nulls, Deal overtop, no wavemaker; the two Wreck Pond breaches on
-  their own face-z domains (`v4_refreeze_swz_wk0` / `_wk165`). EXPECT_MD5 `expected.md5` covers `nj_sfincs/*.py`,
-  `run_experiments.py`, `hpc/sfincs_run.slurm`: 🔴 don't edit them until it STARTS. Scratch will pass its 1 T soft
-  limit while it runs → afterwards retire the 7 v4_refreeze twins (`retire_arm.py`, user OK 10-29); `sfincs-nj-agri`
-  jobs share the quota. Then: null-band read on swz, the repeat check (`repeat_swz.json`).
-- ⏳ **63302336 `swz_bare`** (10-30; `logs/swz_bare_2026-10-30/`): 1 emeraldrapids node, ≤ 24 h. New domain `v4_refreeze_swz_bare` (`aa543d5b17e5ed2c`): SnapWave on bare ground (350,108 faces lower, none higher, vs swz). `p4-premier` = buildings in the flow only (pair: `v4_refreeze_swz/p4-premier`, buildings in both); `bed-nobuildings+p4-premier` = none anywhere (pair: this domain's `p4-premier`). Read paired, then the buildings call for 1.0 (§55, §63 (h)).
+- ⏳ **63385524 `swomp2_full`** (`logs/snapwave_fullrun_2026-11-01/`): 64 threads done, BIT-IDENTICAL, 2.51 h (FINDINGS §20); 16 threads running, pinned to one socket (production spread over 64 cores). `swomp2_full_64t` keeps ~10.5 G: delete after the 16-thread read.
+- ⏳ **63390889, 63390890 tidal twin** (`bed-modern+tide-2ft`, `-4ft`, 32 d, 64 threads, 40 h limit; ~17 h scaled). Up 11-01; a resume is sound (no waves, no rain).
 
 - **Phase 4 read notes:** attempts 1–2 are filed under `logs/rebaseline_2026-10-19/attempt*/` — **not Phase 4 results**.
 - ⚠️ **Sluice Creek gauge** reads an ASSUMED bed (pool painted at −0.24 m; nudged 10-22, FINDINGS part 4): observed
@@ -72,7 +48,7 @@ test, code; details FINDINGS part 4 (h), §44, git log). Desktop backup re-run 1
   (run-up) kept, drawn hollow, `hwm_*_scored_excl_noted` beside the headline.
 - **Phase 4 ✅ (63094139, 10-28; `logs/rebaseline_2026-10-19/`, PREREG `PREREG.md`):** 13 v4 arms + the v3 seeded pair,
   read in FINDINGS part 4 (i). Its lake arms re-run on swz in 63231557.
-- **First 1.x simulations (user 10-28, re-confirmed 10-29): calm still water at MHHW + 2 ft / + 4 ft on the MODERN
+- **First 1.x simulations (staged 11-01, `logs/modern_bed_2026-11-01/README.md`; tidal twin submitted, still water awaits the method call; user 10-28, re-confirmed 10-29): calm still water at MHHW + 2 ft / + 4 ft on the MODERN
   bed, waves off**, for the collaborator's comparison (their own 2 ft / 4 ft maps disagree — negatives on every coast;
   they suspect their data). Plan + data: `logs/modern_bed_2026-10-28/README.md` (download ✅; next: bed-recipe code,
   `_subgrid_modern2026` build ~7 h, buildings + fixes re-checked). Still water = the SLOPED VDatum MHHW surface + s
@@ -80,12 +56,8 @@ test, code; details FINDINGS part 4 (h), §44, git log). Desktop backup re-run 1
   **AND a tidal twin (user 10-29: both):** same bed, waves/wind/rain off, astronomical tide + 0.61 / 1.22 m at the
   boundary over ≥ one spring–neap cycle (a lunar month is better); report the model's mean higher-high + the max.
   Tide source: ✅ EC2015 forcing written 10-30, checked, not yet read by SFINCS (`logs/modern_bed_2026-10-30/tide/README.md`; window 10-12 → 11-13, analysis month from 10-14 12:00). **User 10-30, first run:** unscaled, C&D Canal point as is, rivers OFF, restarts on. **Deficiencies to revisit:** tide 5.6 % (Sandy Hook) to 12 % (the Battery) low in M2, mean higher-high 3–6 cm below VDatum MHHW on most arms; C&D Canal point +32 % range vs NACCS; no river baseflow, so levels near Trenton read a little low; ~42 h estimated, so it may resume after a timeout.
-- **v1.0.0 = the swz premier, frozen + tagged (user 10-29).** 10-30 (user): the tag waits for the `swz_bare` read, which may change which fingerprint is 1.0 (then the FIAT maps are re-exported); nobody else signs off. ✅ Repeat BIT-IDENTICAL 10-30 (`logs/swz_band_2026-10-29/repeat_swz_early.json`; map + his, the restart files were already removed). Gate: the swz noise band + lake arms (63231557), the buildings-in-wave-bed call, Phase 5 (`PREMIER_NAME` + fingerprint → swz,
-  `MODEL.md`, validation summary, user tags). Ship WITH a known-limits list (Monmouth lakes; Delaware lows + 3
-  marks; Cape May back bays; coarse-face inflow pile-ups incl. Salem R.; building cap overtopped at +3 m SLR).
-- **Phase 5–6:** ✅ site (10-28, user's ask): `publish_gallery.py` `SITE_REFERENCE` marks `p4-premier` as the v4 reference and `NEXT_PREMIER` now reads "New in the premier" — site-only; `premier.PREMIER_NAME` stays `naccs-premier` until the Phase 5 tag (then drop `SITE_REFERENCE`). Reads →
-  frozen premier (user tags git), `docs/MODEL.md`, validation summary, research-group brief (incl. the
-  status-notebook "rise above normal water" fig., `logs/notebook_qc_2026-10-11/baseline_check.py`), docs, backup.
+- **v1.0.0: chosen 11-01.** Known limits in `docs/MODEL.md` §4 (Monmouth lakes; Delaware lows + 3 marks; Cape May back bays; coarse-face inflow pile-ups incl. Salem R.; building cap overtopped at +3 m SLR). ✋ User tags.
+- **Phase 6:** frozen premier in the docs ✅ (`premier_arm`, `MODEL.md`, FINDINGS part 4 (j)); research-group brief (incl. the status-notebook "rise above normal water" fig., `logs/notebook_qc_2026-10-11/baseline_check.py`), docs, backup remain.
 - **DEP one-pager** (claude.ai doc "A Compound-Flood Model of the New Jersey Coast", 10-20; figures + scripts
   `logs/one_pager_2026-10-20/`): essentially done — no post-Phase-4 refresh planned (user 10-26). Its Fig. 2 and
   quoted HWM numbers are the 10-11 premier WITHOUT 5 marks (6155 Keansburg pocket; 6122, 6124, 6129, 6130 Monmouth
@@ -150,8 +122,7 @@ heads may still be tidal (unpainted). Paerdegat: leave it (user).
   (NJ)**; every one on a COARSE face (100–200 m) over a narrow creek valley, stepping down 2–3.5 m in
   2 km on rain-off alone (`logs/notebook_qc_2026-10-11/inflow_pileups.py`). Close: read on the Phase 4
   premier; a refinement band is the next-mesh fix.
-- **Waves-on noise band (§44 (e)): MEASURED 10-28** on the old wave bed — gauge peaks ≤ 9.5 cm (NY bays), NY-bay marks
-  ~8 cm, the rest mm. Re-measuring on swz (63231557).
+- **Waves-on noise band:** measured on swz 11-01, FINDINGS part 4 (j).
 - **Capped calls inject river pulses on v4 (§44 (h)).** ✅ Counted 10-27 (Phase 4 wave 1, `snapwave_niter` 200
   sweeps = 50 logged iterations): premier 26 / 73 calls capped (repeat: the same 26), nulls 20 / 25, other
   waves-on arms 22–34; 10-30 00:00 capped in every arm (%ok 88–90, the worst call), 01:00–02:00 in nearly all.
@@ -179,18 +150,13 @@ heads may still be tidal (unpainted). Paerdegat: leave it (user).
 - **Unread from the 10-05 pre-registration:** do the Maurice / Mullica / Tuckahoe / Rancocas reaches
   wet; hm0 vs depth at the SnapWave band's 53 boundary cells shallower than −20 m. Close: one read of
   the premier's map output.
-- **Monmouth lakes under the swz premier — EXPLAINED 10-29 (§63 (h)):** the new face `z` carries the building burn
-  (mean ground incl. `bed_buildings_v4_cap10`, +1.1 m on Asbury Park / Wreck Pond town), so SnapWave's overwash dies
-  over the burned blocks and the lakes peak ~0.1 m lower. Open: keep (waves see buildings, one bed) or take face `z`
-  from the no-buildings bed (waves on bare ground + the channel fixes) — user's call; the latter is another domain.
+- **Monmouth lakes:** a known limit of 1.0.0 (§63 (h), part 4 (j)). 6121 + 6122 stay ~2 m low; why the sea does not reach them is open.
 - **IG in the water:** the v3 / old v4 premiers compute IG but do not couple it (`snapwave_igwaves = 1`, no
   `wvmfile`; §45). ✅ The Phase 4 premier carries the wavemaker (user 10-17; line `snapbeach`, user 10-19;
   engine `…igseed-wmseed-1…`, repeat test passed — §44 (j)) with a no-wavemaker arm beside it.
   ⚠️ `dep_subgrid_lev0.tif` is NaN over the Cape May peninsula block (no level-1 faces there).
 - **Test 8 (setup-only wavemaker line):** evidence says don't run it as designed (§62); user's call.
-- **Buildings on the apex band, in the FLOW: CLOSED 10-28** (§55: neutral, NY bays inside the band). NOT closed:
-  buildings in the WAVE bed (swz) — Phase 4's SnapWave never saw buildings; that is the open choice below (§63 (h)). ⚠️ `motf_metrics` does not
-  mask footprints, so `bed-nobuildings`' CSI is inflated; mask them if buildings are ever ranked on extent.
+- ⚠️ `motf_metrics` does not mask footprints, so `bed-nobuildings`' CSI is inflated; masked CSI in part 4 (j).
 - **No model M2 test** of the interior amplification (part 2). Close: modelled M2 at Port Reading /
   Keasbey / South Amboy / Great Kills vs the NOAA harcon table.
 - **Flux cross-sections never read** (Narrows prism, Rockaway throat). Close: `crosssection_discharge`.
@@ -218,7 +184,7 @@ heads may still be tidal (unpainted). Paerdegat: leave it (user).
 
 ## Future: make the model faster (user 10-27 — after we are happy with the v4 simulations)
 
-▶ **10-28 anatomy + prototype** (`logs/snapwave_parallel_2026-10-28/README.md`): on the v4 `p4-premier` (16 threads)
+▶ **11-01: full storm BIT-IDENTICAL at 64 threads, 2.51 h vs 12.99 h (FINDINGS §20); wavefront installed as `…swomp-2-gf11@dd78d82a`, not the production label yet.** Below, the path. **10-28 anatomy + prototype** (`logs/snapwave_parallel_2026-10-28/README.md`): on the v4 `p4-premier` (16 threads)
 SnapWave is **8.6 of 14.1 h (61 %)**, not 97 % (that was v3 at 64 threads); the sweep is 6.7 h of it. Ceiling at 16
 threads: ~2.6× (the flow is ~5 h). Step 1 patched + compiled (`…-gf11-swomp/`, tag `nj-swomp-1`): ✅ **toy
 BIT-IDENTICAL 10-28** (old 1 thread vs new 1 / 4 / 16, three cases incl. wind-on 5° bins; his + map + restart files +
@@ -246,12 +212,7 @@ around the sweep loop on `main` (checked 10-26). Don't write our own SnapWave (m
   Check each against the toy and a 6 h v4 cut (bit-for-bit). A natural upstream contribution, and the same level
   structure is what a GPU port of SnapWave would need. *Number-changing* speed-ups (`-march=native`, fixing the Sandy
   Hook limit cycle — capped calls cost ~2×, §44 (g)) need a new engine label + re-baseline: separate decision.
-- **(a) GPU build, timed on a waves-off arm.** SFINCS's flow solver is ported (OpenACC, maintained on `main`);
-  SnapWave is NOT (no directives) — it stays on the CPU, so waves-on runs gain ~nothing until (b) or an upstream port.
-  Waves-off runs (rain / river / SLR sweeps, forecast-style) could drop from hours to minutes. Needs NVIDIA's
-  `nvfortran` (HPC SDK, self-installed — Amarel has only `pgi/19.4`) or a Deltares GPU container if one exists; GPU
-  arithmetic is not bit-identical → engine-gate it. First: ask Deltares (reproducibility thread) whether SnapWave on
-  GPU is planned; then build + time one waves-off v4 arm vs the CPU build.
+- **(a) GPU build: DROPPED by the user 11-01.** Beta upstream, no recipe, and SnapWave would stay serial; `logs/gpu_feasibility_2026-11-01/README.md`, unsent draft beside it (user handles Deltares separately).
 
 ## Evidence index
 
@@ -285,8 +246,7 @@ around the sweep loop on `main` (checked 10-26). Don't write our own SnapWave (m
 
 - **Home** (`/cache/home`, GPFS): 100 G soft / 110 G hard; **89.2 G on 2026-10-28**. Ask
   `/usr/lpp/mmfs/bin/mmlsquota -u $USER --block-size auto cache` (lags ~10 min).
-- 🔴 **Scratch** (`/scratch/tpj8`): 1 T soft / 2 T hard. **Over the soft limit: 1.159 T on 10-30 after deleting the swomp cuts (75 G), `mmlsquota` grace 6 days; `sfincs-nj-agri` is now 421 G**; cleanup 10-28 (user OK; `logs/scratch_survey_2026-10-28/`): tiers A + B, run B retired, the 6 10-11 side runs retired → 1.008 T with the download landing. ✅ **tier A-deferred D1 + D2 DONE 10-29** (`snapwave.upw` of the 12 Phase 4 v4 runs + `p4-ref`, 63.8 G; the shadow dir) (commands: `logs/scratch_survey_2026-10-28/candidates.sh` D1; write the paths out literally — the rm safety check refuses `$VAR/…` targets). `sfincs-nj-agri` shares this quota. Earlier: **704 G on 2026-10-22** (after the four pre-creek beds were deleted; the 39 G pre-inflows template is
-  gone too). 🔴 **Not backed up; files not accessed for 90 days are deleted.** `experiments/`
+- **Scratch** (`/scratch/tpj8`): 1 T soft / 2 T hard; 980 G on 11-01 after 12 v4 arms + `_subgrid_refreeze` went here and `sfincs-nj-agri` hard-linked 253.6 G; thin headroom, shared. 🔴 **Not backed up; files not accessed for 90 days are deleted.** `experiments/`
   and most of `data/` (the 10-05 swap is finished) live here; the durable copy is the desktop pull
   (`scripts/desktop_pull_backup.sh`) — re-run it whenever an arm is scored. The engine sources
   (`/scratch/tpj8/sfincs-build/`) live here too; the patches are in `hpc/patches/` + `docs/upstream/`.

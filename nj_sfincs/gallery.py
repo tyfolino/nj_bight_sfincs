@@ -366,14 +366,14 @@ def reference_arm(domain_name: str, arm: str) -> str:
     """The arm this arm is paired against (``experiments.reference_arm``), falling back to
     the domain's premier name when the arm is unregistered or the registry will not
     import."""
-    from .premier import PREMIER_NAME
+    from .premier import premier_arm
 
     try:
         from .experiments import reference_arm as _ref
 
-        return _ref(arm, domain_name) or PREMIER_NAME
+        return _ref(arm, domain_name) or premier_arm(domain_name)
     except Exception:  # noqa: BLE001 — the registry is edited live; the name is enough
-        return PREMIER_NAME
+        return premier_arm(domain_name)
 
 
 def floodmap_fresh(run_dir: Path) -> bool:

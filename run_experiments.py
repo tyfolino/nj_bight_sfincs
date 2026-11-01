@@ -46,7 +46,7 @@ from hydromt_sfincs import SfincsModel
 
 # Import the package first — its __init__ primes PROJ before hydromt_sfincs loads and
 # asserts NJ_ROOT is this package's own repo. Keep this ahead of the hydromt_sfincs import.
-from nj_sfincs import domain, model, premier, provenance, report, run, validate
+from nj_sfincs import calm, domain, model, premier, provenance, report, run, validate
 from nj_sfincs.config import BaseConfig, WaveConfig, exp_root, with_window
 from nj_sfincs.experiments import experiments
 
@@ -288,6 +288,9 @@ def prepare_experiment(name: str, base: BaseConfig) -> Path:
     if exp.rhoa is not None:
         model.set_inp_keys(exp_dir / "sfincs.inp", {"rhoa": f"{exp.rhoa}"})
         print(f"[{name}] rhoa = {exp.rhoa} on the staged copy (null perturbation)")
+    # ``Experiment.calm`` (still-* / tide-* arms): after every writer, for the same reason.
+    if exp.calm is not None:
+        calm.apply(exp_dir, exp.calm)
     del sf
     gc.collect()
     return exp_dir
@@ -777,7 +780,7 @@ def _write_outputs_locked(df: pd.DataFrame) -> None:
                     f"🔴 {name}: {col} reads back {back.at[name, col]!r}, this job "
                     f"wrote {df.at[name, col]!r} — another writer; re-run --validate-only"
                 )
-    for line in hwm_count_mismatches(df):
+    for line in hwm_count_mismatches(df, premier.premier_arm()):
         print(line)
     try:
         rpt = report.generate_html_report(df, EXP_ROOT)

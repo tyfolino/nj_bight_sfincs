@@ -1,13 +1,9 @@
 # MODEL — the v4 premier (model card)
 
-**DRAFT 2026-10-30. Version / tag: `[VERSION — placeholder, set at tagging]`.** Describes arm
+**Version 1.0.0 (user 2026-11-01; git tag `v1.0.0`).** Describes arm
 `p4-premier` on domain `v4_refreeze_swz` as run (job 63181564). Evidence lives in
 [FINDINGS.md](FINDINGS.md) (cited as §n, or "part 4 (x)" for the v4 design record); this card
 states what the model IS, not how it got there.
-
-**Two open reads.** `[PENDING swz_bare]` marks anything that changes if SnapWave's bed changes (a
-bare-ground wave bed is being run). `[PENDING swz_band]` marks anything that depends on the noise
-band and the lake side arms, still scoring on this domain. Neither set has been read for this card.
 
 **What it is.** A SFINCS (v2.3.3, patched) compound-flood hindcast of Hurricane Sandy, 28–31 Oct
 2012, on the New Jersey coast from Cape May to the Narrows plus Delaware Bay and the tidal Delaware,
@@ -20,11 +16,11 @@ run. Validated against USGS high-water marks, NOAA / USGS gauges and the FEMA MO
 
 | | |
 |---|---|
-| domain | `v4_refreeze_swz` — `faces=4881654 boundary_edges=4388 sha(z,mask)=90cc7468614a5814` (`nj_sfincs/premier.py`) `[PENDING swz_bare]` |
-| arm | `p4-premier` (`nj_sfincs/experiments.py`, `_p4`), the name it was run and scored under. `premier.PREMIER_NAME` still reads `naccs-premier` until the tagging step moves it, so the audit's `PREMIER =` line does not name this arm yet |
+| domain | `v4_refreeze_swz` — `faces=4881654 boundary_edges=4388 sha(z,mask)=90cc7468614a5814` (`nj_sfincs/premier.py`) |
+| arm | `p4-premier` (`nj_sfincs/experiments.py`, `_p4`), the name it was run and scored under (`premier.premier_arm`) |
 | engine | `bin:v2.3.3-winddir-igk-igseed-wmseed-1-gf11@e15ed916`, upstream commit `091f531a` (tag v2.3.3) + 4 patches (§3); sha256 `e15ed9161a499960017bc8b3a44d41c1a05d123d429e8f4e93ba67bdfdb8a248`, md5 `cbf497dc4a7683a261d8e2fb3ed75868`; written to each run's `engine.txt` |
 | flow bed | `_subgrid_refreeze_lakes_min_creeks_cohansey` (built 2026-10-23; recipe in its `subgrid_provenance.txt`; `metrics.csv` label `…@34ba916d`) |
-| wave bed | mesh face `z` = the flow bed's subgrid mean ground (§2) `[PENDING swz_bare]` |
+| wave bed | mesh face `z` = the flow bed's subgrid mean ground, buildings included (§2) |
 | run | job 63181564, `hal0391` (`emeraldrapids`), 16 threads, `restart_count 0`: uninterrupted, seeded |
 | window, CRS | `tstart` 2012-10-28 00:00 → `tstop` 2012-10-31 00:00 (72 h), `tspinup` 3600 s; EPSG:32618 (UTM 18N), elevations and water levels m NAVD88 |
 | output | his 600 s (48 obs points + cross-sections), map 3600 s, `zsmax` every 21600 s, restart every 21600 s (the restart files are removed when a run finishes) |
@@ -70,7 +66,7 @@ D00081) → `lake_fix_v4` and the creek beds, both LOWER-ONLY (`:min`). §54, pa
 - **Buildings:** NJDEP footprints (NJ only; the far banks have none) burned at local ground + 10 m
   (`bed_buildings_v4_cap10`), acting as subgrid porosity. In the FLOW close to neutral for Sandy: `bed-nobuildings`
   − premier ΔRMSE −0.003 [−0.057, +0.039] (median, 50 m, n 110, paired; §55, with no buildings in the waves).
-- **Wave bed (SnapWave's bed)** `[PENDING swz_bare]`**:** SnapWave never reads the subgrid; its whole bed
+- **Wave bed (SnapWave's bed):** SnapWave never reads the subgrid; its whole bed
   is the mesh's face `z`, and the flow never reads face `z` (§63 (a)–(b)). Here face `z` = the flow bed's
   subgrid mean ground (`z_zmax − z_volmax / area`, `scripts/setup_face_z.py`) on 3,936,632 active faces;
   28,671 active faces on hydromt's −20 m volume floor keep their old `z`, as do inactive faces. That
@@ -89,7 +85,7 @@ D00081) → `lake_fix_v4` and the creek beds, both LOWER-ONLY (`:min`). §54, pa
 | rain | NOAA AORC v1.1 hourly, on an ~830 m grid as staged (`netampr`) | `aorc_sandy_v4` |
 | infiltration | `cnb` (curve number with recovery), AMC factor 1.5; CN from NLCD 2012 × SSURGO HSG (water CN 100), ksat from SSURGO surface horizon; 1,992,347 of 3,965,303 active points infiltrate | `cn_v4`, `ksat_v4_refreeze`, §59 |
 | rivers | 61 inflows, USGS daily mean discharge (approved), area-scaled, placed in their channels (0 of 193 marks within 500 m of a source) | `usgs_sandy_discharge_v4_refreeze`, §40 |
-| waves | SnapWave: 5° bins over 360°, updated hourly (`dtwave` 3600, §61), wind growth on, `gamma` 0.78, `alpha` 1, `fw` 0.01 (§56), `niter` 200; boundary = NOAA CORA SWAN at 69 support points (§21); SnapWave domain `v4_shelf_steps` (about 3.38 M active nodes), on the wave bed above `[PENDING swz_bare]` | `data/waves_v4/cora_waves_v4.nc` |
+| waves | SnapWave: 5° bins over 360°, updated hourly (`dtwave` 3600, §61), wind growth on, `gamma` 0.78, `alpha` 1, `fw` 0.01 (§56), `niter` 200; boundary = NOAA CORA SWAN at 69 support points (§21); SnapWave domain `v4_shelf_steps` (about 3.38 M active nodes), on the wave bed above | `data/waves_v4/cora_waves_v4.nc` |
 | infragravity | **This model has a wavemaker, so IG is in the water.** `snapwave_igwaves = 1` alone would not do that: it only computes IG inside SnapWave and takes the energy from the incident waves (§45). The water gets IG through the wavemaker line: `wvmfile = sfincs.wvm`, 8 pieces, 157.7 km, 7,940 u/v points, snapped seaward of the beach (§62) | `data/wavemakers_v4/v4_wavemaker_5m_mhw_snapbeach.geojson` |
 | structures | 7 weirs, 412 engine points, weir coefficient 0.6: Keansburg levee system on the USACE NLD centreline (Waackaack gate, Thornes reach, west tie, bayfront dune), the Pews levee gap closed, Overpeck tidal dam + bypass sill. Assumed: stop logs in, gates held (§38) | `data/structures_v4/sfincs.weir` |
 | roughness | Manning from NLCD 2012 (`NLCD_CONUS_mapping.csv`); `manning_water_v4` overlay: 0.02 on lakes / non-tidal rivers, marsh n kept on tidal water | `nlcd_2012_v4` |
@@ -129,13 +125,13 @@ IG seed + wavemaker phase issue and the wavemaker IG frequency shift (drafts in 
 Mark residuals here are model − observed, **median estimator, 50 m radius**; `metrics.csv` or §63 (g).
 
 - **Monmouth coastal lakes.** The five `lake_outlet_blocked` marks read 6121 −2.03, 6122 −2.27, 6124 −0.69, 6129 −0.05,
-  6130 −2.09 m and set the headline RMSE (§6) `[PENDING swz_bare]` `[PENDING swz_band]`. Do not use these lakes' peaks.
+  6130 −2.09 m and set the headline RMSE (§6). Side runs (part 4 (j)): a Wreck Pond breach takes 6130 to +0.48 / +0.74 m but 6129 to +0.41 / +0.67; Deal overtopping takes 6122 to −1.80; 6124 and 6129 lean on the wavemaker (−1.99, −0.66 without it); 6121 moves only with no buildings at all. Do not use these lakes' peaks.
 - **Peak wave heights are not all physical.** `hm0` reaches 27.55 m at the Narrows (40.606 N, −74.045) at hour 11 of the run, well before the storm, against 9.98 m at the wave boundary; 3,131 faces reach ≥ 12 m, 2,765 of them at the Delaware Bay mouth. On the previous wave bed: 26.67 m, 5,974 faces, so it did not come with this bed. The Narrows and Sandy Hook cells are the SnapWave limit cycle (FINDINGS §44 (g)); the Delaware mouth is unexplained. Its effect on water level is unmeasured. Do not publish a peak-`hm0` map unclipped.
 - **Delaware: low water, and few marks.** The storm low misses by −0.36 m at Lewes, −0.6…−0.7 m Ship John → Philadelphia,
   −0.7…−1.0 m at Newbold (rough high/low pick on the previous wave bed). At the mouth it is the NACCS forcing; the growth
   upriver is unexplained. Peaks are better (§6), bar the Christina gauges (−0.80 m Newport, −0.54 m Wilmington).
   Only 3 marks are scored in the Delaware basins (2 river, 1 NJ bay shore).
-- **Cape May back bays.** Bias −0.288, RMSE 0.317 m (median, 50 m, n 4) `[PENDING swz_bare]`; published-crest gauge errors −0.305 m
+- **Cape May back bays.** Bias −0.288, RMSE 0.317 m (median, 50 m, n 4); published-crest gauge errors −0.305 m
   Sea Isle, −0.252 m Stone Harbor, −0.190 m Avalon. Open (§57).
 - **Inflow pile-ups on coarse faces.** Ridley, Chester, Frankford, Red Clay, White Clay, Christina and **Salem R. at
   Woodstown** (peak / bed 4.38 / 0.01 m) enter on 100–200 m faces and stand metres above a ~0 m bed (measured on an
@@ -149,8 +145,8 @@ Mark residuals here are model − observed, **median estimator, 50 m radius**; `
 
 | not represented | what it costs | evidence |
 |---|---|---|
-| **morphology: dune erosion, breaching, overwash** (fixed bed) | In Sandy the dune breached at Wreck Pond and the sea overwashed into Deal Lake; in the model the sea does not get in (lowest connections 2.82 / 3.11 m vs a local sea peak 2.78–2.80 m; traced on the earlier unseeded configuration, part 4 (h)). What the breach arms say on this wave bed is `[PENDING swz_band]`; the post-Sandy dune bed (`bed-postsandy`) is deferred by the user | part 4 (h), §49, Closed |
-| **wave run-up, splash, overtopping** (still-water model) | marks 6121 / 6398 / 6188 are upper bounds the model cannot reach; offline EurOtop overtopping fills Deal Lake 0.29 of the 1.78 Mm³ needed — "the reach is there, the volume is not" (wave input from the earlier unseeded configuration; the `src-deal-overtop` arm on this wave bed is `[PENDING swz_band]`) | part 4 (h) |
+| **morphology: dune erosion, breaching, overwash** (fixed bed) | In Sandy the dune breached at Wreck Pond and the sea overwashed into Deal Lake; in the model the sea does not get in (lowest connections 2.82 / 3.11 m vs a local sea peak 2.78–2.80 m; traced on the earlier unseeded configuration, part 4 (h)). A breach reaches 6130 and overshoots 6129 on this wave bed (part 4 (j)); the post-Sandy dune bed (`bed-postsandy`) is deferred by the user | part 4 (h), §49, Closed |
+| **wave run-up, splash, overtopping** (still-water model) | marks 6121 / 6398 / 6188 are upper bounds the model cannot reach; offline EurOtop overtopping fills Deal Lake 0.29 of the 1.78 Mm³ needed — "the reach is there, the volume is not" (wave input from the earlier unseeded configuration; the `src-deal-overtop` arm on this wave bed lifts 6122 by 0.46 m, part 4 (j)) | part 4 (h) |
 | **storm drains, outfalls, culverts** | closed-basin lakes fill by rain and drain nowhere; infiltration acts on rain, never on standing water | §59, part 4 (h) |
 | **structure failure** | weirs hold all run; the Keansburg pocket is watertight and fills by rain only (6133 / 6155 / 6156 noted `leak`, they do not test the levees) | §38 |
 | **wave diffraction; per-point boundary direction** | SnapWave v2.3.3 has neither: one mean boundary direction per call collapses CORA's alongshore spread; bays sit 0.24–0.69 m under CORA's SWAN at the peak | §43, §48 |
@@ -165,11 +161,9 @@ Coupling, breaching and back-bay literature: `reports/literature_review_2026-10.
   Waves-on: SnapWave starts cold, so a resume differs (v4 calm window: up to 1.99 m at
   `sss_narrows_si`) — read it against an uninterrupted twin or re-run (§44 (j)). Rain-on with `cna`:
   the soil restarts empty (`cnb`'s state survives, §59). Check `restart_history.txt` before pairing.
-- **Waves-on runs carry a noise band.** Seeded runs repeat bit for bit (§44 (d); this domain's repeat check
-  `[PENDING swz_band]`), but a null input change (`rhoa` × 1.00008) moves 7 of 48 points > 10 cm within 6 h; waves-off zsmax
-  p99 0.18 mm. Through the peak, on the previous wave bed (two `rhoa` null copies, §44 (e)) `[PENDING swz_band]`: gauge peak
-  band median 1.4 cm, max 9.5 cm (Lower Bay / Raritan / Sandy Hook 6–9 cm, Delaware 2–6 cm, open coast and NJ back bays
-  ≤ 2 mm); a NY-bay mark shift under ~8 cm is noise; face `zsmax` p05–p95 band 0.081 m; whole series up to 0.3 m mid-storm.
+- **Waves-on runs carry a noise band.** Seeded runs repeat bit for bit (§44 (d); this domain's repeat is bit-identical), but a null input change (`rhoa` × 1.00008) moves 7 of 48 points > 10 cm within 6 h; waves-off zsmax
+  p99 0.18 mm. Through the peak, on this domain (two `rhoa` null copies, part 4 (j)): gauge peak band median 2.1 cm, max 10.4 cm (Marcus Hook;
+  Raritan / Lower Bay / Sandy Hook 1–9 cm, Delaware 1–10 cm, Barnegat and Great Bay ≤ 2 mm); per-mark median 1.4 cm, p90 8.3 cm, max 18 cm; wet-face `zsmax` band 0.083 m; whole series up to 0.3 m on the bays and 1.8 m at Delaware River gauges.
   The NY-bay crest also carries a ±0.1–0.15 m seiche phase (§61 (g)). A capped SnapWave call can put a pulse into the
   Delaware River (§44 (h)): 26 of 73 calls capped on the previous wave bed, not recounted here.
 - **Rain ponding depends on the window.** Closed coastal lakes still rise at `tstop`; a later stop scores them higher
@@ -183,7 +177,7 @@ Coupling, breaching and back-bay literature: `reports/literature_review_2026-10.
 
 Scores go to `experiments/v4_refreeze_swz/metrics.csv`; every row carries `engine`, `engine_seed`,
 `meteo`, `infiltration`, `subgrid`. Arms are compared PAIRED (`scripts/paired_hwm_bootstrap.py`).
-Every number in this table depends on the wave bed: `[PENDING swz_bare]`.
+A bare-ground wave bed scores the same (ΔRMSE −0.000 [−0.004, +0.004], part 4 (j)).
 
 | target | scored as | p4-premier |
 |---|---|---|
@@ -195,22 +189,26 @@ Every number in this table depends on the wave bed: `[PENDING swz_bare]`.
 | FEMA MOTF extent (NJ only) | CSI / POD / FAR inside the validity mask, footprints not masked (§55) | CSI 0.784, POD 0.846, FAR 0.086; `motf_km2_excluded_boxes` 2,412.8 km² (incl. `salem_marshes`, 418 km²); false alarms 39.8 km² connected, 70.6 km² disconnected |
 
 **Sensitivities** (ΔRMSE of `p4-premier` − the arm, median, 50 m, n 110, paired, B 200 000, 95 % CI;
-part 4 (i)). Measured on the previous wave bed unless marked; non-lake effects should carry over.
+parts 4 (i)–(j)). Rain and soil were measured on the previous wave bed; non-lake effects should carry over.
 
 | what | result |
 |---|---|
-| waves on vs off | −0.150 [−0.244, −0.070]; marks rise +0.32 m open coast, +0.20 NJ back bays, +0.19 inlets, +0.13 NY bays, +0.06 rivers. This domain, unpaired: RMSE 0.558 waves-off → 0.439 `[PENDING swz_bare]` |
-| wavemaker on vs off | −0.108 [−0.193, −0.022], nearly all at the lake marks; open-coast median +0.02 m `[PENDING swz_band]` |
+| waves on vs off | −0.150 [−0.244, −0.070]; marks rise +0.32 m open coast, +0.20 NJ back bays, +0.19 inlets, +0.13 NY bays, +0.06 rivers. This domain, unpaired: RMSE 0.558 waves-off → 0.439 |
+| wavemaker on vs off (this domain) | −0.077 [−0.145, −0.021]; without the 5 lake marks −0.005; open coast −0.174 [−0.379, −0.019] |
 | rain on vs off | +0.0005 [−0.019, +0.033] on the marks; without rain FAR 0.084 → 0.035, CSI 0.785 → 0.798 |
-| soil (`cnb` factor), arm − premier | 1.0: −0.022 [−0.046, −0.004], FAR 0.098, CSI 0.779; 2.38: +0.007 [+0.002, +0.011]. A trade-off; the part at the lakes `[PENDING swz_band]` |
-| wave bed, this model vs the previous one | all marks 0.408 → 0.439, ΔRMSE +0.031 [−0.002, +0.075]; the 105 non-lake marks 0.261 → 0.259, ΔRMSE −0.003 [−0.009, +0.005] (§63 (g)) `[PENDING swz_bare]` |
-| breach bracket | on this wave bed `[PENDING swz_band]` |
+| soil (`cnb` factor), arm − premier | 1.0: −0.022 [−0.046, −0.004], FAR 0.098, CSI 0.779; 2.38: +0.007 [+0.002, +0.011]. A trade-off; not re-run on this wave bed, so its effect at the lakes is unmeasured here |
+| wave bed, this model vs the previous one | all marks 0.408 → 0.439, ΔRMSE +0.031 [−0.002, +0.075]; the 105 non-lake marks 0.261 → 0.259, ΔRMSE −0.003 [−0.009, +0.005] (§63 (g)) |
+| buildings: bare wave bed; none in the flow either (this domain) | −0.000 [−0.004, +0.004]; −0.019 [−0.109, +0.049], and +0.027 [−0.001, +0.077] without the 6 noted marks. Masked CSI 0.8046, 0.8041, 0.8123 (premier, bare, none) |
+| Arthur Kill sill carved, waves off (this domain) | 0.000: marks ≤ 3 mm, gauges ≤ 1 mm |
+| Deal overtopping (this domain) | −0.022 [−0.059, +0.000]; without the lake marks −0.003 |
+| Wreck Pond breach, 0 m / 1.65 m (this domain) | −0.043 [−0.144, +0.007] / −0.036 [−0.128, +0.016]; without the lake marks +0.001 / +0.000 |
 
 ## 7. Cost
 
 | | |
 |---|---|
-| solve | this run 12.99 h (46,766 s) at 16 threads on `emeraldrapids`; SnapWave 65.9 % and momentum 25.5 % of simulation time. Its waves-off twin 3.93 h. SnapWave's node sweep is SERIAL (§20), so more threads buy little |
+| solve | this run 12.99 h (46,766 s) at 16 threads on `emeraldrapids`; SnapWave 65.9 % and momentum 25.5 % of simulation time. Its waves-off twin 3.93 h. On this engine SnapWave's node sweep is SERIAL (§20), so more threads buy little |
+| faster engine, not the production label | `bin:v2.3.3-winddir-igk-igseed-wmseed-swomp-2-gf11@dd78d82a`: the same run bit-identical in 2.51 h on 64 threads, SnapWave 0.72 h (§20) |
 | disk per run | `sfincs_map.nc` 10.5 GB, floodmap 0.79 GB, + ~5.6 GB hard-linked inputs; staging needs ~25 GB free |
 | scoring memory | v4 validate ~200 G (3.125 m scoring bed); paired bootstrap ~85–90 G per process — run pairs serially |
 | build | mesh freeze 4 h 39 / 72 GB; a subgrid rebuild ~6.8 h (24,605 s for this bed) |
@@ -223,7 +221,7 @@ part 4 (i)). Measured on the previous wave bed unless marked; non-lake effects s
 3. **Data:** `data/data_catalog.yml` (+ per-folder `PROVENANCE.md`); bulk data on `/scratch` (not backed up; 90-day purge)
    with a desktop pull (`scripts/desktop_pull_backup.sh`). The frozen mesh, sealed template and bed are data, not rebuilt
    by one command; the `v4_refreeze` template carries hand steps (the meteo, an obs nudge, the Overpeck start; CLAUDE.md §5).
-4. **Wave bed** `[PENDING swz_bare]`**:** `NJ_DOMAIN=v4_refreeze_swz python scripts/setup_face_z.py --from v4_refreeze --bed
+4. **Wave bed:** `NJ_DOMAIN=v4_refreeze_swz python scripts/setup_face_z.py --from v4_refreeze --bed
    _subgrid_refreeze_lakes_min_creeks_cohansey` writes this domain's template and bed from `v4_refreeze`'s.
 5. **Stage + run:** arm `p4-premier`, commands in §9; staging copies the sealed template, checks the fingerprint on the copy,
    swaps in the bed and applies the arm. This run's job: `logs/snapwave_bed_2026-10-28/swz_test.slurm`. 🔴 Staging (and

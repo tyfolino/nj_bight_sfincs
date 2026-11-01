@@ -1,0 +1,595 @@
+--- v2.3.3-winddir-igk-igseed-wmseed-1-gf11/src/snapwave/snapwave_solver.f90	2026-10-17 10:21:12.705296192 -0400
++++ v2.3.3-winddir-igk-igseed-wmseed-1-gf11-swomp/src/snapwave/snapwave_solver.f90	2026-10-28 13:29:41.498411000 -0400
+@@ -92,29 +92,51 @@
+          Hmx_ig    = 0.0
+       endif
+       !   
++      ! nj-swomp-1: the two O(ntheta*no_nodes) refraction loops, parallel over nodes. The loop
++      ! nest and the per-element expression are unchanged (itheta outer, node inner); the node
++      ! loop calls sinhf, which has no libmvec variant, so it is scalar before and after
++      ! (checked with -fopt-info-vec). sin/cos(theta(itheta)) are node-invariant scalars.
++      ! The other statements above stay whole-array and serial ON PURPOSE: they are O(no_nodes)
++      ! and gfortran vectorizes them with libmvec powf/expf, whose results differ from scalar
++      ! libm in the last bit -- re-chunking them across threads would move elements between
++      ! the vector body and the scalar remainder.
+       do itheta = 1, ntheta
+-         ctheta(itheta,:)    = sig/sinh(min(2.0*kwav*depth, 50.0))*(dhdx*sin(theta(itheta)) - dhdy*cos(theta(itheta)))
++         !$omp parallel do schedule(static) private(k)
++         do k = 1, no_nodes
++            ctheta(itheta,k)    = sig(k)/sinh(min(2.0*kwav(k)*depth(k), 50.0))*(dhdx(k)*sin(theta(itheta)) - dhdy(k)*cos(theta(itheta)))
++         enddo
++         !$omp end parallel do
+       enddo
+       !
+       if (igwaves) then
+          do itheta = 1, ntheta
+-            ctheta_ig(itheta,:) = sigm_ig/sinh(min(2.0*kwav_ig*depth, 50.0))*(dhdx*sin(theta(itheta)) - dhdy*cos(theta(itheta)))
++            !$omp parallel do schedule(static) private(k)
++            do k = 1, no_nodes
++               ctheta_ig(itheta,k) = sigm_ig(k)/sinh(min(2.0*kwav_ig(k)*depth(k), 50.0))*(dhdx(k)*sin(theta(itheta)) - dhdy(k)*cos(theta(itheta)))
++            enddo
++            !$omp end parallel do
+          enddo
+       else
+          ctheta_ig = 0.0
+       endif
+       !
+       ! Limit unrealistic refraction speed to 1/2 pi per wave period
++      ! (nj-swomp-1: sign/min/abs only -- exact in vector or scalar form -> OpenMP)
+       !
++      !$omp parallel do schedule(static) private(k)
+       do k = 1, no_nodes
+          ctheta(:,k)    = sign(1.0, ctheta(:,k))*min(abs(ctheta(:, k)), sig(k)/4)
+       enddo
++      !$omp end parallel do
+       !
+       if (igwaves) then
++           !$omp parallel do schedule(static) private(k)
+            do k=1, no_nodes
+               ctheta_ig(:,k) = sign(1.0, ctheta_ig(:,k))*min(abs(ctheta_ig(:, k)), sigm_ig(k)/4.0)
+            enddo
++           !$omp end parallel do
+       endif
++
+       !
+       ! Solve the directional wave energy balance on an unstructured grid
+       !
+@@ -163,6 +185,7 @@
+                                          zb, nwav, ig_opt, alfa_ig, gamma_ig, eeinc2ig, Tinc2ig, alphaigfac, shinc2ig, iterative_srcig)
+    !
+    use snapwave_windsource
++   !$ use omp_lib                ! nj-swomp-1
+    !use snapwave_ncoutput ! TL: removed, we don't use this in SF+SW
+    !
+    implicit none
+@@ -314,7 +337,7 @@
+    waveps         = 0.0001
+    allocate(ok(no_nodes)); ok=0
+    allocate(indx(no_nodes,4)); indx=0
+-   allocate(eeold(ntheta,no_nodes)); eeold=0.0
++   allocate(eeold(ntheta,no_nodes)); call swomp_zero2(eeold, ntheta, no_nodes)   ! nj-swomp-1
+    allocate(dee(ntheta)); dee=0.0
+    allocate(eeprev(ntheta)); eeprev=0.0
+    allocate(cgprev(ntheta)); cgprev=0.0
+@@ -337,9 +360,9 @@
+       allocate(E_ig(no_nodes)); E_ig=waveps
+       !allocate(T_ig(no_nodes)); T_ig=0.0
+       allocate(sigm_ig(no_nodes)); sigm_ig=0.0
+-      allocate(depthprev(ntheta,no_nodes)); depthprev=0.0                     
+-      allocate(beta_local(ntheta,no_nodes)); beta_local=0.0        
+-      allocate(alphaig_local(ntheta,no_nodes)); alphaig_local=0.0
++      allocate(depthprev(ntheta,no_nodes)); call swomp_zero2(depthprev, ntheta, no_nodes)   ! nj-swomp-1                     
++      allocate(beta_local(ntheta,no_nodes)); call swomp_zero2(beta_local, ntheta, no_nodes)   ! nj-swomp-1        
++      allocate(alphaig_local(ntheta,no_nodes)); call swomp_zero2(alphaig_local, ntheta, no_nodes)   ! nj-swomp-1
+    endif
+    !
+    if (wind) then
+@@ -351,7 +374,7 @@
+    !
+    allocate(diff(no_nodes)); diff=0.0
+    allocate(ra(no_nodes)); ra=0.0
+-   allocate(srcig_local(ntheta,no_nodes)); srcig_local = 0.0
++   allocate(srcig_local(ntheta,no_nodes)); call swomp_zero2(srcig_local, ntheta, no_nodes)   ! nj-swomp-1
+    !
+    do itheta = 1, ntheta
+       sinth(itheta) = sin(theta(itheta))
+@@ -396,15 +419,21 @@
+    ! Sort coordinates in sweep directions
+    !
+    shift = [0,1,-1,2]
++   ! nj-swomp-1: the four sorts are independent (each its own ra copy, its own indx column)
++   ! and each one stays the serial heapsort, so every permutation is bit-identical.
++   !$omp parallel do schedule(static,1) private(sweep, ra) num_threads(min(4, omp_get_max_threads()))
+    do sweep = 1, 4
+       !
+       ra = x*cos(thetamean + 0.5*pi*shift(sweep)) + y*sin(thetamean + 0.5*pi*shift(sweep))
+       call hpsort_eps_epw(no_nodes, ra , indx(:, sweep), 1.0e-6)
+       !
+    enddo
+-   !   
++   !$omp end parallel do
++   !
+    ! Set inner to false for all points at grid edge or adjacent to dry point
+    !
++   ! nj-swomp-1: writes inner(k) only -> OpenMP
++   !$omp parallel do schedule(static) private(k, itheta, k1, k2)
+    do k=1,no_nodes
+       ! 
+       do itheta = 1, ntheta
+@@ -432,10 +461,15 @@
+          endif
+       enddo
+    enddo  
++   !$omp end parallel do
+    !
+    !
+    ! 0-a) Set boundary and initial conditions      
+    !
++   ! nj-swomp-1: per-node -> OpenMP. The one value that leaks out of this loop is the scalar
++   ! Ak (wind), which serially ends as E(k)/sig(k) of the LAST non-inner node; it is set
++   ! from that node after the loop (same expression, same operands -> same bits).
++   !$omp parallel do schedule(static) private(k)
+    do k = 1, no_nodes
+       !
+       ! Boundary condition at sea side (uniform)
+@@ -458,11 +492,20 @@
+             sig(k)    = 2*pi/Tp(k)
+            !aa(:,k)   = max(aa(:,k),waveps/sig(k))
+             aa(:,k)   = max(ee(:,k),waveps)/sig(k)
+-            Ak        = E(k)/sig(k)
+          endif
+          !
+       endif
+    enddo
++   !$omp end parallel do
++   !
++   if (wind) then
++      do k = no_nodes, 1, -1
++         if (.not.inner(k)) then
++            Ak = E(k)/sig(k)
++            exit
++         endif
++      enddo
++   endif
+    !
+    ! 0-b) Determine IG source/sink term
+    !
+@@ -483,6 +526,10 @@
+    !
+    ! 0-c) Set initial condition at inner cells  
+    !
++   ! nj-swomp-1: per-node -> OpenMP (Ak is read-only here). The scalar Hk leaks into the
++   ! output loop below (wind branch, uorbi) if no node is updated in any sweep; serially it
++   ! is Hk of the LAST inner node, so that value is recomputed after the loop.
++   !$omp parallel do schedule(static) private(k, Ek, Hk, uorbi, Dfk, Dwk, DwT, DwAk)
+    do k = 1, no_nodes   
+       ! 
+       if (inner(k)) then
+@@ -522,6 +569,15 @@
+       endif
+       !
+    enddo        
++   !$omp end parallel do
++   !
++   do k = no_nodes, 1, -1
++      if (inner(k)) then
++         Ek       = sum(ee(:, k))*dtheta
++         Hk       = min(sqrt(Ek/rhog8), gamma*depth(k))
++         exit
++      endif
++   enddo
+    !
+    ! Start iteration
+    !
+@@ -534,16 +590,20 @@
+       endif
+       !
+       if (sweep==1) then
+-         eeold = ee
++         ! nj-swomp-1: per-node copy + per-node sum -> OpenMP
++         !$omp parallel do schedule(static) private(k)
+          do k = 1, no_nodes
++            eeold(:, k) = ee(:, k)
+             Eold(k) = sum(eeold(:, k))
+          enddo
++         !$omp end parallel do
+          !
+          if (igwaves) then
+             !        
+             if (iterative_srcig) then 
+                 ! Update H(k) based on updated ee(:,k), as used in IG source term to determine alphaig
+                 ! 
++                !$omp parallel do schedule(static) private(k)
+                 do k = 1, no_nodes   
+                    ! 
+                    if (inner(k)) then             
+@@ -552,6 +612,7 @@
+                        !
+                    endif               
+                 enddo
++                !$omp end parallel do
+                 !
+                 ! Actual determining of source term - every first sweep of iteration
+                 !          
+@@ -847,25 +908,30 @@
+          !
+          ! Check convergence after all 4 sweeps
+          !
++         ! nj-swomp-1: per-node -> OpenMP. diff(k) is the same per-node maxval of the same
++         ! real*4 differences (dee was a real*4 temporary). sum(ok) is an integer sum (exact in
++         ! any order). maxval(ee) / maxval(diff) go through swomp_maxval, which reproduces the
++         ! serial MAXVAL result bit for bit (first maximum in array order; NaNs skipped).
++         !$omp parallel do schedule(static) private(k)
+          do k = 1, no_nodes
+             !
+-            dee     = ee(:, k) - eeold(:, k)
+-            diff(k) = maxval(abs(dee))
++            diff(k) = maxval(abs(ee(:, k) - eeold(:, k)))
+             !
+             if (diff(k)/eemax<crit ) then
+                ok(k) = 1
+             endif   
+             !
+          enddo
++         !$omp end parallel do
+          !
+          ! Percentage of converged points
+          !
+          percok = sum(ok)/dble(no_nodes)*100.0
+-         eemax  = maxval(ee)
++         eemax  = swomp_maxval(ee, ntheta*no_nodes)
+          !
+          ! Relative maximum error
+          !
+-         error = maxval(diff)/eemax
++         error = swomp_maxval(diff, no_nodes)/eemax
+          !
+          write(logstr,'(a,i6,a,f10.5,a,f7.2)')'   iteration ',iter/4 ,' error = ',error,'   %ok = ',percok
+          call write_log(logstr, 0)         
+@@ -887,6 +953,10 @@
+       !
+    enddo
+    !
++   ! nj-swomp-1: per-node -> OpenMP. Hk is SHARED and read-only here: it is whatever the
++   ! serial sweep (or the 0-c fix-up above) left in it, exactly as in v2.3.3. Serial when
++   ! vegetation is on (vegatt not audited for thread safety).
++   !$omp parallel do schedule(static) private(k, uorbi) if(.not. vegetation)
+    do k=1,no_nodes
+       !
+       ! Compute directionally integrated parameters for output
+@@ -948,6 +1018,7 @@
+          endif
+       !
+    enddo
++   !$omp end parallel do
+    callno=callno+1
+    !
+    end subroutine solve_energy_balance2Dstat
+@@ -1056,13 +1127,22 @@
+     real*4, dimension(:), allocatable                :: Hprev           ! Incident wave height at upwind intersection point  
+     real*4                                           :: dSxx            ! difference in Radiation stress
+     real*4                                           :: Sxx_cons        ! conservative estimate of radiation stress using conservative shoaling     
++    real*4                                           :: Sxx1, Sxx2      ! nj-swomp-1: Sxx at k1, k2 (was written into the shared Sxx array)
+     !   
+     ! Allocate internal variables
+     allocate(Sxxprev(ntheta))       
+     allocate(Hprev(ntheta))  
+     !
+-    Sxx = 0.0
++    ! nj-swomp-1: Sxx is only READ back as Sxx(itheta,k) by ig_opt 2, where it holds whatever
++    ! earlier nodes (in index order) wrote -> ig_opt 2 runs this loop serially (if clause), and
++    ! only it needs the array. Otherwise every node is independent: its writes are its own
++    ! (itheta,k) entries of depthprev/beta_local/alphaig_local/srcig_local, and the per-node
++    ! scratch (eeprev, cgprev, eeprev_ig, Sxxprev, Hprev) is private. Sxxprev is formed from
++    ! the same two real*4 values as before, so it is bit-identical.
++    if (ig_opt == 2) Sxx = 0.0
+     !
++    !$omp parallel do schedule(static) if(ig_opt /= 2) &
++    !$omp private(k, itheta, k1, k2, gam, dSxx, Sxx_cons, Sxx1, Sxx2, Sxxprev, Hprev, eeprev, cgprev, eeprev_ig)
+     do k = 1, no_nodes
+         !
+         if (inner(k)) then    
+@@ -1091,10 +1171,14 @@
+                     ! TL - Note: cg_ig = cg
+                     cgprev(itheta)      = w(1, itheta, k)*cg_ig(k1) + w(2, itheta, k)*cg_ig(k2)
+                     !              
+-                    Sxx(itheta,k1)      = ((2.0 * max(0.0,min(1.0,nwav(k1)))) - 0.5) * ee(itheta, k1) ! limit so value of nwav is between 0 and 1
+-                    Sxx(itheta,k2)      = ((2.0 * max(0.0,min(1.0,nwav(k2)))) - 0.5) * ee(itheta, k2) ! limit so value of nwav is between 0 and 1
++                    Sxx1                = ((2.0 * max(0.0,min(1.0,nwav(k1)))) - 0.5) * ee(itheta, k1) ! limit so value of nwav is between 0 and 1
++                    Sxx2                = ((2.0 * max(0.0,min(1.0,nwav(k2)))) - 0.5) * ee(itheta, k2) ! limit so value of nwav is between 0 and 1
++                    if (ig_opt == 2) then
++                       Sxx(itheta,k1)   = Sxx1
++                       Sxx(itheta,k2)   = Sxx2
++                    endif
+                     !
+-                    Sxxprev(itheta)     = w(1, itheta, k)*Sxx(itheta,k1) + w(2, itheta, k)*Sxx(itheta,k2)
++                    Sxxprev(itheta)     = w(1, itheta, k)*Sxx1 + w(2, itheta, k)*Sxx2
+                     !
+                     eeprev(itheta)      = w(1, itheta, k)*ee(itheta, k1) + w(2, itheta, k)*ee(itheta, k2)  
+                     eeprev_ig(itheta)   = w(1, itheta, k)*ee_ig(itheta, k1) + w(2, itheta, k)*ee_ig(itheta, k2)      
+@@ -1158,6 +1242,7 @@
+         endif
+         !
+     enddo    
++    !$omp end parallel do
+     !    
+    end subroutine determine_infragravity_source_sink_term   
+    
+@@ -1544,5 +1629,94 @@
+ 		endif
+ 		!
+     end subroutine bulkdragcoeff
++
++   ! ------------------------------------------------------------------------------------------
++   ! nj-swomp-1 helpers (2026-10-28)
++   ! ------------------------------------------------------------------------------------------
++   subroutine swomp_zero2(a, n1, n2)
++   ! a = 0.0, column by column in parallel (also spreads the first-touch page faults)
++   implicit none
++   integer, intent(in)   :: n1, n2
++   real*4, intent(inout) :: a(n1, n2)
++   integer               :: j
++   !$omp parallel do schedule(static) private(j)
++   do j = 1, n2
++      a(:, j) = 0.0
++   enddo
++   !$omp end parallel do
++   end subroutine swomp_zero2
++
++   real*4 function swomp_maxval(a, n)
++   ! MAXVAL(a) computed in parallel, bit-identical to gfortran's serial intrinsic:
++   ! the intrinsic takes the first non-NaN element (a >= -Inf), then replaces only on a
++   ! STRICTLY greater element, so it returns the FIRST maximum in array order (this matters
++   ! only for +0/-0) and skips NaNs; all-NaN -> NaN, empty -> -HUGE. Each contiguous chunk
++   ! does the same, and the chunk results are combined in chunk order with the same rule.
++   !$ use omp_lib
++   implicit none
++   integer, intent(in) :: n
++   real*4, intent(in)  :: a(n)
++   integer             :: nt, it, i, i0, i1
++   real*4              :: lim
++   logical             :: got
++   real*4,  allocatable :: part(:)
++   logical, allocatable :: pgot(:)
++   real*4, parameter   :: ninf = -huge(1.0_4)
++   !
++   nt = 1
++   !$ nt = omp_get_max_threads()
++   nt = max(1, min(nt, n / 65536))
++   allocate(part(nt), pgot(nt))
++   !$omp parallel do schedule(static,1) private(it, i, i0, i1, lim, got) num_threads(nt)
++   do it = 1, nt
++      i0  = int((int(it - 1, 8)*n)/nt) + 1
++      i1  = int((int(it, 8)*n)/nt)
++      got = .false.
++      lim = -ieee_inf()
++      do i = i0, i1
++         if (.not. got) then
++            if (a(i) >= lim) then
++               lim = a(i)
++               got = .true.
++            endif
++         elseif (a(i) > lim) then
++            lim = a(i)
++         endif
++      enddo
++      part(it) = lim
++      pgot(it) = got
++   enddo
++   !$omp end parallel do
++   got = .false.
++   lim = -ieee_inf()
++   do it = 1, nt
++      if (.not. pgot(it)) cycle
++      if (.not. got) then
++         lim = part(it)
++         got = .true.
++      elseif (part(it) > lim) then
++         lim = part(it)
++      endif
++   enddo
++   if (got) then
++      swomp_maxval = lim
++   elseif (n > 0) then
++      swomp_maxval = ieee_nan()
++   else
++      swomp_maxval = ninf
++   endif
++   deallocate(part, pgot)
++   contains
++      real*4 function ieee_inf()
++      real*4 :: big
++      big = huge(1.0_4)
++      ieee_inf = big*2.0
++      end function ieee_inf
++      real*4 function ieee_nan()
++      real*4 :: z
++      z = 0.0
++      ieee_nan = transfer(int(z'7FC00000', 4), 1.0_4)
++      end function ieee_nan
++   end function swomp_maxval
+    
+ end module snapwave_solver 
+--- v2.3.3-winddir-igk-igseed-wmseed-1-gf11/src/snapwave/snapwave_boundaries.f90	2026-10-17 10:21:12.699766366 -0400
++++ v2.3.3-winddir-igk-igseed-wmseed-1-gf11-swomp/src/snapwave/snapwave_boundaries.f90	2026-10-28 13:26:57.218360000 -0400
+@@ -744,12 +744,15 @@
+    !
+    ! Initialize the distribution array of wind input
+    ! 
++   ! nj-swomp-1: per-node (the sum is within the node) -> OpenMP; u10dmean above stays serial
++   !$omp parallel do schedule(static) private(k, windspread360k)
+    do k = 1,no_nodes
+       windspread360k = (cos(theta360-u10dir(k)))**2.0
+       where(cos(theta360-u10dir(k))<0.0) windspread360k = 0.0
+       windspread360k = (windspread360k/sum(windspread360k))/dtheta ! normalized and converted to input per rad
+       windspread360(:,k) = windspread360k
+    enddo
++   !$omp end parallel do
+    !   
+ end subroutine update_wind_field
+ !
+@@ -775,10 +778,14 @@
+    enddo
+    !
+    do itheta = 1, ntheta
+-      !
+       theta(itheta) = theta360(i360(itheta))
+-      !
+-      do k = 1, no_nodes
++   enddo
++   !
++   ! nj-swomp-1: pure copies, now node-outer (was itheta-outer: stride-ntheta access over
++   ! ~6 x 72 x no_nodes words per call) and in parallel. Copies are exact in any order.
++   !$omp parallel do schedule(static) private(k, itheta)
++   do k = 1, no_nodes
++      do itheta = 1, ntheta
+          w(1, itheta, k)    = w360(1, i360(itheta), k)
+          w(2, itheta, k)    = w360(2, i360(itheta), k)
+          prev(1, itheta, k) = prev360(1, i360(itheta), k)
+@@ -787,13 +794,15 @@
+          !
+          windspreadfac(itheta, k) = windspread360(i360(itheta), k)
+       enddo
+-      !
+    enddo  
++   !$omp end parallel do
+    !
+    if (wind) then
+        !
+        ! initialization of distribution array of wind input
+        !
++       ! nj-swomp-1: per-node -> OpenMP
++       !$omp parallel do schedule(static) private(k)
+        do k = 1, no_nodes
+           windspreadfac(:,k)=(cos(theta-u10dir(k)))**mwind
+           where(cos(theta-u10dir(k))<0.0) windspreadfac(:,k)=0.0
+@@ -803,6 +812,7 @@
+              windspreadfac(:,k)=0.0
+           endif  
+        enddo
++       !$omp end parallel do
+        !
+    endif
+    !
+--- v2.3.3-winddir-igk-igseed-wmseed-1-gf11/src/sfincs_snapwave.f90	2026-10-17 10:21:12.777616510 -0400
++++ v2.3.3-winddir-igk-igseed-wmseed-1-gf11-swomp/src/sfincs_snapwave.f90	2026-10-28 13:35:53.820472000 -0400
+@@ -173,6 +173,7 @@
+    !
+    use sfincs_data
+    use quadtree
++   !$ use omp_lib                ! nj-swomp-1
+    !
+    implicit none
+    !
+@@ -185,6 +186,12 @@
+    !
+    real*4 :: distances(np)
+    integer :: closest_index(1)
++   ! nj-swomp-1: per-thread partial minima for the nearest-point search
++   integer :: ith, nth, nteam, nteam_sh, i0, i1, ibest
++   real*4  :: dbest
++   logical :: gbest
++   real*4,  dimension(:), allocatable :: part_d
++   integer, dimension(:), allocatable :: part_i
+    !
+    logical :: nearest_warning
+    !   
+@@ -223,32 +230,72 @@
+              !
+              dstmin = 1.0e6
+              !
+-             ! Calculate the distance for each coordinate
+-             !$omp parallel &
+-             !$omp private ( ip, dst )
+-             !$omp do
+-             do ip = 1, np
++ ! nj-swomp-1: the distance loop was already parallel, but MINVAL and MINLOC over all np
++             ! SFINCS points ran serially once per band node (155,787 nodes on v4: ~25 of the 27
++             ! min "Time in input"). Now each thread keeps the FIRST minimum of its contiguous
++             ! chunk (same dst expression), and the chunks are combined in order with a strict
++             ! '<': that is MINVAL's value and MINLOC's first index exactly (NaNs skipped as
++             ! the intrinsics do; all-NaN leaves ipsf = 0 as before, since NaN < dstmin fails).
++             nth = 1
++             !$ nth = omp_get_max_threads()
++             if (.not. allocated(part_d)) allocate(part_d(nth), part_i(nth))
++             part_i   = 0
++             nteam_sh = 1
++             ! chunk bounds from the ACTUAL team size (the runtime may give fewer than nth)
++             !$omp parallel private(ith, nteam, i0, i1, ip, dst, dbest, ibest, gbest) num_threads(nth)
++             ith   = 0
++             nteam = 1
++             !$ ith   = omp_get_thread_num()
++             !$ nteam = omp_get_num_threads()
++             !$omp master
++             nteam_sh = nteam
++             !$omp end master
++             i0 = int((int(ith, 8)*np)/nteam) + 1
++             i1 = int((int(ith + 1, 8)*np)/nteam)
++             gbest = .false.
++             dbest = 0.0
++             ibest = 0
++             do ip = i0, i1
+                  !
+                  dst = sqrt((z_xz(ip) - xsw)**2 + (z_yz(ip) - ysw)**2)
+                  !
+-                 distances(ip) = dst
++                 if (.not. gbest) then
++                    if (dst == dst) then
++                       dbest = dst
++                       ibest = ip
++                       gbest = .true.
++                    endif
++                 elseif (dst < dbest) then
++                    dbest = dst
++                    ibest = ip
++                 endif
+                  !
+              enddo
+-             !$omp end do         
+-             !$omp end parallel             
++             part_d(ith + 1) = dbest
++             part_i(ith + 1) = ibest
++             !$omp end parallel
+              !
+-             ! Find the minimum distance
+-             min_distance = minval(distances)         
++             ! Find the minimum distance (combine the chunks in order)
++             ibest = 0
++             do ith = 1, nteam_sh
++                if (part_i(ith) == 0) cycle
++                if (ibest == 0) then
++                   min_distance = part_d(ith)
++                   ibest = part_i(ith)
++                elseif (part_d(ith) < min_distance) then
++                   min_distance = part_d(ith)
++                   ibest = part_i(ith)
++                endif
++             enddo
+              !
++             if (ibest > 0) then
+              if (min_distance < dstmin) then
+                  !
+-                 ! Find the index of the minimum distance
+-                 closest_index = minloc(distances)
+-                 !
+-                 ! To conform shapes
+-                 ipsf = closest_index(1)
++                 ! The (first) index of the minimum distance
++                 ipsf = ibest
+                  !
+              endif       
++             endif
+              !        
+          endif         
+       endif
+--- v2.3.3-winddir-igk-igseed-wmseed-1-gf11/src/sfincs_lib.f90	2026-10-17 10:21:12.739523434 -0400
++++ v2.3.3-winddir-igk-igseed-wmseed-1-gf11-swomp/src/sfincs_lib.f90	2026-10-28 13:27:06.139051865 -0400
+@@ -94,7 +94,7 @@
+    !
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !
+-   build_revision = "$Rev: v2.3.3 mt. Faber+ nj-winddir-fix-1 nj-igk-fix-1 nj-igseed-1 nj-wmseed-1"
++   build_revision = "$Rev: v2.3.3 mt. Faber+ nj-winddir-fix-1 nj-igk-fix-1 nj-igseed-1 nj-wmseed-1 nj-swomp-1"
+    build_date     = "$Date: 2025-05-12"
+    !
+    call write_log('', 1)

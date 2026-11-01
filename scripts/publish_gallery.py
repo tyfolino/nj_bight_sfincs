@@ -235,10 +235,9 @@ render();
 
 
 #: The arm the SITE marks "(reference)" and compares against, per domain, where it is not
-#: ``premier.PREMIER_NAME`` (user 10-28: show the Phase 4 premier now, before Phase 5's tag).
-#: 10-29: the premier moved to ``v4_refreeze_swz`` (FINDINGS §63 (g)); ``v4_refreeze`` keeps
-#: the Phase 4 side runs, compared against their own ``p4-premier``.
-SITE_REFERENCE = {"v4_refreeze_swz": "p4-premier", "v4_refreeze": "p4-premier"}
+#: ``premier.premier_arm``: ``v4_refreeze`` keeps its Phase 4 rows, compared against its own
+#: ``p4-premier``.
+SITE_REFERENCE = {"v4_refreeze": "p4-premier"}
 
 #: The plain-language "what is new in the premier" list, shown at the bottom of the home page
 #: and of that domain's runs page. ⚠️ Edit it whenever the premier changes: a stale list
@@ -246,16 +245,15 @@ SITE_REFERENCE = {"v4_refreeze_swz": "p4-premier", "v4_refreeze": "p4-premier"}
 NEXT_PREMIER = {
     "domain": "v4_refreeze_swz",
     "arm": "p4-premier",
-    "as_of": "2026-10-29",
-    "status": "Run 2026-10-28 and scored. It is the Phase 4 premier with the wave model "
-    "reading the corrected bed (first item below). The side runs (v4_refreeze) were run "
-    "on the previous version, with the wave model on the old bed; comparing them is "
-    "still under way.",
+    "as_of": "2026-11-01",
+    "status": "Model version 1.0.0. It is the Phase 4 premier with the wave model reading the "
+    "corrected bed (first item below). The lake side runs and the noise check were re-run on "
+    "this version and read on 2026-11-01; most other side runs were on the previous version.",
     "items": (
         "The wave model reads the corrected bed: it used to compute waves on the 09-28 "
         "elevation, missing every bed fix since (deeper rivers, creeks and inlet channels). "
         "Water levels move a few centimetres; the high-water-mark score is unchanged except "
-        "at the Monmouth coastal lakes, where it is worse (under study).",
+        "at the Monmouth coastal lakes, which stay a known limit of this model.",
         "Repeatable waves: the wave model's random part is now seeded, so the same inputs "
         "give the same answer every time.",
         "Infragravity (IG) waves move the water: the long, slow waves under groups of "
@@ -801,7 +799,7 @@ def main(argv=None) -> int:
     a = p.parse_args(argv)
     site = Path(a.site).expanduser()
     ensure_repo(site)
-    from nj_sfincs.premier import PREMIER_NAME
+    from nj_sfincs.premier import premier_arm
 
     exp = Path(a.exp_root) if a.exp_root else ROOT / "experiments"
     if a.domains:
@@ -824,7 +822,7 @@ def main(argv=None) -> int:
         domains[d] = arms
         ddir = site / d
         ddir.mkdir(exist_ok=True)
-        ref = SITE_REFERENCE.get(d, PREMIER_NAME)
+        ref = SITE_REFERENCE.get(d, premier_arm(d))
         n_png = 0
         for arm, e in arms.items():
             adir = ddir / e["slug"]

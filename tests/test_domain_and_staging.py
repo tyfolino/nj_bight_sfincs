@@ -772,6 +772,16 @@ class TestRainOffIsWrittenNotMerelyNotWritten(_DomainEnv):
             self.skipTest("no rain-off arms staged on any domain")
 
 
+class TestPremierArm(unittest.TestCase):
+    def test_version_one_is_the_swz_premier(self):
+        from nj_sfincs import premier
+
+        self.assertEqual(premier.premier_arm("v4_refreeze_swz"), "p4-premier")
+        self.assertEqual(premier.premier_arm("v3"), "naccs-premier")
+        self.assertIn("p4-premier", experiments("v4_refreeze_swz"))
+        self.assertEqual(premier.V4_REFREEZE_SWZ.sha_z_mask, "90cc7468614a5814")
+
+
 class TestNoInfiltrationIsWrittenNotMerelyNotWritten(_DomainEnv):
     """Same shape again: the template has infiltration ON, so ``Experiment.infiltration
     = False`` must reach ``finalize`` and strip the keys on the staged copy — and a
@@ -789,6 +799,8 @@ class TestNoInfiltrationIsWrittenNotMerelyNotWritten(_DomainEnv):
         seen = 0
         for dname, arms in EXPERIMENTS_BY_DOMAIN.items():
             for name, exp in arms.items():
+                if exp.calm is not None:  # no rain to infiltrate (nj_sfincs/calm.py)
+                    continue
                 if "rain-noinfil" not in name:
                     self.assertTrue(exp.infiltration, f"{dname}/{name}")
                     continue
@@ -822,7 +834,7 @@ class TestNoInfiltrationIsWrittenNotMerelyNotWritten(_DomainEnv):
             os.environ["NJ_DOMAIN"] = dname
             root = exp_root()
             for name, exp in experiments(dname).items():
-                if exp.infiltration:
+                if exp.infiltration or exp.calm is not None:
                     continue
                 inp = root / name / "sfincs.inp"
                 if not inp.exists():

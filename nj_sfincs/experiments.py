@@ -29,8 +29,9 @@ A ``BRACKET+`` prefix marks a deliberately inadmissible bound.
 from __future__ import annotations
 
 from dataclasses import replace
+from pathlib import Path
 
-from .config import DATA, Experiment, WaveConfig
+from .config import DATA, CalmForcing, Experiment, WaveConfig
 from .domain import active
 
 # ── v1_5_raritan ─────────────────────────────────────────────────────────────
@@ -847,6 +848,61 @@ def reference_arm(arm: str, domain_name: str | None = None) -> str | None:
     return ref if ref in arms else None
 
 
+def _calm_arm(name: str, description: str, calm: CalmForcing) -> Experiment:
+    return replace(
+        _V4_REFREEZE["p4-nowaves"],
+        name=name,
+        description=description,
+        subgrid_from="_subgrid_modern2026",
+        meteo_from=None,
+        rain=False,
+        infiltration=False,
+        cnb_effective=None,
+        calm=calm,
+    )
+
+
+_CALM_T0 = "20121012 000000"
+_STILL_TSTOP = "20121013 000000"
+#: Mean LMSL -> NAVD88 over the 241 points: where the tide arms start (points_241.csv).
+_TIDE_MEAN_OFFSET = -0.082
+#: The tidal twin's boundary files (EC2015, logs/modern_bed_2026-10-30/tide/README.md).
+_TIDE_DIR = Path("/scratch/tpj8/nj_bight_sfincs_data/modern_2026/derived/tide")
+#: The collaborator's comparison (user 10-28 / 29 / 30): waves, wind, rain, rivers off, modern
+#: land + beach under the Phase 4 channels and fixes; face z is SnapWave's alone, so the mesh
+#: and the domain stay swz's (FINDINGS §63 (a)). Offsets 0.61 / 1.22 m are the 2 ft / 4 ft.
+_CALM_ARMS: dict[str, Experiment] = {
+    **{
+        f"bed-modern+still-{ft}ft": _calm_arm(
+            f"bed-modern+still-{ft}ft",
+            f"Calm still water at VDatum MHHW + {s} m ({ft} ft): boundary constant, start on "
+            "the same sloped surface, connected through the sills and weirs. Nothing holds the "
+            "slope up, so it relaxes: read the start or the first zsmax block (nj_sfincs/calm.py).",
+            CalmForcing(s, "mhhw", _CALM_T0, _STILL_TSTOP),
+        )
+        for ft, s in (("2", 0.61), ("4", 1.22))
+    },
+    **{
+        f"bed-modern+tide-{ft}ft": _calm_arm(
+            f"bed-modern+tide-{ft}ft",
+            f"EC2015 astronomical tide + {s} m ({ft} ft) at the boundary, 10-12 to 11-13 (first "
+            "2.5 d spin-up). Unscaled, C&D Canal point as is, rivers off (user 10-30). zsmax in "
+            "3 h blocks gives the mean higher-high and the max at every face.",
+            CalmForcing(
+                s,
+                str(_TIDE_DIR / f"sfincs_netbndbzsbzifile_tide_ec2015_{tag}.nc"),
+                _CALM_T0,
+                "20121113 000000",
+                level_m=round(s + _TIDE_MEAN_OFFSET, 3),
+                dtmapout=21600.0,
+                dtmaxout=10800.0,
+            ),
+        )
+        for ft, s, tag in (("2", 0.61, "p061"), ("4", 1.22, "p122"))
+    },
+}
+
+
 EXPERIMENTS_BY_DOMAIN: dict[str, dict[str, Experiment]] = {
     "v1_monmouth": {},
     "v1_5_raritan": _V1_5_RARITAN,
@@ -892,6 +948,8 @@ EXPERIMENTS_BY_DOMAIN: dict[str, dict[str, Experiment]] = {
             "Kill sill (_subgrid_p4_aknsill; akn_sill_sandy_v4, ASSUMED depth). Pair: p4-nowaves.",
             subgrid_from="_subgrid_p4_aknsill",
         ),
+        # 2026-11-01: the first 1.x runs, on the modern bed (logs/modern_bed_2026-11-01/).
+        **_CALM_ARMS,
     },
     # The breach arms, each on a domain whose face z comes from its own breach bed.
     "v4_refreeze_swz_wk0": {

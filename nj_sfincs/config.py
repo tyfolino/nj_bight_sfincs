@@ -290,6 +290,25 @@ class WaveConfig:
 
 
 @dataclass(frozen=True)
+class CalmForcing:
+    """A run with no weather: only the sea, on its own window (``nj_sfincs/calm.py``).
+
+    ``boundary`` = ``"mhhw"`` holds the boundary at VDatum MHHW + ``offset_m`` at each point,
+    with a start on the same sloped surface; a path = an engine-format boundary file that
+    already carries the offset (the tidal twin), with a connected start at ``level_m``.
+    Times are sfincs.inp strings (``YYYYMMDD HHMMSS``); ``tref`` = ``tstart``.
+    """
+
+    offset_m: float
+    boundary: str
+    tstart: str
+    tstop: str
+    level_m: float | None = None
+    dtmapout: float = 3600.0
+    dtmaxout: float = 21600.0
+
+
+@dataclass(frozen=True)
 class Experiment:
     """A named experiment = a label + the knobs to apply to a staged template.
 
@@ -403,6 +422,11 @@ class Experiment:
     #: same, far below anything measurable, so a pair of these copies reads the waves-on
     #: run-to-run noise band through the peak (FINDINGS §44 (e); user 2026-10-17).
     rhoa: float | None = None
+
+    #: ``still-*`` / ``tide-*`` ARMS ONLY (2026-11-01). Applied LAST on the staged copy
+    #: (``calm.apply``): wind, pressure, rain and discharge come out, the boundary and window
+    #: are replaced, and the start is a connected one that respects the weirs.
+    calm: CalmForcing | None = None
 
 
 def with_window(base: BaseConfig, tstop: datetime) -> BaseConfig:

@@ -1,0 +1,204 @@
+--- src/snapwave/snapwave_solver.f90	2026-10-28 13:29:41.498411000 -0400
++++ src/snapwave/snapwave_solver.f90	2026-10-29 15:56:21.981454000 -0400
+@@ -332,6 +332,17 @@
+    real*4                                     :: depthlimfac=1.0
+    real*4                                     :: waveps=0.0001
+    !
++   ! nj-swomp-2: wavefront (level) schedule of the Gauss-Seidel sweep -- see swomp_levels
++   logical                                    :: wavefront              ! run the sweep level by level, in parallel
++   integer, dimension(:,:), allocatable       :: lvorder                ! per sweep: serial positions, grouped by level
++   integer, dimension(:,:), allocatable       :: lvstart                ! per sweep: first slot of each level in lvorder
++   integer, dimension(4)                      :: nlev                   ! per sweep: number of levels
++   integer                                    :: lv, ic, tid, nthr, best
++   integer, dimension(:), allocatable         :: hkpos                  ! per thread: highest serial position updated
++   real*4, dimension(:), allocatable          :: hkval                  ! per thread: Hk at that position
++   character(len=8)                           :: swenv
++   integer                                    :: swst
++   !
+    ! Allocate local arrays
+    !
+    waveps         = 0.0001
+@@ -579,6 +590,46 @@
+       endif
+    enddo
+    !
++   ! nj-swomp-2: the sweep visits nodes in indx order and reads ee/cg/ee_ig/aa of its upwind
++   ! nodes prev(:,:,k) from the arrays it writes (Gauss-Seidel): an upwind node EARLIER in the
++   ! order gives this sweep's value, a LATER one the previous sweep's. swomp_levels gives every
++   ! inner node a level such that for each pair (k, j in prev(:,:,k)) the one later in the
++   ! order has the strictly higher level. Nodes of one level then share no data, and running
++   ! the levels in order -- nodes of a level in any order, on any thread -- reads exactly the
++   ! values the serial sweep reads. A node writes only its own entries, except the Neumann
++   ! copy into kn: with Neumann nodes (or vegetation, not audited) the sweep stays serial.
++   ! Serial = one level holding every position in order: the original loop, bit for bit.
++   nthr = 1
++   !$ nthr = omp_get_max_threads()
++   wavefront = .false.
++   !$ wavefront = nthr > 1
++   call get_environment_variable('NJ_SWOMP_WAVEFRONT', swenv, status=swst)
++   if (swst == 0) wavefront = (trim(swenv) == '1')
++   if (vegetation) wavefront = .false.
++   if (any(neumannconnected /= 0)) wavefront = .false.
++   allocate(hkpos(0:nthr - 1), hkval(0:nthr - 1))
++   allocate(lvorder(no_nodes, 4), lvstart(no_nodes + 1, 4))
++   if (wavefront) then
++      !$omp parallel do schedule(static,1) private(sweep) num_threads(min(4, nthr))
++      do sweep = 1, 4
++         call swomp_levels(no_nodes, ntheta, prev, inner, indx(:, sweep), lvorder(:, sweep), lvstart(:, sweep), nlev(sweep))
++      enddo
++      !$omp end parallel do
++      if (callno == 1) then
++         write(logstr,'(a,4i8)')'   nj-swomp-2 wavefront sweep, levels per direction:', nlev
++         call write_log(logstr, 0)
++      endif
++   else
++      do sweep = 1, 4
++         do ic = 1, no_nodes
++            lvorder(ic, sweep) = ic
++         enddo
++         lvstart(1, sweep) = 1
++         lvstart(2, sweep) = no_nodes + 1
++         nlev(sweep) = 1
++      enddo
++   endif
++   !
+    ! Start iteration
+    !
+    do iter=1,niter
+@@ -626,8 +677,22 @@
+       !
+       !  Loop over all points depending on sweep direction
+       !
+-      do count = 1, no_nodes
++      ! nj-swomp-2: level by level (see above); the body is unchanged. count = the node's
++      ! position in the serial order. Hk leaks out of the sweep (output loop, wind branch):
++      ! each thread keeps the Hk of its highest position, the overall highest wins below.
++      hkpos = 0
++      !$omp parallel if(wavefront) default(shared) &
++      !$omp private(lv, ic, count, k, k1, k2, kn, itheta, tid, Ek, Hk, Ak, depthlimfac, uorbi, &
++      !$omp         Dfk, Dwk, Dvegk, DwT, DwAk, Ek_ig, Hk_ig, Dfk_ig, Dwk_ig, &
++      !$omp         eeprev, cgprev, eeprev_ig, cgprev_ig, aaprev, A, B, C, R, B_aa, R_aa, &
++      !$omp         A_ig, B_ig, C_ig, R_ig)
++      tid = 0
++      !$ tid = omp_get_thread_num()
++      do lv = 1, nlev(sweep)
++      !$omp do schedule(static)
++      do ic = lvstart(lv, sweep), lvstart(lv + 1, sweep) - 1
+          !
++         count = lvorder(ic, sweep)
+          k=indx(count, sweep)
+          !
+          if (inner(k)) then
+@@ -868,6 +933,11 @@
+                      !
+                   endif
+                   !
++                  if (count > hkpos(tid)) then      ! nj-swomp-2
++                     hkpos(tid) = count
++                     hkval(tid) = Hk
++                  endif
++                  !
+                endif
+                !
+             else
+@@ -903,6 +973,16 @@
+          endif
+          !
+       enddo
++      !$omp end do
++      enddo
++      !$omp end parallel
++      best = 0
++      do tid = 0, nthr - 1
++         if (hkpos(tid) > best) then
++            best = hkpos(tid)
++            Hk   = hkval(tid)
++         endif
++      enddo
+       !
+       if (sweep==4) then
+          !
+@@ -1646,6 +1726,72 @@
+    !$omp end parallel do
+    end subroutine swomp_zero2
+ 
++   subroutine swomp_levels(n, ntheta, prev, inner, indx, order, start, nlev)
++   ! nj-swomp-2: level schedule of one sweep direction. Visiting inner nodes in sweep order
++   ! (c = position), each gets level = max(lb, 1 + level of every inner upwind node earlier
++   ! in the order), then pushes lb = its level + 1 onto every inner upwind node LATER in the
++   ! order. So for every pair (k, j in prev(:,:,k)) the later node has the strictly higher
++   ! level. Non-inner nodes are never written in the sweep (no Neumann nodes here), so they
++   ! impose nothing. Output: order(start(L):start(L+1)-1) = the positions of level L,
++   ! ascending. One pass, O(2*ntheta*n), integer only.
++   implicit none
++   integer, intent(in)  :: n, ntheta
++   integer, intent(in)  :: prev(2, ntheta, n), indx(n)
++   logical, intent(in)  :: inner(n)
++   integer, intent(out) :: order(n), start(n + 1), nlev
++   integer, allocatable :: pos(:), lev(:), lb(:), nxt(:)
++   integer              :: c, k, j, m, it, L
++   !
++   allocate(pos(n), lev(n), lb(n))
++   do c = 1, n
++      pos(indx(c)) = c
++   enddo
++   lev  = 0
++   lb   = 1
++   nlev = 0
++   do c = 1, n
++      k = indx(c)
++      if (.not. inner(k)) cycle
++      L = lb(k)
++      do it = 1, ntheta
++         do m = 1, 2
++            j = prev(m, it, k)
++            if (j < 1 .or. j == k) cycle
++            if (.not. inner(j)) cycle
++            if (pos(j) < c) L = max(L, lev(j) + 1)
++         enddo
++      enddo
++      lev(k) = L
++      nlev   = max(nlev, L)
++      do it = 1, ntheta
++         do m = 1, 2
++            j = prev(m, it, k)
++            if (j < 1 .or. j == k) cycle
++            if (.not. inner(j)) cycle
++            if (pos(j) > c) lb(j) = max(lb(j), L + 1)
++         enddo
++      enddo
++   enddo
++   allocate(nxt(nlev + 1))
++   nxt = 0
++   do c = 1, n
++      k = indx(c)
++      if (inner(k)) nxt(lev(k)) = nxt(lev(k)) + 1
++   enddo
++   start(1) = 1
++   do L = 1, nlev
++      start(L + 1) = start(L) + nxt(L)
++   enddo
++   nxt(1:nlev) = start(1:nlev)
++   do c = 1, n
++      k = indx(c)
++      if (.not. inner(k)) cycle
++      order(nxt(lev(k))) = c
++      nxt(lev(k)) = nxt(lev(k)) + 1
++   enddo
++   deallocate(pos, lev, lb, nxt)
++   end subroutine swomp_levels
++
+    real*4 function swomp_maxval(a, n)
+    ! MAXVAL(a) computed in parallel, bit-identical to gfortran's serial intrinsic:
+    ! the intrinsic takes the first non-NaN element (a >= -Inf), then replaces only on a
+--- src/sfincs_lib.f90	2026-10-28 13:27:06.139051865 -0400
++++ src/sfincs_lib.f90	2026-10-29 15:56:13.518511550 -0400
+@@ -94,7 +94,7 @@
+    !
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !
+-   build_revision = "$Rev: v2.3.3 mt. Faber+ nj-winddir-fix-1 nj-igk-fix-1 nj-igseed-1 nj-wmseed-1 nj-swomp-1"
++   build_revision = "$Rev: v2.3.3 mt. Faber+ nj-winddir-fix-1 nj-igk-fix-1 nj-igseed-1 nj-wmseed-1 nj-swomp-1 nj-swomp-2"
+    build_date     = "$Date: 2025-05-12"
+    !
+    call write_log('', 1)

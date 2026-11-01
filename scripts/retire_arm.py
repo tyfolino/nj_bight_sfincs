@@ -75,6 +75,7 @@ KEEP_FILES = {
     "sfincs_cnb.nc",  # curve-number-with-recovery inputs (nj_sfincs.infiltration; ~60 MB)
     "sfincs_cnb.json",
     "face_z_report.json",  # a face_z_from domain's swap record (setup_face_z.py, §63)
+    "extra_discharge.json",  # an arm's added point sources (model.append_extra_discharge)
 }
 KEEP_GLOBS = (
     "provenance*.txt",

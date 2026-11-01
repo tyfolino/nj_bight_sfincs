@@ -206,7 +206,10 @@ CLAUDE.md §5.
 
 ### Physics and forcing
 
-20. **SnapWave is nearly all of the runtime, and our configuration, not the method, makes
+20. **The wavefront sweep (2026-11-01, `logs/snapwave_fullrun_2026-11-01/`, job 63385524): the full 72 h premier on
+    `…swomp-2-gf11@dd78d82a`, 64 threads, BIT-IDENTICAL to production (map + his, STRICT, 2,020 iteration lines) in 9,052 s vs
+    46,766 s at 16 threads; SnapWave 2,595 s vs 29,728 s. Thread count differs, so that 5.2× is not code alone. Below: the serial build.**
+    **SnapWave is nearly all of the runtime, and our configuration, not the method, makes
     it so.** v3 premier: 96.9 % of simulation time, 23.4 h of a 25.5 h solve, against 46 min
     for the same mesh waves-off; its 84 min "Time in input" is also SnapWave (the
     nearest-point search for 1.12 M SnapWave-only band nodes; `wave-coupled` pays 45 s).
@@ -1445,8 +1448,8 @@ CLAUDE.md §5.
     ≤ 1 cm. Its CSI 0.807 vs 0.785 is not a skill gain: `motf_metrics` does NOT mask footprints,
     so bare-ground footprints that MOTF calls wet score as hits. ⚠️ **FLOW only:** on that bed SnapWave
     read face `z` from `bed_v4_coarse_25m`, which has no buildings (§63), so neither arm had buildings in
-    the WAVES. Buildings in SnapWave's bed (the swz premier) are a separate, unmeasured choice — they
-    lower the Monmouth lakes ~0.1 m (§63 (h)); only a bare-ground face-`z` side arm measures them.
+    the WAVES. Measured on swz in part 4 (j): buildings in SnapWave's bed make no skill difference, and
+    the premier keeps them in both (user 2026-11-01).
 
 56. **SnapWave bottom friction: `fw` 0.01 is the premier's, and the engine's default.** Every
     arm before 2026-09-11 wrote 0.02, double the default. One-flag pair on the fixed engine
@@ -2239,8 +2242,7 @@ waves-on noise: a paired comparison holds ONE mark set on both sides (the refere
 `logs/rebaseline_2026-10-19/read/out/`; `v4_refreeze`, seeded wavemaker engine, 13 arms, every one uninterrupted
 and `output WHOLE`; median, 50 m, n 110, paired B 200 000). ⚠️ **On the OLD wave bed**: the premier has since moved
 to `v4_refreeze_swz` (§63 (g)), which moves the water a few cm and the Monmouth lakes ~0.1 m. Non-lake effects below
-should carry over; **every LAKE answer (wavemaker, breach, Deal overtopping, cnb at the lakes) is HELD** until the swz
-re-runs. The repeat is bit-identical; the null band is §44 (e).
+should carry over; the wavemaker, breach and Deal answers on swz are (j); cnb was not re-run on swz. The repeat is bit-identical; the null band is §44 (e).
 - **Waves** (`p4-premier` − `p4-nowaves`): ΔRMSE −0.150 [−0.244, −0.070]; marks rise +0.32 m open coast, +0.19
   inlets, +0.20 NJ back bays, +0.13 NY bays, +0.06 rivers (Δmean). Larger than v3's seeded −0.054 [−0.084, −0.025]
   on its 94 marks.
@@ -2260,6 +2262,28 @@ re-runs. The repeat is bit-identical; the null band is §44 (e).
   bed, above).
 - **v3 reference repeats**: seeded − unseeded waves-off identical; waves-on ΔRMSE +0.003 [+0.001, +0.006] — one IG
   draw vs another (§44), not a change.
+
+(j) **The swz reads: model 1.0.0** (2026-11-01, `logs/swz_read_2026-11-01/`, job 63385437; solves 63231557 + 63302336 +
+63325606, all uninterrupted, seeded, `output WHOLE`; median, 50 m, n 110, paired B 200 000). Premier: `v4_refreeze_swz` /
+`p4-premier`, buildings in flow and waves (user).
+- **Band:** repeat bit-identical. Two `rhoa` nulls: ΔRMSE ≤ 0.001 pooled, Δmean up to 0.025; per-mark |Δ| median 0.014, p90
+  0.083, max 0.181; gauge peak median 0.021, max 0.104 (Marcus Hook); wet-face `zsmax` 0.083. A floor, not a bound.
+- **Arthur Kill sill** carved to −12.85 m (`bed-aknsill+p4-nowaves`, waves off): marks ≤ 3 mm, gauges ≤ 1 mm. No effect, bed left alone.
+- **Buildings in the waves** (bare wave bed − premier): ΔRMSE −0.000 [−0.004, +0.004]; Δmean +0.012, inside the band;
+  CSI masked 0.8041 vs 0.8046; 6129 −0.28, 6124 +0.09.
+- **Buildings in the flow too** (none − bare wave bed): ΔRMSE −0.019 [−0.109, +0.049], excl noted +0.027 [−0.001, +0.077], excl
+  lakes −0.003 [−0.018, +0.011]; NY bays Δmean +0.067. Set by 6121 +1.23 (noted run-up) and 6124 −0.78. Footprint-masked CSI
+  0.8123 vs 0.8041 (centre), 0.8204 vs 0.8240 (touched), against the raw 0.8067 vs 0.7833. Its 0.27–0.39 m Narrows gauge
+  peaks are a short burst about 1 h before the crest; the slow crest agrees to mm. Cause not identified.
+- **Lakes**, residuals premier / breach 0 m / 1.65 m / Deal / no wavemaker: 6121 −2.03 / −2.03 / −2.03 / −2.03 / −2.35; 6122 −2.27 /
+  −2.27 / −2.27 / −1.80 / −2.48; 6124 −0.68 / −0.69 / −0.69 / −0.69 / −1.99; 6129 −0.05 / +0.41 / +0.67 / −0.05 / −0.66; 6130 −2.09 /
+  +0.48 / +0.74 / −2.09 / −2.41. A breach reaches 6130 and overshoots 6129: sensitivity, not in the premier.
+- **Wavemaker** (with − without): ΔRMSE −0.077 [−0.145, −0.021]; excl lakes −0.005 [−0.011, +0.001]; open coast −0.174
+  [−0.379, −0.019]; `usgs_stormtide_sea_bright` peak +0.72 m.
+
+(k) **Calm runs on the modern bed** (2026-11-01, `logs/modern_bed_2026-11-01/`): a sloped MHHW + s start does not hold in a solve:
+`still-4ft` 0 h → 24 h Newbold 2.64 → 1.86, Mantoloking 1.32 → 1.82, most of it in 6–12 h. On this bed the engine keeps 408 weir
+points vs 412: it drops a point whose crest is at or below `uv_zmin` (ground already blocks it).
 
 **Usual surface for depth maps (2026-10-19; CLAUDE.md §6).** v4 "flood depth" = water level −
 pixel ground, drawn only where the ground is normally dry: ground ≥ W, W = the normal pool of a
