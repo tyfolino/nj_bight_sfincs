@@ -51,6 +51,7 @@ Every script reads `NJ_DOMAIN` unless its row names a domain. Run from the repo 
 | `paired_hwm_bootstrap.py` | Paired HWM comparison of two arms; `--bbox` zone and `--by-basin` groups | live |
 | `v4_first_results.py` | The first waves-on v4 read in one command: setup, scores, paired marks (incl. v4 vs v3), gauge/HWM/zsmax figures, summary skeleton; `submit --preset refreeze` | live |
 | `overflow_check.py` | Where the peak water reaches the model edge; `--compare` for the SLR ladder | live |
+| `power_exposure.py` | First-pass flood read of power plants and substations (`data/power_infra`) against the Sandy bare-ground and MHHW + 2 / + 4 ft maps: wet / dry / NOT COMPUTED per footprint, by the run's own active faces; outputs in `logs/power_exposure_2026-11-02/`, Model 1.0.0, preliminary | live |
 | `source_proximity.py` | Which marks and gauges sit close enough to a river inflow to read it | live |
 | `lake_outlet_blocked.py` | Which marks sit in a basin whose outlet the model holds shut above the local sea peak (`lake_outlet_blocked`; light, no floodmap); `--marks` prints the headline with and without | live |
 | `relocate_coarse_inflows.py` | Flag inflows piling up on a coarse face; move them down the creek (screen / write / apply) | live |

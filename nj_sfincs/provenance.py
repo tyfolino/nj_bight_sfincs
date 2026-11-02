@@ -210,6 +210,8 @@ def catalog_uri(key: str, data_dir: Path = DATA) -> str:
 _BUILD_REV = re.compile(r"Build-Revision:\s*(.+)")
 #: Build-Revision → short label, for runs that predate engine.txt
 _KNOWN_REVISIONS = {
+    # first match wins, and every patched build's revision also holds "mt. Faber"
+    "nj-swomp-2": "bin:v2.3.3-winddir-igk-igseed-wmseed-swomp-2-gf11",
     "v2.3.3 mt. Faber": "container:v2.3.3-faber",
     "v2.4.0 Galibier": "container:v2.4.0-galibier",
 }

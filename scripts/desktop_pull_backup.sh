@@ -3,9 +3,11 @@
 #
 # Pulls, over SSH + rsync, the two things that cannot be regenerated from git:
 #
-#   TIER 1  irreplaceable INPUTS, which live in Amarel HOME (backed up by OARC, but
-#           quota-bound):  ~/nj_bight_sfincs/data/   (~13 G: elevation_v3, frozen
-#           meshes, NACCS, infiltration, precip, waves, validation, discharge)
+#   TIER 1  irreplaceable INPUTS. ~/nj_bight_sfincs/data/ itself holds mostly SYMLINKS, and
+#           rsync copies those as links, so the bulk behind them is pulled separately:
+#           /scratch/tpj8/nj_bight_sfincs_data/        (~82 G, NOT backed up by OARC since the
+#           10-05 move: frozen meshes, elevation_v3/v4, the modern land, NACCS, buildings,
+#           infiltration. modern_2026/raw (106 G, public downloads) only with --with-raw)
 #           ~/sfincs_data/                             (~29 G: raw CUDEM/3DEP tiles that
 #           the elevation VRTs READ, the 16 G statewide DEM kept for the v4 Delaware
 #           Bay re-clip, and sfincs-env.tar.gz, the VSCode-node fast-deploy env)
@@ -16,7 +18,7 @@
 #           (/scratch/tpj8/nj_bight_sfincs/experiments — 1 TB, NOT backed up, files
 #           not accessed for 90 days are purged).  Per arm we keep what the numbers in
 #           STATUS/FINDINGS were read from: sfincs_his.nc, sfincs.log, sfincs.inp,
-#           provenance.txt, floodmap_hmax_lev3.tif, the small forcing files and gis/;
+#           provenance.txt, floodmap_hmax_lev3.tif, tide_stats.nc, the small forcing files and gis/;
 #           per domain metrics*.csv and report.html.  EXCLUDED because regenerable
 #           from tier 1 + git: _template_sealed/, subgrid/, roughness.nc, sfincs.nc,
 #           sfincs_subgrid.nc, snapwave.upw, floodmaps/ (gallery copies), and
@@ -34,6 +36,7 @@
 #   bash desktop_pull_backup.sh -n                     # rsync dry run
 #   bash desktop_pull_backup.sh                        # tiers 1 + 2
 #   bash desktop_pull_backup.sh --with-maps            # ... plus sfincs_map.nc
+#   bash desktop_pull_backup.sh --with-raw             # ... plus modern_2026/raw (106 G)
 #   bash desktop_pull_backup.sh --only inputs|archive|runs
 #   DEST=/media/ty/backup/amarel bash desktop_pull_backup.sh
 #
@@ -45,15 +48,18 @@ REMOTE="${REMOTE:-tpj8@amarel.rutgers.edu}"
 DEST="${DEST:-$HOME/amarel_backup}"
 HOME_R="/cache/home/tpj8"
 SCRATCH_R="/scratch/tpj8/nj_bight_sfincs"
+SCRATCH_DATA_R="/scratch/tpj8/nj_bight_sfincs_data"
 
 DRY=""
 WITH_MAPS=0
+WITH_RAW=0
 ONLY="all"
 LIST=0
 for a in "$@"; do
   case "$a" in
     -n|--dry-run) DRY="-n" ;;
     --with-maps) WITH_MAPS=1 ;;
+    --with-raw) WITH_RAW=1 ;;
     --only) ;;
     inputs|archive|runs) ONLY="$a" ;;
     --list) LIST=1 ;;
@@ -90,6 +96,7 @@ RUN_FILTER=(
   --include='MANIFEST.md'
   --include='.retired'
   --include='floodmap_hmax_lev3.tif'
+  --include='tide_stats.nc'
   --include='.window'
   --include='sfincs.obs'
   --include='sfincs.weir'
@@ -100,12 +107,15 @@ RUN_FILTER=(
 )
 if [ "$WITH_MAPS" = 1 ]; then RUN_FILTER+=(--include='sfincs_map.nc'); fi
 RUN_FILTER+=(--exclude='*' --prune-empty-dirs)
+DATA_FILTER=()
+if [ "$WITH_RAW" = 0 ]; then DATA_FILTER+=(--exclude='/modern_2026/raw/'); fi
 
 manifest() {
   cat <<EOF
 remote : $REMOTE
 dest   : $DEST
 tier 1 : $HOME_R/nj_bight_sfincs/data/   -> $DEST/nj_bight_sfincs/data/
+         $SCRATCH_DATA_R/                -> $DEST/nj_bight_sfincs_data/  (modern_2026/raw only with --with-raw)
          $HOME_R/sfincs_data/            -> $DEST/sfincs_data/
          $HOME_R/nj_coast_sfincs/        -> $DEST/nj_coast_sfincs/
 tier 2 : $SCRATCH_R/experiments/         -> $DEST/nj_bight_sfincs/experiments/
@@ -124,6 +134,7 @@ mkdir -p "$DEST/nj_bight_sfincs"
 if [ "$ONLY" = all ] || [ "$ONLY" = inputs ]; then
   echo "== tier 1: inputs"
   "${RSYNC[@]}" "$REMOTE:$HOME_R/nj_bight_sfincs/data/" "$DEST/nj_bight_sfincs/data/"
+  "${RSYNC[@]}" ${DATA_FILTER[@]+"${DATA_FILTER[@]}"} "$REMOTE:$SCRATCH_DATA_R/" "$DEST/nj_bight_sfincs_data/"
   "${RSYNC[@]}" "$REMOTE:$HOME_R/sfincs_data/" "$DEST/sfincs_data/"
 fi
 if [ "$ONLY" = all ] || [ "$ONLY" = archive ]; then

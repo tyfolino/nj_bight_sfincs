@@ -578,8 +578,8 @@ def main(argv=None) -> int:
     sif = os.environ.get("SFINCS_SIF") or None
     if solving and bool(binary) == bool(sif):
         print(
-            "[engine] REFUSING: set exactly one of SFINCS_BIN (native build, e.g. "
-            "~/nj_sandy_sfincs/sfincs-native/<variant>/bin/sfincs) or SFINCS_SIF"
+            "[engine] REFUSING: set exactly one of SFINCS_BIN (native build; production: "
+            "SFINCS_BIN=$(cat hpc/production_engine.txt)) or SFINCS_SIF"
         )
         return 2
     if solving:

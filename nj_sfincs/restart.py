@@ -42,6 +42,14 @@ refuses a resume whose stamp is not on the ``dtmaxout`` lattice for exactly that
 beyond the newest segment's end (the older run got further before it died). Resuming
 from one of those would leave a hole in the stitched record, so a candidate must lie
 within the segment being retired: ``stamp <= last map time``.
+
+🔴 A KILL CAN LOSE WRITTEN RECORDS (2026-11-02). HDF5 holds recent chunks in memory, so a
+preempted file can list a ``zsmax`` block on its axis while that block's chunk reads as an
+HDF error, or as all fill. A chunk holds many blocks (14 × 3 h on the 32 d tide runs), so
+this can reach back past the newest restart file, and the stitch then fails only AFTER the
+resumed solve. ``plan`` therefore checks every record and block of the outputs it would
+retire and resumes no later than the last time they read back whole. A resume from the
+segment's own start needs nothing from that segment, so that is always allowed.
 """
 
 from __future__ import annotations
@@ -124,6 +132,45 @@ def last_time_s(nc: Path) -> float | None:
         return None  # a file the solver was writing when it died can be unreadable
 
 
+def readable_until(nc: Path) -> float:
+    """Seconds since tref up to which every record and block of ``nc`` reads back whole.
+
+    ``inf`` if nothing is wrong or the file is absent, ``-inf`` if nothing can be used.
+    All fill on a mesh variable counts as lost; a station may legitimately be all fill.
+    """
+    if not nc.is_file():
+        return np.inf
+    good = np.inf
+    try:
+        with netCDF4.Dataset(nc) as ds:
+            for axis in ("time", "timemax"):
+                if axis not in ds.variables:
+                    continue
+                t = np.asarray(ds.variables[axis][:], dtype="float64").ravel()
+                names = [
+                    n
+                    for n, v in ds.variables.items()
+                    if axis in v.dimensions and n != axis
+                ]
+                for i in np.flatnonzero(t < NC_FLOAT_FILL):
+                    if not all(_record_ok(ds.variables[n], axis, i) for n in names):
+                        good = min(good, t[i - 1] if i > 0 else -np.inf)
+                        break
+    except OSError:
+        return -np.inf
+    return good
+
+
+def _record_ok(v, axis: str, i: int) -> bool:
+    sl = [slice(None)] * v.ndim
+    sl[v.dimensions.index(axis)] = i
+    try:
+        data = v[tuple(sl)]
+    except (RuntimeError, OSError):  # netCDF4 raises RuntimeError for "HDF error"
+        return False
+    return "nmesh2d_face" not in v.dimensions or np.ma.count(data) > 0
+
+
 def segments(model_dir: Path) -> list[Path]:
     d = Path(model_dir) / SEG_DIR
     return sorted(p for p in d.iterdir() if p.is_dir()) if d.is_dir() else []
@@ -156,10 +203,16 @@ def plan(model_dir: Path) -> Plan:
     if end_s is not None and end_s >= stop_s - dtmap / 2:
         return Plan("finish", f"map already reaches tstop ({end_s / 3600:.1f} h)")
 
+    # the segment these outputs belong to starts here; see the module docstring
+    seg_s = (inp_datetime(inp.read_text(), "tstart") - tref).total_seconds()
+    read_s = min(
+        readable_until(model_dir / fn) for fn in ("sfincs_map.nc", "sfincs_his.nc")
+    )
+    limit_s = seg_s if end_s is None else max(seg_s, min(read_s, end_s))
     cands = [
         (t, p)
         for t, p in restart_files(model_dir)
-        if tstart < t < tstop and (end_s is None or (t - tref).total_seconds() <= end_s)
+        if tstart < t < tstop and seg_s <= (t - tref).total_seconds() <= limit_s
     ]
     if dtmax > 0:
         on_lattice = [
@@ -172,7 +225,10 @@ def plan(model_dir: Path) -> Plan:
     if not cands:
         return Plan("fresh", "no usable restart file inside the written window")
     t, p = cands[-1]
-    return Plan("resume", f"newest restart file {p.name}", rst=p, t_resume=t)
+    note = (
+        f" (outputs read back only to {read_s / 3600:.1f} h)" if read_s < np.inf else ""
+    )
+    return Plan("resume", f"newest restart file {p.name}{note}", rst=p, t_resume=t)
 
 
 def prepare(model_dir: Path) -> Plan:

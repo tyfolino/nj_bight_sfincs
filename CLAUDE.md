@@ -146,7 +146,8 @@ hook and staging copies its inp; check `grep dtrstout <dir>/sfincs.inp` before a
 parks the earlier output in `restart_segments/`, and **stitches** one `sfincs_map.nc` /
 `sfincs_his.nc` afterwards (`restart_history.txt` records it). `python
 scripts/sfincs_restart.py plan <dir>` is read-only; `enable <dir>` retrofits a staged dir.
-🔴 `dtmaxout` must divide `dtrstout` — the stitch keeps whole `zsmax` blocks only. A job
+🔴 `dtmaxout` must divide `dtrstout` — the stitch keeps whole `zsmax` blocks only. 🔴 A kill can lose `zsmax` chunks from before the newest
+restart file (2026-11-01, the tide runs); `plan` now checks the outputs and resumes no later than they read back. A job
 submitted BEFORE 09-10 runs the old spooled batch script: it still restarts from scratch,
 resume it by hand (`prepare`, then `run.submit_slurm`). Measured on the toy model: the
 resumed trajectory differs from the uninterrupted one by ≤ 0.2 mm (p90), 8 mm max on a
@@ -161,8 +162,11 @@ uninterrupted twin, or re-run it.
 ⚠️ **Submit the STAGED dir via `run.submit_slurm(dir, sif=... | binary=...)`, not
 `--slurm`,** when you have already staged. 🔴 **The engine is always explicit (2026-09-11):**
 exactly one of `sif` (container) or `binary` (a native build from
-`hpc/build_sfincs_native.sh`) — `run.py` and `hpc/sfincs_run.slurm` both REFUSE a run with
-none or both; the old fallback to `sfincs-cpu.sif` (Galibier v2.4.0, NOT the premier's Faber
+`hpc/build_sfincs_native.sh`) — **for new runs, production is the path in
+`hpc/production_engine.txt`: `SFINCS_BIN=$(cat hpc/production_engine.txt)` (`…swomp-2-gf11`, user
+2026-11-02; bit-identical to 1.0.0's engine on the full storm, FINDINGS §20). Still a choice you
+state, not a default** —
+`run.py` and `hpc/sfincs_run.slurm` both REFUSE a run with none or both; the old fallback to `sfincs-cpu.sif` (Galibier v2.4.0, NOT the premier's Faber
 v2.3.3) is gone. The sweep driver and `stage_and_submit_v3.slurm` REFUSE to solve unless
 exactly one of `SFINCS_BIN=<path>` / `SFINCS_SIF=<path>` is set (2026-10-15; their silent
 default to the unpatched Faber container is gone). Every finished run gets `engine.txt`

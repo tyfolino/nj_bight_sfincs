@@ -68,7 +68,7 @@ if [ -n "$SIF" ] && [ -n "$BIN" ]; then
     echo "REFUSING: both SFINCS_SIF and SFINCS_BIN are set — pick one engine" >&2; exit 2
 fi
 if [ -z "$SIF" ] && [ -z "$BIN" ]; then
-    echo "REFUSING: no engine — export SFINCS_SIF=<image.sif> or SFINCS_BIN=<sfincs binary>" >&2; exit 2
+    echo 'REFUSING: no engine — export SFINCS_BIN=$(cat hpc/production_engine.txt), or another <sfincs binary>, or SFINCS_SIF=<image.sif>' >&2; exit 2
 fi
 if [ -n "$SIF" ] && [ ! -f "$SIF" ]; then echo "REFUSING: SFINCS_SIF=$SIF not found" >&2; exit 2; fi
 if [ -n "$BIN" ] && [ ! -x "$BIN" ]; then echo "REFUSING: SFINCS_BIN=$BIN is not executable" >&2; exit 2; fi

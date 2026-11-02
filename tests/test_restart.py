@@ -32,7 +32,12 @@ H = 3600.0
 
 
 def write_map(
-    fn: Path, t_start_s: float, t_end_s: float, tmax: list[float], tag: float
+    fn: Path,
+    t_start_s: float,
+    t_end_s: float,
+    tmax: list[float],
+    tag: float,
+    checksum: bool = False,
 ):
     """A toy map: zs[t, f] = tag*1000 + t/3600 + f, zsmax[b, f] = tag*1000 + block end."""
     times = np.arange(t_start_s, t_end_s + 1, H)
@@ -46,7 +51,13 @@ def write_map(
             "zs", "f4", ("time", "nmesh2d_face"), zlib=True, chunksizes=(1, NF)
         )
         tm = ds.createVariable("timemax", "f4", ("timemax",))
-        zm = ds.createVariable("zsmax", "f4", ("timemax", "nmesh2d_face"))
+        zm = ds.createVariable(
+            "zsmax",
+            "f4",
+            ("timemax", "nmesh2d_face"),
+            fletcher32=checksum,
+            chunksizes=(1, NF) if checksum else None,
+        )
         zb = ds.createVariable("zb", "f4", ("nmesh2d_face",))
         zb[:] = np.arange(NF) * -1.0
         for i, t in enumerate(times):
@@ -108,6 +119,86 @@ class TestPlan(Base):
         )
         self.rst(24)
         self.assertEqual(R.plan(self.d).action, "finish")
+
+
+def break_block(fn: Path, block_value: float):
+    """Damage one block's chunk on disk; its Fletcher checksum makes the read fail."""
+    raw = fn.read_bytes()
+    pattern = np.full(NF, block_value, dtype="f4").tobytes()
+    at = raw.index(pattern)
+    fn.write_bytes(raw[:at] + b"\xff" * 4 + raw[at + 4 :])
+
+
+class TestKilledMidWrite(Base):
+    """A preemption can lose records the axis still lists (2026-11-01, the tide runs)."""
+
+    def _map_at_15h(self):
+        fn = self.d / "sfincs_map.nc"
+        write_map(fn, 0, 15 * H, [6 * H, 12 * H], tag=1, checksum=True)
+        for hh in (6, 12):
+            self.rst(hh)
+        return fn
+
+    def test_unreadable_block_moves_the_resume_back(self):
+        fn = self._map_at_15h()
+        break_block(fn, 1012.0)
+        with netCDF4.Dataset(fn) as ds, self.assertRaises(RuntimeError):
+            ds.variables["zsmax"][1, :]
+        self.assertEqual(R.readable_until(fn), 6 * H)
+        pl = R.plan(self.d)
+        self.assertEqual(pl.rst.name, "sfincs.20121028.060000.rst")
+        self.assertIn("read back only to 6.0 h", pl.reason)
+
+    def test_all_fill_block_counts_as_lost(self):
+        fn = self._map_at_15h()
+        with netCDF4.Dataset(fn, "a") as ds:
+            ds.variables["zsmax"][1, :] = np.ma.masked
+        self.assertEqual(R.plan(self.d).rst.name, "sfincs.20121028.060000.rst")
+
+    def test_healthy_map_is_not_moved_back(self):
+        fn = self._map_at_15h()
+        self.assertEqual(R.readable_until(fn), np.inf)
+        self.assertEqual(R.plan(self.d).rst.name, "sfincs.20121028.120000.rst")
+
+    def test_unusable_first_segment_runs_fresh(self):
+        fn = self._map_at_15h()
+        break_block(fn, 1006.0)
+        self.assertEqual(R.plan(self.d).action, "fresh")
+
+    def test_second_kill_never_goes_back_past_the_segment_start(self):
+        # resumed at 6 h, then killed with its only block lost: start from 6 h again
+        self._map_at_15h()
+        write_his(self.d / "sfincs_his.nc", 0, 15 * H, tag=1)
+        fn = self.d / "sfincs_map.nc"
+        break_block(fn, 1012.0)
+        R.prepare(self.d)
+        write_map(fn, 6 * H, 15 * H, [12 * H], tag=2, checksum=True)
+        break_block(fn, 2012.0)
+        pl = R.plan(self.d)
+        self.assertEqual(pl.rst.name, "sfincs.20121028.060000.rst")
+
+    def test_map_missing_after_a_retire_resumes_from_the_segment_start(self):
+        # killed between prepare and the solver's first write; 12 h would leave a hole
+        self._map_at_15h()
+        write_his(self.d / "sfincs_his.nc", 0, 15 * H, tag=1)
+        break_block(self.d / "sfincs_map.nc", 1012.0)
+        R.prepare(self.d)
+        pl = R.plan(self.d)
+        self.assertEqual(pl.rst.name, "sfincs.20121028.060000.rst")
+
+    def test_the_repaired_run_stitches_whole(self):
+        fn = self._map_at_15h()
+        write_his(self.d / "sfincs_his.nc", 0, 15 * H, tag=1)
+        break_block(fn, 1012.0)
+        R.prepare(self.d)
+        write_map(fn, 6 * H, 24 * H, [12 * H, 18 * H, 24 * H], tag=2)
+        write_his(self.d / "sfincs_his.nc", 6 * H, 24 * H, tag=2)
+        R.finish(self.d)
+        with netCDF4.Dataset(fn) as ds:
+            self.assertEqual(
+                list(ds.variables["zsmax"][:, 0]), [1006, 2012, 2018, 2024]
+            )
+            self.assertTrue(np.array_equal(ds["time"][:], np.arange(0, 24 * H + 1, H)))
 
 
 class TestPrepareAndFinish(Base):

@@ -6,11 +6,11 @@ running, what is next, what is open. When an item closes, its durable fact goes 
 Git has the history. The campaign log this file grew into until 2026-09-29 (6,767 lines) is
 `git show d70dd1e:docs/STATUS.md`; FINDINGS cites it as "STATUS <date>".
 
-▶ **PICK UP (11-01): MODEL 1.0.0 = `p4-premier` on `v4_refreeze_swz` (`90cc7468614a5814`, user 11-01).** Read in FINDINGS part 4 (j) (`logs/swz_read_2026-11-01/`): buildings stay in flow and waves, the Arthur Kill sill does nothing, breach and Deal stay sensitivities. FIAT closed (user 11-01; the 10-30 maps in `share/` stand). **Next:** (1) ✋ user commits + tags `v1.0.0`, pushes the site after `publish_gallery.py`; (2) read `swomp2_full` 16 threads (63385524) and decide the production engine; (3) tidal twin 63390889 + 63390890 → `logs/modern_bed_2026-11-01/tide_stats.py <dir>`, first run of that script on real output; (4) user's call: still-water maps by mapping the sloped surface without a solve (recommended; `still-*` arms staged, not submitted, part 4 (k)); check the modern bed's untested overlays + the +70 m and pits before anything goes to the collaborator; (5) RCC talk 11-02: `reports/rcc_talk_2026-10-30.pptx`, 14 slides, patched by `logs/rcc_talk_2026-10-30/deck/patch*_2026-11-01.py` (`build_deck.js` is older), present from real PowerPoint.
+▶ **PICK UP (11-02): MODEL 1.0.0 = `p4-premier` on `v4_refreeze_swz` (`90cc7468614a5814`, tagged `v1.0.0`).** Read in FINDINGS part 4 (j) (`logs/swz_read_2026-11-01/`): buildings stay in flow and waves, the Arthur Kill sill does nothing, breach and Deal stay sensitivities. FIAT closed (user 11-01; the 10-30 maps in `share/` stand). **New runs use `SFINCS_BIN=$(cat hpc/production_engine.txt)`** (`…swomp-2-gf11@dd78d82a`, user 11-02; its first run is also its first through `hpc/sfincs_run.slurm` and its first possible resume). **Next:** (1) ✋ user commits the staged edits; site still staged in `~/sandy_flood_site`. (2) 63440060 (+4 ft, bed spots, QC figure; ~18:15): read `logs/still_maps_2026-11-02/`, then `python scripts/power_exposure.py update --maps still_2ft still_4ft` (never run in full). (3) 63441387 (~19:15): `python logs/ak_noise_2026-11-02/read_short.py`, then its README's cleanup. (4) **v1.1 worklist, reports 11-02 in `logs/`:** Mullica bed from charts + the listed sills (`river_drain_2026-11-02/`, the largest finding); remove elevated decks from the bed; Overpeck dam bracket; Arthur Kill cut-bank noise once the settings runs read (`ak_noise_2026-11-02/`); place South Ironbound's reported streets (`newark_motf_2026-11-02/`). Each a paired waves-off test against `p4-nowaves`. (5) Phase 1 repo consolidation once those jobs end (plan `~/.claude/plans/alright-claude-i-m-actually-humble-iverson.md`). (6) Hudson + Upper Bay: memo + 6 decisions, `hudson_design_2026-11-02/README.md`; NACCS pull CLOSED 284 of 312 in `data/NACCS/hudson_pull_2026-11-02/` (keep it out of `data/NACCS/`: the builder reads every zip there). (7) Later: Sandy's forcing on the modern bed for the end read on today's assets.
 
 **Phase 4 still to read:** capped-hour `zsmax` (open question below).
 
-Last updated: **2026-11-01** — 1.0.0 chosen; swz reads done; wavefront 2.51 h and bit-identical at 64 threads; scratch back under its soft limit.
+Last updated: **2026-11-02** — tidal twin repaired and its statistics written; a resume now checks the outputs it retires; `swomp-2` is production; still-water maps running; five agent reports filed. Scratch 980 G of the 1 T soft limit.
 
 ---
 
@@ -20,10 +20,21 @@ Last updated: **2026-11-01** — 1.0.0 chosen; swz reads done; wavefront 2.51 h 
   MOTF CSI 0.706; re-run on the seeded engine in Phase 4 (`p4-ref` / `p4-ref-nowaves`).
 - **Model 1.0.0: `v4_refreeze_swz` / `p4-premier`** (`90cc7468614a5814`, job 63181564): RMSE 0.439 / bias −0.128 (median, 50 m, n 110), CSI 0.784; without the 6 noted marks 0.354 / −0.093 (n 104). `docs/MODEL.md`.
 
-## Running (11-01)
+## Running (11-02)
 
-- ⏳ **63385524 `swomp2_full`** (`logs/snapwave_fullrun_2026-11-01/`): 64 threads done, BIT-IDENTICAL, 2.51 h (FINDINGS §20); 16 threads running, pinned to one socket (production spread over 64 cores). `swomp2_full_64t` keeps ~10.5 G: delete after the 16-thread read.
-- ⏳ **63390889, 63390890 tidal twin** (`bed-modern+tide-2ft`, `-4ft`, 32 d, 64 threads, 40 h limit; ~17 h scaled). Up 11-01; a resume is sound (no waves, no rain).
+- ⏳ **63441387 `ak_solves`** (`logs/ak_noise_2026-11-02/`): `adv0`, `alpha025`, `advlim01`, maps; ~19:15.
+- ⏳ **63440060 `still_maps`** (`logs/still_maps_2026-11-02/`): MHHW + 2 ft / + 4 ft depth on the modern bed from the staged `still-*` starts, no solve (user 11-02), into `experiments/v4_refreeze_swz/floodmaps/`; + the +70 m and pits checked against the Phase 4 bed.
+
+## Power exposure: first pass (11-02, `logs/power_exposure_2026-11-02/README.md`)
+
+- Sandy, Model 1.0.0, preliminary: NJ 59 wet / 123 dry / 71 not computed. ⚠️ The asset files are believed to be today's (PSE&G moved assets after Sandy; user), so this is today's layout against a Sandy-sized flood, not what flooded in 2012. **Sandy is the test case (user 11-02): no 2012 asset list exists or is needed; the end read is today's assets on the modern bed ("if Sandy happened today"), which needs Sandy's forcing on the modern bed.** After both still-water maps: `python scripts/power_exposure.py update --maps still_2ft still_4ft`.
+
+## Tidal twin: done, with open questions (11-02, `logs/tide_repair_2026-11-02/README.md`)
+
+- **Whole:** `bed-modern+tide-2ft`, `-4ft`, 32 d, 256 blocks, all readable, `tide_stats.nc` in each run dir. Preempted 11-01, resumed and finished; the kill lost `zsmax` blocks 210–223 (one chunk), re-solved from the 11-07 06:00 restart file and stitched (restart_history.txt). Patch vs original: p99 of `zs` under 0.6 mm.
+- ⚠️ **Noisy water on cut banks, IN 1.0.0 TOO, cause not identified (`logs/ak_noise_2026-11-02/README.md`):** faces holding a sliver of deep channel. Peak water at the patch unaffected (42 persistently wet faces: p99 +0.002 m); tide statistics are biased, mask flagged faces. Original note: in a ~1 m tide, single faces near −74.245, 40.55 read 0.62 vs −1.41 m between the patch and the original. At least 260 faces (+2 ft) / 51 (+4 ft) parted by > 10 cm. A typical noisy face is within 2 cm of its neighbours in mean higher-high; the worst is ~0.7 m high.
+- ⚠️ **Monthly peaks that are not tide:** 2.304 m at −73.9975, 40.5884 (+2 ft; a noisy cut-bank face, 4807804) and 3.080 m at −75.0973, 39.8538 (+4 ft; face 3622412, still unexplained), mean higher-high 2.246 and 2.604 there; Sandy Hook's mean higher-high is 1.31 / 1.92.
+- Not yet compared with VDatum MHHW. The known deficiencies in the bullet on the first 1.x simulations below still stand.
 
 - **Phase 4 read notes:** attempts 1–2 are filed under `logs/rebaseline_2026-10-19/attempt*/` — **not Phase 4 results**.
 - ⚠️ **Sluice Creek gauge** reads an ASSUMED bed (pool painted at −0.24 m; nudged 10-22, FINDINGS part 4): observed
@@ -36,7 +47,7 @@ Last updated: **2026-11-01** — 1.0.0 chosen; swz reads done; wavefront 2.51 h 
 ## ⭐ FINAL AUDIT → "the v4 premier is ready" (plan approved 10-15)
 
 Plan: `~/.claude/plans/i-think-i-m-ready-warm-trinket.md`. Phases 0–3 ✅ (seed patch, cleanup, seeded-engine
-test, code; details FINDINGS part 4 (h), §44, git log). Desktop backup re-run 10-22 (user).
+test, code; details FINDINGS part 4 (h), §44, git log). Desktop backup re-run 11-02 (user), the first since the 10-05 move to include the scratch data behind `data/`'s symlinks; the script now pulls it.
 
 - **Closed 10-20 (user; facts in FINDINGS part 4 (h)):** no lake pool start; no Wreck Pond culvert; Wreck Pond
   "band" = the 1st Ave bridge deck, already removed — no fix; Atlantic City +0.5 m = NACCS forcing; paved
@@ -48,7 +59,7 @@ test, code; details FINDINGS part 4 (h), §44, git log). Desktop backup re-run 1
   (run-up) kept, drawn hollow, `hwm_*_scored_excl_noted` beside the headline.
 - **Phase 4 ✅ (63094139, 10-28; `logs/rebaseline_2026-10-19/`, PREREG `PREREG.md`):** 13 v4 arms + the v3 seeded pair,
   read in FINDINGS part 4 (i). Its lake arms re-run on swz in 63231557.
-- **First 1.x simulations (staged 11-01, `logs/modern_bed_2026-11-01/README.md`; tidal twin submitted, still water awaits the method call; user 10-28, re-confirmed 10-29): calm still water at MHHW + 2 ft / + 4 ft on the MODERN
+- **First 1.x simulations (staged 11-01, `logs/modern_bed_2026-11-01/README.md`; tidal twin done; still water mapped without a solve, user 11-02, so the staged `still-*` arms are inputs only and are not to be solved; user 10-28, re-confirmed 10-29): calm still water at MHHW + 2 ft / + 4 ft on the MODERN
   bed, waves off**, for the collaborator's comparison (their own 2 ft / 4 ft maps disagree — negatives on every coast;
   they suspect their data). Plan + data: `logs/modern_bed_2026-10-28/README.md` (download ✅; next: bed-recipe code,
   `_subgrid_modern2026` build ~7 h, buildings + fixes re-checked). Still water = the SLOPED VDatum MHHW surface + s
@@ -184,7 +195,7 @@ heads may still be tidal (unpainted). Paerdegat: leave it (user).
 
 ## Future: make the model faster (user 10-27 — after we are happy with the v4 simulations)
 
-▶ **11-01: full storm BIT-IDENTICAL at 64 threads, 2.51 h vs 12.99 h (FINDINGS §20); wavefront installed as `…swomp-2-gf11@dd78d82a`, not the production label yet.** Below, the path. **10-28 anatomy + prototype** (`logs/snapwave_parallel_2026-10-28/README.md`): on the v4 `p4-premier` (16 threads)
+▶ **11-02: `…swomp-2-gf11@dd78d82a` IS THE PRODUCTION ENGINE for new runs (user): full storm BIT-IDENTICAL at 64 and 16 threads, 2.51 h and 5.44 h vs 12.99 h (FINDINGS §20).** Below, the path. **10-28 anatomy + prototype** (`logs/snapwave_parallel_2026-10-28/README.md`): on the v4 `p4-premier` (16 threads)
 SnapWave is **8.6 of 14.1 h (61 %)**, not 97 % (that was v3 at 64 threads); the sweep is 6.7 h of it. Ceiling at 16
 threads: ~2.6× (the flow is ~5 h). Step 1 patched + compiled (`…-gf11-swomp/`, tag `nj-swomp-1`): ✅ **toy
 BIT-IDENTICAL 10-28** (old 1 thread vs new 1 / 4 / 16, three cases incl. wind-on 5° bins; his + map + restart files +

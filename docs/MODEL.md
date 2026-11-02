@@ -113,6 +113,20 @@ git checkout 091f531a && git apply <repo>/hpc/patches/snapwave_igseed_wmseed_v2.
 hpc/build_sfincs_native.sh v2.3.3-winddir-igk-igseed-wmseed-1-gf11 --src <checkout>
 ```
 
+**New runs use a faster build of the same physics** (`…swomp-2-gf11@dd78d82a`, §7; results bit-identical on this run, §20).
+Two more patches, on the same checkout (a fresh apply reproduced the production source tree exactly, 2026-11-02):
+
+```bash
+cd source
+patch -p1 < <repo>/hpc/patches/snapwave_swomp_v2.3.3.patch
+patch -p0 < <repo>/hpc/patches/snapwave_swomp2_on_swomp1_v2.3.3.patch
+cd .. && <repo>/hpc/build_sfincs_native.sh v2.3.3-winddir-igk-igseed-wmseed-swomp-2-gf11 --src <checkout>
+```
+
+A rebuild under another name or path changes the whole-file sha256 but not the machine code: compare
+`objcopy -O binary --only-section=.text`, sha256 `b08b73ea03e6…` (a fresh rebuild matched, 2026-11-02). The source
+folder and the variant name must differ: the script builds in `/scratch/tpj8/sfincs-build/<variant>` with `rsync --delete`.
+
 Check the sha256 in the `BUILD_INFO` beside the binary against §1; netCDF-C came from the `sfincs-build` env (4.10.1).
 A different compiler or library gives a different binary, a new engine label: re-baseline.
 
@@ -208,7 +222,7 @@ parts 4 (i)–(j)). Rain and soil were measured on the previous wave bed; non-la
 | | |
 |---|---|
 | solve | this run 12.99 h (46,766 s) at 16 threads on `emeraldrapids`; SnapWave 65.9 % and momentum 25.5 % of simulation time. Its waves-off twin 3.93 h. On this engine SnapWave's node sweep is SERIAL (§20), so more threads buy little |
-| faster engine, not the production label | `bin:v2.3.3-winddir-igk-igseed-wmseed-swomp-2-gf11@dd78d82a`: the same run bit-identical in 2.51 h on 64 threads, SnapWave 0.72 h (§20) |
+| production engine for NEW runs (user 2026-11-02) | `bin:v2.3.3-winddir-igk-igseed-wmseed-swomp-2-gf11@dd78d82a`: this same run bit-identical in 5.44 h on 16 threads (SnapWave 1.44 h) and 2.51 h on 64 (0.72 h) (§20). 1.0.0 itself was solved on `…wmseed-1-gf11@e15ed916` and stays recorded that way |
 | disk per run | `sfincs_map.nc` 10.5 GB, floodmap 0.79 GB, + ~5.6 GB hard-linked inputs; staging needs ~25 GB free |
 | scoring memory | v4 validate ~200 G (3.125 m scoring bed); paired bootstrap ~85–90 G per process — run pairs serially |
 | build | mesh freeze 4 h 39 / 72 GB; a subgrid rebuild ~6.8 h (24,605 s for this bed) |

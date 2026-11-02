@@ -208,7 +208,9 @@ CLAUDE.md §5.
 
 20. **The wavefront sweep (2026-11-01, `logs/snapwave_fullrun_2026-11-01/`, job 63385524): the full 72 h premier on
     `…swomp-2-gf11@dd78d82a`, 64 threads, BIT-IDENTICAL to production (map + his, STRICT, 2,020 iteration lines) in 9,052 s vs
-    46,766 s at 16 threads; SnapWave 2,595 s vs 29,728 s. Thread count differs, so that 5.2× is not code alone. Below: the serial build.**
+    46,766 s at 16 threads; SnapWave 2,595 s vs 29,728 s. Thread count differs, so that 5.2× is not code alone. At 16 threads, also
+    BIT-IDENTICAL: 19,575 s, SnapWave 5,172 s, a 2.4× whole-run gain at the same thread count (pinned to one socket, production spread
+    over 64 cores, which can only flatter production). Production engine for new runs since 2026-11-02 (user). Below: the serial build.**
     **SnapWave is nearly all of the runtime, and our configuration, not the method, makes
     it so.** v3 premier: 96.9 % of simulation time, 23.4 h of a 25.5 h solve, against 46 min
     for the same mesh waves-off; its 84 min "Time in input" is also SnapWave (the

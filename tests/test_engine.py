@@ -122,6 +122,15 @@ class TestEngineLabel(unittest.TestCase):
                 "container:v2.4.0-galibier (inferred)",
             )
         with tempfile.TemporaryDirectory() as td:
+            log = (
+                "Build-Revision: $Rev: v2.3.3 mt. Faber+ nj-winddir-fix-1 "
+                "nj-igk-fix-1 nj-igseed-1 nj-wmseed-1 nj-swomp-1 nj-swomp-2\n"
+            )
+            self.assertEqual(
+                P.engine_label(_dir(td, "", log)),
+                "bin:v2.3.3-winddir-igk-igseed-wmseed-swomp-2-gf11 (inferred)",
+            )
+        with tempfile.TemporaryDirectory() as td:
             self.assertIn("not run", P.engine_label(_dir(td, "", None)))
 
     def test_write_and_read_engine(self):
