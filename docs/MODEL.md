@@ -152,6 +152,12 @@ Mark residuals here are model − observed, **median estimator, 50 m radius**; `
   earlier configuration of this mesh, not re-read on this run). Do not read depths there; the fix needs a new mesh.
 - **Building cap under sea-level rise.** A ground + 4 m cap is overtopped at +3 m SLR (4.6 % of in-model buildings stood
   in deeper water), hence this bed's ground + 10 m. Overtopping of the 10 m burn is uncounted; check before SLR use.
+- **Building drag is counted twice on developed land (found 2026-11-03; FIXED in v1.1).** NLCD developed n 0.10 / 0.13
+  (classes 23 / 24) were tuned on a model without buildings to stand in for them, and this bed burns the buildings in
+  as well. Overland flow through built-up land is too slow: the likely cause of the South Ironbound and Newark-airfield
+  misses (water reaches the area, then falls 3.66 → 2.4–2.55 m on the way). Read inland urban depths as low.
+- **Newark Bay / Hackensack / Overpeck carry no HWMs in this model's mark file** (pulled on a box that stopped at
+  40.617 N): 13 marks inside the ring, 9 headline, join the mark file in v1.1.
 - **Hudson waterfront and Upper Bay shore: NOT in the model.** Hoboken, east Jersey City (Exchange Place, Liberty State
   Park) and Bayonne's Upper Bay side are outside the active mask (`mask` 0, nearest active face ~1–3.6 km; confirmed
   2026-10-30). Blank there means not computed, never dry. Interior Bayonne and its Newark Bay side are active.

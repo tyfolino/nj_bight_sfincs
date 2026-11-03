@@ -1,0 +1,25 @@
+arm,region,faces,p10,median,p90
+bed-modern+tide-2ft,ALL,2989380,-0.42,-0.05,0.01
+bed-modern+tide-2ft,Arthur Kill / Kill van Kull,73227,-0.081,-0.031,0.001
+bed-modern+tide-2ft,Atlantic City to Ocean City,358449,-0.342,-0.061,-0.015
+bed-modern+tide-2ft,Barnegat + Manasquan + Shark R.,312741,-0.02,0.037,0.09
+bed-modern+tide-2ft,Cape May back bays,155523,-0.223,-0.076,-0.026
+bed-modern+tide-2ft,Delaware Bay,1412394,-0.484,-0.069,-0.004
+bed-modern+tide-2ft,Delaware River above 39.75 N,105827,-0.663,-0.31,-0.212
+bed-modern+tide-2ft,Little Egg / Great Bay / Mullica,281921,-0.325,-0.064,0.026
+bed-modern+tide-2ft,Newark Bay / Hackensack / Passaic,30599,-0.37,-0.187,-0.101
+bed-modern+tide-2ft,"Raritan + Sandy Hook Bays, Lower Bay",212957,-0.093,-0.026,-0.014
+bed-modern+tide-2ft,Raritan River,1263,-0.216,-0.205,-0.195
+bed-modern+tide-2ft,other,44479,-0.689,-0.174,0.046
+bed-modern+tide-4ft,ALL,3218373,-0.37,-0.071,0.019
+bed-modern+tide-4ft,Arthur Kill / Kill van Kull,81992,-0.075,-0.029,0.003
+bed-modern+tide-4ft,Atlantic City to Ocean City,389698,-0.366,-0.079,-0.017
+bed-modern+tide-4ft,Barnegat + Manasquan + Shark R.,348022,-0.019,0.061,0.127
+bed-modern+tide-4ft,Cape May back bays,167283,-0.159,-0.087,-0.027
+bed-modern+tide-4ft,Delaware Bay,1486051,-0.382,-0.106,-0.022
+bed-modern+tide-4ft,Delaware River above 39.75 N,120355,-0.661,-0.373,-0.262
+bed-modern+tide-4ft,Little Egg / Great Bay / Mullica,305655,-0.411,-0.018,0.026
+bed-modern+tide-4ft,Newark Bay / Hackensack / Passaic,40310,-0.476,-0.267,-0.104
+bed-modern+tide-4ft,"Raritan + Sandy Hook Bays, Lower Bay",227653,-0.129,-0.027,-0.013
+bed-modern+tide-4ft,Raritan River,1557,-0.214,-0.198,-0.175
+bed-modern+tide-4ft,other,49797,-0.569,-0.216,0.043
