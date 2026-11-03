@@ -416,6 +416,14 @@ class Experiment:
     #: staged sidecar, never this path.
     extra_discharge: Path | None = None
 
+    #: ``weir-*`` ARMS ONLY (2026-11-03). A complete SFINCS weir file that REPLACES the staged
+    #: ``sfincs.weir`` byte for byte (``model.finalize``, through ``restore_weir``, so it lands
+    #: after ``sf.write()`` as a new inode). A structure assumption (the Overpeck dam open or
+    #: closed) is then an arm, not a template edit, and a re-stage reproduces it. The metrics row
+    #: carries ``provenance.weir_label`` (md5 + polyline names of the STAGED file), never this
+    #: path. ``None`` = the template's weirs.
+    weir_from: Path | None = None
+
     #: ``null-*`` ARMS ONLY (2026-10-19). Air density written to the staged ``sfincs.inp``
     #: (``rhoa``; the template's is 1.25) after every writer, so nothing restores 1.25 over
     #: it. A NULL perturbation, not a physics knob: ±0.01 % moves the wind stress by the

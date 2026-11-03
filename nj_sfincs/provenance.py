@@ -696,3 +696,19 @@ def extra_discharge_label(model_dir: Path | str) -> str:
         for n, pk, v in zip(r["names"], r["peak_m3s"], r["volume_m3"])
     ]
     return "; ".join(parts) + f" @{r['sha256'][:8]}"
+
+
+def weir_label(model_dir: Path | str) -> str:
+    """The STAGED ``sfincs.weir`` (template's or ``Experiment.weir_from``'s): md5[:8] and its
+    polyline names. ``none`` when the run has no weir file."""
+
+    f = Path(model_dir) / "sfincs.weir"
+    if not f.is_file():
+        return "none"
+    data = f.read_bytes()
+    lines = [ln.split() for ln in data.decode().splitlines() if ln.strip()]
+    names, i = [], 0
+    while i < len(lines):
+        names.append(lines[i][0])
+        i += 2 + int(lines[i + 1][0])
+    return f"md5:{hashlib.md5(data).hexdigest()[:8]} " + " ".join(names)

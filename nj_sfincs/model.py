@@ -1797,6 +1797,30 @@ def _read_weir(model_dir: Path) -> bytes | None:
     return f.read_bytes() if f.is_file() else None
 
 
+def read_weir_from(src: Path | str) -> bytes:
+    """The bytes of an arm's weir file (``Experiment.weir_from``), checked for SFINCS's
+    polyline layout: a name line, then ``<n> 4``, then n rows of x y crest Cd. Refuses
+    anything else, so a wrong path cannot stage an empty or malformed structure set."""
+    src = Path(src)
+    if not src.is_file():
+        raise SystemExit(f"weir_from {src}: no such file")
+    lines = [ln.split() for ln in src.read_text().splitlines() if ln.strip()]
+    i = 0
+    while i < len(lines):
+        try:
+            n, ncol = int(lines[i + 1][0]), int(lines[i + 1][1])
+            rows = lines[i + 2 : i + 2 + n]
+            [float(v) for r in rows for v in r]
+        except (IndexError, ValueError):
+            raise SystemExit(f"weir_from {src}: not a SFINCS weir file near line {i + 1}")
+        if ncol != 4 or len(rows) != n or any(len(r) != 4 for r in rows):
+            raise SystemExit(f"weir_from {src}: polyline {lines[i][0]} is not n rows of 4")
+        i += 2 + n
+    if i == 0:
+        raise SystemExit(f"weir_from {src}: empty")
+    return src.read_bytes()
+
+
 def restore_weir(model_dir: Path, data: bytes | None) -> bool:
     """Put back the ``sfincs.weir`` bytes read before ``sf.write()``.
 
@@ -2166,6 +2190,7 @@ def finalize(
     infiltration: bool = True,
     cnb_effective: float | None = None,
     extra_discharge: Path | str | None = None,
+    weir_from: Path | str | None = None,
 ) -> None:
     """Release handles, write, patch sfincs.inp, write the SnapWave ASCII forcing.
 
@@ -2254,6 +2279,8 @@ def finalize(
         print(f"[write] private copies before write: {', '.join(broken)}", flush=True)
     _meteo_marked = meteo_grid.marked_in_memory(sf)
     _weir_bytes = _read_weir(model_dir)
+    if weir_from is not None:  # ``Experiment.weir_from``: the arm's weirs replace the template's
+        _weir_bytes = read_weir_from(weir_from)
     sf.write()
     if restore_weir(model_dir, _weir_bytes):
         print("[weir] sfincs.weir restored byte for byte after the write", flush=True)
