@@ -948,6 +948,18 @@ EXPERIMENTS_BY_DOMAIN: dict[str, dict[str, Experiment]] = {
             "Kill sill (_subgrid_p4_aknsill; akn_sill_sandy_v4, ASSUMED depth). Pair: p4-nowaves.",
             subgrid_from="_subgrid_p4_aknsill",
         ),
+        # 2026-11-03: the lower Mullica + the river_drain sills (logs/mullica_bed_2026-11-03/),
+        # waves-off: the flow never reads face z, so the 1.0.0 wave bed can stay as it is.
+        "bed-hierv4d+p4-nowaves": replace(
+            _V4_REFREEZE["p4-nowaves"],
+            name="bed-hierv4d+p4-nowaves",
+            description="p4-nowaves on the 1.0.0 flow bed with riverbeds_hierarchy_v4d for "
+            "v4c: the lower Mullica from NOS 1935 / ENC soundings, and new hierarchy reaches "
+            "on the Tuckahoe (lower), Toms, Cedar Ck (Barnegat), Westecunk, Raccoon and Mantua "
+            "(most of the last four an ASSUMED sloping section). _subgrid_p4_hierv4d. "
+            "Pair: p4-nowaves.",
+            subgrid_from="_subgrid_p4_hierv4d",
+        ),
         # 2026-11-01: the first 1.x runs, on the modern bed (logs/modern_bed_2026-11-01/).
         **_CALM_ARMS,
     },

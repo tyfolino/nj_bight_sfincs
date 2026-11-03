@@ -1795,8 +1795,8 @@ elevation**, `UU00`/`VV00` velocity, `RMU00`/`RMV00` wind — and **no wave para
 That absence is the check; the builder filters on `_ADCIRC01_` and looks `ET00` up by name
 (column 9 is `TM` in STWAVE). The two products have DISJOINT save-point ID spaces (STWAVE
 `SP0089` = ADCIRC `SP03584`): join on coordinates with a tolerance, never on id. After the
-2026-09-26 merge, v3's NACCS boundary is byte-reproducible only from the pre-merge zips in
-`data/NACCS/_originals_pending_delete/` — deleting them ends that.
+2026-09-26 merge, v3's NACCS boundary was byte-reproducible only from the pre-merge zips; those were
+deleted 2026-11-03 (user: v3 retired), so it no longer is.
 
 🔴 **The 2 km screen must live in the FILE**, not in a downstream selection.
 `water_level.create` selects support points by buffering the **`mask==2` line** — not the

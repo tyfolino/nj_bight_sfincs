@@ -1626,6 +1626,31 @@ riverbeds_hierarchy_v4c:
       logs/cohansey_sources_2026-10-22/. scripts/build_riverbeds_hierarchy_v4.py build
       --reach cohansey --version v4c
 
+riverbeds_hierarchy_v4d:
+  data_type: RasterDataset
+  uri: elevation_v4/riverbeds/riverbeds_hierarchy_v4d.vrt
+  driver:
+    name: rasterio
+    options: {}
+  metadata:
+    category: topography
+    crs: 32618
+    nodata: -9999.0
+    unit: m+NAVD88
+    source: >-
+      riverbeds_hierarchy_v4c (Model 1.0.0's river beds; its 32 files unchanged) + 7 NEW reaches
+      (2026-11-03, logs/mullica_bed_2026-11-03/): the lower Mullica, Graveling Point -> the 10-05
+      reach (9.4 km; NOS H05893 + H05894 1935 pooled; CUDEM's -1.1..-1.4 m surface demoted where
+      > 1 m above the soundings' local p5; section below MLLW 244 -> 1241 m2); the lower Tuckahoe
+      (the km 9.6 CUDEM plug opened; NOS H06254 1937); Toms River (eHydro TR_01_TRC 2022/2023,
+      then an ASSUMED section to a hand-set head of tide); and ASSUMED sloping sections (1.2 m
+      below MLLW at the head, the 10-06 floor) on Cedar Creek (Barnegat), Westecunk Creek,
+      Raccoon Creek and Mantua Creek, where CUDEM holds a ~0 / +0.8 m water surface. Salem River
+      NOT included (possible gates). User 11-03: the unsurveyed-depth rule, Salem out and the
+      new survey check all agreed. scripts/build_riverbeds_hierarchy_v4.py build --version v4d
+      --base v4c --reach mullica_lower --reach tuckahoe_lower --reach toms --reach
+      cedar_barnegat --reach westecunk --reach raccoon --reach mantua
+
 riverbed_cohansey_v4:
   data_type: RasterDataset
   uri: elevation_v4/riverbeds/riverbed_cohansey_v4.tif

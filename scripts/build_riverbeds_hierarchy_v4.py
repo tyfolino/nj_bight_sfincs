@@ -266,7 +266,9 @@ _OWN_PREFIXES = ("riverbed_hier_", "riverbeds_hierarchy_")
 VER = "v4"
 #: versions whose files a finished bed was built from — never rewritten (Phase 4's beds
 #: and everything before them read ``v4``; 2026-10-23)
-FROZEN_VERSIONS = ("v4",)
+FROZEN_VERSIONS = ("v4", "v4c")  # v4c: Model 1.0.0's flow bed (2026-11-03)
+#: the version a subset build's full VRT starts from (``--base``)
+BASE = "v4"
 
 
 def _out(name: str) -> Path:
@@ -314,6 +316,10 @@ class TBranch:
     mouth: tuple[float, float]  # downstream end (lon, lat); may sit in the parent water
     head: tuple[float, float]  # upstream end (lon, lat)
     head_of_tide: bool = True  # False: the upstream end is open water (a canal)
+    #: False: keep the hand-set head even where the merged bed's channel sits above MHHW
+    #: (``_head_by_mhhw``) — only where a NOAA tide station ABOVE that water surface shows
+    #: the water is tidal (a hydro-flattened lidar surface above MHHW, 2026-11-03)
+    head_by_mhhw: bool = True
 
 
 @dataclass(frozen=True)
@@ -337,6 +343,11 @@ class HReach:
     #: holds from the previous end (or the mouth) to the station nearest (lon, lat). CUDEM
     #: whose p5 is shallower is not a bed; tiers 3 and 4 never put the axis above it.
     controlling: tuple[tuple[tuple[float, float], float], ...] = ()
+    #: NOS surveys of the SAME year are one source (2026-11-03): equally near Sandy, so
+    #: neither outranks the other, and station-by-station precedence lets one survey's
+    #: sparse edge points (interpolated across a gap) override the other's dense coverage
+    #: (the lower Mullica: H05893's 8 points at km 6.4 over H05894's 600)
+    nos_pool_year: bool = False
 
 
 REACHES: tuple[HReach, ...] = (
@@ -652,6 +663,135 @@ REACHES: tuple[HReach, ...] = (
         halfwidth_m=100.0,
         nos=(Nos("H10255", "H10001-H12000", 1987, "MLLW"),),
     ),
+    # ── 2026-11-03 (v4d, logs/mullica_bed_2026-11-03/): the lower Mullica and the sills of
+    # logs/river_drain_2026-11-02 (d). LAST in the list, so every earlier reach keeps its
+    # pixels (forks: Wading, Bass, the 10-05 Mullica and Tuckahoe spans). Built only as
+    # ``--version v4d --base v4c``; the v4 / v4c rasters are untouched.
+    HReach(
+        "mullica_lower",
+        "Mullica River, Graveling Point -> Lower Bank (the 10-05 reach's mouth)",
+        # CUDEM's -1.1..-1.4 m surface passes the fill test (MLLW -0.52 - 0.5) but sits
+        # ~5 m above NOS H05893/H05894 and the ENC soundings: the survey check demotes it
+        box=(-74.4800, 39.5300, -74.4000, 39.5720),
+        branches=(
+            TBranch(
+                "Mullica River",
+                (-74.4135, 39.5425),
+                (-74.4753, 39.5514),
+                head_of_tide=False,  # the 10-05 reach continues upstream
+            ),
+        ),
+        nos=(
+            Nos("H05893", "H04001-H06000", 1935, "MLW"),
+            Nos("H05894", "H04001-H06000", 1935, "MLW"),
+        ),
+        nos_pool_year=True,
+        survey_over_cudem_m=1.0,
+    ),
+    HReach(
+        "tuckahoe_lower",
+        "Tuckahoe River, Great Egg Harbor Bay -> the 10-05 reach (above Tuckahoe)",
+        # the river_drain sill at km 9.6 is a ~0 m CUDEM plug in a meander between -5..-7 m
+        # holes, just below the 10-05 span
+        box=(-74.7150, 39.2780, -74.6300, 39.3030),
+        branches=(
+            TBranch(
+                "Tuckahoe River",
+                (-74.6390, 39.2881),
+                (-74.7094, 39.2935),
+                head_of_tide=False,
+            ),
+        ),
+        halfwidth_m=150.0,
+        nos=(
+            Nos("H06254", "H06001-H08000", 1937, "MLW"),
+            Nos("H06218", "H06001-H08000", 1937, "MLW"),
+        ),
+        survey_over_cudem_m=1.0,
+    ),
+    HReach(
+        "toms",
+        "Toms River, Barnegat Bay -> Toms River (town) -> head of tide",
+        # CUDEM / NJ10 hold the river above km ~8.8 at +0.7..+0.8 m (MHHW +0.14): a
+        # hydro-flattened surface; NOAA 8533051 Toms River (km 9) is a tide station
+        box=(-74.2200, 39.9250, -74.1050, 39.9700),
+        branches=(
+            TBranch(
+                "Toms River",
+                (-74.1165, 39.9448),
+                (-74.2113, 39.9623),
+                head_by_mhhw=False,
+            ),
+        ),
+        halfwidth_m=200.0,
+        ehydro=(  # nearest Sandy LAST (wins); TR_01_TRC_20250520_XC: no zip (404, 11-03)
+            Ehydro("TR_01_TRC_20230627_CS", "CENAP"),
+            Ehydro("TR_01_TRC_20220628_XC", "CENAP"),
+        ),
+    ),
+    HReach(
+        "cedar_barnegat",
+        "Cedar Creek (Lacey), Barnegat Bay -> Lanoka Harbor -> head of tide",
+        # CUDEM +0.8 m from km ~1.8 (MHHW +0.12); NOAA 8533295 Cedar Creek (km ~2) is a
+        # tide station. No survey or chart reaches it: tier 4 (ASSUMED) above the mouth
+        box=(-74.1800, 39.8580, -74.1280, 39.8800),
+        branches=(
+            TBranch(
+                "Cedar Creek",
+                (-74.1351, 39.8650),
+                (-74.1737, 39.8711),
+                head_by_mhhw=False,
+            ),
+        ),
+        halfwidth_m=60.0,
+    ),
+    HReach(
+        "westecunk",
+        "Westecunk Creek, Little Egg Harbor -> West Creek -> head of tide",
+        # NOAA 8533987 West Creek (km ~1.6) is a tide station; ENC US5NJ1KJ near the mouth
+        box=(-74.3150, 39.6200, -74.2800, 39.6480),
+        branches=(
+            TBranch("Westecunk Creek", (-74.2861, 39.6252), (-74.3088, 39.6418)),
+        ),
+        halfwidth_m=60.0,
+    ),
+    HReach(
+        "raccoon",
+        "Raccoon Creek, Delaware -> Bridgeport -> Swedesboro (head of tide)",
+        # CUDEM ~0 m for 15 km (MHHW +0.98): the fill class; no eHydro, NOS or chart
+        # inside the creek beyond the mouth — tier 4 (ASSUMED) on most of it
+        box=(-75.4000, 39.7380, -75.2700, 39.8180),
+        branches=(TBranch("Raccoon Creek", (-75.3954, 39.8117), (-75.2789, 39.7436)),),
+        halfwidth_m=100.0,
+    ),
+    HReach(
+        "mantua",
+        "Mantua Creek, Delaware -> Paulsboro -> head of tide",
+        # CUDEM ~0 m for 14 km (MHHW +1.04): the fill class
+        box=(-75.2400, 39.7800, -75.1500, 39.8620),
+        branches=(TBranch("Mantua Creek", (-75.2355, 39.8574), (-75.1568, 39.7880)),),
+        halfwidth_m=100.0,
+        nos=(Nos("H09942", "H08001-H10000", 1981, "MLW"),),
+    ),
+    # Defined, NOT in v4d: the Salem River above Salem. NJ10 flattens it in stages
+    # (-0.822 / -0.411 / -0.111) that may mark gates; the 10-20 creek beds left it out for
+    # that reason (logs/de_bay_creeks_2026-10-20/). User's call before it is painted.
+    HReach(
+        "salem",
+        "Salem River, Delaware -> Salem -> head of tide",
+        box=(-75.5480, 39.5520, -75.3550, 39.6800),
+        branches=(TBranch("Salem River", (-75.5414, 39.5613), (-75.3645, 39.6543)),),
+        halfwidth_m=120.0,
+        ehydro=(
+            Ehydro("SA_01_SRC_20210830_CS", "CENAP"),
+            Ehydro("SA_01_SRC_20200924_CS", "CENAP"),
+            Ehydro("SA_01_SRC_20200415_CS", "CENAP"),
+        ),
+        nos=(
+            Nos("H11023", "H10001-H12000", 2001, "MLLW"),
+            Nos("H10112", "H10001-H12000", 1983, "MLLW"),
+        ),
+    ),
 )
 BY_NAME = {r.name: r for r in REACHES}
 
@@ -797,7 +937,9 @@ def fetch() -> None:
         "US4DE1BB US4DE1DB US4DE1DA US5ILGAE US5ILGAF US5ILGAG US5ILGBE US5ILGBF "
         "US5ILGCE US5ILGCF US5DE1KE US5DE1DE US5DE1EE US5DE1KC US5DE1LB US5DE1LC "
         "US4NJ1BD US5NJ1FE US5NJ1GE US5NJ1HD US4NY1AQ US4NY1BP US4NY1BQ US5NYCEG "
-        "US5NYCFG"
+        "US5NYCFG "
+        # 2026-11-03 reaches (v4d): Toms River, Raccoon Creek, Mantua Creek (encdirect DSNM)
+        "US5NJ1OK US5NJ1OL US5NJ1PL US5PHLAA US5PHLAB US5PHLBC US5PHLBD"
     ).split()
     for c in cells:
         if (SRC / "enc" / "ENC_ROOT" / c).exists():
@@ -953,6 +1095,7 @@ def branches_trace(r: HReach) -> list[Br]:
                 0.0,
                 line.length,
                 b.head_of_tide,
+                extra={"head_by_mhhw": b.head_by_mhhw},
             )
         )
         print(
@@ -1200,8 +1343,19 @@ def tier3_trace(r: HReach, br: Br, dat: Datum) -> None:
     br.t3src = np.full(br.grid.shape, "", dtype=object)
     br.deep = np.full(br.grid.shape, np.nan)
     sources = []
-    for s in sorted(r.nos, key=lambda s: abs(s.year - SANDY_YEAR)):
-        sources.append((f"NOS {s.sid} ({s.year}, {s.plane})", *_nos_points(s, dat)))
+    nos_sorted = sorted(r.nos, key=lambda s: abs(s.year - SANDY_YEAR))
+    if r.nos_pool_year:
+        for yr in dict.fromkeys(s.year for s in nos_sorted):
+            grp = [s for s in nos_sorted if s.year == yr]
+            pts = [_nos_points(s, dat) for s in grp]
+            label = (
+                f"NOS {'+'.join(s.sid for s in grp)} ({yr}, "
+                f"{'/'.join(dict.fromkeys(s.plane for s in grp))})"
+            )
+            sources.append((label, *(np.concatenate(a) for a in zip(*pts))))
+    else:
+        for s in nos_sorted:
+            sources.append((f"NOS {s.sid} ({s.year}, {s.plane})", *_nos_points(s, dat)))
     if r.enc:
         t = _enc_table()
         b = r.box
@@ -1211,6 +1365,7 @@ def tier3_trace(r: HReach, br: Br, dat: Datum) -> None:
                 ("ENC SOUNDG", t.lon.to_numpy(), t.lat.to_numpy(), dat.mllw - t.depth)
             )
     xi_pts = []
+    br.extra["deep_local"] = np.full(br.grid.shape, np.nan)
     for label, lon, lat, z in sources:
         prof, xy, n, deep = _profile(
             br, np.asarray(lon), np.asarray(lat), np.asarray(z)
@@ -1219,12 +1374,40 @@ def tier3_trace(r: HReach, br: Br, dat: Datum) -> None:
         br.t3[new] = prof[new]
         br.t3src[new] = label
         br.deep[new] = deep[new]
+        if r.survey_over_cudem_m is not None:  # the survey check's like-with-like p5
+            dl_ = _deep_local(br, np.asarray(lon), np.asarray(lat), np.asarray(z))
+            br.extra["deep_local"][new] = dl_[new]
         if new.any() and xy is not None:
             xi_pts.append(xy)
         br.extra.setdefault("t3_notes", []).append(
             f"{label}: {n} soundings near the channel, {int(new.sum())} stations"
         )
     br.kind = _measured_kind(br, xi_pts)
+
+
+def _deep_local(br: Br, lon, lat, z) -> np.ndarray:
+    """Running p5 of the sounding beds over the CUDEM slice's own window (+-(SLICE + 0.5)
+    stations = +-62.5 m), NaN where no sounding: what the survey check holds CUDEM's slice
+    p5 against on a SECTION survey (2026-11-03). ``td._deep`` uses +-300 m, which on a
+    meandering river reaches the next bend's scour hole."""
+    import geopandas as gpd
+    import shapely
+
+    half = (SLICE_STATIONS + 0.5) * STATION_M
+    out = np.full(br.grid.shape, np.nan)
+    p = np.asarray(gpd.points_from_xy(lon, lat, crs=4326).to_crs(EPSG))
+    near = shapely.dwithin(br.chan, p, NEAR_CHANNEL_M)
+    if not near.any():
+        return out
+    s = shapely.line_locate_point(br.line, p[near])
+    o = np.argsort(s)
+    s, zz = s[o], np.asarray(z)[near][o]
+    lo = np.searchsorted(s, br.grid - half)
+    hi = np.searchsorted(s, br.grid + half)
+    for i, (a, b) in enumerate(zip(lo, hi)):
+        if b > a:
+            out[i] = np.percentile(zz[a:b], 5)
+    return out
 
 
 def _pointset(s: PointSet, dat: Datum):
@@ -1374,9 +1557,12 @@ def evaluate(r: HReach) -> Result:
     # the premier's own river-bed tier (riverbeds_v4) is left as it is here: its
     # consistency with the hierarchy is reported by ``premier``, not patched piecemeal
     protect |= np.isfinite(warp(RIVERBEDS_V4, g))
-    # earlier reaches of this overlay own their pixels (no two reach rasters overlap)
+    # earlier reaches of this overlay own their pixels (no two reach rasters overlap);
+    # a reach new in this version (no ``_v4`` file) is read in this version's file
     for q in REACHES[: [x.name for x in REACHES].index(r.name)]:
         f = OUT / f"riverbed_hier_{q.name}_v4.tif"
+        if not f.exists():
+            f = OUT / f"riverbed_hier_{q.name}_{VER}.tif"
         if f.exists():
             protect |= np.isfinite(warp(f, g))
     inring = _ring_mask(g)
@@ -1414,7 +1600,9 @@ def evaluate(r: HReach) -> Result:
             b.line, b.chan, b.grid, b.grid * 0.0, b.grid * 0.0, b.lo, b.hi, "", 0
         )
         rr, cc, px, py, st, e, Bw = td.bank_field(pt, (g.h, g.w), g.T)
-        if not r.old and b.head_of_tide:
+        if not r.old and b.head_of_tide and not b.extra.get("head_by_mhhw", True):
+            notes.append(f"{b.name}: hand-set head of tide kept (head_by_mhhw off)")
+        elif not r.old and b.head_of_tide:
             cut = _head_by_mhhw(b, st, ref[rr, cc], dat.mhhw)
             if cut is not None:
                 lon, lat = _to_ll(*np.asarray(b.line.interpolate(cut).coords[0]))
@@ -1464,10 +1652,19 @@ def evaluate(r: HReach) -> Result:
                 f"{b.name}: CUDEM above the controlling depth: {bad.sum()} st."
             )
         if r.survey_over_cudem_m is not None and b.t3 is not None:
-            bad = real & np.isfinite(b.t3) & (b.t3 < p5 - r.survey_over_cudem_m)
+            # like with like (2026-11-03): a SECTION survey's running median is a bank-to-
+            # bank bed (the lower Mullica's 1935 lead line: -1.5..-2.1 m over a channel the
+            # same survey sounds to -11 m), so CUDEM's slice p5 is held against the
+            # soundings' p5 over the same +-62.5 m (``_deep_local``; NaN = no sounding, no
+            # test); a thalweg survey and the point sets (the Cohansey, v4c) keep the
+            # running median
+            dloc = b.extra.get("deep_local")
+            t3c = dloc if (b.kind == "section" and dloc is not None) else b.t3
+            bad = real & np.isfinite(t3c) & (t3c < p5 - r.survey_over_cudem_m)
             real[bad], demoted[bad] = False, "survey"
             notes.append(
-                f"{b.name}: CUDEM > {r.survey_over_cudem_m:.1f} m above the soundings: "
+                f"{b.name}: CUDEM > {r.survey_over_cudem_m:.1f} m above the soundings "
+                f"({'local p5' if t3c is dloc else 'running median'}): "
                 f"{bad.sum()} st."
             )
         has1 = np.isfinite(z1)
@@ -1819,14 +2016,23 @@ def build(names: list[str] | None) -> None:
     _atomic_csv(LOG_DIR / f"stations{tag}.csv", prof)
     _atomic_bytes(LOG_DIR / f"notes{tag}.md", ("\n\n".join(notes) + "\n").encode())
     if names is not None and VER != "v4":
-        # a new VERSION of a subset: the full overlay = the v4 members, rebuilt ones swapped
+        # a new VERSION of a subset: the full overlay = the BASE version's members (``--base``,
+        # default v4), a rebuilt reach's file swapped in place; a reach the base does not
+        # carry (new in this version, 2026-11-03) is appended
         for kind, built, nodata in (("", tifs, NODATA), ("tier_", tiers, 0)):
-            members = _vrt_members(OUT / f"riverbeds_hierarchy_{kind}v4.vrt")
-            swap = {
-                f"riverbed_hier_{r.name}_{kind}v4.tif": p for r, p in zip(todo, built)
-            }
-            new = [swap.get(m.name, m) for m in members]
-            assert sum(m.name in swap for m in members) == len(swap), "reach not in v4"
+            members = _vrt_members(OUT / f"riverbeds_hierarchy_{kind}{BASE}.vrt")
+            by_reach = {}
+            for m in members:
+                for r in todo:
+                    if m.name.startswith(f"riverbed_hier_{r.name}_{kind}v4"):
+                        by_reach[r.name] = m
+            new = list(members)
+            for r, p in zip(todo, built):
+                if r.name in by_reach:
+                    new[new.index(by_reach[r.name])] = p
+                else:
+                    new.append(p)
+            assert len(new) == len(members) + sum(r.name not in by_reach for r in todo)
             _write_vrt(f"riverbeds_hierarchy_{kind}{VER}.vrt", new, nodata)
     if names is None:
         cols = ["reach", "branch", "station_m", "tier", "section_mean_depth", "d_c"]
@@ -2297,9 +2503,15 @@ def main() -> int:
         default="v4",
         help="output tag (riverbed_hier_<reach>_<tag>.tif); v4 is frozen — 2026-10-23",
     )
+    ap.add_argument(
+        "--base",
+        default="v4",
+        help="a subset build's full VRT = this version's members, the rebuilt reaches "
+        "swapped in and new ones appended (2026-11-03: v4d on v4c)",
+    )
     a = ap.parse_args()
-    global VER  # noqa: PLW0603 (a CLI-wide output tag, read by the writers)
-    VER = a.version
+    global VER, BASE  # noqa: PLW0603 (CLI-wide output tags, read by the writers)
+    VER, BASE = a.version, a.base
     if a.stage == "fetch":
         fetch()
     elif a.stage == "build":
