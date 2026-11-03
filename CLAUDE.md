@@ -387,7 +387,9 @@ not trip that guard. Do not run the sweep driver to "just rebuild" a template.
   `mask-`, `bed-` deltas; unions joined by `+` in alphabetical order; a deliberately
   inadmissible bound is prefixed `BRACKET+`.
 - **Model versions (user 2026-10-29):** 1.0.0 = the frozen, tagged swz premier; 1.x = fixes that keep
-  the mesh (forcing, bed overlays, building cap); 2.0 = a new mesh. A version names a fingerprint.
+  the mesh (forcing, bed overlays, building cap); 2.0 = a new mesh. A 1.x version names a fingerprint. **From 2.0 a
+  version names a MESH (user 2026-11-03):** 2.0.0 is one version with two bed options, 2012 and 2026 (estimated),
+  each listed under it with its own fingerprint ("2.0.0, 2026 bed").
 - **The user commits and pushes. Claude may `git add`, never `git commit`.**
 - 🔴 **Never quote an HWM bias without its estimator and radius.** The estimator alone flips
   the sign of the bias and inverts the ranking of every arm. Use the `_scored` keys.
