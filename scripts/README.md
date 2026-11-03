@@ -132,6 +132,7 @@ Every script reads `NJ_DOMAIN` unless its row names a domain. Run from the repo 
 | `download_gmrt.py` | GMRT offshore bathymetry | provenance |
 | `download_pre_sandy_topobathy.py` | USACE 2010 pre-Sandy topobathy | provenance |
 | `download_ehydro_nj.py` | eHydro carving tier (imported by `download_ehydro_v4.py`) | provenance |
+| `build_ehydro_south.py` | eHydro carving tier for the Barnegat Bay channels (`ehydro_south`, in 1.0.0's bed; detects the depth-vs-elevation sign per survey; ported 2026-11-03) | provenance |
 | `download_ehydro_shrewsbury.py` | eHydro 2015 Shrewsbury survey tier | provenance |
 | `download_ehydro_v4.py` | eHydro surveys for the v4 rivers + a CUDEM check | provenance |
 | `download_nos_hydro_v4.py` | NOS hydrographic surveys for the v4 rivers | provenance |

@@ -119,9 +119,9 @@ Env manager is **micromamba** (no conda module on Amarel), installed into
 `$PROJ/micromamba`. HOME is on the large `/cache` filesystem (84 T free — no need for
 `/scratch`).
 
-> ⚠️ **`$PROJ` is the TOOLCHAIN directory, not the repo.** Since the 2026-08-05
-> consolidation the project is `~/nj_coast_sfincs`, while `~/nj_sandy_sfincs` was demoted
-> to holding only `micromamba/`, `hydromt_sfincs/` and the `.sif` images. They are
+> ⚠️ **`$PROJ` is the TOOLCHAIN directory, not the repo.** The project is
+> `~/nj_bight_sfincs` (since 2026-08-13; `~/nj_coast_sfincs` before it, now frozen, ARCHIVE.md),
+> while `~/nj_sandy_sfincs` was demoted on 2026-08-05 to holding only `micromamba/`, `hydromt_sfincs/` and the `.sif` images. They are
 > deliberately separate: a conda env bakes its own absolute prefix into 79 shebangs and
 > into PROJ/GDAL data paths, so the env cannot be moved without rewriting it — but the
 > repo it serves can be renamed freely. Keep `$PROJ` pointed at the toolchain and run
@@ -132,7 +132,7 @@ Env manager is **micromamba** (no conda module on Amarel), installed into
 
 ```bash
 export PROJ=$HOME/nj_sandy_sfincs        # TOOLCHAIN (env + containers); add to ~/.bashrc
-export REPO=$HOME/nj_coast_sfincs        # the project
+export REPO=$HOME/nj_bight_sfincs        # the project
 export MAMBA_ROOT_PREFIX=$PROJ/micromamba
 MM=$PROJ/micromamba/bin/micromamba
 # 1. env from the pinned spec (bleeding-edge py3.14 stack solved fine, no relaxing needed)

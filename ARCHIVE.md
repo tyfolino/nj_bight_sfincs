@@ -1,6 +1,18 @@
-# The archive — `~/nj_coast_sfincs`
+# The archives — `~/nj_coast_sfincs` and `~/nj_sandy_sfincs`
 
-This repo is a fresh start. Everything before it lives in **`~/nj_coast_sfincs`**, pinned at
+This repo is the only live one. Two predecessors stay on disk, frozen:
+
+- **`~/nj_coast_sfincs`**: the predecessor project (code, data, docs, 26 campaign logs). Data and docs only.
+- **`~/nj_sandy_sfincs`**: the first repo, demoted 2026-08-05 to the TOOLCHAIN's home (`micromamba/`, the
+  `hydromt_sfincs` checkout, the engine builds and `.sif` images). It stays on disk because a conda env cannot
+  move (its prefix is baked into scripts and data paths); as a repo it is retired.
+
+**On GitHub** both are to be marked *archived* (read-only) by the user; checked 2026-11-03: no unpushed commits
+in either, and the two hpc scripts edited in `nj_coast_sfincs`'s working tree are identical to this repo's copies.
+
+## `~/nj_coast_sfincs`
+
+Everything before this repo lives in **`~/nj_coast_sfincs`**, pinned at
 
 ```
 commit 21e28f2197bdab39ec009ca5c660832e7d34e188
@@ -13,7 +25,10 @@ commit 21e28f2197bdab39ec009ca5c660832e7d34e188
 > **The archive is referenced for DATA and DOCS only. Never for code.**
 
 `data/` here symlinks into `~/nj_coast_sfincs/data/` for the read-only bulk (elevation,
-roughness, infiltration, waves, ERA5, precip, wind, discharge, validation, wavemakers).
+roughness, waves, ERA5, precip, wind, discharge, validation, wavemakers) and, since
+2026-10-05, into `/scratch/tpj8/nj_bight_sfincs_data/` for the v3 / v4 builds. Moving the
+archive's share to a data directory this repo owns is plan Phase 1 step 2 (waits for an
+empty queue: running jobs read through these links).
 Nothing in `nj_sfincs/`, `scripts/`, `tests/` or `hpc/` may import from, exec, or add the
 archive to `sys.path` — `tests/test_repo_hygiene.py` asserts this. The same rule
 `CLAUDE.md` already applies to the toolchain repo, for the same reason: two copies of a
@@ -36,6 +51,13 @@ directory it scores.
 `reports/` · `.git` (293 M for 11 commits, almost all of it committed notebook outputs).
 `data/frozen_mesh_v1_monmouth` IS symlinked, for port verification only, and is dropped
 when `v1_monmouth` is retired.
+
+## Ported later
+
+Scripts whose output is in Model 1.0.0's recipe, brought across with a note in their docstring:
+`scripts/build_ehydro_south.py` (2026-11-03; `ehydro_south`, the Barnegat Bay channel carve). The other
+builders the data catalog cites as "(archive; not ported)" build v1–v3 products 1.0.0 does not use
+(the GTSM / NOAA tide corrections, the Barnegat bay-Manning test) and stay there.
 
 ## Index of the archived campaign logs
 

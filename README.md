@@ -19,7 +19,7 @@ declared premier. See [CLAUDE.md](CLAUDE.md) §1–§2.
 | [docs/STATUS.md](docs/STATUS.md) | what is happening right now, and what is open |
 | [docs/FINDINGS.md](docs/FINDINGS.md) | what is believed true now — no history, no retractions |
 | [scripts/README.md](scripts/README.md) | every script, grouped by purpose, with its status |
-| [ARCHIVE.md](ARCHIVE.md) | the frozen predecessor repo and an index of its campaign logs |
+| [ARCHIVE.md](ARCHIVE.md) | the two frozen predecessor repos, and an index of the campaign logs |
 
 ## Quick start
 
@@ -35,8 +35,8 @@ NJ_DOMAIN=v3 python -m nj_sfincs.premier  # audit every run dir on that domain
 On Amarel, run anything heavier than a quick read on a compute node (`srun`), not the
 login node.
 
-The environment lives in `~/nj_sandy_sfincs` (micromamba, the `hydromt_sfincs` checkout and
-the Singularity images), symlinked in. That directory is **toolchain only** — never point
+The environment lives in `~/nj_sandy_sfincs` (micromamba, the `hydromt_sfincs` checkout, the engine builds and
+the Singularity images): a retired repo kept on disk only because a conda env cannot move ([ARCHIVE.md](ARCHIVE.md)). That directory is **toolchain only** — never point
 `NJ_ROOT` or `PYTHONPATH` at it; `nj_sfincs/__init__.py` refuses if you do.
 
 ## Reproducing the toolchain
@@ -58,7 +58,7 @@ nj_sfincs/     the package — domain registry, fingerprints, build, validation,
 scripts/       flat; indexed in scripts/README.md
 tests/         stdlib unittest (pytest is deliberately not in the pinned env)
 hpc/           SLURM batch scripts + the Amarel bootstrap
-data/          symlinks into the archive for bulk; NACCS/ gtsm/ quadtree/ are local
+data/          symlinks for bulk (into the archive and /scratch/tpj8/nj_bight_sfincs_data); NACCS/ gtsm/ quadtree/ are local
 experiments/   run dirs, gitignored; a symlink to /scratch/tpj8 (not backed up, 90-day purge)
 logs/          gitignored; dated campaign dirs, SLURM stdout under logs/slurm/<yyyy-mm>/
 notebooks/     rendered notebooks, committed with their outputs
