@@ -377,6 +377,40 @@ class TestPublish(unittest.TestCase):
             arm_html = (ddir / pub.slug(arms[0]) / "index.html").read_text()
             self.assertIn("estimator median", arm_html)
 
+    def test_arms_filter_prunes_unpublished_domains(self):
+        """``--arms`` publishes only the named arms; a domain left empty leaves the site."""
+        pub = _load_publish()
+        with tempfile.TemporaryDirectory() as d:
+            exp, site = Path(d) / "experiments", Path(d) / "site"
+            for dom, arms in (
+                ("v4_refreeze_swz", ("p4-premier", "p4-nowaves")),
+                ("v3", ("naccs-premier",)),
+            ):
+                (exp / dom).mkdir(parents=True)
+                (exp / dom / "metrics.csv").write_text(
+                    ",hwm_estimator,hwm_radius_m,hwm_rmse_scored_m\n"
+                    + "".join(f"{a},median,50.0,0.4\n" for a in arms)
+                )
+            with (
+                mock.patch("shutil.which", return_value=None),
+                mock.patch("subprocess.run"),
+            ):
+                base = ["--site", str(site), "--exp-root", str(exp)]
+                pub.main([*base, "--domains", "v4_refreeze_swz,v3"])
+                self.assertTrue((site / "v3" / "data.js").is_file())
+                pub.main(
+                    [*base, "--domains", "v4_refreeze_swz", "--arms", "p4-premier"]
+                )
+            self.assertFalse((site / "v3").exists())
+            ddir = site / "v4_refreeze_swz"
+            self.assertTrue((ddir / pub.slug("p4-premier") / "index.html").is_file())
+            self.assertFalse((ddir / pub.slug("p4-nowaves")).exists())
+            home = (site / "index.html").read_text()
+            self.assertIn("What is in Model 1.0.0", home)
+            self.assertIn("Coming in version", home)
+            self.assertIn("Known limitations", home)
+            self.assertNotIn("v3/", home)
+
     def test_slug_is_path_safe_and_distinct(self):
         pub = _load_publish()
         self.assertEqual(pub.slug("a+b-c.d_e"), "a_b-c.d_e")

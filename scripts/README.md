@@ -38,7 +38,7 @@ Every script reads `NJ_DOMAIN` unless its row names a domain. Run from the repo 
 | `retire_arm.py` | Retire a solved arm: keep its record, delete its bulk, manifest first | live |
 | `dedupe_experiment_inputs.py` | Hard-link identical inputs within a domain | live |
 | `dedupe_home.py` | Hard-link identical large files across the four data roots | live |
-| `desktop_pull_backup.sh` | Run on the desktop: rsync the irreplaceable outputs off Amarel | live |
+| `desktop_pull_backup.sh` | Run on the desktop: rsync the irreplaceable outputs off Amarel; `--units` archives named run units (verified against `--manifest` md5 lists made on Amarel) before a scratch delete | live |
 | `ring_to_geojson.py` | Region GeoJSON from the named-vertex ring CSV | live |
 | `export_share_floodmap.py` | Share-ready max-depth GeoTIFF for a collaborator | live |
 | `build_gallery.py` | Run-gallery figures (`nj_sfincs/gallery.py`) for finished arms, one subprocess per arm, serially — for arms validated before the `run_experiments.py` hook (which draws them after every validate; `--no-gallery` skips it) or to re-draw (`--only <keys>`); ~17 G peak per v4 arm, compute node | live |

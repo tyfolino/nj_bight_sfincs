@@ -22,6 +22,7 @@ small. Superseded PNGs and arm pages are removed in the same pass. Every page is
     python scripts/publish_gallery.py                       # every domain with a gallery
     python scripts/publish_gallery.py --domains v4_refreeze,v3
     python scripts/publish_gallery.py --site /tmp/site_test
+    python scripts/publish_gallery.py --domains v4_refreeze_swz --arms p4-premier   # Model 1.0.0 only
 
 Light (no rasters): fine on a login node.
 """
@@ -245,10 +246,9 @@ SITE_REFERENCE = {"v4_refreeze": "p4-premier"}
 NEXT_PREMIER = {
     "domain": "v4_refreeze_swz",
     "arm": "p4-premier",
-    "as_of": "2026-11-01",
-    "status": "Model version 1.0.0. It is the Phase 4 premier with the wave model reading the "
-    "corrected bed (first item below). The lake side runs and the noise check were re-run on "
-    "this version and read on 2026-11-01; most other side runs were on the previous version.",
+    "as_of": "2026-11-04",
+    "status": "Model version 1.0.0 (tagged v1.0.0, chosen 2026-11-01): the Phase 4 premier with "
+    "the wave model reading the corrected bed. What changed from the previous version:",
     "items": (
         "The wave model reads the corrected bed: it used to compute waves on the 09-28 "
         "elevation, missing every bed fix since (deeper rivers, creeks and inlet channels). "
@@ -277,19 +277,105 @@ NEXT_PREMIER = {
         "Their new bottoms are an assumption (about mean low water), not a survey.",
         "Tide gauges moved off dry ground: Cape May, Cape May Harbor and Barnegat Light sat "
         "on land in the model; each moved a few tens of metres into the water.",
-        "Side runs in the same batch: an identical repeat (it matched bit for bit), two copies with a tiny change to measure the noise, "
-        "waves off, no IG waves in the water, wetter and drier soil, no buildings, the Wreck Pond dune "
-        "breach at two depths, waves overtopping into Deal Lake, and the older v3 model "
-        "re-run on the same settings.",
     ),
 }
+
+
+#: The plain-language "coming in the next version" list (home page + the premier's runs
+#: page). ⚠️ Edit it when the next version's contents change; empty ``items`` hides it.
+COMING = {
+    "version": "1.1",
+    "as_of": "2026-11-04",
+    "status": "Being tested now; each change is checked against Model 1.0.0 before it goes "
+    "in. The release is planned for about 7-8 November 2026. Preliminary: items may still "
+    "change.",
+    "items": (
+        "Bridge decks taken out of the ground: at 529 bridges the elevation data recorded the "
+        "bridge deck as solid ground, so the model saw a dam across the water. The largest "
+        "were on the coast: the bridge across Corson Inlet, Grassy Sound, and the Atlantic "
+        "City Expressway over Beach Thorofare. The ground under each deck is now the "
+        "channel or bank on either side (an assumption, not a survey).",
+        "Deeper river channels from surveys and charts: the lower Mullica River (1935 depth "
+        "soundings), the lower Tuckahoe, the Toms River, Cedar Creek and Westecunk Creek on "
+        "Barnegat Bay, and Raccoon and Mantua Creeks on the Delaware. More of the tide now "
+        "reaches up these rivers, as it does in reality. The Garden State Parkway crossing "
+        "of the Mullica no longer holds the water back.",
+        "The Christina River at Wilmington: a narrow false plug, where two elevation "
+        "surveys meet, halved the tide upstream. It is opened from a 2015 Army Corps "
+        "survey.",
+        "Building friction counted once: in New Jersey the buildings are solid blocks in "
+        "the model, so the streets between them now carry street-level friction instead of "
+        "a value that also stood in for the buildings.",
+        "Smoother channels at the heads of tidal rivers: channel beds that had marsh "
+        "friction now have open-water friction.",
+        "The Overpeck Creek tidal dam (Leonia / Ridgefield Park): tested both open and "
+        "closed, to show how much it matters.",
+        "13 more high-water marks scored around Newark Bay, the Hackensack and Overpeck "
+        "Creek, and two scoring corrections (a gauge datum on the Christina River, and how "
+        "the tide range is measured).",
+    ),
+}
+
+
+#: Plain-language known limitations of the published version (docs/MODEL.md §4 is the
+#: technical list). ⚠️ Keep in step with MODEL.md when the version changes.
+KNOWN_LIMITS = {
+    "as_of": "2026-11-04",
+    "items": (
+        "The ground does not move during the storm. In Sandy the dunes eroded and broke "
+        "through in places (Mantoloking, Wreck Pond) and the sea washed over into Deal Lake; "
+        "in the model the dunes stand all storm. Erosion is planned for a later version.",
+        "The Monmouth coastal lakes (Wreck Pond, Deal Lake and three others) read up to about "
+        "2 m too low for that reason. Do not use the model's peak water level in those lakes.",
+        "Water level, not wave splash: the model computes the water surface, including the "
+        "rise that breaking waves cause, but not the splash and run-up of individual waves. "
+        "High-water marks left by splash sit above what the model can reach.",
+        "The Delaware Bay and River: the storm's low water is too low upriver, and only a "
+        "few high-water marks there can check the peak.",
+        "The Cape May back bays read about 0.3 m low.",
+        "Water crosses built-up land too slowly in this version (friction from the "
+        "buildings is counted twice), so inland urban depths, around Newark especially, read "
+        "low. Fixed in version 1.1.",
+        "Not in the model: the Hudson waterfront (Hoboken, eastern Jersey City, Bayonne's "
+        "Upper Bay shore), rivers above today's head of tide, storm drains and culverts. A "
+        "blank area on a map there means not computed, not dry.",
+        "Levees, walls and dams hold for the whole storm (no failures), and small inland "
+        "creeks that enter on large cells (the Salem River at Woodstown, some Pennsylvania and "
+        "Delaware creeks) pile water up unrealistically: do not read depths there.",
+        "The wind data cannot resolve the narrow back bays, and some peak wave heights at "
+        "the Narrows and the Delaware Bay mouth are not physical (they do not affect the "
+        "published water levels shown here).",
+    ),
+}
+
+
+def limits_section() -> str:
+    items = "".join(f"<li>{esc(t)}</li>" for t in KNOWN_LIMITS["items"])
+    return (
+        "<section><h2>Known limitations of Model 1.0.0</h2>"
+        f'<p class="note">Read the figures with these in mind. As of '
+        f"{esc(KNOWN_LIMITS['as_of'])}.</p>"
+        f'<ul class="next">{items}</ul></section>'
+    )
+
+
+def coming_section() -> str:
+    c = COMING
+    if not c["items"]:
+        return ""
+    items = "".join(f"<li>{esc(t)}</li>" for t in c["items"])
+    return (
+        f"<section><h2>Coming in version {esc(c['version'])}</h2>"
+        f'<p class="note">{esc(c["status"])} As of {esc(c["as_of"])}.</p>'
+        f'<ul class="next">{items}</ul></section>'
+    )
 
 
 def next_premier_section() -> str:
     n = NEXT_PREMIER
     items = "".join(f"<li>{esc(t)}</li>" for t in n["items"])
     return (
-        f"<section><h2>New in the premier ({esc(n['domain'])} / {esc(n['arm'])})</h2>"
+        f"<section><h2>What is in Model 1.0.0 ({esc(n['domain'])} / {esc(n['arm'])})</h2>"
         f'<p class="note">{esc(n["status"])} As of {esc(n["as_of"])}.</p>'
         f'<ul class="next">{items}</ul></section>'
     )
@@ -674,7 +760,7 @@ def domain_index(domain_name: str, arms: dict, ref: str) -> str:
         "</section>"
     )
     if domain_name == NEXT_PREMIER["domain"]:
-        body += next_premier_section()
+        body += next_premier_section() + limits_section() + coming_section()
     return page(f"{domain_name} · runs", body, 1)
 
 
@@ -748,22 +834,32 @@ def site_index(domains: dict) -> str:
         f'<td><a href="{esc(d)}/compare.html">view runs</a></td></tr>'
         for d, a in domains.items()
     )
+    n = NEXT_PREMIER
+    start = ""
+    if n["domain"] in domains and n["arm"] in domains[n["domain"]]:
+        e = domains[n["domain"]][n["arm"]]
+        start = (
+            f" Start with <b><a href='{esc(n['domain'])}/{esc(e['slug'])}/index.html'>"
+            f"Model 1.0.0's figures and scores</a></b>."
+        )
     body = (
         mast(
-            "<b>NJ Bight SFINCS</b> · run gallery",
-            "Run gallery",
-            'A standard set of figures for every model run ("arm") of the Hurricane Sandy '
-            "compound-flood hindcast, per domain, so runs compare by eye. Each domain is a "
-            "different model: compare arms within a domain. Start with "
-            "<b><a href='v4_refreeze_swz/compare.html'>view runs (v4 premier)</a></b>; "
-            "the Phase 4 side runs are under "
-            "<a href='v4_refreeze/compare.html'>v4_refreeze</a>.",
+            "<b>NJ Bight SFINCS</b> · Model 1.0.0",
+            "Hurricane Sandy flood model",
+            "A compound-flood hindcast of Hurricane Sandy (28-31 October 2012) on the New "
+            "Jersey coast: storm surge, waves, wind, rain and river flow together, checked "
+            "against tide gauges, USGS high-water marks and FEMA's mapped flood extent. This "
+            "site shows the current model version, 1.0.0, and what is coming next."
+            + start,
         )
-        + '<section><table class="sortable"><thead><tr><th>domain</th><th class="num">arms</th>'
+        + '<section><table class="sortable"><thead><tr><th>model run</th><th class="num">runs</th>'
         f'<th class="num">with figures</th><th></th></tr></thead><tbody>{trs}</tbody>'
-        "</table></section>" + next_premier_section()
+        "</table></section>"
+        + next_premier_section()
+        + limits_section()
+        + coming_section()
     )
-    return page("Run gallery", body, 0)
+    return page("Hurricane Sandy flood model", body, 0)
 
 
 def ensure_repo(site: Path) -> None:
@@ -795,6 +891,12 @@ def main(argv=None) -> int:
         help="comma-separated (default: all with "
         "a metrics.csv and at least one gallery)",
     )
+    p.add_argument(
+        "--arms",
+        default=None,
+        help="comma-separated arm names to publish (default: every arm). "
+        "Domain folders left with no published arm are removed from the site.",
+    )
     p.add_argument("--exp-root", default=None, help=argparse.SUPPRESS)  # tests
     a = p.parse_args(argv)
     site = Path(a.site).expanduser()
@@ -817,6 +919,9 @@ def main(argv=None) -> int:
     domains = {}
     for d in names:
         arms = read_domain(d, exp)
+        if a.arms:
+            want = set(a.arms.split(","))
+            arms = {k: v for k, v in arms.items() if k in want}
         if not arms:
             continue
         domains[d] = arms
@@ -838,6 +943,10 @@ def main(argv=None) -> int:
         (ddir / "compare.html").write_text(compare_page(d))
         (ddir / "data.js").write_text(data_js(d, arms, ref))
         print(f"[publish] {d}: {len(arms)} arms, {n_png} figures")
+    for sub in site.iterdir():  # clean as you go: domains no longer published
+        if sub.is_dir() and (sub / "data.js").is_file() and sub.name not in domains:
+            shutil.rmtree(sub)
+            print(f"[publish] removed {sub.name}/ (not published)")
     (site / "index.html").write_text(site_index(domains))
     size = sum(
         f.stat().st_size

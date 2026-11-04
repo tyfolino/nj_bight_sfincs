@@ -1883,3 +1883,96 @@ akn_sill_sandy_v4:
       sill, where the premier's bed is CUDEM at -2..-6 m and no 2012-14 survey reaches. Footprint = the 2026
       survey NJ_05_AKN in that reach; depth capped at the median of the nearest 2014 soundings. ASSUMED
       depth, lower-only (`:min`).
+
+# 2026-11-04: Arthur Kill / Coney cut-bank DIAGNOSTIC overlays (logs/ak_table_2026-11-04/); not a bed fix.
+bankslope_ak_v4:
+  data_type: RasterDataset
+  uri: elevation_v4/ak_bankslope/bankslope_ak_v4.tif
+  driver:
+    name: rasterio
+    options: {}
+  metadata:
+    category: topography
+    crs: 32618
+    nodata: -9999.0
+    unit: m+NAVD88
+    source: >-
+      DIAGNOSTIC, NOT A BED FIX (2026-11-04, logs/ak_table_2026-11-04/README.md). Arthur Kill
+      cut banks (-74.26..-74.23, 40.54..40.565): the modern bed (_subgrid_modern2026 lev3 lattice)
+      cut back LOWER-ONLY to a 1V:3H slope from channel pixels below -2 m; only pixels at or above
+      -2 m change; tapered to no change over 50 m inside the box edge. 0.5 m north-up, valid only
+      where lowered by > 1 cm. Use as an --overlay with :min, LAST.
+bankslope_coney_v4:
+  data_type: RasterDataset
+  uri: elevation_v4/ak_bankslope/bankslope_coney_v4.tif
+  driver:
+    name: rasterio
+    options: {}
+  metadata:
+    category: topography
+    crs: 32618
+    nodata: -9999.0
+    unit: m+NAVD88
+    source: >-
+      DIAGNOSTIC, NOT A BED FIX (2026-11-04, logs/ak_table_2026-11-04/README.md). As
+      bankslope_ak_v4, for the Coney Island patch (-74.005..-73.99, 40.583..40.594).
+
+# 2026-11-04: v4e (the Christina plug) + channel Manning (logs/tidal_reach_2026-11-04/).
+riverbeds_hierarchy_v4e:
+  data_type: RasterDataset
+  uri: elevation_v4/riverbeds/riverbeds_hierarchy_v4e.vrt
+  driver:
+    name: rasterio
+    options: {}
+  metadata:
+    category: topography
+    crs: 32618
+    nodata: -9999.0
+    unit: m+NAVD88
+    source: >-
+      riverbeds_hierarchy_v4d (v1.1's river beds, its 39 files unchanged) + 1 NEW reach (2026-11-04,
+      logs/tidal_reach_2026-11-04/): christina_cr02, the Christina at Wilmington from eHydro CR_02_UPR_20150807_CS
+      (CENAP, tier 1) and NOS H10042 (1982, MLLW, tier 3) — opens the ~50 m plug at -0.3..-1.3 m (a crossing held in
+      CUDEM, at the seam between CR_02's coverage and the 10-05 reach) whose uv sill at -0.90 m (MLLW) halved the
+      tide at Newport. Built by logs/tidal_reach_2026-11-04/build_v4e.py (the builder, unchanged, + this reach).
+
+manning_channel_v4e:
+  data_type: RasterDataset
+  uri: elevation_v4/riverbeds/manning_channel_v4e.vrt
+  driver:
+    name: rasterio
+    options: {}
+  metadata:
+    category: roughness
+    crs: 32618
+    nodata: -9999.0
+    unit: s m-1/3
+    source: >-
+      TEST (2026-11-04, logs/tidal_reach_2026-11-04/, decision 4): Manning n 0.02 on every pixel riverbeds_hierarchy_v4e
+      PAINTED (its tier raster > 0: channel below MLLW / the shaped section), 5 m, one tif per hierarchy member.
+      2.27 M px (56.8 km2); 367 k px (9.2 km2) were 0.03-0.14 (marsh n kept by manning_water_v4 inside tidal-looking
+      polygons), none raised. Painted with rebuild_subgrid.py --manning-overlay manning_water_v4 --manning-overlay
+      manning_channel_v4e (later wins). logs/tidal_reach_2026-11-04/s8_manning_channel.py.
+
+# 2026-11-04: bridge decks out of the bed (logs/decks_2026-11-04/).
+deck_fix_v4:
+  data_type: RasterDataset
+  uri: elevation_v4/deck_fix/deck_fix_v4.vrt
+  driver:
+    name: rasterio
+    options: {}
+  metadata:
+    category: topography
+    crs: 32618
+    nodata: -9999.0
+    unit: m+NAVD88
+    source: >-
+      LOWER-ONLY bridge-deck removal, an ASSUMED bed (2026-11-04, logs/decks_2026-11-04/; apply as
+      deck_fix_v4:min, LAST, after riverbeds_hierarchy_v4d and the two :min fixes). Under 529 OSM bridge
+      sites (Geofabrik extracts 2026-11-02) where the v4d merged bed holds a deck, either across tidal
+      water (both sides below MHHW - 0.3 m and the gap under the deck >= 0.5 m above the channel) or as
+      a viaduct >= 1.5 m above ground that Sandy flooded, the bed under the deck becomes a straight line
+      between the bed 6-12 m either side (viaducts: the 25th percentile 6-36 m out), or CUDEM 1/9in where
+      the USACE 2010 lidar holds the deck and CUDEM is open (11 sites). Never painted on eHydro, the
+      river hierarchy, Little Egg, Shrewsbury, the Sayreville margins or a burned building footprint.
+      0.55 km2 in 595 1.5 m tiles (EPSG:32618). Built by logs/decks_2026-11-04/s5_overlay.py.

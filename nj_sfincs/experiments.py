@@ -960,6 +960,18 @@ EXPERIMENTS_BY_DOMAIN: dict[str, dict[str, Experiment]] = {
             "Pair: p4-nowaves.",
             subgrid_from="_subgrid_p4_hierv4d",
         ),
+        # 2026-11-04: bridge decks out of the bed (logs/decks_2026-11-04/), on the v4d bed,
+        # waves-off: the flow never reads face z.
+        "bed-decks+bed-hierv4d+p4-nowaves": replace(
+            _V4_REFREEZE["p4-nowaves"],
+            name="bed-decks+bed-hierv4d+p4-nowaves",
+            description="bed-hierv4d+p4-nowaves with deck_fix_v4 painted LAST, lower-only: the "
+            "bridge decks and viaducts that lidar put in the bed (529 OSM bridge sites) replaced "
+            "by the channel or ground either side, or by CUDEM where the USACE 2010 lidar holds "
+            "the deck (an ASSUMED bed). _subgrid_p4_decks. Pair: bed-hierv4d+p4-nowaves (the "
+            "decks alone) and p4-nowaves.",
+            subgrid_from="_subgrid_p4_decks",
+        ),
         # 2026-11-03: developed-land Manning (logs/developed_manning_2026-11-03/): NLCD 22-24
         # IN NJ -> n 0.04 on 1.0.0's exact bed, waves-off (the flow never reads face z).
         "bed-devmanning+p4-nowaves": replace(
@@ -970,6 +982,24 @@ EXPERIMENTS_BY_DOMAIN: dict[str, dict[str, Experiment]] = {
             "/ Staten Island keep NLCD n) on Model 1.0.0's flow bed (_subgrid_p4_devmanning; "
             "bed tables bit-identical). Pair: p4-nowaves.",
             subgrid_from="_subgrid_p4_devmanning",
+        ),
+        # 2026-11-04: v4e = v4d + the Christina's Wilmington plug opened, and the channel-Manning
+        # arm on the same bed (logs/tidal_reach_2026-11-04/).
+        "bed-hierv4e+p4-nowaves": replace(
+            _V4_REFREEZE["p4-nowaves"],
+            name="bed-hierv4e+p4-nowaves",
+            description="p4-nowaves on the 1.0.0 flow bed with riverbeds_hierarchy_v4e for v4c: v4d + the "
+            "Christina's Wilmington plug opened from eHydro CR_02_UPR 2015 + NOS H10042 1982. "
+            "_subgrid_p4_hierv4e. Pair: bed-hierv4d+p4-nowaves.",
+            subgrid_from="_subgrid_p4_hierv4e",
+        ),
+        "bed-hierv4e+manchan+p4-nowaves": replace(
+            _V4_REFREEZE["p4-nowaves"],
+            name="bed-hierv4e+manchan+p4-nowaves",
+            description="bed-hierv4e+p4-nowaves with manning_channel_v4e: n 0.02 on every hierarchy-painted channel pixel, "
+            "painted after manning_water_v4 (the reach-head channels lose the marsh n 0.03-0.14). Bed tables bit-identical "
+            "to _subgrid_p4_hierv4e. _subgrid_p4_hierv4e_manchan. Pair: bed-hierv4e+p4-nowaves; also p4-nowaves.",
+            subgrid_from="_subgrid_p4_hierv4e_manchan",
         ),
         # 2026-11-03: the Overpeck tidal dam bracket (logs/ironbound_overpeck_2026-11-03/),
         # waves-off so the pair against p4-nowaves is well-conditioned; one file differs

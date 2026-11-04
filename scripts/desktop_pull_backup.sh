@@ -40,6 +40,16 @@
 #   bash desktop_pull_backup.sh --only inputs|archive|runs
 #   DEST=/media/ty/backup/amarel bash desktop_pull_backup.sh
 #
+# ARCHIVE mode (2026-11-04, logs/scratch_survey_2026-11-04/): copy named run units off scratch before
+# they are deleted there, e.g. into a OneDrive-synced folder:
+#   DEST=~/OneDrive/amarel_archive bash desktop_pull_backup.sh --units v4_refreeze_swz_wk0,v4_refreeze_swz/p4-premier+src-deal-overtop
+#   A unit is a path under experiments/ (a domain or one arm). Each arm keeps everything tier 2 keeps PLUS
+#   sfincs_map.nc, sfincs_subgrid.nc and sfincs.nc (so it can be re-scored); subgrid/*.tif, roughness.nc,
+#   snapwave.upw and _template_sealed/ stay out (rebuildable from tier 1 + the recipe in provenance.txt).
+#   Afterwards it checks every file against the md5 list written ON AMAREL by
+#   `bash scripts/desktop_pull_backup.sh --manifest <units>` (into $SCRATCH_R/archive_manifests/) and
+#   prints VERIFIED / FAILED per unit. Delete on scratch only after VERIFIED, and only on the user's say-so.
+#
 # Copy this file to the desktop once (scp tpj8@amarel.rutgers.edu:nj_bight_sfincs/scripts/desktop_pull_backup.sh .)
 # — or keep the repo cloned there and run it from scripts/.
 set -euo pipefail
@@ -55,7 +65,11 @@ WITH_MAPS=0
 WITH_RAW=0
 ONLY="all"
 LIST=0
+UNITS=""
+MANIFEST=0
 for a in "$@"; do
+  if [ "${NEXT_UNITS:-0}" = 1 ]; then UNITS="$a"; ONLY=units; NEXT_UNITS=0; continue; fi
+  if [ "${MANIFEST:-0}" = 1 ] && [ "${a#-}" = "$a" ]; then UNITS="${UNITS:+$UNITS,}$a"; continue; fi
   case "$a" in
     -n|--dry-run) DRY="-n" ;;
     --with-maps) WITH_MAPS=1 ;;
@@ -63,6 +77,9 @@ for a in "$@"; do
     --only) ;;
     inputs|archive|runs) ONLY="$a" ;;
     --list) LIST=1 ;;
+    --units=*) UNITS="${a#--units=}"; ONLY=units ;;
+    --units) NEXT_UNITS=1 ;;
+    --manifest) MANIFEST=1 ;;
     -h|--help) sed -n '2,40p' "$0"; exit 0 ;;
     *) echo "unknown arg: $a" >&2; exit 2 ;;
   esac
@@ -107,6 +124,16 @@ RUN_FILTER=(
 )
 if [ "$WITH_MAPS" = 1 ]; then RUN_FILTER+=(--include='sfincs_map.nc'); fi
 RUN_FILTER+=(--exclude='*' --prune-empty-dirs)
+# ARCHIVE filter (--units / --manifest): tier 2's keep-list + the three files a re-score needs.
+ARCH_FILTER=(
+  --exclude='_template_sealed/' --exclude='floodmaps/' --exclude='subgrid/' --exclude='snapwave.upw'
+  --exclude='roughness.nc' --exclude='rst/' --exclude='*.rst'
+  --include='*/'
+  --include='sfincs_map.nc' --include='sfincs_subgrid.nc' --include='sfincs.nc'
+  --include='restart_history.txt' --include='*.md' --include='*.json' --include='*.txt'
+)
+for f in "${RUN_FILTER[@]}"; do case "$f" in --include=*) ARCH_FILTER+=("$f") ;; esac; done
+ARCH_FILTER+=(--exclude='*' --prune-empty-dirs)
 DATA_FILTER=()
 if [ "$WITH_RAW" = 0 ]; then DATA_FILTER+=(--exclude='/modern_2026/raw/'); fi
 
@@ -127,6 +154,38 @@ no --delete: removals on Amarel are never propagated.
 EOF
 }
 
+if [ "$MANIFEST" = 1 ]; then  # ON AMAREL: md5 of exactly what --units will copy
+  [ -n "$UNITS" ] || { echo "--manifest needs units" >&2; exit 2; }
+  OUT="$SCRATCH_R/archive_manifests"; mkdir -p "$OUT"; EMPTY=$(mktemp -d)
+  IFS=, read -ra US <<< "$UNITS"
+  for u in "${US[@]}"; do
+    u="${u%/}"; [ -d "$SCRATCH_R/experiments/$u" ] || { echo "no such unit: $u" >&2; exit 2; }
+    m="$OUT/$(echo "$u" | tr '/+' '__').md5"
+    ( cd "$SCRATCH_R/experiments" && rsync -aHn --out-format='%n' "${ARCH_FILTER[@]}" "$u/" "$EMPTY/" \
+        | grep -v '/$' | sed "s|^|$u/|" | grep -v "^$u/\.\?$" | tr '\n' '\0' | xargs -0 md5sum ) > "$m.partial"
+    mv "$m.partial" "$m"
+    echo "$u: $(wc -l < "$m") files, $(cd "$SCRATCH_R/experiments" && cut -c35- "$m" | tr '\n' '\0' | du -ch --files0-from=- 2>/dev/null | tail -1 | cut -f1) -> $m"
+  done
+  rmdir "$EMPTY"; exit 0
+fi
+if [ "$ONLY" = units ]; then  # ON THE DESKTOP: copy each unit, then verify against Amarel's md5 list
+  [ -n "$UNITS" ] || { echo "--units needs a list" >&2; exit 2; }
+  A="$DEST/nj_bight_sfincs/experiments"; mkdir -p "$A"
+  IFS=, read -ra US <<< "$UNITS"; RESULT=()
+  for u in "${US[@]}"; do
+    u="${u%/}"; m="$(echo "$u" | tr '/+' '__').md5"
+    echo "== archive $u"
+    mkdir -p "$A/$u"
+    "${RSYNC[@]}" "${ARCH_FILTER[@]}" "$REMOTE:$SCRATCH_R/experiments/$u/" "$A/$u/"
+    [ -n "$DRY" ] && continue
+    if rsync -a "$REMOTE:$SCRATCH_R/archive_manifests/$m" "$A/.$m" 2>/dev/null; then
+      if ( cd "$A" && md5sum -c --quiet ".$m" ); then RESULT+=("VERIFIED  $u ($(wc -l < "$A/.$m") files)")
+      else RESULT+=("FAILED    $u (see md5sum output above)"); fi
+    else RESULT+=("UNCHECKED $u (no manifest on Amarel: run --manifest there first)"); fi
+  done
+  printf '%s\n' "${RESULT[@]}" | tee -a "$DEST/pull_log.txt"
+  date "+%F %T  archive done" | tee -a "$DEST/pull_log.txt"; exit 0
+fi
 if [ "$LIST" = 1 ]; then manifest; exit 0; fi
 manifest
 mkdir -p "$DEST/nj_bight_sfincs"
