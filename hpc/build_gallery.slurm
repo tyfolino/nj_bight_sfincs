@@ -19,7 +19,14 @@ export PATH=$HOME/nj_sandy_sfincs/micromamba/envs/sfincs/bin:$PATH
 export PYTHONPATH=$PWD NJ_ROOT=$PWD
 export PROJ_DATA=/home/tpj8/nj_sandy_sfincs/micromamba/envs/sfincs/share/proj
 # EXPECT_MD5=<md5sum file written at submit time>: refuse to run stale copies (CLAUDE.md §5).
-if [ -n "${EXPECT_MD5:-}" ]; then md5sum -c "$EXPECT_MD5" || { echo "STALE FILES — refusing"; exit 3; }; fi
+# A REQUEUE (preemption) re-runs this check: there it WARNS and continues (2026-11-04).
+if [ -n "${EXPECT_MD5:-}" ]; then
+  if [ "${SLURM_RESTART_COUNT:-0}" -gt 0 ]; then
+    md5sum -c --quiet "$EXPECT_MD5" >/dev/null 2>&1 || { echo "⚠️ requeue (restart=$SLURM_RESTART_COUNT): guarded files changed since submit — continuing:"; md5sum -c "$EXPECT_MD5" 2>&1 | grep -v ': OK$' || true; }
+  else
+    md5sum -c "$EXPECT_MD5" || { echo "STALE FILES — refusing"; exit 3; }
+  fi
+fi
 hostname; date
 rc=0
 for d in ${GALLERY_DOMAINS:?set GALLERY_DOMAINS, e.g. "v4_refreeze v3"}; do

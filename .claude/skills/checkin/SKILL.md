@@ -24,7 +24,8 @@ If the block above is empty or shows the command instead of its output, run
    "soil state RESET"; a resumed waves-on run is a different run). Failed or preempted: give
    the log lines and the likely cause; read more of the log only when the tail does not say.
 3. Jobs from other repos (`[sfincs-nj-agri]` etc.): one line, no digging.
-4. A 🔴 from campaign_check (an EXPECT_MD5 that now fails, `DependencyNeverSatisfied`, a job
+4. A 🔴 from campaign_check (an EXPECT_MD5 that now fails — a pending job's, or a running one's
+   that a preemption requeue would kill — `DependencyNeverSatisfied`, a job
    running into maintenance) blocks work: say it first. Claude cannot `scancel` or
    `scontrol update` — give the user the exact lines.
 5. Where we left off: the previous session's last user asks and Claude's last message, plus

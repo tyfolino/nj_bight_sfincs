@@ -11,9 +11,13 @@ One pass over everything a check-in used to take a dozen commands for:
   ``DependencyNeverSatisfied`` is flagged, it never clears on its own (CLAUDE.md §5).
 - **EXPECT_MD5 guards** — every PENDING job's checksum file is checked NOW, so an
   edit that would make the job refuse at start ("STALE FILES") is caught while it
-  can still be undone.  SLURM hides a pending job's environment, so the file is
+  can still be undone.  SLURM hides a job's environment, so the file is
   INFERRED: the newest ``*expected.md5`` beside the job script written before the
   submit (``.bak_*`` copies never match the glob).  The report names the file.
+  RUNNING jobs are checked too, because a PREEMPTION requeue re-runs the check
+  (job 63524748, 2026-11-04): the job's SPOOLED script (``scontrol write
+  batch_script``, what a requeue re-runs) says whether it warns and continues on a
+  restart (the 2026-11-04 pattern) or refuses — and then a mismatch is 🔴.
 - **finished** — jobs that ended in the last ``--hours``; anything not COMPLETED,
   and any ``halk`` node (the late-write trap, CLAUDE.md §5), is flagged.
 - **maintenance** — maintenance reservations in the next 3 weeks, and any pending
@@ -21,7 +25,9 @@ One pass over everything a check-in used to take a dozen commands for:
 - **quota** — the GPFS home quota (``quota -s`` prints nothing here).
 
 ``--guarded`` feeds ``.claude/hooks/guard.py``, which warns before an edit to a file
-a queued job is going to check.
+a job would REFUSE on at its next start: any pending job's (unless it is a requeue with
+the warn-on-restart branch), and a requeueable running job's whose spooled script still
+refuses on a restart (``Job.would_refuse``).
 """
 
 from __future__ import annotations
@@ -38,6 +44,9 @@ from pathlib import Path
 
 MMLSQUOTA = "/usr/lpp/mmfs/bin/mmlsquota"
 SUBMIT_SLACK = timedelta(minutes=2)
+#: The 2026-11-04 requeue branch's message (hpc/job_template.slurm): a spooled script
+#: carrying it WARNS and continues when a restart finds the guarded files changed.
+TOLERANT_MARK = "changed since submit"
 RES_HORIZON = timedelta(days=21)
 
 
@@ -58,6 +67,24 @@ class Job:
     md5_file: Path | None = None
     md5_note: str = ""
     guarded: list[Path] = field(default_factory=list)
+    restarts: int = 0
+    requeue: bool = True
+    #: the spooled batch script's text ("" when scontrol could not print it)
+    spooled: str = ""
+
+    @property
+    def tolerant(self) -> bool:
+        """True if the script WARNS and continues when a requeue finds a mismatch."""
+        return requeue_tolerant(self.spooled)
+
+    @property
+    def would_refuse(self) -> bool:
+        """An edit to a guarded file would make this job exit at its next start."""
+        if self.state == "PENDING":
+            return not (self.restarts > 0 and self.tolerant)
+        if self.state == "RUNNING":
+            return self.requeue and not self.tolerant
+        return False
 
 
 def _run(cmd: list[str]) -> str:
@@ -94,7 +121,7 @@ def queue(user: str) -> list[Job]:
             jobs.append(Job(*parts))
     for j in jobs:
         info = _run(["scontrol", "show", "job", j.jobid])
-        for key in ("Command", "WorkDir", "SubmitTime"):
+        for key in ("Command", "WorkDir", "SubmitTime", "Restarts", "Requeue"):
             m = re.search(rf"\b{key}=(\S+)", info)
             if not m:
                 continue
@@ -102,17 +129,35 @@ def queue(user: str) -> list[Job]:
                 j.command = m.group(1)
             elif key == "WorkDir":
                 j.workdir = m.group(1)
-            else:
+            elif key == "SubmitTime":
                 j.submit = _when(m.group(1))
+            elif key == "Restarts":
+                j.restarts = int(m.group(1)) if m.group(1).isdigit() else 0
+            else:
+                j.requeue = m.group(1) != "0"
     return jobs
 
 
-def pick_md5(script: Path, submit: datetime | None) -> tuple[Path | None, str]:
-    """The ``*expected.md5`` a job was most likely submitted with, and why."""
+def requeue_tolerant(text: str) -> bool:
+    """Does this job script WARN and continue when a requeue finds changed files?"""
+    return "SLURM_RESTART_COUNT" in text and TOLERANT_MARK in text
+
+
+def spooled_script(jobid: str) -> str:
+    """The batch script SLURM spooled at submit (a requeue re-runs THIS, not the file
+    on disk); "" if scontrol cannot print it."""
+    return _run(["scontrol", "write", "batch_script", jobid, "-"])
+
+
+def pick_md5(
+    script: Path, submit: datetime | None, text: str | None = None
+) -> tuple[Path | None, str]:
+    """The ``*expected.md5`` a job was most likely submitted with, and why.  ``text``
+    is the spooled script when known (it is what runs); else the file on disk."""
     if not script.is_file():
         return None, "job script not found"
     try:
-        if "EXPECT_MD5" not in script.read_text(errors="replace"):
+        if "EXPECT_MD5" not in (text or script.read_text(errors="replace")):
             return None, "script has no EXPECT_MD5 guard"
     except OSError:
         return None, "job script unreadable"
@@ -154,21 +199,31 @@ def md5_failures(entries: list[tuple[str, Path]]) -> list[str]:
     return bad
 
 
-def attach_guards(jobs: list[Job]) -> None:
+def attach_guards(jobs: list[Job], spool=spooled_script) -> None:
+    """Pending and running jobs: the md5 file each checks, and the files it lists.
+    ``spool`` is injectable so tests need no SLURM."""
     for j in jobs:
-        if j.state != "PENDING" or not j.command:
+        if j.state not in ("PENDING", "RUNNING") or not j.command or j.name == "vscode":
             continue
-        j.md5_file, j.md5_note = pick_md5(Path(j.command), j.submit)
+        j.spooled = spool(j.jobid)
+        j.md5_file, j.md5_note = pick_md5(Path(j.command), j.submit, j.spooled or None)
         if j.md5_file is not None:
             wd = Path(j.workdir) if j.workdir else Path(j.command).parent
             j.guarded = [p for _, p in md5_entries(j.md5_file, wd)]
 
 
 def guarded_map(jobs: list[Job]) -> dict[str, list[str]]:
+    """{abs path: [jobs]} for the files whose edit would make a job REFUSE at its next
+    start (``Job.would_refuse``) — the hook's ASK list."""
     out: dict[str, list[str]] = {}
     for j in jobs:
+        if not j.would_refuse:
+            continue
+        tag = f"{j.jobid} {j.name}"
+        if j.state == "RUNNING":
+            tag += " (running; refuses on a preemption requeue)"
         for p in j.guarded:
-            out.setdefault(str(p.resolve()), []).append(f"{j.jobid} {j.name}")
+            out.setdefault(str(p.resolve()), []).append(tag)
     return out
 
 
@@ -215,6 +270,46 @@ def quota(user: str) -> str:
     )
 
 
+def running_guard(j: Job) -> int:
+    """Print one running job's guard line; return 1 if it is a flag."""
+    if j.md5_file is None:
+        print(f"  {j.jobid} {j.name}: — {j.md5_note}")
+        return 0
+    wd = Path(j.workdir) if j.workdir else Path(j.command).parent
+    bad = md5_failures(md5_entries(j.md5_file, wd))
+    rel = os.path.relpath(j.md5_file, wd)
+    if not j.spooled:
+        kind = "spooled script unreadable; pattern unknown"
+    elif j.tolerant:
+        kind = "warns on a requeue"
+    else:
+        kind = "OLD pattern: refuses on a requeue"
+    if not j.requeue:
+        kind += "; not requeueable (a preemption cancels it)"
+    if not bad:
+        print(
+            f"  ✅ {j.jobid} {j.name}: {len(j.guarded)}/{len(j.guarded)} OK "
+            f"({rel}; {kind})"
+        )
+        return 0
+    if not j.requeue:
+        head, tail = "⚠️", "irrelevant unless resubmitted"
+    elif j.tolerant:
+        head, tail = "⚠️", "would WARN and continue on a requeue"
+    else:
+        head, tail = (
+            "🔴",
+            "a preemption would kill it; re-write its md5 deliberately",
+        )
+    print(
+        f"  {head} {j.jobid} {j.name}: {len(bad)} of {len(j.guarded)} FAIL "
+        f"({rel}; {kind}) — {tail}:"
+    )
+    for b in bad:
+        print(f"      {os.path.relpath(b.split(': ')[0], wd)}: {b.split(': ')[1]}")
+    return 1
+
+
 def report(user: str, hours: float) -> int:
     now = datetime.now()
     jobs = queue(user)
@@ -259,9 +354,12 @@ def report(user: str, hours: float) -> int:
         rel = os.path.relpath(j.md5_file, wd)
         if bad:
             flags += 1
+            head, tail = "🔴", "the job will refuse at start"
+            if not j.would_refuse:  # a requeued job with the warn-on-restart branch
+                head, tail = "⚠️", f"requeued ({j.restarts}): will WARN and continue"
             print(
-                f"  🔴 {j.jobid} {j.name}: {len(bad)} of {len(j.guarded)} FAIL "
-                f"({rel}; {j.md5_note}) — the job will refuse at start:"
+                f"  {head} {j.jobid} {j.name}: {len(bad)} of {len(j.guarded)} FAIL "
+                f"({rel}; {j.md5_note}) — {tail}:"
             )
             for b in bad:
                 print(
@@ -272,6 +370,15 @@ def report(user: str, hours: float) -> int:
                 f"  ✅ {j.jobid} {j.name}: {len(j.guarded)}/{len(j.guarded)} OK "
                 f"({rel}; {j.md5_note})"
             )
+
+    print(
+        "\n-- EXPECT_MD5 guards (running jobs; a preemption requeue re-runs the check)"
+    )
+    run = [j for j in jobs if j.state == "RUNNING" and j.name != "vscode"]
+    if not run:
+        print("  (no running jobs)")
+    for j in run:
+        flags += running_guard(j)
 
     print(f"\n-- finished in the last {hours:g} h")
     rows = recent(user, hours)

@@ -25,7 +25,14 @@ hostname; date
 : "${NJ_DOMAIN:?set NJ_DOMAIN — this script freezes one registered domain}"
 echo "NJ_DOMAIN=$NJ_DOMAIN"
 # Stale reads from the VS Code (halk) node — CLAUDE.md §5.
-if [ -n "${EXPECT_MD5:-}" ]; then md5sum -c "$EXPECT_MD5" || { echo "STALE FILES — refusing"; exit 3; }; fi
+# A REQUEUE (preemption) re-runs this check: there it WARNS and continues (2026-11-04).
+if [ -n "${EXPECT_MD5:-}" ]; then
+  if [ "${SLURM_RESTART_COUNT:-0}" -gt 0 ]; then
+    md5sum -c --quiet "$EXPECT_MD5" >/dev/null 2>&1 || { echo "⚠️ requeue (restart=$SLURM_RESTART_COUNT): guarded files changed since submit — continuing:"; md5sum -c "$EXPECT_MD5" 2>&1 | grep -v ': OK$' || true; }
+  else
+    md5sum -c "$EXPECT_MD5" || { echo "STALE FILES — refusing"; exit 3; }
+  fi
+fi
 export PATH=$HOME/nj_sandy_sfincs/micromamba/envs/sfincs/bin:$PATH
 export PYTHONPATH=$PWD NJ_ROOT=$PWD NJ_DOMAIN
 export PROJ_DATA=/home/tpj8/nj_sandy_sfincs/micromamba/envs/sfincs/share/proj

@@ -341,5 +341,33 @@ class TestEngineIsExplicit(unittest.TestCase):
             self.assertIn("binary=binary", src, rel)
 
 
+class TestExpectMd5SurvivesARequeue(unittest.TestCase):
+    """A preemption REQUEUE re-runs a job script from the top, EXPECT_MD5 check
+    included: job 63524748 (2026-11-04) refused on its restart over an additive edit
+    made while it ran, and lost 3.5 h.  Every hpc script that checks EXPECT_MD5 must
+    branch on SLURM_RESTART_COUNT and WARN-and-continue there — and keep ``|| true`` on
+    the warning pipeline, or ``set -e`` + pipefail exits the job on the warning itself.
+    """
+
+    def test_every_guarded_hpc_script_handles_a_restart(self):
+        missing = []
+        for p in sorted((ROOT / "hpc").glob("*.slurm")):
+            src = p.read_text(errors="ignore")
+            if "md5sum -c" not in src:
+                continue
+            if not (
+                re.search(r'"\$\{SLURM_RESTART_COUNT:-0\}" -gt 0', src)
+                and "changed since submit — continuing" in src
+                and re.search(r"grep -v ': OK\$' \|\| true", src)
+            ):
+                missing.append(p.name)
+        self.assertEqual(
+            missing,
+            [],
+            "hpc scripts whose EXPECT_MD5 check would kill a requeued job "
+            "(copy the block from hpc/job_template.slurm):\n  " + "\n  ".join(missing),
+        )
+
+
 if __name__ == "__main__":
     unittest.main()

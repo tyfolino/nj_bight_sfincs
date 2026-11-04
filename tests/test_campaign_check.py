@@ -1,4 +1,5 @@
-"""scripts/campaign_check.py: which md5 file a pending job checks, and what fails."""
+"""scripts/campaign_check.py: which md5 file a job checks, what fails, and which jobs a
+changed file would kill (a pending job at start, an old-pattern running one on a requeue)."""
 
 import hashlib
 import importlib.util
@@ -79,6 +80,78 @@ class TestParseLimit(unittest.TestCase):
         self.assertEqual(cc.parse_limit("6:00:00"), timedelta(hours=6))
         self.assertEqual(cc.parse_limit("30:00"), timedelta(minutes=30))
         self.assertIsNone(cc.parse_limit("UNLIMITED"))
+
+
+OLD = 'if [ -n "${EXPECT_MD5:-}" ]; then md5sum -c "$EXPECT_MD5" || exit 3; fi\n'
+NEW = (
+    'if [ "${SLURM_RESTART_COUNT:-0}" -gt 0 ]; then\n'
+    '  md5sum -c --quiet "$EXPECT_MD5" || echo "guarded files changed since submit '
+    '— continuing"\nfi\n'
+)
+
+
+class TestRunningJobs(unittest.TestCase):
+    """A preemption requeue re-runs the EXPECT_MD5 check (job 63524748, 2026-11-04)."""
+
+    def setUp(self):
+        self.cc = _cc()
+        self.tmp = Path(tempfile.mkdtemp())
+        self.t0 = datetime(2026, 11, 4, 10, 0)
+        self.script = _touch(self.tmp / "test.slurm", OLD, self.t0)
+        (self.tmp / "a.py").write_text("x = 1\n")
+        ok = hashlib.md5(b"x = 1\n").hexdigest()
+        _touch(self.tmp / "expected.md5", f"{ok}  a.py\n", self.t0)
+
+    def _job(self, state, spooled, restarts=0, requeue=True):
+        j = self.cc.Job("1", "t", state, "None", "", "1:00:00", "0:10", "", "")
+        j.command, j.workdir, j.submit = str(self.script), str(self.tmp), self.t0
+        j.restarts, j.requeue = restarts, requeue
+        self.cc.attach_guards([j], spool=lambda _id: spooled)
+        return j
+
+    def test_pattern_is_read_from_the_spooled_script(self):
+        self.assertFalse(self._job("RUNNING", OLD).tolerant)
+        self.assertTrue(self._job("RUNNING", OLD + NEW).tolerant)
+        self.assertTrue(
+            self.cc.requeue_tolerant((ROOT / "hpc" / "job_template.slurm").read_text())
+        )
+
+    def test_which_jobs_an_edit_would_kill(self):
+        cases = [
+            (("PENDING", OLD), True),
+            (("PENDING", NEW), True),  # first start stays strict
+            (("PENDING", NEW, 1), False),  # a requeue that will warn
+            (("PENDING", OLD, 1), True),
+            (("RUNNING", OLD), True),  # dies on a preemption requeue
+            (("RUNNING", NEW), False),
+            (("RUNNING", OLD, 0, False), False),  # not requeueable: cancelled anyway
+        ]
+        for args, want in cases:
+            j = self._job(*args)
+            self.assertEqual(j.would_refuse, want, args)
+            gm = self.cc.guarded_map([j])
+            self.assertEqual(bool(gm), want, args)
+
+    def test_running_report_line(self):
+        import contextlib
+        import io
+
+        (self.tmp / "a.py").write_text("x = 2\n")  # an edit after the start
+        for spooled, mark, words in (
+            (OLD, "🔴", "a preemption would kill it"),
+            (NEW, "⚠️", "would WARN and continue on a requeue"),
+        ):
+            j = self._job("RUNNING", spooled)
+            buf = io.StringIO()
+            with contextlib.redirect_stdout(buf):
+                self.assertEqual(self.cc.running_guard(j), 1)
+            self.assertIn(mark, buf.getvalue())
+            self.assertIn(words, buf.getvalue())
+        (self.tmp / "a.py").write_text("x = 1\n")
+        buf = io.StringIO()
+        with contextlib.redirect_stdout(buf):
+            self.assertEqual(self.cc.running_guard(self._job("RUNNING", OLD)), 0)
+        self.assertIn("✅", buf.getvalue())
 
 
 if __name__ == "__main__":

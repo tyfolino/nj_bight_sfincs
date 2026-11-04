@@ -33,7 +33,14 @@ echo "domain $NJ_DOMAIN"
 hostname; date
 # EXPECT_MD5=<file of `md5sum` lines, written at submit time> makes the job refuse to
 # stage from files that still read STALE on this node (the halk write lag, CLAUDE.md §5).
-if [ -n "${EXPECT_MD5:-}" ]; then md5sum -c "$EXPECT_MD5" || { echo "STALE FILES — refusing"; exit 3; }; fi
+# A REQUEUE (preemption) re-runs this check: there it WARNS and continues (2026-11-04).
+if [ -n "${EXPECT_MD5:-}" ]; then
+  if [ "${SLURM_RESTART_COUNT:-0}" -gt 0 ]; then
+    md5sum -c --quiet "$EXPECT_MD5" >/dev/null 2>&1 || { echo "⚠️ requeue (restart=$SLURM_RESTART_COUNT): guarded files changed since submit — continuing:"; md5sum -c "$EXPECT_MD5" 2>&1 | grep -v ': OK$' || true; }
+  else
+    md5sum -c "$EXPECT_MD5" || { echo "STALE FILES — refusing"; exit 3; }
+  fi
+fi
 ARMS="${1:?give the arms to stage, comma-separated (no default since 2026-09-30)}"
 # Measured 2026-09-01 on the rebuilt mesh: wave arms 5:10-5:17 wall, MaxRSS 12.8 G;
 # waves-off 0:40 / 1.3 G. 12 h / 64 G is ~2x the worst case on both axes.

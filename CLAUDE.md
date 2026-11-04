@@ -117,8 +117,9 @@ python scripts/campaign_check.py                # ⭐ the check-in: queue, md5 g
 ```
 
 ✅ **`.claude/hooks/guard.py` (2026-10-25) enforces three traps below** on every Bash / Edit / Write:
-ASK before an edit to a file a PENDING job's EXPECT_MD5 will check, DENY `run_experiments.py`
-`--inputs-only` / `--no-run` / `--dry-run`, DENY `git commit`. A guard bug lets the call through.
+ASK before an edit to a file a PENDING job's EXPECT_MD5 will check (or a RUNNING job's whose
+spooled script still refuses on a requeue), DENY `run_experiments.py` `--inputs-only` /
+`--no-run` / `--dry-run`, DENY `git commit`. A guard bug lets the call through.
 
 ⚠️ **This session may be on a LOGIN node** (`hostname` = `amarel*`). Anything heavier than
 a grep — scoring, floodmaps, figures, the test suite — goes through `srun` on an
@@ -198,7 +199,12 @@ not trip that guard. Do not run the sweep driver to "just rebuild" a template.
 - 🔴 **`EXPECT_MD5` is checked when a job STARTS, so editing a guarded file while it is QUEUED
   kills it** ("STALE FILES — refusing"), and every `afterok` job behind it then sits in
   `DependencyNeverSatisfied` forever. Either leave the guarded files alone until the job starts,
-  or re-write its md5 file deliberately right after the edit. A watcher must treat
+  or re-write its md5 file deliberately right after the edit. 🔴 **A preemption REQUEUE re-runs
+  the check** (63524748, 2026-11-04: an additive edit made while it ran, 3.5 h lost). Since
+  that date scripts WARN and continue when `SLURM_RESTART_COUNT > 0` — copy the block from
+  `hpc/job_template.slurm` (keep its `|| true`s: under `set -e` + pipefail the warning itself
+  exits). A job spooled with the OLD block still refuses on a requeue: after editing a file a
+  RUNNING job guards, re-write its md5 too (`campaign_check.py` flags it 🔴). A watcher must treat
   `DependencyNeverSatisfied` as terminal. Likewise an `afterany` job (a data move, a cleanup)
   knows nothing of jobs submitted after it — re-check its dependency list before submitting
   new readers.
@@ -289,7 +295,8 @@ not trip that guard. Do not run the sweep driver to "just rebuild" a template.
   started 15 s after a script was created ran it as an empty file and **exited 0 in 0.4 s**,
   and the job before it ran the pre-edit version. Submit with a checksum:
   `md5sum <files> > logs/<job>_expected.md5; EXPECT_MD5=logs/<job>_expected.md5 sbatch …`
-  (`hpc/build_coarse_bed.slurm`, `hpc/clip_nj_dem.slurm` honour it), or wait a few minutes.
+  (the `hpc/*.slurm` builders honour it — not `sfincs_run.slurm` / `run_experiments.slurm`;
+  new scripts start from `hpc/job_template.slurm`), or wait a few minutes.
 - 🔴 **A preempted rain-on run RESUMES WITH DRY SOIL.** Restart files do not carry `cna`'s
   `cumprcp` / `cuminf`, so after a resume the curve-number method starts again from an empty
   soil and soaks up rain that should have run off (FINDINGS §59). The resume warns but does

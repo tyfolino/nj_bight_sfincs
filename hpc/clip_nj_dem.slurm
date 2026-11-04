@@ -25,7 +25,14 @@ hostname; date; echo "NJ_DOMAIN=$NJ_DOMAIN"
 # 🔴 A file edited from the VS Code session (itself on a halk node) can read STALE or
 # EMPTY on a compute node for a while — 2026-09-27 an empty script ran and exited 0.
 # EXPECT_MD5=<file of `md5sum` lines, written at submit time> makes the job refuse.
-if [ -n "${EXPECT_MD5:-}" ]; then md5sum -c "$EXPECT_MD5" || { echo "STALE FILES — refusing"; exit 3; }; fi
+# A REQUEUE (preemption) re-runs this check: there it WARNS and continues (2026-11-04).
+if [ -n "${EXPECT_MD5:-}" ]; then
+  if [ "${SLURM_RESTART_COUNT:-0}" -gt 0 ]; then
+    md5sum -c --quiet "$EXPECT_MD5" >/dev/null 2>&1 || { echo "⚠️ requeue (restart=$SLURM_RESTART_COUNT): guarded files changed since submit — continuing:"; md5sum -c "$EXPECT_MD5" 2>&1 | grep -v ': OK$' || true; }
+  else
+    md5sum -c "$EXPECT_MD5" || { echo "STALE FILES — refusing"; exit 3; }
+  fi
+fi
 
 D=data/elevation_$NJ_DOMAIN
 F=nj_10ft_dem_$NJ_DOMAIN.tif

@@ -5,8 +5,10 @@ Wired in ``.claude/settings.json``; reads the hook JSON on stdin, prints a decis
 
 - **ASK** before an edit to a file a PENDING job's EXPECT_MD5 will check at start
   (editing it kills the job — "STALE FILES" — and strands every ``afterok`` job behind
-  it; CLAUDE.md §5).  Ask, not deny: re-writing the md5 file right after a deliberate
-  edit is a legitimate route.  The list comes from
+  it; CLAUDE.md §5), or a RUNNING requeueable job's whose spooled script still REFUSES
+  on a restart (a preemption would kill it; scripts with the 2026-11-04 requeue branch
+  warn and continue, so they do not ask).  Ask, not deny: re-writing the md5 file right
+  after a deliberate edit is a legitimate route.  The list comes from
   ``scripts/campaign_check.py --guarded``.
 - **DENY** ``run_experiments.py`` with ``--inputs-only`` / ``--no-run`` / ``--dry-run``:
   all three ``rmtree`` each experiment dir first (CLAUDE.md §4; ``--check`` is the
@@ -144,7 +146,8 @@ def decide(event: dict, guard_map=guarded) -> tuple[str, str] | None:
         return None
     lines = [f"{os.path.relpath(h, ROOT)} ← {', '.join(gm[h])}" for h in hit]
     return "ask", (
-        "This edits a file a QUEUED job checks against its EXPECT_MD5 at start; the job "
+        "This edits a file a job checks against its EXPECT_MD5 at its next start (a "
+        "pending job's first start, or a running job's preemption requeue); the job "
         "would refuse (STALE FILES) and strand its afterok chain (CLAUDE.md §5):\n  "
         + "\n  ".join(lines)
         + "\nApprove only if the edit is deliberate AND the job's md5 file will be "

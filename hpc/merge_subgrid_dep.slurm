@@ -23,7 +23,14 @@ export PYTHONPATH=$PWD NJ_ROOT=$PWD
 export NJ_DOMAIN="${NJ_DOMAIN:?set NJ_DOMAIN in the submitting shell}"
 export PROJ_DATA=/home/tpj8/nj_sandy_sfincs/micromamba/envs/sfincs/share/proj
 # EXPECT_MD5=<md5sum file written at submit time>: refuse to run stale copies (CLAUDE.md §5).
-if [ -n "${EXPECT_MD5:-}" ]; then md5sum -c "$EXPECT_MD5" || { echo "STALE FILES — refusing"; exit 3; }; fi
+# A REQUEUE (preemption) re-runs this check: there it WARNS and continues (2026-11-04).
+if [ -n "${EXPECT_MD5:-}" ]; then
+  if [ "${SLURM_RESTART_COUNT:-0}" -gt 0 ]; then
+    md5sum -c --quiet "$EXPECT_MD5" >/dev/null 2>&1 || { echo "⚠️ requeue (restart=$SLURM_RESTART_COUNT): guarded files changed since submit — continuing:"; md5sum -c "$EXPECT_MD5" 2>&1 | grep -v ': OK$' || true; }
+  else
+    md5sum -c "$EXPECT_MD5" || { echo "STALE FILES — refusing"; exit 3; }
+  fi
+fi
 SRC="$1"; shift
 # BASE_LEVEL unset = the domain's Domain.merged_dep_base_level (v4: 2).
 hostname; date; echo "NJ_DOMAIN=$NJ_DOMAIN src=$SRC base_level=${BASE_LEVEL:-domain} link into: $*"
