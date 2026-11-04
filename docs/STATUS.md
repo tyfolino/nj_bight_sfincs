@@ -20,9 +20,10 @@ Last updated: **2026-11-03** — still-water maps done and read for power exposu
   MOTF CSI 0.706; re-run on the seeded engine in Phase 4 (`p4-ref` / `p4-ref-nowaves`).
 - **Model 1.0.0: `v4_refreeze_swz` / `p4-premier`** (`90cc7468614a5814`, job 63181564): RMSE 0.439 / bias −0.128 (median, 50 m, n 110), CSI 0.784; without the 6 noted marks 0.354 / −0.093 (n 104). `docs/MODEL.md`.
 
-## Running (11-03)
+## Running (11-04)
 
-- ⏳ **63483048 Mullica bed test** (`logs/mullica_bed_2026-11-03/`), pending at last look; its EXPECT_MD5 covers `nj_sfincs/experiments.py` + `data/data_catalog.yml`.
+- ⏳ **63524748 developed-land friction test** (`logs/developed_manning_2026-11-03/`, `bed-devmanning+p4-nowaves`, NLCD 22–24 → n 0.04 IN NJ, ~14 h) and **63524749 Overpeck dam bracket** (`logs/ironbound_overpeck_2026-11-03/overpeck/`, `p4-nowaves+weir-overpeck-{open,high}` via `Experiment.weir_from`, ~8 h), both submitted 11-04. 🔴 Their EXPECT_MD5 files cover `run_experiments.py`, `nj_sfincs/{experiments,config,model,provenance,gallery,sea_level}.py`, `data/data_catalog.yml`, `hpc/sfincs_run.slurm`, `scripts/paired_hwm_bootstrap.py`: no edits there until both have STARTED.
+- ✅ **63483048 Mullica bed test** done 11-04 (hal0383, no resume, output WHOLE; `logs/mullica_bed_2026-11-03/out/`), not yet read in full: tide range up the Mullica 0.30–0.39 → 0.49–0.60 of NOAA's, Tuckahoe 0.31 → 0.53, Toms 0.05 → 1.54 (overshoots); Great Bay Sandy peak −0.25 → −0.40 m (to explain); domain-wide HWM ΔRMSE −0.002 [−0.009, +0.003]; Mullica box 4 marks ΔRMSE −0.08 [−0.23, +0.10]; the Great Egg box holds no marks.
 
 ## MHHW + 2 ft / + 4 ft for the climate hazard team: two versions (user 10-29)
 

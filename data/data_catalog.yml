@@ -163,7 +163,7 @@ ehydro_nj:
 # never reaches the coarse z. Leaving z/mask alone is deliberate — the subgrid tables are
 # what the solver uses for conveyance, and the domain fingerprint stays intact so the arm
 # remains comparable to `wave-cora`.
-# Build: python ~/nj_coast_sfincs/scripts/build_ehydro_south.py (archive; not ported)
+# Build: python scripts/build_ehydro_south.py (ported from the archive 2026-11-03)
 ehydro_south:
   data_type: RasterDataset
   uri: elevation/ehydro_south.tif
@@ -1408,6 +1408,25 @@ manning_water_v4:
     nodata: -9999.0
     unit: s m-1/3
     source: NHD HR Area (460/336/431) + Waterbody (390/436), scripts/build_inland_water_v4.py manning
+
+manning_developed_v4:
+  data_type: RasterDataset
+  uri: roughness_v4/manning_developed_v4.tif
+  driver:
+    name: rasterio
+    options: {}
+  metadata:
+    category: roughness
+    unit: s m-1/3
+    source: >-
+      TEST (2026-11-03, logs/developed_manning_2026-11-03/): NLCD 2012 classes 22-24 (developed low / medium /
+      high intensity; nlcd_2012_v4's grid, 30 m, its own Albers CRS) IN NEW JERSEY (Census cb_2023 STATEFP 34)
+      -> one street-level Manning n 0.04, NaN elsewhere (the file's nodata). 1.0.0 burns the NJDEP buildings
+      into the bed (FINDINGS §55) AND keeps NLCD n 0.05 / 0.10 / 0.13 there, which were tuned 2026-05-25 on a
+      model WITHOUT buildings to stand in for them. PA / DE / Staten Island have no burned footprints and keep
+      NLCD n. Painted with rebuild_subgrid.py --manning-overlay manning_developed_v4 --manning-overlay
+      manning_water_v4 (water last). Class 21 untouched. ASSUMED value;
+      logs/developed_manning_2026-11-03/build_overlay.py [n].
 
 creek_bed_nj10ft_v4:
   data_type: RasterDataset

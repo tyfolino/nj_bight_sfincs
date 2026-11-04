@@ -960,6 +960,40 @@ EXPERIMENTS_BY_DOMAIN: dict[str, dict[str, Experiment]] = {
             "Pair: p4-nowaves.",
             subgrid_from="_subgrid_p4_hierv4d",
         ),
+        # 2026-11-03: developed-land Manning (logs/developed_manning_2026-11-03/): NLCD 22-24
+        # IN NJ -> n 0.04 on 1.0.0's exact bed, waves-off (the flow never reads face z).
+        "bed-devmanning+p4-nowaves": replace(
+            _V4_REFREEZE["p4-nowaves"],
+            name="bed-devmanning+p4-nowaves",
+            description="p4-nowaves with NLCD developed classes 22-24 in New Jersey at "
+            "Manning n 0.04 (manning_developed_v4, painted before manning_water_v4; PA / DE "
+            "/ Staten Island keep NLCD n) on Model 1.0.0's flow bed (_subgrid_p4_devmanning; "
+            "bed tables bit-identical). Pair: p4-nowaves.",
+            subgrid_from="_subgrid_p4_devmanning",
+        ),
+        # 2026-11-03: the Overpeck tidal dam bracket (logs/ironbound_overpeck_2026-11-03/),
+        # waves-off so the pair against p4-nowaves is well-conditioned; one file differs
+        # (sfincs.weir, through Experiment.weir_from).
+        "p4-nowaves+weir-overpeck-open": replace(
+            _V4_REFREEZE["p4-nowaves"],
+            name="p4-nowaves+weir-overpeck-open",
+            description="p4-nowaves with the Overpeck tidal dam (NID NJ00799) weir line "
+            "REMOVED: gates and stoplogs open, the creek meets the Hackensack over the bed's "
+            "own lanes (0.44 m on the mesh; 1.57 m as built). Bypass sill, Keansburg system "
+            "and the -1.005 m pool start unchanged. Bounds the gates-held assumption from "
+            "below. Pair: p4-nowaves.",
+            weir_from=DATA / "structures_v4" / "sfincs_overpeck_open.weir",
+        ),
+        "p4-nowaves+weir-overpeck-high": replace(
+            _V4_REFREEZE["p4-nowaves"],
+            name="p4-nowaves+weir-overpeck-high",
+            description="p4-nowaves with the Overpeck tidal dam crest raised 1.74 -> 3.28 m "
+            "(the walkway, 11.75 ft NGVD29 via VDatum): closed to the deck, so Sandy "
+            "(2.5-2.6 m outside) never overtops it and the valley fills only over the bypass "
+            "sill (1.57 m on the mesh) and by rain. Bounds the dam from above. "
+            "Pair: p4-nowaves.",
+            weir_from=DATA / "structures_v4" / "sfincs_overpeck_high.weir",
+        ),
         # 2026-11-01: the first 1.x runs, on the modern bed (logs/modern_bed_2026-11-01/).
         **_CALM_ARMS,
     },

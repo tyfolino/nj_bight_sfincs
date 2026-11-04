@@ -278,6 +278,7 @@ def prepare_experiment(name: str, base: BaseConfig) -> Path:
         infiltration=exp.infiltration,
         cnb_effective=exp.cnb_effective,
         extra_discharge=exp.extra_discharge,
+        weir_from=exp.weir_from,
     )
     # hydromt's writer drops crsfile/storevel; put them back so a staged arm carries the
     # flux cross-sections — which on a relocated-boundary domain are the headline result,
@@ -324,6 +325,7 @@ def collect_metrics(names: list[str]) -> pd.DataFrame:
             rows[name]["wind_scale"] = provenance.wind_scale_label(exp_dir)
             rows[name]["sea_level_offset"] = provenance.sea_level_offset_label(exp_dir)
             rows[name]["meteo"] = provenance.meteo_label(exp_dir)
+            rows[name]["weir"] = provenance.weir_label(exp_dir)
             rows[name]["infiltration"] = provenance.infiltration_label(exp_dir)
             rows[name]["engine_seed"] = provenance.engine_seed_label(exp_dir)
             rows[name]["extra_discharge"] = provenance.extra_discharge_label(exp_dir)

@@ -479,6 +479,7 @@ def run_card(domain_name: str, arm: str, run_dir: Path, row: dict | None) -> dic
         ("snapwave_direction", provenance.snapwave_direction),
         ("engine_seed", provenance.engine_seed_label),
         ("meteo", provenance.meteo_label),
+        ("weir", provenance.weir_label),
         ("infiltration", provenance.infiltration_label),
         ("subgrid", provenance.subgrid_label),
         ("wind_scale", provenance.wind_scale_label),
