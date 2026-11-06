@@ -182,6 +182,10 @@ def main(argv: list[str] | None = None) -> int:
         "faces_changed": int(changed.sum()),
         "delta_p1_p5_p50_p95_p99": [float(x) for x in q],
     }
+    # 🔴 link_tree hard-linked the SOURCE template's own report when the source is itself a
+    # face-z domain: break the link first, or the write lands in the source's record too
+    # (2026-11-06: v4_refreeze_swz's report was overwritten this way, restored from p4-premier).
+    (dst_t / "face_z_report.json").unlink(missing_ok=True)
     (dst_t / "face_z_report.json").write_text(json.dumps(rep, indent=1))
     print(json.dumps(rep, indent=1))
     print(

@@ -1311,6 +1311,29 @@ ehydro_refreeze_cenan_v4:
       logs/audit_v4_hot_plus_2026-10-05/channels_and_3dep/.
       scripts/download_ehydro_v4.py --set refreeze_cenan
 
+ehydro_fill_v4:
+  data_type: RasterDataset
+  uri: elevation_v4/ehydro/ehydro_fill_v4.vrt
+  driver:
+    name: rasterio
+    options: {}
+  metadata:
+    category: topography
+    crs: 32618
+    nodata: -9999.0
+    unit: m+NAVD88
+    source: >-
+      LOWER-ONLY survey fix for federal-channel sills (2026-11-05, user: into v1.1c wherever a survey exists;
+      logs/ehydro_inventory_2026-11-05/). The bed audit's channel_depth HIGH rows (tide-choking fills in NCF
+      channels, bed = CUDEM / lidar fill): Cape May Canal, ICW IW_14 / IW_15 (Cape May Co.), Lewes & Rehoboth
+      Canal, Cheesequake Ck, Great Kills Harbor, Leonardo, Coney Island Ck, Woodbridge Ck. Per sill the EARLIEST
+      eHydro survey that reaches it (closest to Oct 2012; none of these channels deepened after 2012), converted as
+      build_ehydro_latest.py (MLLW via local VDatum, nearest VDatum / CO-OPS outside, CENAN XYZ elevation / CENAP
+      Z_use depth, median sign test), 5 m linear grid in the survey coverage + the NCF channel outline within 60 m
+      (bridge gaps), <= 100 m from a sounding, z < -1 m; painted only > 0.25 m below the v1.1 bed and outside
+      every 2012 survey tier. 9 survey tiles, 2.04 km2 painted. Apply as ehydro_fill_v4:min after deck_fix_v4b:min.
+      Built by logs/ehydro_inventory_2026-11-05/build_ehydro_fill.py; verified by verify_ehydro_fill.py
+      (channel_depth HIGH 13 -> 5).
 usace_unpave_backbay_v4:
   data_type: RasterDataset
   uri: elevation_v4/usace_unpave_backbay/usace_unpave_backbay_v4.vrt
@@ -1544,6 +1567,43 @@ inland_water_bed_v4:
       stretches, 5.16 km2, -11.3 Mm3 of fake storage. BED ONLY: the rule's n = 0.02 has no
       overlay route yet. logs/inland_water_2026-10-05/draft_overlay.py (= its _draft.tif).
 
+alloway_pool_v4:
+  data_type: RasterDataset
+  uri: elevation_v4/inland_water/alloway_pool_v4.vrt
+  driver:
+    name: rasterio
+    options: {}
+  metadata:
+    category: topography
+    crs: 32618
+    nodata: -9999.0
+    unit: m+NAVD88
+    source: >-
+      RAISE-TO-POOL fix for Alloway Lake (§54 item L19, NID NJ00038 Alloway Lake Dam 20 ft; NWI L1UBHh
+      impounded) (2026-11-05, user: into v1.1b; logs/inland_water_lines_2026-11-05/). The lake is held at its
+      1.61 m pool by inland_water_bed_v4, but its NHD outline is 1-2 px wide up the arms, so the arms' valley
+      floors stayed CUDEM's flat ~0 m fill and reached the tidal creek below the dam at -0.36 m. Upstream of
+      the dam crest only: the fill floor (bed <= 0.6 m) connected to the outline + a 1 px rim below the pool,
+      painted at 1.61 m (= max(bed, 1.61); never lowers). 0.388 km2, 0.60 Mm3. Apply as a plain overlay right
+      after inland_water_bed_v4.
+silver_pool_v4:
+  data_type: RasterDataset
+  uri: elevation_v4/inland_water/silver_pool_v4.vrt
+  driver:
+    name: rasterio
+    options: {}
+  metadata:
+    category: topography
+    crs: 32618
+    nodata: -9999.0
+    unit: m+NAVD88
+    source: >-
+      RAISE-TO-POOL fix for Silver Lake, Middletown DE (NHD 26094538; NID DE00051 Silver Lake Dam, 18 ft; deck
+      site E4) (2026-11-05, user: into v1.1; logs/inland_water_lines_2026-11-05/). In the 2012 / v1.1 bed the lake
+      is CUDEM's flat ~0 m fill, an empty fake pit behind the dam. Pool 2.55 m = the 2023 DE statewide lidar and
+      3DEP lake surface (= the NBI spillway crest assumed by nbi_open_v4). Upstream of the dam ridge only: the
+      outline below the pool + the connected fill floor (bed <= 0.6 m) + a 1 px rim, painted at 2.55 m
+      (= max(bed, 2.55); never lowers). 0.174 km2, 0.40 Mm3. Apply as a plain overlay right after alloway_pool_v4.
 riverbeds_tidal_v4:
   data_type: RasterDataset
   uri: elevation_v4/riverbeds/riverbeds_tidal_v4.vrt
@@ -1976,3 +2036,174 @@ deck_fix_v4:
       the USACE 2010 lidar holds the deck and CUDEM is open (11 sites). Never painted on eHydro, the
       river hierarchy, Little Egg, Shrewsbury, the Sayreville margins or a burned building footprint.
       0.55 km2 in 595 1.5 m tiles (EPSG:32618). Built by logs/decks_2026-11-04/s5_overlay.py.
+deck_fix_v4b:
+  data_type: RasterDataset
+  uri: elevation_v4/deck_fix/deck_fix_v4b.vrt
+  driver:
+    name: rasterio
+    options: {}
+  metadata:
+    category: topography
+    crs: 32618
+    nodata: -9999.0
+    unit: m+NAVD88
+    source: >-
+      LOWER-ONLY bridge-deck removal, CORRECTED (2026-11-05, logs/deck_carve_audit_2026-11-05/; apply as
+      deck_fix_v4b:min, LAST, in place of deck_fix_v4:min). deck_fix_v4's sites, ways, stations and
+      half-widths, but only DECK pixels (standing > 0.3 m above the higher bank on the bed after the
+      overlay) are lowered, each to max(v4's side-to-side line, the bank on its own side); natural water
+      and ground are never lowered (v4's ramp carved 1.9 ha of real ground / shoal > 1 m, 0.73 ha of it
+      from above MHHW to below it); stations where a solid ridge crosses the bridge (an embankment) are
+      not painted; a pixel any overlapping way reads as natural bed is not painted. CUDEM-fix ways and
+      Normandy Rd's eye-checked override are kept as in v4. 0.45 km2 in 583 1.5 m tiles (EPSG:32618).
+      Built by logs/deck_carve_audit_2026-11-05/build_v4b.py.
+nbi_open_v4:
+  data_type: RasterDataset
+  uri: elevation_v4/deck_fix/nbi_open_v4.vrt
+  driver:
+    name: rasterio
+    options: {}
+  metadata:
+    category: topography
+    crs: 32618
+    nodata: -9999.0
+    unit: m+NAVD88
+    source: >-
+      LOWER-ONLY crossing openings (2026-11-05, logs/nbi_crossings_2026-11-05/; apply as nbi_open_v4:min, LAST,
+      after deck_fix_v4b:min). (1) 8 FHWA NBI water crossings verified blocked on 1.0.0 + deck_fix_v4b with an
+      independent support (CUDEM / modern lidar under the span, a Sandy peak difference across it, or an ENC bridge),
+      each pixel lowered to its own side's channel, never below the lower bank; (2) 18 bridges over federal channels
+      where the bed audit's channel_depth finds a SILL under the span, lowered inside the NCF reach to the 2012-era
+      eHydro survey or the authorized bottom (NAVD88), never below the channel beside the bridge, and only where the
+      cut connects water on both sides; (3) the Silver Lake (DE) spillway slot at its crest, 2.55 m (ASSUMED = the
+      modern-lidar pool). 4,449 px (1.0 ha) in 45 1.5 m tiles (EPSG:32618). Built by verify_build.py.
+# ── MODERN (2026) BED, round b (2026-11-06, logs/modern_bed_b_2026-11-06/README.md) ─────────────────────
+# Modern-bed / 2.0 tiers only; no 2012-bed recipe lists any of these.
+modern_land_paint_2026b:
+  data_type: RasterDataset
+  uri: elevation_modern_2026/b/modern_land_paint_2026b.tif
+  driver:
+    name: rasterio
+    options: {}
+  metadata:
+    category: topography
+    crs: 32618
+    nodata: -9999.0
+    unit: m+NAVD88
+    source: >-
+      MODERN BED ONLY. modern_land_2026 where it may PAINT (overlay, first after the base stack): every
+      modern_land pixel EXCEPT (a) water in either epoch (water_mask_v4, or the v1.1c bed below MHHW) where
+      the lidar reads below MHHW + 0.5 m (or any value on non-tidal mapped water) -> modern_land_lower_2026b;
+      (b) bridge corridors over 2012 water -> modern_land_lower_2026b; (c) dry-dock cap: not water, lidar
+      < -3 m where the 2012 bed >= -0.25 m -> dropped. Non-tidal lake pools (lake_pool_v4) are exempt and
+      paint. logs/modern_bed_b_2026-11-06/split_modern_land.py (sweep fixes 2 + 6, logs/modern_sweeps_2026-11-04/).
+modern_land_lower_2026b:
+  data_type: RasterDataset
+  uri: elevation_modern_2026/b/modern_land_lower_2026b.tif
+  driver:
+    name: rasterio
+    options: {}
+  metadata:
+    category: topography
+    crs: 32618
+    nodata: -9999.0
+    unit: m+NAVD88
+    source: >-
+      MODERN BED ONLY. The modern_land_2026 pixels that may only LOWER the 2012 stack (apply as
+      modern_land_lower_2026b:min right after modern_land_paint_2026b): lidar water surfaces over water in
+      either epoch (below MHHW + 0.5 m), and bridge corridors (the 11-04 modern deck sweep's stations of
+      every OSM bridge way, radius 6 / 10 / 15 m by class, embankment and culvert ways excluded) over 2012
+      water whatever the lidar reads (a deck in the lidar; S12 Gerritsen Inlet). split_modern_land.py.
+bluetopo_newer_2026:
+  data_type: RasterDataset
+  uri: elevation_modern_2026/b/bluetopo_newer/bluetopo_newer_2026.vrt
+  driver:
+    name: rasterio
+    options: {}
+  metadata:
+    category: topography
+    crs: 26918
+    nodata: -9999.0
+    unit: m+NAVD88
+    source: >-
+      MODERN BED ONLY. NOAA OCS BlueTopo (tiles 2026-07..10), band 1, ONLY where the contributor is a named
+      survey (not 0 / NBSGeneralization) whose survey_date_end is after the source cut-off of the CUDEM 1/9in
+      build under the pixel (logs/modern_inputs_2026-11-04/bluetopo_newer.py's test), z < -1 m, inside
+      region_v4, and NOT where modern_land_2026 has data. MLLW-native contributors (USACE eHydro surveys,
+      Navy E00214) get the MLLW -> NAVD88 separation added where VDatum is not core (edge-weighted or none;
+      bluetopo_mllw_fix_2026, sep_lib pooled_nearest at native pixel centres). Native 4/8/16 m, finer wins.
+      OVERLAY after riverbeds_hierarchy_v4e, before ehydro_latest_2026.
+      logs/modern_bed_b_2026-11-06/build_bluetopo_newer.py.
+bluetopo_mllw_fix_2026:
+  data_type: RasterDataset
+  uri: elevation_modern_2026/bluetopo_mllw/bluetopo_mllw_fix_16m.tif
+  driver:
+    name: rasterio
+    options: {}
+  metadata:
+    category: topography
+    crs: 32618
+    nodata: -9999.0
+    unit: m (MLLW above NAVD88; negative)
+    source: >-
+      MODERN BED / 2.0 ONLY; NOT an elevation tier (reference; bluetopo_newer_2026 already carries it,
+      computed at native pixel centres). The ADDITIVE MLLW -> NAVD88 correction for BlueTopo pixels that
+      BlueTopo left in MLLW: where the local VDatum grids give no core value (edge-weighted or none), the
+      nearest of {VDatum node, CO-OPS station} (the build_ehydro_latest.py rule). Apply ONLY to MLLW-native
+      contributors (USACE district eHydro surveys, Navy E00214), never to NOS H-surveys (BlueTopo converted
+      them) or lidar. Error ~0.05 m, up to 0.13 m (fill too low) in tidal creeks.
+      logs/bluetopo_mllw_2026-11-06/README.md
+ehydro_latest_2026:
+  data_type: RasterDataset
+  uri: elevation_modern_2026/ehydro_latest_2026.tif
+  driver:
+    name: rasterio
+    options: {}
+  metadata:
+    category: topography
+    crs: 32618
+    nodata: -9999.0
+    unit: m+NAVD88
+    source: >-
+      MODERN BED ONLY. USACE eHydro, the NEWEST condition survey per channel (166; 2013-06 .. 2026-10, 147 from
+      2024-26), CENAN + CENAP, sign and CRS per survey, MLLW->NAVD88 by local VDatum (nearest CO-OPS where VDatum does
+      not reach), Delaunay-linear 5 m, survey-footprint masked, 100 m cap, newest last, water < -1 m. Includes the
+      post-2012 deepenings (Delaware 45 ft, harbour 50 ft, AK north). The 10 (+4) surveys BlueTopo disagrees with
+      are RESTORED (ours right, user 11-05, logs/ehydro_datum_2026-11-05/). OVERLAY tier, after
+      riverbeds_hierarchy_v4e and bluetopo_newer_2026. logs/modern_bed_2026-10-30/ehydro/build_ehydro_latest.py;
+      checks logs/modern_inputs_2026-11-04/. (file: a link to modern_2026/derived/ehydro_latest_2026.tif)
+deck_fix_v4b_modern:
+  data_type: RasterDataset
+  uri: elevation_modern_2026/b/deck_fix_v4b_modern/deck_fix_v4b_modern.vrt
+  driver:
+    name: rasterio
+    options: {}
+  metadata:
+    category: topography
+    crs: 32618
+    nodata: -9999.0
+    unit: m+NAVD88
+    source: >-
+      MODERN BED ONLY. deck_fix_v4b (LOWER-ONLY; apply :min) with ONE site patched: S08 (user picker 11-06),
+      the NJ 21 motorway_link ramp off Main St on the Passaic west bank (-74.1399, 40.7975), a bridge over
+      GROUND that v4b carves to -3.3 / -3.8 m; its 424 pixels raised to the ground under the ramp, 2.23 m
+      (the 25th percentile of modern_land 6-36 m out: the deck pass's viaduct rule). 582 tiles are v4b's own.
+      logs/modern_bed_b_2026-11-06/build_deck_overlays.py.
+deck_fix_modern_b:
+  data_type: RasterDataset
+  uri: elevation_modern_2026/b/deck_fix_modern_b/deck_fix_modern_b.vrt
+  driver:
+    name: rasterio
+    options: {}
+  metadata:
+    category: topography
+    crs: 32618
+    nodata: -9999.0
+    unit: m+NAVD88
+    source: >-
+      MODERN BED ONLY. LOWER-ONLY (apply :min, LAST). The 11-04 modern deck pass's automatic REMOVE /
+      LOWER-SILL ways (deck_fix_modern_draft, computed on the 1.0.0-recipe modern bed with deck_fix_v4) + the
+      round-2 short-list sites decided as a CARVE (user 11-05: M388, M364, M144 deck carve; M537, M271 partial
+      channel carve from the withuser preview, within 80 m of each site). Min-rule sites (E1, E2, M181, M232,
+      M561, M562) are handled by modern_land_lower_2026b; keep sites (E3, M049, M064) are not painted.
+      logs/modern_bed_b_2026-11-06/build_deck_overlays.py.

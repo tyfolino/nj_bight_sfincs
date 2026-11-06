@@ -1024,8 +1024,48 @@ EXPERIMENTS_BY_DOMAIN: dict[str, dict[str, Experiment]] = {
             "Pair: p4-nowaves.",
             weir_from=DATA / "structures_v4" / "sfincs_overpeck_high.weir",
         ),
+        # 2026-11-05: Elizabeth River South (RB + LB) + Rahway South Branch RB levees as weirs
+        # (logs/walls_elizabeth_rahway_2026-11-05/), on top of Overpeck open; waves-off, one file differs.
+        "p4-nowaves+weir-elizabeth-rahway+weir-overpeck-open": replace(
+            _V4_REFREEZE["p4-nowaves"],
+            name="p4-nowaves+weir-elizabeth-rahway+weir-overpeck-open",
+            description="p4-nowaves+weir-overpeck-open plus the USACE Elizabeth River Right / Left Bank South "
+            "(NLD 4505000007 / -09) and Rahway River South Branch RB (4505000027) levee + floodwall lines at the NLD "
+            "crest (3.0-3.9 m), the 85 m Bayway wall (no NLD height: lidar ground), 3 end tie-ins and 11 ground "
+            "guards at the lidar ridge. Gates closed. Pair: p4-nowaves+weir-overpeck-open.",
+            weir_from=DATA / "structures_v4" / "sfincs_overpeck_open_elizabeth_rahway_ground.weir",
+        ),
         # 2026-11-01: the first 1.x runs, on the modern bed (logs/modern_bed_2026-11-01/).
         **_CALM_ARMS,
+    },
+    # 2026-11-06: Model v1.1 (logs/v1_1_premier_2026-11-06/README.md): 1.0.0's premier on the v1.1c
+    # flow bed, SnapWave on that bed (the domain's face z comes from _subgrid_v1_1c), the Overpeck
+    # dam OPEN (user 11-05), and the Elizabeth / Rahway levees as the second option (pick after the
+    # levee pair's read). The domain's own premier is named p4-premier (the same name means a different
+    # model on each domain, CLAUDE.md §2). Pair: v4_refreeze_swz's p4-premier (Model 1.0.0).
+    "v4_refreeze_swz_v11": {
+        "p4-premier": replace(
+            _V4_REFREEZE["p4-premier"],
+            name="p4-premier",
+            description="Model v1.1 candidate: p4-premier on the v1.1c flow bed (_subgrid_v1_1c: "
+            "riverbeds v4e, deck_fix_v4b, developed-land n 0.04 in NJ, channel n 0.02, Alloway / "
+            "Silver Lake pools, ehydro_fill_v4, nbi_open_v4; Little Egg overlay kept) with SnapWave "
+            "on the same bed, and the Overpeck tidal dam weir line REMOVED (Keansburg system and "
+            "the bypass sill kept). Pair: v4_refreeze_swz/p4-premier.",
+            subgrid_from="_subgrid_v1_1c",
+            weir_from=DATA / "structures_v4" / "sfincs_overpeck_open.weir",
+        ),
+        "p4-premier+weir-elizabeth-rahway": replace(
+            _V4_REFREEZE["p4-premier"],
+            name="p4-premier+weir-elizabeth-rahway",
+            description="This domain's p4-premier (Overpeck open) plus the USACE Elizabeth River Right / Left "
+            "Bank South (NLD 4505000007 / -09) and Rahway River South Branch RB (4505000027) "
+            "levee + floodwall lines at the NLD crest, the Bayway wall, 3 end tie-ins and 11 "
+            "ground guards (logs/walls_elizabeth_rahway_2026-11-05/). Gates closed. "
+            "Pair: p4-premier (this domain) and v4_refreeze_swz/p4-premier.",
+            subgrid_from="_subgrid_v1_1c",
+            weir_from=DATA / "structures_v4" / "sfincs_overpeck_open_elizabeth_rahway_ground.weir",
+        ),
     },
     # The breach arms, each on a domain whose face z comes from its own breach bed.
     "v4_refreeze_swz_wk0": {

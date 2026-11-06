@@ -3231,6 +3231,20 @@ V4_REFREEZE_SWZ_BARE = replace(
     face_z_from="_subgrid_refreeze_lakes_min_nobuildings_creeks_cohansey",
 )
 
+#: Model v1.1 (2026-11-06): ``v4_refreeze_swz`` with face ``z`` from the v1.1c flow bed's subgrid
+#: mean ground (``_subgrid_v1_1c``: v4e river beds + ``deck_fix_v4b`` + developed / channel n +
+#: Alloway / Silver Lake pools + ``ehydro_fill_v4`` + ``nbi_open_v4``;
+#: ``logs/nbi_crossings_2026-11-05/``), so SnapWave reads the bed the v1.1 flow uses (§63). Same
+#: mesh, mask and inputs as 1.0.0; only face ``z`` moves. 1.x keeps the mesh (CLAUDE.md §6).
+#: Marks: the 1.x file = the v4 file's 193 + the 13 the v4 pull missed inside the ring (9 q<=2;
+#: user 11-03, a deliberate re-baseline, logs/v2_validation_2026-11-03/ "Decisions" 1).
+V4_REFREEZE_SWZ_V11 = replace(
+    V4_REFREEZE_SWZ,
+    name="v4_refreeze_swz_v11",
+    face_z_from="_subgrid_v1_1c",
+    hwm_geojson=DATA / "validation_v4" / "sandy_hwms_v4_1x.geojson",
+)
+
 DOMAINS: dict[str, Domain] = {
     d.name: d
     for d in (
@@ -3247,6 +3261,7 @@ DOMAINS: dict[str, Domain] = {
         V4_REFREEZE_SWZ_WK0,
         V4_REFREEZE_SWZ_WK165,
         V4_REFREEZE_SWZ_BARE,
+        V4_REFREEZE_SWZ_V11,
     )
 }
 

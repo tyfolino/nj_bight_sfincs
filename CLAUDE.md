@@ -351,7 +351,10 @@ not trip that guard. Do not run the sweep driver to "just rebuild" a template.
   threading: the SnapWave node sweep is SERIAL (FINDINGS §20), so every finished 64-thread
   solve used 5.9–6.8 effective cores. ⚠️ 3.3 was F.4 (IG off, `fw 0.02`,
   no buildings); the PREMIER config paces 2.2–2.6 on the same nodes (09-14) — budget
-  33–36 h. Read pace from the restart-file mtimes: a SnapWave call over 999.99 s logs
+  33–36 h. ✅ **All of that is the OLD serial engine. On the production engine
+  (`hpc/production_engine.txt`, `…swomp-2-gf11`, since 11-02) the full 72 h waves-on premier
+  takes ~2.5 h on 64 threads, ~5.4 h on 16, bit-identical (FINDINGS §20)** — the
+  emeraldrapids rule and the 33–36 h budget do not apply to it. Read pace from the restart-file mtimes: a SnapWave call over 999.99 s logs
   `took ****** seconds` (Fortran overflow), so summing the `took` field drops the slowest calls. ⚠️ And check
   `scontrol show reservation` first: the monthly maintenance takes every hal node for ~40 h,
   (next: 10-13, 11-10, 12-15, 08:00 → next day 23:59),

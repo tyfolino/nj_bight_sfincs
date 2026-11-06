@@ -127,6 +127,10 @@ STATIONS_V3 = STATIONS + [
 #   00065  gage height, ft — ONLY where `monitoring-locations` gives the gage datum as
 #          altitude 0.0 ft, vertical_datum NAVD88, i.e. gage height IS NAVD88 feet.
 #          `gage_datum_ft` records that 0.0 and where it came from; it is ADDED.
+#          🔴 EXCEPT Newport 01480065 + Wilmington 01480120 (2026-11-05): their 2012 IV
+#          series is NGVD29 ("[NGVD29, Discontinued]"; USGS switched to NAVD88 10-2015, and the
+#          site page's datum describes the NEW series) → −1.070 / −1.030 ft (VDatum; the 2015 step
+#          vs Reedy Pt and a calm-window mean agree to ~2 cm). logs/newport_datum_2026-11-05/.
 # NOT included: Beach Thorofare at Margate 01411330 and Hackensack R at Hackensack
 # 01378570 — listed with a 72279 series spanning 2012 but NO values in the window;
 # 62619 (NGVD29) series; 00065 at Red Lion Ck 01482320 (datum NGVD29) and
@@ -149,8 +153,8 @@ STATIONS_V4 = STATIONS_V3 + [
     {"id": "01484080", "name": "Murderkill River at Frederica DE",          "lon": -75.4583, "lat": 39.0105, "parm": "62620"},
     {"id": "01484085", "name": "Murderkill River at Bowers DE",             "lon": -75.3976, "lat": 39.0583, "parm": "00065", "gage_datum_ft": 0.0},
     {"id": "01482170", "name": "Delaware River at New Castle DE",           "lon": -75.5869, "lat": 39.6514, "parm": "63160"},
-    {"id": "01480065", "name": "Christina River at Newport DE",             "lon": -75.6087, "lat": 39.7106, "parm": "00065", "gage_datum_ft": 0.0},
-    {"id": "01480120", "name": "Christina River at Wilmington DE",          "lon": -75.5406, "lat": 39.7361, "parm": "00065", "gage_datum_ft": 0.0},
+    {"id": "01480065", "name": "Christina River at Newport DE",             "lon": -75.6087, "lat": 39.7106, "parm": "00065", "gage_datum_ft": -1.070},  # 2012 IV = NGVD29 (11-05)
+    {"id": "01480120", "name": "Christina River at Wilmington DE",          "lon": -75.5406, "lat": 39.7361, "parm": "00065", "gage_datum_ft": -1.030},  # 2012 IV = NGVD29 (11-05)
 ]
 # fmt: on
 STATIONS_BY_DOMAIN = {"v4": STATIONS_V4}

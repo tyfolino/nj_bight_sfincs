@@ -2324,6 +2324,45 @@ the v3-inherited southern cuts sit at the gauges, above today's head of tide); n
 the 2010-lidar back-bay candidates; Little Egg
 Harbor's 2024 survey reading 4–9 m deeper than the model (12 years post-Sandy; unresolved).
 
+(l) **The v1.1 component reads** (2026-11-05; waves-off on `v4_refreeze_swz`, each paired against
+`p4-nowaves`, median estimator, 50 m, n 110 unless noted; reads in each log's `READ.md`):
+**Developed-land n 0.04 in NJ** (the double count with burned buildings removed;
+`logs/developed_manning_2026-11-03/`): ΔRMSE −0.0033 [−0.0058, −0.0014]; MOTF CSI 0.771 → 0.779
+with FA flat, Newark window 0.599 → 0.664; South Street wet 3 % → 42 % (MOTF 61 %); the cost is the
+15 independent Newark-window marks, already high, rising (bias +0.112 → +0.132). **v4e (Christina
+plug) + channel n 0.02** (`logs/tidal_reach_2026-11-04/`): Newport tide range 0.62 → 0.95 of
+observed, HWM neutral; v4d + v4e + channel n together ΔRMSE −0.0021 [−0.0089, +0.0029]; v4d lowers
+the Delaware Marcus Hook → Newbold ~2 cm. **Overpeck dam open** (`logs/ironbound_overpeck_2026-11-03/overpeck/`):
+valley peak 0.93 → 2.37–2.44 m (NACCS 2.25), Hackensack −9 cm, nothing else moves; 23 independent
+USGS marks ΔRMSE −0.009 [−0.020, +0.002]; no mark inside the valley. **Arthur Kill table noise**
+(`logs/ak_table_2026-11-04/`; tide-only gates, replicate bit-identical): caused by the table cliff (a
+face of high land with a sliver of deep channel); a 1V:3H bank cut removes most of it (named faces
+~1.0 → 0.02–0.08 m rms), `wiggle_suppression` off makes it worse; the 2.0 fix is the bank cut.
+**Measurement facts found on the way:** the Christina USGS gauges (Newport 01480065, Wilmington
+01480120) published 2012 in NGVD29 and were read as NAVD88 — observed 0.31–0.33 m too high
+(`logs/newport_datum_2026-11-05/`); every other `00065` gauge is NAVD88. Every NOAA subordinate-station
+range we quote is NOAA's own prediction (rebuilt to ≤ 4 mm from h_high × MHW − h_low × MLW); scaling a
+reference range by one ratio would err by up to 0.10 m.
+
+(m) **Bed lessons from the 2026-11-05 deck and inland-water checks.** (1) A **flat "sill" across a
+channel under a bridge is the lidar's blind spot**: the bare-earth product fills under the deck (and in
+turbid marinas) with the water surface at the flight's tide, so it sits flat near low water (−0.5 to
+−1.2 m), not on pilings. (2) **"Lower the deck to the bed either side" over-deepens and cuts
+embankments**: taking ground as p25 of the bed 6–36 m out lands on the riverbed beside viaducts, and
+OSM ways run onto approach fill — on v1.1's 525 deck sites, 212 over-deep (> 1 m below a
+CUDEM-confirmed bed), 139 land-to-water, 21 embankment cuts, ~2 % of the carved volume
+(`logs/deck_carve_audit_2026-11-05/`). The corrected rule (deck pixels only, each to its own bank,
+ridge stations skipped, no paint where an overlapping way reads natural bed) keeps 588 of 597 wet
+crossings open and removes all but Normandy Rd's deliberate override (`deck_fix_v4b`). (3) **Decks over
+STREETS are a separate class**: lidar strips long high viaducts but often keeps a short span over a
+street (Foundry St, Newark: a 4.7 m gap over a ~2 m street); a screen finds 273 bridges over a street
+or rail line holding back water that stood above the street in 1.0.0's Sandy run, 41 with ≥ 0.5 m of
+peak difference across them (`logs/underpass_sweep_2026-11-05/`). (4) **An impounded lake can sit in
+the bed as a tidal arm**: Alloway Lake's arm (behind a 20 ft NID dam) was CUDEM's ~0 m fill, tied to
+the tide at −0.36 m, with only a 1–2 px NHD outline tail painted at the 1.61 m pool by
+`inland_water_bed_v4` (the "line down the creek"); fixed by raising the floor upstream of the dam to
+the pool (`alloway_pool_v4`, 0.388 km², ~600,000 m³; `logs/inland_water_lines_2026-11-05/`).
+
 **Head-of-tide variants on v4's mesh (`v4_hot` = A, `v4_hot_plus` = A+; mask-only, registered
 2026-10-02; read 2026-10-03, `logs/v4_hot_2026-10-03/`).** Marks identical to v4 (RMSE 0.577 /
 bias −0.407) — no mark or gauge lies in a trimmed reach; MOTF CSI 0.684 → 0.687 / 0.686;

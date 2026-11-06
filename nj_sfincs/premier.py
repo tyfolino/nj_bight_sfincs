@@ -81,7 +81,7 @@ PREMIER_NAME = "naccs-premier"
 #: ``v4_refreeze_swz`` as run, job 63181564 (user 2026-11-01; docs/MODEL.md).
 MODEL_VERSION = "1.0.0"
 #: Domains whose premier is not PREMIER_NAME.
-PREMIER_ARMS = {"v4_refreeze_swz": "p4-premier"}
+PREMIER_ARMS = {"v4_refreeze_swz": "p4-premier", "v4_refreeze_swz_v11": "p4-premier"}
 
 
 def premier_arm(domain_name: str | None = None) -> str:
@@ -218,6 +218,10 @@ V4_REFREEZE_SWZ_WK165 = DomainFingerprint(4881654, 4388, "68286d6ef7c3dd66")
 #: WITHOUT the building burn, so SnapWave crosses the blocks; the flow keeps them unless an arm
 #: drops them. Measures buildings in the waves (FINDINGS §55, §63 (h)).
 V4_REFREEZE_SWZ_BARE = DomainFingerprint(4881654, 4388, "aa543d5b17e5ed2c")
+#: v4_refreeze_swz_v11 STAGED 2026-11-06 (setup_face_z.py --from v4_refreeze_swz --bed _subgrid_v1_1c;
+#: logs/v1_1_premier_2026-11-06/setup_face_z.log): Model v1.1's domain, face z = the v1.1c flow bed's
+#: mean ground on 3,936,632 active faces; against v4_refreeze_swz face z differs on 15,746.
+V4_REFREEZE_SWZ_V11 = DomainFingerprint(4881654, 4388, "4bc97aae885f0aa4")
 
 EXPECTED: dict[str, DomainFingerprint] = {
     "v1_monmouth": V1_MONMOUTH,
@@ -233,6 +237,7 @@ EXPECTED: dict[str, DomainFingerprint] = {
     "v4_refreeze_swz_wk0": V4_REFREEZE_SWZ_WK0,
     "v4_refreeze_swz_wk165": V4_REFREEZE_SWZ_WK165,
     "v4_refreeze_swz_bare": V4_REFREEZE_SWZ_BARE,
+    "v4_refreeze_swz_v11": V4_REFREEZE_SWZ_V11,
 }
 
 KNOWN = {
@@ -277,6 +282,10 @@ KNOWN = {
     V4_REFREEZE_SWZ_BARE: (
         "v4_refreeze_swz_bare STAGED 2026-10-30 — v4_refreeze_swz with face z from the bed "
         "without the building burn (SnapWave on bare ground; flow bed per arm)"
+    ),
+    V4_REFREEZE_SWZ_V11: (
+        "v4_refreeze_swz_v11 STAGED 2026-11-06 — Model v1.1: v4_refreeze_swz with face z from "
+        "the v1.1c flow bed (_subgrid_v1_1c)"
     ),
     V4_HOT_PLUS: "v4_hot_plus RE-STAGED 2026-10-05, RETIRED 2026-10-15 (records in _retired/)"
     " (Maurice cut on the Union Lake dam crest)"
