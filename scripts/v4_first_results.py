@@ -77,7 +77,10 @@ import numpy as np
 import pandas as pd
 
 ROOT = Path(__file__).resolve().parents[1]
-ENV_PATH = "/home/tpj8/nj_sandy_sfincs/micromamba/envs/sfincs"
+ENV_PATH = os.path.join(
+    os.environ.get("NJ_TOOLCHAIN") or os.path.expanduser("~/nj_sandy_sfincs"),
+    "micromamba/envs/sfincs",
+)
 SHADOW_ROOT = Path("/scratch/tpj8/v4_first_results_shadow")
 ESTIMATOR, RADIUS_M = "median", 50.0  # = the metrics.csv rows (hwm_estimator/radius)
 SEED, N_BOOT = 20261007, 200_000  # = paired_hwm_bootstrap.py defaults

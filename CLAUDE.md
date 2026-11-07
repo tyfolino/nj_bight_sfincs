@@ -92,8 +92,9 @@ run_experiments.py  the sweep driver (stage → run → validate → aggregate)
 scripts/            flat, indexed in scripts/README.md (a hygiene test keeps them in step)
 experiments/<domain>/<arm>/     run dirs (gitignored; SYMLINK → /scratch/tpj8 — NOT backed up,
                                  files unread for 90 days are purged; STATUS "Disk")
-data/               per-subdir symlinks for bulk: into the archive, and (2026-10-05) into
-                    /scratch/tpj8/nj_bight_sfincs_data/ (elevation_v3/, frozen_mesh_v3/, NACCS/, …)
+data/               bulk: the archive's share as real dirs of HARD LINKS (2026-11-07; same
+                    inodes as ~/nj_coast_sfincs/data, read-only modes kept), and per-subdir
+                    symlinks into /scratch/tpj8/nj_bight_sfincs_data/ (elevation_v3/, frozen_mesh_v3/, NACCS/, …)
 docs/FINDINGS.md    ⭐ what is believed true NOW. No history, no retractions.
 docs/STATUS.md      ⭐ the live campaign state (≤ ~300 lines; the old log is git history).
 logs/               gitignored; dated campaign dirs + logs/slurm/<yyyy-mm>/ for job stdout
@@ -104,6 +105,7 @@ ARCHIVE.md          the frozen predecessor + an index of its 26 campaign logs
 
 ```bash
 export PATH=$HOME/nj_sandy_sfincs/micromamba/envs/sfincs/bin:$PATH   # git lives here too
+# (scripts read the toolchain dir from NJ_TOOLCHAIN, default ~/nj_sandy_sfincs; 2026-11-07)
 export PYTHONPATH=$PWD
 
 python -m unittest discover -s tests            # ~240 tests, ~30 s on a compute node
@@ -211,7 +213,8 @@ not trip that guard. Do not run the sweep driver to "just rebuild" a template.
 - 🔴 **`data/elevation_v3/cudem_nj_v3.vrt` reads its tiles through `../elevation/…`
   (relativeToVRT).** Since 2026-10-05 `elevation_v3/` is a symlink into
   `/scratch/tpj8/nj_bight_sfincs_data/`, and `..` resolves PHYSICALLY — so that scratch dir
-  carries an `elevation` symlink back to the archive. Moving any data dir: grep its VRTs for
+  carries an `elevation` symlink back to this repo's `data/elevation` (to the archive until
+  2026-11-07). Moving any data dir: grep its VRTs for
   `relativeToVRT="1">../` first.
 - 🔴 **A new freeze silently drops HAND-PLACED frozen-mesh files.** `sfincs.weir` (the Keansburg
   levee, FINDINGS §38) and `sfincs.obs` live as files dropped into `data/frozen_mesh_<domain>/`,

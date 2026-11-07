@@ -37,7 +37,7 @@ set -euo pipefail
 VARIANT="${1:?usage: build_sfincs_native.sh <variant> [--fc host|conda] [--src DIR] [-j N] [--force]}"
 shift
 FC_KIND=host
-SRC="$HOME/nj_sandy_sfincs/SFINCS-src"
+SRC="${NJ_TOOLCHAIN:-$HOME/nj_sandy_sfincs}/SFINCS-src"
 JOBS=16
 FORCE=0
 while [ $# -gt 0 ]; do
@@ -50,8 +50,8 @@ while [ $# -gt 0 ]; do
     esac
 done
 
-ENV="$HOME/nj_sandy_sfincs/micromamba/envs/sfincs-build"
-PREFIX="$HOME/nj_sandy_sfincs/sfincs-native/$VARIANT"
+ENV="${NJ_TOOLCHAIN:-$HOME/nj_sandy_sfincs}/micromamba/envs/sfincs-build"
+PREFIX="${NJ_TOOLCHAIN:-$HOME/nj_sandy_sfincs}/sfincs-native/$VARIANT"
 BUILD="/scratch/tpj8/sfincs-build/$VARIANT"
 case "$FC_KIND" in
     host)  FC=/usr/bin/gfortran; CC=/usr/bin/gcc ;;

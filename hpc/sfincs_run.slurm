@@ -96,7 +96,7 @@ echo "model=$MODEL  engine=$ENGINE"
 # it retires the partial output and rewrites sfincs.inp to start from the newest restart
 # file; `finish` stitches the pieces back and restores the inp. Both are safe to run on a
 # dir that needs neither. The host env python is used — the container only has SFINCS.
-PY="${NJ_PYTHON:-$HOME/nj_sandy_sfincs/micromamba/envs/sfincs/bin/python}"
+PY="${NJ_PYTHON:-${NJ_TOOLCHAIN:-$HOME/nj_sandy_sfincs}/micromamba/envs/sfincs/bin/python}"
 export PYTHONPATH="$REPO"
 if [ "${SLURM_RESTART_COUNT:-0}" -gt 0 ]; then
     echo "NOTE: this job was requeued (restart #${SLURM_RESTART_COUNT})."

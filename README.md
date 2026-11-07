@@ -58,7 +58,7 @@ nj_sfincs/     the package — domain registry, fingerprints, build, validation,
 scripts/       flat; indexed in scripts/README.md
 tests/         stdlib unittest (pytest is deliberately not in the pinned env)
 hpc/           SLURM batch scripts + the Amarel bootstrap
-data/          symlinks for bulk (into the archive and /scratch/tpj8/nj_bight_sfincs_data); NACCS/ gtsm/ quadtree/ are local
+data/          bulk: hard-linked copies of the archive's share (2026-11-07) + symlinks into /scratch/tpj8/nj_bight_sfincs_data; NACCS/ gtsm/ quadtree/ are local
 experiments/   run dirs, gitignored; a symlink to /scratch/tpj8 (not backed up, 90-day purge)
 logs/          gitignored; dated campaign dirs, SLURM stdout under logs/slurm/<yyyy-mm>/
 notebooks/     rendered notebooks, committed with their outputs

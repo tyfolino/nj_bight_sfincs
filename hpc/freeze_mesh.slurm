@@ -33,9 +33,9 @@ if [ -n "${EXPECT_MD5:-}" ]; then
     md5sum -c "$EXPECT_MD5" || { echo "STALE FILES — refusing"; exit 3; }
   fi
 fi
-export PATH=$HOME/nj_sandy_sfincs/micromamba/envs/sfincs/bin:$PATH
+export PATH=${NJ_TOOLCHAIN:-$HOME/nj_sandy_sfincs}/micromamba/envs/sfincs/bin:$PATH
 export PYTHONPATH=$PWD NJ_ROOT=$PWD NJ_DOMAIN
-export PROJ_DATA=/home/tpj8/nj_sandy_sfincs/micromamba/envs/sfincs/share/proj
+export PROJ_DATA=${NJ_TOOLCHAIN:-$HOME/nj_sandy_sfincs}/micromamba/envs/sfincs/share/proj
 export HDF5_USE_FILE_LOCKING=FALSE
 OUT=/scratch/tpj8/nj_bight_sfincs_data/frozen_mesh_${NJ_DOMAIN}
 LINK=data/frozen_mesh_${NJ_DOMAIN}

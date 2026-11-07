@@ -10,7 +10,7 @@
 # This is an AUTOMATED commit on the user's behalf, made at their request (STATUS 09-14).
 set -euo pipefail
 REPO=/cache/home/tpj8/nj_bight_sfincs
-export PATH="$HOME/nj_sandy_sfincs/micromamba/envs/sfincs/bin:$PATH"
+export PATH="${NJ_TOOLCHAIN:-$HOME/nj_sandy_sfincs}/micromamba/envs/sfincs/bin:$PATH"
 cd "$REPO"
 NB="${1:?usage: push_rendered_notebook.sh <notebook> [gif-glob]}"
 GIFS="${2:-}"

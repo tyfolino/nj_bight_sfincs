@@ -15,9 +15,9 @@
 #SBATCH -o logs/slurm/%x_%j.out
 set -uo pipefail
 cd "$SLURM_SUBMIT_DIR"
-export PATH=$HOME/nj_sandy_sfincs/micromamba/envs/sfincs/bin:$PATH
+export PATH=${NJ_TOOLCHAIN:-$HOME/nj_sandy_sfincs}/micromamba/envs/sfincs/bin:$PATH
 export PYTHONPATH=$PWD NJ_ROOT=$PWD
-export PROJ_DATA=/home/tpj8/nj_sandy_sfincs/micromamba/envs/sfincs/share/proj
+export PROJ_DATA=${NJ_TOOLCHAIN:-$HOME/nj_sandy_sfincs}/micromamba/envs/sfincs/share/proj
 # EXPECT_MD5=<md5sum file written at submit time>: refuse to run stale copies (CLAUDE.md §5).
 # A REQUEUE (preemption) re-runs this check: there it WARNS and continues (2026-11-04).
 if [ -n "${EXPECT_MD5:-}" ]; then

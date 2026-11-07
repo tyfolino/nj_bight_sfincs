@@ -5,9 +5,9 @@ READ-ONLY with respect to every data product: it reads the discharge file, the r
 and the NLDI flowline cache, and writes only into ``OUT`` (``river_table.csv``,
 ``river_table.md``, ``summary.json``, and the HTTP cache ``cache/``).
 
-    export PATH=$HOME/nj_sandy_sfincs/micromamba/envs/sfincs/bin:$PATH
+    export PATH=${NJ_TOOLCHAIN:-$HOME/nj_sandy_sfincs}/micromamba/envs/sfincs/bin:$PATH
     export PYTHONPATH=$PWD NJ_DOMAIN=v4
-    export PROJ_DATA=/home/tpj8/nj_sandy_sfincs/micromamba/envs/sfincs/share/proj
+    export PROJ_DATA=${NJ_TOOLCHAIN:-$HOME/nj_sandy_sfincs}/micromamba/envs/sfincs/share/proj
     python scripts/build_river_table_v4.py [OUT]
 
 ``OUT`` defaults to ``logs/v4_design_2026-09-28/river_table`` — where the 09-28 decision

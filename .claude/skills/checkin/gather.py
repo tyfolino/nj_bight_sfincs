@@ -24,9 +24,9 @@ REPO = "/cache/home/tpj8/nj_bight_sfincs"
 TRANSCRIPTS = os.path.expanduser("~/.claude/projects/-cache-home-tpj8-nj-bight-sfincs")
 USER = os.environ.get("USER", "tpj8")
 # git is off the default PATH on Amarel; it lives in the sfincs env (CLAUDE.md §4).
-GIT = (
-    shutil.which("git")
-    or "/cache/home/tpj8/nj_sandy_sfincs/micromamba/envs/sfincs/bin/git"
+GIT = shutil.which("git") or os.path.join(
+    os.environ.get("NJ_TOOLCHAIN") or os.path.expanduser("~/nj_sandy_sfincs"),
+    "micromamba/envs/sfincs/bin/git",
 )
 BAD = (
     "FAILED",

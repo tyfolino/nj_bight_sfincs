@@ -22,7 +22,7 @@ _USE = re.compile(
     r"copytree|symlink|cd)\b"
 )
 #: The toolchain lives behind symlinks into the other repo by design (CLAUDE.md).
-_SANCTIONED = re.compile(r"micromamba|envs/sfincs|\.sif\b|hydromt_sfincs")
+_SANCTIONED = re.compile(r"micromamba|envs/sfincs|\.sif\b|hydromt_sfincs|NJ_TOOLCHAIN")
 
 
 def _code_files():
@@ -125,6 +125,37 @@ class TestArchiveIsDataOnly(unittest.TestCase):
                 target.parts,
                 f"experiments/ resolves INTO the archive ({name}): {target}",
             )
+
+
+class TestToolchainIsOneSetting(unittest.TestCase):
+    """The toolchain directory is named through ONE setting, ``NJ_TOOLCHAIN`` (2026-11-07).
+
+    ``~/nj_sandy_sfincs`` stopped being a repo on 2026-11-04 (archived on GitHub) but stays
+    on disk as the TOOLCHAIN: the conda env bakes its absolute prefix into its shebangs and
+    PROJ / GDAL paths, so it cannot move. Every path into it reads
+    ``${NJ_TOOLCHAIN:-$HOME/nj_sandy_sfincs}`` (shell) or
+    ``os.environ.get("NJ_TOOLCHAIN") or ~/nj_sandy_sfincs`` (Python), so the day it does
+    move is one export, not a grep. ``hpc/production_engine.txt`` keeps its absolute path on
+    purpose: it is a record of WHICH binary, guarded by md5s and named in engine.txt.
+    """
+
+    def test_paths_into_the_toolchain_read_nj_toolchain(self):
+        pat = re.compile(r"nj_sandy_sfincs[/\"']")
+        offenders = []
+        for p in _code_files():
+            for i, line in enumerate(p.read_text(errors="ignore").splitlines(), 1):
+                if line.strip().startswith("#"):
+                    continue
+                if pat.search(line) and "NJ_TOOLCHAIN" not in line:
+                    offenders.append(f"{p.relative_to(ROOT)}:{i}: {line.strip()[:90]}")
+        self.assertEqual(
+            offenders,
+            [],
+            "a path into the toolchain bypasses NJ_TOOLCHAIN:\n  "
+            + "\n  ".join(offenders)
+            + "\n  Write ${NJ_TOOLCHAIN:-$HOME/nj_sandy_sfincs}/... (shell) or "
+            'os.environ.get("NJ_TOOLCHAIN") or os.path.expanduser("~/nj_sandy_sfincs").',
+        )
 
 
 class TestNoProjEnvInHpc(unittest.TestCase):

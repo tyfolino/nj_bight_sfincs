@@ -25,7 +25,7 @@
 set -uo pipefail
 REPO=/cache/home/tpj8/nj_bight_sfincs
 cd $REPO
-ENV=/home/tpj8/nj_sandy_sfincs/micromamba/envs/sfincs
+ENV=${NJ_TOOLCHAIN:-$HOME/nj_sandy_sfincs}/micromamba/envs/sfincs
 export PATH=$ENV/bin:$PATH PYTHONPATH=$REPO NJ_ROOT=$REPO
 export PROJ_LIB=$ENV/share/proj PROJ_DATA=$ENV/share/proj GDAL_DATA=$ENV/share/gdal
 echo "== job=${SLURM_JOB_ID:-none} restart=${SLURM_RESTART_COUNT:-0} host=$(hostname) $(date)"

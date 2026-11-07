@@ -1,0 +1,16 @@
+NLCD,description,landuse,N
+11,Open Water,11,0.020
+21,Developed - Open Space,21,0.030
+22,Developed - Low Intensity,22,0.050
+23,Developed - Medium Intensity,23,0.100
+24,Developed - High Intensity,24,0.130
+31,Barren Land,31,0.040
+41,Deciduous Forest,41,0.160
+42,Evergreen Forest,42,0.180
+43,Mixed Forest,43,0.170
+52,Shrub/Scrub,52,0.070
+71,Grassland/Herbaceous,71,0.035
+81,Pasture/Hay,81,0.033
+82,Cultivated Crops,82,0.040
+90,Woody Wetlands,90,0.140
+95,Emergent Herbaceous Wetlands,95,0.045

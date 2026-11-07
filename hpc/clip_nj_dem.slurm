@@ -16,10 +16,10 @@
 #SBATCH -o logs/clip_nj_dem_%j.out
 set -euo pipefail
 cd "$SLURM_SUBMIT_DIR"
-export PATH=$HOME/nj_sandy_sfincs/micromamba/envs/sfincs/bin:$PATH
+export PATH=${NJ_TOOLCHAIN:-$HOME/nj_sandy_sfincs}/micromamba/envs/sfincs/bin:$PATH
 export PYTHONPATH=$PWD NJ_ROOT=$PWD
 export NJ_DOMAIN="${NJ_DOMAIN:?set NJ_DOMAIN in the submitting shell}"
-export PROJ_DATA=/home/tpj8/nj_sandy_sfincs/micromamba/envs/sfincs/share/proj
+export PROJ_DATA=${NJ_TOOLCHAIN:-$HOME/nj_sandy_sfincs}/micromamba/envs/sfincs/share/proj
 export GDAL_CACHEMAX=4096
 hostname; date; echo "NJ_DOMAIN=$NJ_DOMAIN"
 # 🔴 A file edited from the VS Code session (itself on a halk node) can read STALE or

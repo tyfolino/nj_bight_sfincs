@@ -1,4 +1,4 @@
-# Ruff configuration for nj_coast_sfincs.
+# Ruff configuration for nj_bight_sfincs.
 #
 # Ruff is deliberately NOT in the pinned sfincs env (same reasoning as pytest — see
 # CLAUDE.md §3a). Install it wherever you like and point it at the repo:

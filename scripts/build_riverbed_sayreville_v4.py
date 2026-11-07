@@ -47,7 +47,11 @@ import tempfile
 from pathlib import Path
 
 os.environ.setdefault(
-    "PROJ_DATA", "/home/tpj8/nj_sandy_sfincs/micromamba/envs/sfincs/share/proj"
+    "PROJ_DATA",
+    os.path.join(
+        os.environ.get("NJ_TOOLCHAIN") or os.path.expanduser("~/nj_sandy_sfincs"),
+        "micromamba/envs/sfincs/share/proj",
+    ),
 )
 os.environ["OGR_S57_OPTIONS"] = "SPLIT_MULTIPOINT=ON,ADD_SOUNDG_DEPTH=ON"
 

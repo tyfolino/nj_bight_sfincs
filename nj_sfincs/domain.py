@@ -3322,10 +3322,12 @@ for _d in DOMAINS.values():
     _check_building(_d)
 
 
-#: Domains whose elevation/precip/etc. tiers live in the READ-ONLY archive
-#: (``data/elevation`` and friends are symlinks into ``~/nj_coast_sfincs``, mode
-#: ``dr-xr-xr-x``). A puller must never target these: the freeze is what keeps their
-#: fingerprints reproducible, and on disk it simply returns EPERM.
+#: Domains whose elevation/precip/etc. tiers are the READ-ONLY archive's
+#: (``data/elevation`` and friends: since 2026-11-07 real directories here whose files
+#: are HARD LINKS to ``~/nj_coast_sfincs/data`` — same inodes, mode ``dr-xr-xr-x`` /
+#: ``r--r--r--`` carried over; before that, symlinks into it). A puller must never target
+#: these: the freeze is what keeps their fingerprints reproducible, on disk it simply
+#: returns EPERM, and a chmod'ed write would land in the archive's copy too.
 ARCHIVED_TIER_DOMAINS = ("v1_monmouth", "v1_5_raritan", "v2_barnegat")
 
 

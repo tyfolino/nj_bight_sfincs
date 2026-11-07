@@ -1,1 +1,32 @@
-../../nj_coast_sfincs/data/region_v2_barnegat.geojson
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "coast_v2",
+        "note": "DOMAIN v2 (2026-07-26) — nj_sandy_sfincs region.geojson extended SOUTH to Barnegat Inlet. v1's southern edge was lat 40.150 (Sea Girt), which did not even contain Manasquan Inlet. v2 adds a lobe at lon -74.30..-73.45, lat 39.70..40.15, bringing in Manasquan Inlet (40.103), the Point Pleasant Canal (40.07), the Mantoloking breach zone, Barnegat Bay, Island Beach, and BARNEGAT INLET (39.7565). This is the first increment of a staged march south to Cape May; the polygon is deliberately a simple box union so the next increment is another box.\n\nSOUTH EDGE = lat 39.70, the Manahawkin narrows. Measured from CUDEM, this is the narrowest bay cross-section between 39.55 and 39.80: 2,651 m of water, deepest -3.57 m (vs 4,533 m at 39.74 and 5,388 m at 39.62). It sits 6 km south of Barnegat Inlet so the artificial edge is outside the inlet's zone of influence. It IS an open tidal cross-section, unlike the Navesink fix which landed on dry land -- but model.py's wet-outflow sealer (OUTFLOW_MAX_DEPTH = -1.0) converts a free-outflow BC on water into an ordinary active cell, i.e. a WALL. So the failure mode here is NOT the Workstream L drain; it is the opposite -- the onward tidal exchange through Little Egg Inlet is missing, so expect over-response in the last few km. The Barnegat Light gauge (USGS 01409125) sits inside that buffer as the check.\n\nWEST EDGE = -74.30 so every tidal limit in the new lobe is enclosed ON DRY LAND, per Workstream L: Toms River head-of-tide gauge is at -74.223, N Br Metedeconk -74.153, S Br Metedeconk -74.180, Manasquan at Allenwood -74.122. All east of the edge.\n\nOFFSHORE EDGE stays straight at -73.45 for the whole coast. Verified with GMRT (not GEBCO -- its 450 m grid is too coarse here and wrongly implied a staircase was needed): off Barnegat the -30 m isobath is at lon -73.733 and -40 m at -73.502, so -73.45 is past 40 m depth at every latitude in the lobe. That keeps the water-level boundary a single straight line with no alongshore discontinuity, and leaves room for a snapwave_deep-style 30 m wave boundary.\n\nThe northern part of the polygon is v1 VERBATIM (same vertices, including the Raritan Bay lobe at lat 40.38-40.52 and its notch); v1's old south edge at lat 40.15 becomes interior and is dropped.",
+        "south_edge_lat": 39.7,
+        "west_edge_lon": -74.3,
+        "offshore_edge_lon": -73.45,
+        "supersedes": "nj_sandy_sfincs/data/region.geojson (sealed premier domain, 547408 faces)"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [-74.3, 39.7],
+            [-73.45, 39.7],
+            [-73.45, 40.520002],
+            [-74.279994, 40.520002],
+            [-74.280002, 40.380003],
+            [-74.092888, 40.380344],
+            [-74.095955, 40.150372],
+            [-74.3, 40.150372],
+            [-74.3, 39.7]
+          ]
+        ]
+      }
+    }
+  ]
+}

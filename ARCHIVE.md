@@ -24,11 +24,16 @@ commit 21e28f2197bdab39ec009ca5c660832e7d34e188
 
 > **The archive is referenced for DATA and DOCS only. Never for code.**
 
-`data/` here symlinks into `~/nj_coast_sfincs/data/` for the read-only bulk (elevation,
-roughness, waves, ERA5, precip, wind, discharge, validation, wavemakers) and, since
-2026-10-05, into `/scratch/tpj8/nj_bight_sfincs_data/` for the v3 / v4 builds. Moving the
-archive's share to a data directory this repo owns is plan Phase 1 step 2 (waits for an
-empty queue: running jobs read through these links).
+Since 2026-11-07 this repo OWNS its copy of the archive's read-only bulk (elevation,
+roughness, waves, ERA5, precip, wind, discharge, validation, wavemakers, the v1 frozen mesh,
+the v2 region + runs): the 13 `data/` symlinks into `~/nj_coast_sfincs` were replaced by real
+directories whose files are HARD LINKS to the archive's (`cp -a --link`: same inodes, so no
+quota, and the archive's `dr-xr-xr-x` / `r--r--r--` modes carry over; the inner `raw/`
+symlinks into `~/sfincs_data` kept). Deleting the archive no longer breaks this repo. The
+check (manifest with inodes, every VRT's sources read before / after, tests, port gate,
+fingerprint audits: all identical) is `logs/consolidation_2026-11-07/`. `data/` also
+symlinks, since 2026-10-05, into `/scratch/tpj8/nj_bight_sfincs_data/` for the v3 / v4
+builds.
 Nothing in `nj_sfincs/`, `scripts/`, `tests/` or `hpc/` may import from, exec, or add the
 archive to `sys.path` — `tests/test_repo_hygiene.py` asserts this. The same rule
 `CLAUDE.md` already applies to the toolchain repo, for the same reason: two copies of a
@@ -49,7 +54,7 @@ directory it scores.
 
 `data/frozen_mesh_v2_barnegat` (2.7 G) · `sfincs-env.tar.gz` (930 M) · `notebooks/` ·
 `reports/` · `.git` (293 M for 11 commits, almost all of it committed notebook outputs).
-`data/frozen_mesh_v1_monmouth` IS symlinked, for port verification only, and is dropped
+`data/frozen_mesh_v1_monmouth` IS brought across (hard links), for port verification only, and is dropped
 when `v1_monmouth` is retired.
 
 ## Ported later

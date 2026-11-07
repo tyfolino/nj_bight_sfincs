@@ -33,6 +33,7 @@ import argparse
 import html
 import json
 import math
+import os
 import re
 import shutil
 import subprocess
@@ -866,7 +867,8 @@ def ensure_repo(site: Path) -> None:
     site.mkdir(parents=True, exist_ok=True)
     if not (site / ".git").exists():
         git = shutil.which("git") or str(
-            Path.home() / "nj_sandy_sfincs/micromamba/envs/sfincs/bin/git"
+            Path(os.environ.get("NJ_TOOLCHAIN") or Path.home() / "nj_sandy_sfincs")
+            / "micromamba/envs/sfincs/bin/git"
         )
         subprocess.run([git, "init", "-b", "main", str(site)], check=False)
     (site / ".nojekyll").touch()
