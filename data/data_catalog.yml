@@ -2207,3 +2207,100 @@ deck_fix_modern_b:
       channel carve from the withuser preview, within 80 m of each site). Min-rule sites (E1, E2, M181, M232,
       M561, M562) are handled by modern_land_lower_2026b; keep sites (E3, M049, M064) are not painted.
       logs/modern_bed_b_2026-11-06/build_deck_overlays.py.
+
+# --- relevance-fix overlays for bed v1.2a (2026-11-06, logs/relevance_fixes_2026-11-06/) ---
+
+raritan_mouth_fix_v4:
+  data_type: RasterDataset
+  uri: elevation_v4/relevance_fix/raritan_mouth_fix_v4.tif
+  driver:
+    name: rasterio
+    options: {}
+  metadata:
+    category: topography
+    crs: 32618
+    nodata: -9999.0
+    unit: m+NAVD88
+    source: >-
+      LOWER-ONLY fix (2026-11-06, relevance work list #1/2/4/7, logs/relevance_fixes_2026-11-06/): the Raritan mouth
+      off Sewaren, where no bathymetry tier covers the channel shoulders and v1.1c falls through to USGS 3DEP 1/3"
+      (dep3_v4) = the lidar's HYDRO-FLATTENED water surface at -0.79..-0.80 m (3DEP breakline NJ_NE6County_B23
+      confirms the water polygon) over a 5-9 m channel. Value = NOAA OCS BlueTopo z (16 m, NAVD88;
+      modern_2026/derived/bluetopo_z_16m.tif) where its contributor class is 1-3 (a real survey; class 4 =
+      interpolated is NOT used), only at pixels where v1.1c = dep3 in -0.95..-0.65 m and BlueTopo is > 0.3 m deeper.
+      Surveys are 2013+ (closest available to 2012). BOTH beds (the 2026 bed has the same -0.79 m flat). Apply as
+      raritan_mouth_fix_v4:min. 8836 px / 14.14 ha painted; median lowering -8.30 m. Built by
+      logs/relevance_fixes_2026-11-06/build_overlays.py.
+
+gmrt_gap_fix_v4:
+  data_type: RasterDataset
+  uri: elevation_v4/relevance_fix/gmrt_gap_fix_v4.tif
+  driver:
+    name: rasterio
+    options: {}
+  metadata:
+    category: topography
+    crs: 32618
+    nodata: -9999.0
+    unit: m+NAVD88
+    source: >-
+      LOWER-ONLY fix (2026-11-06, work list #5/#25): two spots on the Delaware Bay shore (39.255 -74.998, 39.276
+      -74.981) where every tier above GMRT is NoData (nj_10ft_dem_v4 is cut at its zmin 0.001) so GMRT 50 m paints a
+      3-4 m 'ridge' across low ground. Value = the raw NJ 10 ft lidar DEM (pre-Sandy) where v1.1c = GMRT and the lidar
+      is > 0.5 m lower. 2012 BED ONLY (the 2026 bed is already right there). Apply as gmrt_gap_fix_v4:min. Note:
+      covers 8 of 13 flagged pixels at #5, none of #25's 2 (re-check #25). 189 px / 0.3 ha painted; median lowering
+      -3.96 m. Built by logs/relevance_fixes_2026-11-06/build_overlays.py.
+
+nj36_deck_recut_v4:
+  data_type: RasterDataset
+  uri: elevation_v4/relevance_fix/nj36_deck_recut_v4.tif
+  driver:
+    name: rasterio
+    options: {}
+  metadata:
+    category: topography
+    crs: 32618
+    nodata: -9999.0
+    unit: m+NAVD88
+    source: >-
+      LOWER-ONLY fix (2026-11-06, user picker S01 'real problem'; work list #22 area): deck_fix_v4's carve at the NJ
+      36 Highlands - Sea Bright bridge within 300 m of 40.396 -73.981, which deck_fix_v4b put back. 2012 BED ONLY
+      (user: the 2026 bed looks right). Apply as nj36_deck_recut_v4:min AFTER deck_fix_v4b:min. Note: it covers the
+      S01 spot; work-list site #22's deck-scale ridge 230 m north is NOT covered by v4's carve and stays open. 180 px
+      / 0.29 ha painted; median lowering -1.51 m. Built by logs/relevance_fixes_2026-11-06/build_overlays.py.
+
+greategg_plug_fix_v4:
+  data_type: RasterDataset
+  uri: elevation_v4/relevance_fix/greategg_plug_fix_v4.tif
+  driver:
+    name: rasterio
+    options: {}
+  metadata:
+    category: topography
+    crs: 32618
+    nodata: -9999.0
+    unit: m+NAVD88
+    source: >-
+      LOWER-ONLY fix (2026-11-06, work list #36): a 72 m CUDEM plug at -0.55 m in the Great Egg Harbor River (39.330
+      -74.695) over a ~-4.9 m channel; BlueTopo class 3 (a survey NOT newer than CUDEM, i.e. same era, valid for 2012)
+      reads -3.3 m there. Value = BlueTopo class 1-3 z where v1.1c = CUDEM and BlueTopo is > 0.3 m deeper. BOTH beds.
+      Apply as greategg_plug_fix_v4:min. 695 px / 1.11 ha painted; median lowering -2.82 m. Built by
+      logs/relevance_fixes_2026-11-06/build_overlays.py.
+
+barnegat_flat_fix_v4:
+  data_type: RasterDataset
+  uri: elevation_v4/relevance_fix/barnegat_flat_fix_v4.tif
+  driver:
+    name: rasterio
+    options: {}
+  metadata:
+    category: topography
+    crs: 32618
+    nodata: -9999.0
+    unit: m+NAVD88
+    source: >-
+      LOWER-ONLY fix (2026-11-06, work list #58): Barnegat Bay at 39.772 -74.103, where the USACE 2010 topobathy wins
+      with a flat -0.14 m (a water surface) and CUDEM (-0.67), BlueTopo class 3 (-0.46) and the 2026 bed (-0.69) are
+      all deeper. Value = CUDEM where v1.1c = the USACE 2010 tier and CUDEM is > 0.2 m lower. 2012 BED ONLY. Apply as
+      barnegat_flat_fix_v4:min. 2543 px / 4.07 ha painted; median lowering -0.54 m. Built by
+      logs/relevance_fixes_2026-11-06/build_overlays.py.

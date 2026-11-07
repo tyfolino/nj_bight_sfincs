@@ -901,6 +901,26 @@ _CALM_ARMS: dict[str, Experiment] = {
         for ft, s, tag in (("2", 0.61, "p061"), ("4", 1.22, "p122"))
     },
 }
+#: 2026-11-07: the same four calm arms with the Elizabeth River South + Rahway South Branch
+#: levees as weirs, re-tied to the 2026 ground (logs/walls_elizabeth_rahway_modern_2026-11-06/).
+#: NEW arms, because the four above are scored runs; each pairs with its namesake without the
+#: suffix (one file changed: sfincs.weir). Overpeck dam IN, as in the template's weir.
+_CALM_ARMS.update(
+    {
+        f"{k}+weir-elizabeth-rahway": replace(
+            e,
+            name=f"{k}+weir-elizabeth-rahway",
+            description=e.description
+            + " + the Elizabeth / Rahway levees as weirs on 2026 ground (pair: "
+            + k
+            + ").",
+            weir_from=DATA
+            / "structures_v4"
+            / "sfincs_modern_elizabeth_rahway_ground.weir",
+        )
+        for k, e in list(_CALM_ARMS.items())
+    }
+)
 
 
 EXPERIMENTS_BY_DOMAIN: dict[str, dict[str, Experiment]] = {
@@ -1065,6 +1085,24 @@ EXPERIMENTS_BY_DOMAIN: dict[str, dict[str, Experiment]] = {
             "Pair: p4-premier (this domain) and v4_refreeze_swz/p4-premier.",
             subgrid_from="_subgrid_v1_1c",
             weir_from=DATA / "structures_v4" / "sfincs_overpeck_open_elizabeth_rahway_ground.weir",
+        ),
+        # 2026-11-06: the v1.2a bed test (logs/relevance_fixes_2026-11-06/): waves-off, Overpeck open, v1.1c
+        # bed vs v1.1c + the five relevance-fix overlays. Pair: this domain's p4-nowaves.
+        "p4-nowaves": replace(
+            _V4_REFREEZE["p4-nowaves"],
+            description="Waves-off reference on the v1.1 domain: p4-nowaves on the v1.1c flow bed with the "
+            "Overpeck dam open (= this domain's p4-premier without SnapWave).",
+            subgrid_from="_subgrid_v1_1c",
+            weir_from=DATA / "structures_v4" / "sfincs_overpeck_open.weir",
+        ),
+        "bed-v12a+p4-nowaves": replace(
+            _V4_REFREEZE["p4-nowaves"],
+            name="bed-v12a+p4-nowaves",
+            description="p4-nowaves (this domain) on _subgrid_v1_2a = v1.1c + raritan_mouth_fix_v4, "
+            "gmrt_gap_fix_v4, nj36_deck_recut_v4, greategg_plug_fix_v4, barnegat_flat_fix_v4 (all :min; "
+            "logs/relevance_fixes_2026-11-06/VERDICTS.md). Pair: p4-nowaves (this domain).",
+            subgrid_from="_subgrid_v1_2a",
+            weir_from=DATA / "structures_v4" / "sfincs_overpeck_open.weir",
         ),
     },
     # The breach arms, each on a domain whose face z comes from its own breach bed.
