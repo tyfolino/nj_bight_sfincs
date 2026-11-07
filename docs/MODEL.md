@@ -143,7 +143,8 @@ Mark residuals here are model − observed, **median estimator, 50 m radius**; `
 - **Peak wave heights are not all physical.** `hm0` reaches 27.55 m at the Narrows (40.606 N, −74.045) at hour 11 of the run, well before the storm, against 9.98 m at the wave boundary; 3,131 faces reach ≥ 12 m, 2,765 of them at the Delaware Bay mouth. On the previous wave bed: 26.67 m, 5,974 faces, so it did not come with this bed. The Narrows and Sandy Hook cells are the SnapWave limit cycle (FINDINGS §44 (g)); the Delaware mouth is unexplained. Its effect on water level is unmeasured. Do not publish a peak-`hm0` map unclipped.
 - **Delaware: low water, and few marks.** The storm low misses by −0.36 m at Lewes, −0.6…−0.7 m Ship John → Philadelphia,
   −0.7…−1.0 m at Newbold (rough high/low pick on the previous wave bed). At the mouth it is the NACCS forcing; the growth
-  upriver is unexplained. Peaks are better (§6), bar the Christina gauges (−0.80 m Newport, −0.54 m Wilmington).
+  upriver is unexplained. Peaks are better (§6); the Christina gauges read −0.47 m Newport, −0.23 m Wilmington since their observed
+  series was re-datumed NGVD29 → NAVD88 (11-05; re-scored 11-07, job 63666636 — before the fix −0.80 / −0.54).
   Only 3 marks are scored in the Delaware basins (2 river, 1 NJ bay shore).
 - **Cape May back bays.** Bias −0.288, RMSE 0.317 m (median, 50 m, n 4); published-crest gauge errors −0.305 m
   Sea Isle, −0.252 m Stone Harbor, −0.190 m Avalon. Open (§57).
