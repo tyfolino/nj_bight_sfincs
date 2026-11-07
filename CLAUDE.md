@@ -311,7 +311,11 @@ not trip that guard. Do not run the sweep driver to "just rebuild" a template.
   hard-links `sfincs_subgrid.nc` from the `subgrid_from` source; `finalize()`'s `sf.write()` once
   rewrote it THROUGH the link into the premier's and 15 other runs' tables (2026-10-01; harmless
   that time, bit-identical). `model.break_hardlinks()` runs before every write; `TestBreakHardlinks`
-  pins it. Any new writer into a staged dir needs the same.
+  pins it. Any new writer into a staged dir needs the same. The same holds for MODES: since 2026-11-07
+  `data/{elevation,roughness,…}` are hard links to the archive's files, and a `chmod` on them
+  is a chmod of the archive (10 archive files went 444 → 644 that day; restored from the
+  `/cache/.snapshots/` weekly). To remove a hard-linked tree, `rm -rf` it: unlinking needs
+  only the parent dirs writable.
 - **Disk quota exhaustion never says "quota".** It SIGSEGVs jobs or silently truncates
   output maps while `sacct` reports COMPLETED. Home is **GPFS, 100 G soft / 110 G hard**, and
   `quota -s` prints nothing — ask `mmlsquota -u $USER --block-size auto cache`

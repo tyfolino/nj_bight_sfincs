@@ -26,7 +26,7 @@ commit 21e28f2197bdab39ec009ca5c660832e7d34e188
 
 Since 2026-11-07 this repo OWNS its copy of the archive's read-only bulk (elevation,
 roughness, waves, ERA5, precip, wind, discharge, validation, wavemakers, the v1 frozen mesh,
-the v2 region + runs): the 13 `data/` symlinks into `~/nj_coast_sfincs` were replaced by real
+the v2 region): 12 of the 13 `data/` symlinks into `~/nj_coast_sfincs` were replaced by real
 directories whose files are HARD LINKS to the archive's (`cp -a --link`: same inodes, so no
 quota, and the archive's `dr-xr-xr-x` / `r--r--r--` modes carry over; the inner `raw/`
 symlinks into `~/sfincs_data` kept). Deleting the archive no longer breaks this repo. The
@@ -34,6 +34,10 @@ check (manifest with inodes, every VRT's sources read before / after, tests, por
 fingerprint audits: all identical) is `logs/consolidation_2026-11-07/`. `data/` also
 symlinks, since 2026-10-05, into `/scratch/tpj8/nj_bight_sfincs_data/` for the v3 / v4
 builds.
+The 13th, `data/v2_barnegat_runs`, was REMOVED the same day: nothing read it. The v2 Barnegat
+runs live only in `~/nj_coast_sfincs/experiments/v2_barnegat/` (6.2 G, incl. its 2026-08-20
+`metrics.csv`); re-link with `cp -a --link` if ever needed. Deleting the archive frees them; it
+does NOT free the 12 hard-linked dirs above (~2.7 G), which this repo reads.
 Nothing in `nj_sfincs/`, `scripts/`, `tests/` or `hpc/` may import from, exec, or add the
 archive to `sys.path` — `tests/test_repo_hygiene.py` asserts this. The same rule
 `CLAUDE.md` already applies to the toolchain repo, for the same reason: two copies of a
