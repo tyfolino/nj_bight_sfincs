@@ -225,6 +225,16 @@ not trip that guard. Do not run the sweep driver to "just rebuild" a template.
   not replay a template's hand steps (v4_refreeze: the ERA5-bilinear meteo, the Absecon obs
   nudge, the Overpeck `sfincs_ini_regional.bin`) — diff the new template against the old one
   file by file (`logs/restage_2026-10-17/compare_templates.py`) before swapping it in.
+- 🔴 **A mark within ~50 m of a weir / levee line is scored from BOTH sides of it.** The median-50 m estimator pools
+  wet pixels in a circle; 14 m from the Elizabeth Left Bank levee that circle reached the protected side and turned a
+  −0.04 m residual into −0.73 m, which nearly decided the v1.1 levee arm (2026-11-07). And check a mark's position
+  in its SOURCE table: `independent_marks_v11.txt` prints 3 decimals (~100 m) — that rounding put the same sensor
+  inside the leveed area. Before reading a mark's Δ between weir arms, check its distance to every weir line.
+- 🔴 **Predict a weir file's u/v count with the ENGINE's rule, not our snap.** SFINCS snaps in float32 (face centres
+  move in 0.5 m steps at UTM northings ~4.5e6) and counts a centre lying ON a segment as crossing every link of
+  that face; `weir_on_mesh.snap` + 1 predicted 817 for a file the engine reads as 819 and the job refused to score
+  (2026-11-06). `logs/walls_elizabeth_rahway_2026-11-05/engine_snap_f32.py <rundir> <weirfile>` reproduces every
+  logged count (`weircount_819.md`).
 - **A roughness or elevation change needs a SUBGRID rebuild on the frozen mesh.**
   `build_static` copies the frozen mesh and returns early, so it will silently produce a
   no-op template. A *mask* change is the opposite: no subgrid rebuild, but the fingerprint
