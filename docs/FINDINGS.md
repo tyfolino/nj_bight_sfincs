@@ -2363,6 +2363,19 @@ the tide at −0.36 m, with only a 1–2 px NHD outline tail painted at the 1.61
 `inland_water_bed_v4` (the "line down the creek"); fixed by raising the floor upstream of the dam to
 the pool (`alloway_pool_v4`, 0.388 km², ~600,000 m³; `logs/inland_water_lines_2026-11-05/`).
 
+(n) **Model 1.1.0 read** (`logs/v1_1_read_2026-11-06/READ.md`; both v1.1 arms on `v4_refreeze_swz_v11`, production
+engine, 32 threads, uninterrupted, output WHOLE). Paired vs 1.0.0, median 50 m, B 200 000: on the 1.x mark file
+(n 119) ΔRMSE −0.069 [−0.158, −0.007] for the levee arm (0.355 vs 0.424), −0.069 [−0.157, −0.006] for the
+Overpeck-only arm; on the v4 file (n 110) −0.072 for both. The gain is the open coast (−0.215 [−0.550, +0.014],
+n 23) and the NJ back bays (−0.055 [−0.092, −0.008], n 19); inlets, NY bays and rivers move by ≤ 0.02. MOTF CSI
+0.784 → 0.795 / 0.794. The upper Delaware gauges read 0.05–0.07 m lower than 1.0.0 (Marcus Hook → Newbold).
+**Levees vs Overpeck-only is a tie on everything observed**: ΔRMSE −0.0001 [−0.0034, +0.0031] (n 119); the
+deterministic waves-off pair +0.0000; the waves-on arms differ by 5–8 cm in Raritan Bay, far from any levee
+(SnapWave sensitivity). Scored one-sided, the 15 independent Newark marks move only within 15 m of a levee
+(001WL +0.01 → −0.07, HWM-208 +0.21 → +0.09 m; Elizabeth RMSE 0.149 → 0.119, n 4). No observation lies inside the
+leveed areas; Bayway substation is dry with levees, 97 % wet (median 0.79 m) without. The user chose the levee arm
+(2026-11-09) as mapped flood-control structures (NLD), not on the scores.
+
 **Head-of-tide variants on v4's mesh (`v4_hot` = A, `v4_hot_plus` = A+; mask-only, registered
 2026-10-02; read 2026-10-03, `logs/v4_hot_2026-10-03/`).** Marks identical to v4 (RMSE 0.577 /
 bias −0.407) — no mark or gauge lies in a trimmed reach; MOTF CSI 0.684 → 0.687 / 0.686;

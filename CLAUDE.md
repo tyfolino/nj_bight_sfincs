@@ -21,8 +21,9 @@ Newark Bay; the far banks computed) was PARKED 09-30 on two questions the user d
 2026-10-05: **rivers are cut at today's head of tide (A+** — the Cohansey and Neshaminy keep
 the +3 m reach; upriver of a cut is out of scope by design, the +3 m containment rule applies
 within that ring**)** and **waves = SnapWave with 5° bins and HOURLY updates** (`dtwave` 3600,
-FINDINGS §61). **Model 1.0.0 (user 2026-11-01) is `p4-premier` on `v4_refreeze_swz`** (`v4_refreeze` with SnapWave
-on the flow bed's mean ground, `docs/MODEL.md`, FINDINGS part 4 (j)). `v4_refreeze` keeps only its rain
+FINDINGS §61). **Model 1.1.0 (user 2026-11-09) is `p4-premier+weir-elizabeth-rahway` on `v4_refreeze_swz_v11`**
+(the v1.1c flow bed, wave bed = its mean ground, Overpeck dam open, Elizabeth / Rahway levees in; `docs/MODEL.md`,
+`CHANGELOG.md`). 1.0.0 = `p4-premier` on `v4_refreeze_swz` (tag `v1.0.0`; FINDINGS part 4 (j)). `v4_refreeze` keeps only its rain
 pair; the 10-11 `naccs-premier` and its bed are retired (rows kept).
 
 **The lineage's founding argument, still the rule for how to argue a boundary:** the
@@ -52,7 +53,8 @@ to run until it is set; tests that need *a* domain declare the `v1_monmouth` fix
 | `v4_hot` / `v4_hot_plus` | v4's mesh, river arms cut at today's head of tide (A) / A with the Cohansey + Neshaminy +3 m reaches kept (A+, user's pick 10-05; Maurice cut on the Union Lake dam crest) | STAGED 10-02 / RE-STAGED 10-05 — mask-only variants via `scripts/setup_boundary_depth.py`, `sha=446d671cd97037ee` / `e5e9d8668fe29292` |
 | `v4_hot_plus_walls` | A+ + 11 leak walls + the Cape Henlopen gap closed + 4 inflows moved into their channels — run B's domain, the pre-re-freeze record | STAGED 10-05, `sha=77b5eda1fcd51cf6`; run B 10-05 |
 | `v4_refreeze` | `v4_hot_plus_walls` + the Lewes edge, Keansburg + Overpeck weirs, ERA5-bilinear template meteo; the Phase 4 record | STAGED 10-06, `sha=378014e154b4ff41`; side runs retired 11-01 |
-| `v4_refreeze_swz` | `v4_refreeze` with face `z` = the flow bed's mean ground — **MODEL 1.0.0** | STAGED 10-28, `sha=90cc7468614a5814`; premier `p4-premier` (job 63181564) |
+| `v4_refreeze_swz` | `v4_refreeze` with face `z` = the flow bed's mean ground — MODEL 1.0.0 (tag `v1.0.0`), superseded by 1.1.0 | STAGED 10-28, `sha=90cc7468614a5814`; premier `p4-premier` (job 63181564) |
+| `v4_refreeze_swz_v11` | `v4_refreeze_swz` with face `z` = the v1.1c flow bed's mean ground — **MODEL 1.1.0** | STAGED 11-06, `sha=4bc97aae885f0aa4`; premier `p4-premier+weir-elizabeth-rahway` (job 63617802; 819 weir u/v) |
 
 **The same experiment name exists on every domain and means a different model each time.**
 That is why runs live at `experiments/<domain>/<arm>`, why `EXPERIMENTS` is keyed by domain

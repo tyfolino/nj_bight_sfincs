@@ -1,9 +1,12 @@
 # MODEL — the v4 premier (model card)
 
-**Version 1.0.0 (user 2026-11-01; git tag `v1.0.0`).** Describes arm
-`p4-premier` on domain `v4_refreeze_swz` as run (job 63181564). Evidence lives in
-[FINDINGS.md](FINDINGS.md) (cited as §n, or "part 4 (x)" for the v4 design record); this card
-states what the model IS, not how it got there.
+**Version 1.1.0 (user 2026-11-09; git tag `v1.1.0`).** Describes arm
+`p4-premier+weir-elizabeth-rahway` on domain `v4_refreeze_swz_v11` as run (job 63617802). Same mesh,
+forcing and engine physics as 1.0.0 (`v4_refreeze_swz` / `p4-premier`, job 63181564, tag `v1.0.0`); the
+changes are the flow bed, the wave bed that follows it, the weir file and the mark file ("Changes from
+1.0.0", §2). Everything not listed there is 1.0.0's and is described below as written for 1.0.0. Evidence
+lives in [FINDINGS.md](FINDINGS.md) (cited as §n, or "part 4 (x)" for the v4 design record) and the v1.1
+read (`logs/v1_1_read_2026-11-06/READ.md`); this card states what the model IS, not how it got there.
 
 **What it is.** A SFINCS (v2.3.3, patched) compound-flood hindcast of Hurricane Sandy, 28–31 Oct
 2012, on the New Jersey coast from Cape May to the Narrows plus Delaware Bay and the tidal Delaware,
@@ -16,26 +19,44 @@ run. Validated against USGS high-water marks, NOAA / USGS gauges and the FEMA MO
 
 | | |
 |---|---|
-| domain | `v4_refreeze_swz` — `faces=4881654 boundary_edges=4388 sha(z,mask)=90cc7468614a5814` (`nj_sfincs/premier.py`) |
-| arm | `p4-premier` (`nj_sfincs/experiments.py`, `_p4`), the name it was run and scored under (`premier.premier_arm`) |
-| engine | `bin:v2.3.3-winddir-igk-igseed-wmseed-1-gf11@e15ed916`, upstream commit `091f531a` (tag v2.3.3) + 4 patches (§3); sha256 `e15ed9161a499960017bc8b3a44d41c1a05d123d429e8f4e93ba67bdfdb8a248`, md5 `cbf497dc4a7683a261d8e2fb3ed75868`; written to each run's `engine.txt` |
-| flow bed | `_subgrid_refreeze_lakes_min_creeks_cohansey` (built 2026-10-23; recipe in its `subgrid_provenance.txt`; `metrics.csv` label `…@34ba916d`) |
-| wave bed | mesh face `z` = the flow bed's subgrid mean ground, buildings included (§2) |
-| run | job 63181564, `hal0391` (`emeraldrapids`), 16 threads, `restart_count 0`: uninterrupted, seeded |
+| domain | `v4_refreeze_swz_v11` — `faces=4881654 boundary_edges=4388 sha(z,mask)=4bc97aae885f0aa4` (`nj_sfincs/premier.py`); same mesh and mask as 1.0.0 (`v4_refreeze_swz`, `90cc7468614a5814`), face `z` moved on 15,746 faces |
+| arm | `p4-premier+weir-elizabeth-rahway` (`nj_sfincs/experiments.py`, block `v4_refreeze_swz_v11`): 1.0.0's `p4-premier` with `subgrid_from="_subgrid_v1_1c"` and `weir_from=data/structures_v4/sfincs_overpeck_open_elizabeth_rahway_ground.weir` (md5 `e11966fcab8b91f2e22583c8733a4dbf`), nothing else |
+| engine | `bin:v2.3.3-winddir-igk-igseed-wmseed-swomp-2-gf11@dd78d82a` = `hpc/production_engine.txt` (user 2026-11-02), upstream commit `091f531a` (tag v2.3.3) + 6 patches (`hpc/patches/`, fork branch `nj/v2.3.3-swomp-2`); sha256 `dd78d82a40480c6ef5fe0a8bbb8cd77df2cfbc336c77c37d9662e48eb1560fa7`. Bit-identical to 1.0.0's `…wmseed-1-gf11@e15ed916` on the full storm (FINDINGS §20); written to each run's `engine.txt` |
+| flow bed | `_subgrid_v1_1c` (built 2026-11-06, job 63578834; recipe in its `provenance.txt`). 1.0.0: `_subgrid_refreeze_lakes_min_creeks_cohansey` (built 2026-10-23, `…@34ba916d`) |
+| wave bed | mesh face `z` = the flow bed's subgrid mean ground, buildings included (`scripts/setup_face_z.py --from v4_refreeze_swz --bed _subgrid_v1_1c`; §2) |
+| weirs | 819 engine structure u/v points (1.0.0: 412): the Overpeck dam removed, the Elizabeth / Rahway levees added. The engine snaps in float32 and counts a centre lying on a line as crossing every link of its face, so it reads 819 where `weir_on_mesh.snap` + 1 predicted 817 (`logs/walls_elizabeth_rahway_2026-11-05/weircount_819.md`) |
+| run | job 63617802, `hal0383`, 32 threads, `restart_count 0`: uninterrupted, seeded. SLURM says FAILED: the job's own weir-count check refused to score (819 ≠ 817) after the solve had finished; scored by 63666636 |
 | window, CRS | `tstart` 2012-10-28 00:00 → `tstop` 2012-10-31 00:00 (72 h), `tspinup` 3600 s; EPSG:32618 (UTM 18N), elevations and water levels m NAVD88 |
 | output | his 600 s (48 obs points + cross-sections), map 3600 s, `zsmax` every 21600 s, restart every 21600 s (the restart files are removed when a run finishes) |
 
 **Verify the fingerprint** (reads `z` and `mask` from the run's `sfincs.nc`, checks obs points and output):
 
 ```bash
-NJ_DOMAIN=v4_refreeze_swz python -m nj_sfincs.premier experiments/v4_refreeze_swz/p4-premier
-# OK  experiments/v4_refreeze_swz/p4-premier  v4_refreeze_swz STAGED 2026-10-28 …  obs OK  output WHOLE
+NJ_DOMAIN=v4_refreeze_swz_v11 python -m nj_sfincs.premier experiments/v4_refreeze_swz_v11/p4-premier+weir-elizabeth-rahway
+# OK  experiments/v4_refreeze_swz_v11/p4-premier+weir-elizabeth-rahway  v4_refreeze_swz_v11 STAGED 2026-11-06 …  obs OK  output WHOLE
 ```
 
 With no path it audits every run dir on the domain. Trust neither the name nor the counts: sibling domains on
 this mesh share face and edge counts, and only the sha tells them apart. Read nothing before `output WHOLE`.
 
 ## 2. What is IN
+
+### Changes from 1.0.0 (1.1.0; everything else in this section is 1.0.0's)
+
+| what | 1.0.0 | 1.1.0 | evidence (waves-off pair vs `p4-nowaves`, median 50 m, n 110, unless stated) |
+|---|---|---|---|
+| river beds | `riverbeds_hierarchy_v4c` | `riverbeds_hierarchy_v4e`: lower Mullica + Tuckahoe, Toms, Cedar Ck, Westecunk, Raccoon, Mantua from charts / surveys (v4d) + the Christina plug removed (v4e) | v4d kept, all 7 reaches (`logs/mullica_bed_2026-11-03/READ.md`); v4d + v4e + channel n ΔRMSE −0.0021 [−0.0089, +0.0029]; Newport tide range 0.62 → 0.95 of observed |
+| bridge decks in the bed | none removed | `deck_fix_v4b:min` (deck pixels only, each to its own bank; 588 of 597 wet crossings open) | decks ΔRMSE −0.0010 [−0.0021, −0.0003]; Sea Isle tide range 0.687 → 0.818 (`logs/decks_2026-11-04/`); FINDINGS part 4 (m) |
+| NBI water crossings | — | `nbi_open_v4:min` (8 verified + 18 over federal channels; `logs/nbi_crossings_2026-11-05/`) | built into v1.1c; no separate pair |
+| eHydro channels | 2012 survey tiers only | + `ehydro_fill_v4:min` (9 survey tiles, 2.04 km², lower-only; `logs/ehydro_inventory_2026-11-05/`) | built into v1.1c; lower-only; reconnects the Broadkill / Lewes–Rehoboth canal (`logs/bed_audit_2026-11-05/out/TRIAGE_v1_1c.md`) |
+| impounded lakes | CUDEM ~0 m fills under Alloway and Silver Lakes | `alloway_pool_v4` (0.388 km² at 1.61 m) + `silver_pool_v4` (0.174 km² at 2.55 m), raise-only | FINDINGS part 4 (m)(4) |
+| Manning, developed land | NLCD 22–24 → 0.10 / 0.13 (tuned 2026-05 on a model WITHOUT buildings: a double count with the burn) | `manning_developed_v4`: 0.04 in NJ only (where footprints are burned); PA / DE / Staten Island keep NLCD n | ΔRMSE −0.0033 [−0.0058, −0.0014]; MOTF CSI 0.771 → 0.779 (`logs/developed_manning_2026-11-03/`) |
+| Manning, channels | marsh / NLCD n on tidal channels | `manning_channel_v4e`: 0.02 in the surveyed channels | with v4e (above) |
+| Little Egg channel | `littleegg_channel_v4` | kept (18-day tide test: a tie; `logs/barnegat_tide_2026-11-04/READ.md`, `GAUGES.md`) | — |
+| Overpeck tidal dam | weir line in (dam closed) | removed (open; Keansburg system + bypass sill kept) | valley peak 0.93 → 2.37–2.44 m (NACCS 2.25); 23 independent marks ΔRMSE −0.009 [−0.020, +0.002] |
+| Elizabeth / Rahway levees | not in | in: USACE Elizabeth River South (Right + Left Bank) and Rahway South Branch (Right Bank) at the NLD crest, the 85 m Bayway wall, 3 tie-ins and 11 ground guards (lidar ridge where the mesh averaged a rise away); gates closed (`logs/walls_elizabeth_rahway_2026-11-05/`) | waves-off pair 63612303: ΔRMSE +0.0000 [−0.0000, +0.0000]. The 15 independent Newark marks scored ONE-SIDED (only water on the mark's side of a levee line; waves-off): only the two marks within 15 m of a levee move (001WL +0.01 → −0.07, HWM-208 +0.21 → +0.09 m); Elizabeth RMSE 0.149 → 0.119 (n 4), all 15 0.154 → 0.147. Bayway 345 kV substation dry (97 % wet, median 0.79 m, without). **No observation inside the leveed areas**: that it stayed dry is the model's, untested. MOTF cannot judge (a bathtub surface with no levees) |
+| validation marks | v4 file, 193 marks (110 scored) | 1.x file `data/validation_v4/sandy_hwms_v4_1x.geojson` (md5 `1919eba410d3c7c7d2ce8ca328be4a9f`): + 13 marks the v4 pull missed (Newark Bay / Hackensack / Overpeck), 206 marks (119 scored); 1.0.0 scores 119 on it too | a deliberate re-baseline (`logs/v2_validation_2026-11-03/`) |
+| Christina gauges | Newport 01480065 / Wilmington 01480120 read as NAVD88 (were NGVD29) | re-datumed −0.326 / −0.314 m (`data/gtsm/usgs_sandy_tidal_v4.nc`, 11-05) | a measurement fix: compare gauges by re-baselining, not by delta |
 
 ### Domain and mesh
 - **Ring:** `data/region_v4_hot_plus.geojson`, from `data/v4_design/region_v4_hot_plus_vertices.csv` (198 named
@@ -196,21 +217,29 @@ Coupling, breaching and back-bay literature: `reports/literature_review_2026-10.
 
 ## 6. Validation (what is scored, and how)
 
-Scores go to `experiments/v4_refreeze_swz/metrics.csv`; every row carries `engine`, `engine_seed`,
-`meteo`, `infiltration`, `subgrid`. Arms are compared PAIRED (`scripts/paired_hwm_bootstrap.py`).
-A bare-ground wave bed scores the same (ΔRMSE −0.000 [−0.004, +0.004], part 4 (j)).
+Scores go to `experiments/v4_refreeze_swz_v11/metrics.csv` (1.0.0: `experiments/v4_refreeze_swz/metrics.csv`);
+every row carries `engine`, `engine_seed`, `meteo`, `infiltration`, `subgrid`. Arms are compared PAIRED
+(`scripts/paired_hwm_bootstrap.py`). 1.1.0 is scored on the 1.x mark file, 1.0.0 on the v4 file: compare them on
+the PAIRED rows, which put both on one mark set. A bare-ground wave bed scores the same (ΔRMSE −0.000
+[−0.004, +0.004], part 4 (j), on 1.0.0).
 
-| target | scored as | p4-premier |
-|---|---|---|
-| USGS HWMs (STN event 24), all | RMSE / bias, **median estimator, 50 m radius** (`_scored` keys) | RMSE 0.439, bias −0.128 m, n 110, 1 dry, 91.8 % within ±0.5 m |
-| HWMs without the 5 `lake_outlet_blocked` marks | same estimator and radius (`_excl_lake_blocked`) | RMSE 0.259, bias −0.066 m, n 105, 95.2 % within ±0.5 m |
-| HWMs without the 6 noted marks (6121, 6155, 6169, 6188, 6202, 6398: run-up, `leak`, questioned; drawn hollow) | same estimator and radius (`_excl_noted`) | RMSE 0.354, bias −0.093 m, n 104, 97.1 % within ±0.5 m |
-| NOAA CO-OPS gauges (6-min) | peak error, m | Atlantic City +0.494 (the NACCS forcing, local to there; part 4 (h)), Cape May −0.101, Lewes −0.191, Ship John −0.068, Reedy Point −0.110, Delaware City −0.189, Marcus Hook −0.142, Philadelphia −0.120, Burlington −0.116, Newbold −0.138; Sandy Hook −0.321 before the gauge failed |
-| all 27 gauges with a full peak record (NOAA, USGS tidal, STN storm-tide sensors) | peak error; Great Kills corrected −0.34 m (§50); other gauges use published crests where USGS's archive has the storm-day hole (`peak_err_pub_*`, §60 (f)) | median \|error\| 0.110 m, median −0.068 m |
-| FEMA MOTF extent (NJ only) | CSI / POD / FAR inside the validity mask, footprints not masked (§55) | CSI 0.784, POD 0.846, FAR 0.086; `motf_km2_excluded_boxes` 2,412.8 km² (incl. `salem_marshes`, 418 km²); false alarms 39.8 km² connected, 70.6 km² disconnected |
+| target | scored as | 1.1.0 (`p4-premier+weir-elizabeth-rahway`) | 1.0.0 (`p4-premier`) |
+|---|---|---|---|
+| USGS HWMs (STN event 24), all | RMSE / bias, **median estimator, 50 m radius** (`_scored` keys) | 1.x file: RMSE 0.355, bias −0.072 m, n 119, 1 dry, 93.3 % within ±0.5 m | v4 file: RMSE 0.439, bias −0.128 m, n 110, 1 dry, 91.8 % within ±0.5 m |
+| paired, 1.1.0 − 1.0.0 | ΔRMSE [95 % CI], B 200 000, same estimator and radius | 1.x file (n 119): 0.355 vs 0.424, **−0.069 [−0.158, −0.007]**; v4 file (n 110): 0.367 vs 0.439, −0.072 [−0.165, −0.006]. By basin (1.x): open coast −0.215 [−0.550, +0.014], NJ back bays −0.055 [−0.092, −0.008], inlets / NY bays / rivers within ±0.015 | — |
+| HWMs without the `lake_outlet_blocked` marks | same estimator and radius (`_excl_lake_blocked`) | RMSE 0.249, bias −0.033 m, n 114, 94.7 % within ±0.5 m | RMSE 0.259, bias −0.066 m, n 105, 95.2 % within ±0.5 m |
+| HWMs without the 6 noted marks (6121, 6155, 6169, 6188, 6202, 6398: run-up, `leak`, questioned; drawn hollow) | same estimator and radius (`_excl_noted`) | RMSE 0.312, bias −0.051 m, n 113, 97.3 % within ±0.5 m | RMSE 0.354, bias −0.093 m, n 104, 97.1 % within ±0.5 m |
+| NOAA CO-OPS gauges (6-min) | peak error, m | Atlantic City +0.50, Cape May +0.00, Lewes −0.17, Ship John −0.05, Reedy Point −0.11, Delaware City −0.24, Marcus Hook −0.21, Philadelphia −0.18, Burlington −0.17, Newbold −0.19; Sandy Hook −0.30 before the gauge failed. The upper Delaware reads 0.05–0.07 m lower than 1.0.0 | Atlantic City +0.494 (the NACCS forcing, local to there; part 4 (h)), Cape May −0.101, Lewes −0.191, Ship John −0.068, Reedy Point −0.110, Delaware City −0.189, Marcus Hook −0.142, Philadelphia −0.120, Burlington −0.116, Newbold −0.138; Sandy Hook −0.321 before the gauge failed |
+| all gauges with a full peak record (NOAA, USGS tidal, STN storm-tide sensors) | peak error; Great Kills corrected −0.34 m (§50); published crests where USGS's archive has the storm-day hole (`peak_err_pub_*`, §60 (f)) | per gauge in `logs/v1_1_read_2026-11-06/READ.md` §5; Christina gauges re-datumed (re-baseline, no delta) | median \|error\| 0.110 m, median −0.068 m (27 gauges) |
+| FEMA MOTF extent (NJ only) | CSI / POD / FAR inside the validity mask, footprints not masked (§55) | CSI 0.795, POD 0.859, FAR 0.086; `motf_km2_excluded_boxes` 2,412.8 km²; false alarms 42.5 km² connected, 68.8 km² disconnected | CSI 0.784, POD 0.846, FAR 0.086; `motf_km2_excluded_boxes` 2,412.8 km² (incl. `salem_marshes`, 418 km²); false alarms 39.8 km² connected, 70.6 km² disconnected |
+| 15 independent Newark-window marks (SIR 2016-5085 / OFR 2013-1043) | one-sided (no pixel across a levee line), median, 50 m, waves-off pair | levees vs none: all 15 RMSE 0.147 vs 0.154; Elizabeth (n 4) 0.119 vs 0.149 (`logs/walls_elizabeth_rahway_2026-11-05/README.md` "One-sided mark read") | — |
 
-**Sensitivities** (ΔRMSE of `p4-premier` − the arm, median, 50 m, n 110, paired, B 200 000, 95 % CI;
-parts 4 (i)–(j)). Rain and soil were measured on the previous wave bed; non-lake effects should carry over.
+The levee arm and the Overpeck-only arm (`p4-premier` on this domain) tie on the marks: ΔRMSE −0.0001
+[−0.0034, +0.0031], n 119; MOTF CSI 0.7947 vs 0.7942. The levees were chosen because they are mapped flood-control
+structures (NLD) and scoring them one-sided hurts no mark, not because the scores separate the arms (user 2026-11-09).
+
+**Sensitivities (1.0.0)** (ΔRMSE of `p4-premier` − the arm, median, 50 m, n 110, paired, B 200 000, 95 % CI;
+parts 4 (i)–(j)); not re-run on 1.1.0. Rain and soil were measured on the previous wave bed; non-lake effects should carry over.
 
 | what | result |
 |---|---|
@@ -228,7 +257,8 @@ parts 4 (i)–(j)). Rain and soil were measured on the previous wave bed; non-la
 
 | | |
 |---|---|
-| solve | this run 12.99 h (46,766 s) at 16 threads on `emeraldrapids`; SnapWave 65.9 % and momentum 25.5 % of simulation time. Its waves-off twin 3.93 h. On this engine SnapWave's node sweep is SERIAL (§20), so more threads buy little |
+| solve, 1.1.0 | 4.09 h (14,714 s) at 32 threads on `hal0383`, production engine; momentum 49.2 %, SnapWave 28.0 % of simulation time |
+| solve, 1.0.0 | 12.99 h (46,766 s) at 16 threads on `emeraldrapids`; SnapWave 65.9 % and momentum 25.5 % of simulation time. Its waves-off twin 3.93 h. On that engine SnapWave's node sweep is SERIAL (§20), so more threads bought little |
 | production engine for NEW runs (user 2026-11-02) | `bin:v2.3.3-winddir-igk-igseed-wmseed-swomp-2-gf11@dd78d82a`: this same run bit-identical in 5.44 h on 16 threads (SnapWave 1.44 h) and 2.51 h on 64 (0.72 h) (§20). 1.0.0 itself was solved on `…wmseed-1-gf11@e15ed916` and stays recorded that way |
 | disk per run | `sfincs_map.nc` 10.5 GB, floodmap 0.79 GB, + ~5.6 GB hard-linked inputs; staging needs ~25 GB free |
 | scoring memory | v4 validate ~200 G (3.125 m scoring bed); paired bootstrap ~85–90 G per process — run pairs serially |
@@ -242,17 +272,21 @@ parts 4 (i)–(j)). Rain and soil were measured on the previous wave bed; non-la
 3. **Data:** `data/data_catalog.yml` (+ per-folder `PROVENANCE.md`); bulk data on `/scratch` (not backed up; 90-day purge)
    with a desktop pull (`scripts/desktop_pull_backup.sh`). The frozen mesh, sealed template and bed are data, not rebuilt
    by one command; the `v4_refreeze` template carries hand steps (the meteo, an obs nudge, the Overpeck start; CLAUDE.md §5).
-4. **Wave bed:** `NJ_DOMAIN=v4_refreeze_swz python scripts/setup_face_z.py --from v4_refreeze --bed
-   _subgrid_refreeze_lakes_min_creeks_cohansey` writes this domain's template and bed from `v4_refreeze`'s.
-5. **Stage + run:** arm `p4-premier`, commands in §9; staging copies the sealed template, checks the fingerprint on the copy,
-   swaps in the bed and applies the arm. This run's job: `logs/snapwave_bed_2026-10-28/swz_test.slurm`. 🔴 Staging (and
+4. **Wave bed:** 1.1.0: `NJ_DOMAIN=v4_refreeze_swz_v11 python scripts/setup_face_z.py --from v4_refreeze_swz --bed
+   _subgrid_v1_1c` (`logs/v1_1_premier_2026-11-06/README.md`). 1.0.0: `NJ_DOMAIN=v4_refreeze_swz python scripts/setup_face_z.py
+   --from v4_refreeze --bed _subgrid_refreeze_lakes_min_creeks_cohansey`.
+5. **Stage + run:** arm `p4-premier+weir-elizabeth-rahway`, commands in §9; staging copies the sealed template, checks the
+   fingerprint on the copy, swaps in the bed and applies the arm. This run's job: `logs/v1_1_premier_2026-11-06/v11_premier.slurm`
+   (`WEIRS=levees`); 1.0.0's: `logs/snapwave_bed_2026-10-28/swz_test.slurm`. 🔴 Staging (and
    `--no-run`, `--inputs-only`) deletes an existing run dir of that name; only `--check` is read-only.
 6. **Check:** the audit in §1; `restart_history.txt` must show no resume. Same engine and inputs should repeat bit for bit (§5).
 
 ## 9. Starting a new experiment from the premier
 
-An arm is a delta of the premier in the registry: define it in `_V4_REFREEZE` with `_p4_arm(name, description, **changes)`,
-then add its name to `EXPERIMENTS_BY_DOMAIN["v4_refreeze_swz"]`, which selects arms from `_V4_REFREEZE`. Changeable fields:
+An arm is a delta of the premier in the registry. For 1.1.0, add it to the `"v4_refreeze_swz_v11"` block of
+`nj_sfincs/experiments.py` (built on that domain's `p4-premier+weir-elizabeth-rahway`) and run with
+`NJ_DOMAIN=v4_refreeze_swz_v11`; for 1.0.0, define it in `_V4_REFREEZE` with `_p4_arm(name, description, **changes)`
+and add its name to `EXPERIMENTS_BY_DOMAIN["v4_refreeze_swz"]`. Changeable fields:
 `Experiment`, `nj_sfincs/config.py`. Name it the premier + `wave-` / `tide-` / `solver-` / `mask-` / `bed-` deltas, unions
 joined by `+` in alphabetical order, `BRACKET+` for a deliberately inadmissible bound (CLAUDE.md §6).
 - A **mask or boundary-depth** change is a new DOMAIN, not an arm (CLAUDE.md §2).

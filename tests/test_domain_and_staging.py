@@ -783,6 +783,14 @@ class TestPremierArm(unittest.TestCase):
         self.assertIn("p4-premier", experiments("v4_refreeze_swz"))
         self.assertEqual(premier.V4_REFREEZE_SWZ.sha_z_mask, "90cc7468614a5814")
 
+    def test_version_one_one_is_the_levee_arm(self):
+        from nj_sfincs import premier
+
+        arm = premier.premier_arm("v4_refreeze_swz_v11")
+        self.assertEqual(arm, "p4-premier+weir-elizabeth-rahway")
+        self.assertIn(arm, experiments("v4_refreeze_swz_v11"))
+        self.assertEqual(premier.MODEL_VERSION, "1.1.0")
+
 
 class TestNoInfiltrationIsWrittenNotMerelyNotWritten(_DomainEnv):
     """Same shape again: the template has infiltration ON, so ``Experiment.infiltration

@@ -77,17 +77,22 @@ from nj_sfincs.config import exp_root
 #: inferred from a run's name.
 PREMIER_NAME = "naccs-premier"
 
-#: The version a domain's premier carries (CLAUDE.md §6): model 1.0.0 is ``p4-premier`` on
-#: ``v4_refreeze_swz`` as run, job 63181564 (user 2026-11-01; docs/MODEL.md).
-MODEL_VERSION = "1.0.0"
+#: The version a domain's premier carries (CLAUDE.md §6): model 1.1.0 is
+#: ``p4-premier+weir-elizabeth-rahway`` on ``v4_refreeze_swz_v11`` as run, job 63617802 (user 2026-11-09);
+#: 1.0.0 is ``p4-premier`` on ``v4_refreeze_swz``, job 63181564 (user 2026-11-01). docs/MODEL.md, CHANGELOG.md.
+MODEL_VERSION = "1.1.0"
 #: Domains whose premier is not PREMIER_NAME.
-PREMIER_ARMS = {"v4_refreeze_swz": "p4-premier", "v4_refreeze_swz_v11": "p4-premier"}
+PREMIER_ARMS = {
+    "v4_refreeze_swz": "p4-premier",
+    "v4_refreeze_swz_v11": "p4-premier+weir-elizabeth-rahway",
+}
 
 
 def premier_arm(domain_name: str | None = None) -> str:
     """The reference arm of a domain, default the active one."""
     name = domain_name or _domain.active().name
     return PREMIER_ARMS.get(name, PREMIER_NAME)
+
 
 TEMPLATE_NAME = "_template_sealed"
 
