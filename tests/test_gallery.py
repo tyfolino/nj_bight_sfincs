@@ -406,7 +406,7 @@ class TestPublish(unittest.TestCase):
             self.assertTrue((ddir / pub.slug("p4-premier") / "index.html").is_file())
             self.assertFalse((ddir / pub.slug("p4-nowaves")).exists())
             home = (site / "index.html").read_text()
-            self.assertIn("What is in Model 1.0.0", home)
+            self.assertIn("What is in Model 1.1.0", home)
             self.assertIn("Coming in version", home)
             self.assertIn("Known limitations", home)
             self.assertNotIn("v3/", home)

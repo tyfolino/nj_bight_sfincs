@@ -274,7 +274,13 @@ def prepare(model_dir: Path) -> Plan:
     # segment restarts the curve number with EMPTY soil, i.e. the storm's rain becomes
     # two SCS events and infiltrates more (CN 85, 100 mm split 50/50: runoff ~50 -> ~39
     # mm). Harmless if the resume falls outside the rain. A warning, not a gate.
-    cna = inp_get(text, "infiltration_type") == "cna"
+    # `cnb` (rsttype 4) keeps the remaining storage scs_Se, but not the event state
+    # (scs_P1 / scs_F1 / scs_S1 / scs_rain): rain after the resume opens a NEW SCS event,
+    # with a fresh initial abstraction 0.2·Se — it over-infiltrates less than `cna`, but
+    # the resumed run is still not its uninterrupted twin (engine source, 2026-11-09).
+    inftype = inp_get(text, "infiltration_type")
+    cna = inftype == "cna"
+    cnb = inftype == "cnb"
     with (model_dir / HISTORY).open("a") as fh:
         fh.write(
             f"{datetime.now():%Y-%m-%d %H:%M:%S} resume from {pl.rst.name}: "
@@ -285,10 +291,16 @@ def prepare(model_dir: Path) -> Plan:
                 f"  ⚠️ cna infiltration: soil state RESET at {pl.t_resume:%Y-%m-%d %H:%M} "
                 "(not in the restart file) — over-infiltrates if it rained after this\n"
             )
-    if cna:
+        if cnb:
+            fh.write(
+                f"  ⚠️ cnb infiltration: rain EVENT restarts at {pl.t_resume:%Y-%m-%d %H:%M} "
+                "(storage scs_Se kept, P1/F1 not) — a new initial abstraction if it "
+                "rained after this\n"
+            )
+    if cna or cnb:
         print(
-            f"⚠️ [restart] cna infiltration resets at {pl.t_resume:%Y-%m-%d %H:%M} "
-            "(restart files do not carry cumprcp / cuminf)",
+            f"⚠️ [restart] {inftype} infiltration state partly lost at "
+            f"{pl.t_resume:%Y-%m-%d %H:%M} (see {HISTORY})",
             flush=True,
         )
     return pl

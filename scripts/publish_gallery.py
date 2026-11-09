@@ -22,7 +22,7 @@ small. Superseded PNGs and arm pages are removed in the same pass. Every page is
     python scripts/publish_gallery.py                       # every domain with a gallery
     python scripts/publish_gallery.py --domains v4_refreeze,v3
     python scripts/publish_gallery.py --site /tmp/site_test
-    python scripts/publish_gallery.py --domains v4_refreeze_swz --arms p4-premier   # Model 1.0.0 only
+    python scripts/publish_gallery.py --domains v4_refreeze_swz_v11 --arms p4-premier+weir-elizabeth-rahway   # Model 1.1.0 only
 
 Light (no rasters): fine on a login node.
 """
@@ -241,43 +241,64 @@ render();
 #: ``p4-premier``.
 SITE_REFERENCE = {"v4_refreeze": "p4-premier"}
 
+#: Figures left OFF the public site for one arm (they stay in the arm's gallery/). The 1.1.0
+#: dzsmax is levees − Overpeck-only, two WAVES-ON runs: its signal away from the levees is
+#: SnapWave sensitivity (5-8 cm in Raritan Bay, −0.4 m at Great Egg; CLAUDE.md §5), which a
+#: public reader would take for a levee effect (2026-11-09).
+SITE_HIDE_FIGURES = {
+    ("v4_refreeze_swz_v11", "p4-premier+weir-elizabeth-rahway"): {"dzsmax"},
+}
+
 #: The plain-language "what is new in the premier" list, shown at the bottom of the home page
 #: and of that domain's runs page. ⚠️ Edit it whenever the premier changes: a stale list
 #: here gets believed.
 NEXT_PREMIER = {
-    "domain": "v4_refreeze_swz",
-    "arm": "p4-premier",
-    "as_of": "2026-11-04",
-    "status": "Model version 1.0.0 (tagged v1.0.0, chosen 2026-11-01): the Phase 4 premier with "
-    "the wave model reading the corrected bed. What changed from the previous version:",
+    "version": "1.1.0",
+    "domain": "v4_refreeze_swz_v11",
+    "arm": "p4-premier+weir-elizabeth-rahway",
+    "as_of": "2026-11-09",
+    "status": "Model version 1.1.0 (tagged v1.1.0, chosen 2026-11-09). Same model grid, "
+    "storm forcing and physics as version 1.0.0; the changes are in the ground the water "
+    "flows over, two flood structures and the scoring. On the same 119 high-water marks the "
+    "typical error falls from 0.42 m to 0.36 m, and the agreement with FEMA's mapped flood "
+    "extent rises from 0.784 to 0.795 (CSI). What changed:",
     "items": (
-        "The wave model reads the corrected bed: it used to compute waves on the 09-28 "
-        "elevation, missing every bed fix since (deeper rivers, creeks and inlet channels). "
-        "Water levels move a few centimetres; the high-water-mark score is unchanged except "
-        "at the Monmouth coastal lakes, which stay a known limit of this model.",
-        "Repeatable waves: the wave model's random part is now seeded, so the same inputs "
-        "give the same answer every time.",
-        "Infragravity (IG) waves move the water: the long, slow waves under groups of "
-        "ordinary waves are now fed into the water along the beach, so they raise the water "
-        "level and push water ashore. Before, they were only calculated.",
-        "Rain soaking in: an updated method for how much rain the ground absorbs, set for "
-        "the soil conditions before Sandy.",
-        "Air pressure from the ERA5 weather reanalysis, blended with the storm's wind field.",
-        "Rivers enter in their channels: 12 river inflows moved off the banks and into "
-        "the water.",
-        "The Keansburg levees follow the federal levee database's line (USACE National "
-        "Levee Database).",
-        "A deeper lower Cohansey River: the elevation data had it several metres too "
-        "shallow; its new bed comes from depth soundings and nautical charts.",
-        "Lake beds fixed: 14 coastal lakes had a false ridge of land across them from an "
-        "old elevation survey; it is removed.",
-        "Creeks reopened: Beach Creek in North Wildwood (an old survey laid a false bank "
-        "across it), and about 50 marsh creeks on the New Jersey Delaware Bay shore (about "
-        "120 km of channel, Sluice and Dennis Creek among them) where the elevation data held "
-        "the water surface instead of the creek bottom, so they could not drain at low tide. "
-        "Their new bottoms are an assumption (about mean low water), not a survey.",
-        "Tide gauges moved off dry ground: Cape May, Cape May Harbor and Barnegat Light sat "
-        "on land in the model; each moved a few tens of metres into the water.",
+        "Bridge decks taken out of the ground: where the elevation data recorded a bridge "
+        "deck as solid ground, the model saw a dam across the water. Each deck is now "
+        "replaced by the channel bank on its own side (an assumption, not a survey); 588 of "
+        "597 bridges over water are open. The largest were on the coast: Corson Inlet, "
+        "Grassy Sound, and the Atlantic City Expressway over Beach Thorofare.",
+        "26 more crossings opened from the National Bridge Inventory: 8 checked against "
+        "independent elevation data or charts (the Garden State Parkway over the Toms and "
+        "Manasquan Rivers among them), and 18 bridges over federal navigation channels with "
+        "a false sill under the span.",
+        "Deeper river channels from surveys and charts: the lower Mullica River (1935 depth "
+        "soundings), the lower Tuckahoe, the Toms River, Cedar Creek and Westecunk Creek on "
+        "Barnegat Bay, and Raccoon and Mantua Creeks on the Delaware. More of the tide now "
+        "reaches up these rivers, as it does in reality.",
+        "The Christina River at Wilmington: a narrow false plug, where two elevation "
+        "surveys meet, halved the tide upstream. It is opened from a 2015 Army Corps survey.",
+        "Army Corps channel surveys fill holes in 9 places where the older surveys left "
+        "gaps (they can only deepen the bed, never raise it).",
+        "Alloway Lake and Silver Lake (Delaware) held at their normal pool: the elevation "
+        "data had them as empty pits at sea level, open to the tide.",
+        "Building friction counted once: in New Jersey the buildings are solid blocks in "
+        "the model, so the streets between them now carry street-level friction instead of "
+        "a value that also stood in for the buildings. Water now crosses built-up land "
+        "faster, around Newark especially.",
+        "Smoother channels at the heads of tidal rivers: surveyed channel beds that had "
+        "marsh friction now have open-water friction.",
+        "Overpeck Creek (Leonia / Ridgefield Park): the tidal dam is open in the model. "
+        "The valley's peak water level rises to about 2.4 m, close to the Army Corps' "
+        "storm study (NACCS, 2.25 m).",
+        "The Elizabeth River and Rahway River levees: the Army Corps levees on the "
+        "Elizabeth River and the Rahway's South Branch (National Levee Database) now hold "
+        "water back, with their gates closed. They change no high-water mark's score, and "
+        "no observation lies behind them, so whether that land stayed dry in Sandy is the "
+        "model's answer, not a measured one.",
+        "Scoring: 13 more high-water marks around Newark Bay, the Hackensack and Overpeck "
+        "Creek (119 scored in all), and a corrected datum for two USGS gauges on the "
+        "Christina River.",
     ),
 }
 
@@ -285,35 +306,32 @@ NEXT_PREMIER = {
 #: The plain-language "coming in the next version" list (home page + the premier's runs
 #: page). ⚠️ Edit it when the next version's contents change; empty ``items`` hides it.
 COMING = {
-    "version": "1.1",
-    "as_of": "2026-11-04",
-    "status": "Being tested now; each change is checked against Model 1.0.0 before it goes "
-    "in. The release is planned for about 7-8 November 2026. Preliminary: items may still "
-    "change.",
+    "version": "2.0",
+    "as_of": "2026-11-09",
+    "status": "In preparation: a new, larger model grid. Preliminary: items may still "
+    "change, and there is no release date yet.",
     "items": (
-        "Bridge decks taken out of the ground: at 529 bridges the elevation data recorded the "
-        "bridge deck as solid ground, so the model saw a dam across the water. The largest "
-        "were on the coast: the bridge across Corson Inlet, Grassy Sound, and the Atlantic "
-        "City Expressway over Beach Thorofare. The ground under each deck is now the "
-        "channel or bank on either side (an assumption, not a survey).",
-        "Deeper river channels from surveys and charts: the lower Mullica River (1935 depth "
-        "soundings), the lower Tuckahoe, the Toms River, Cedar Creek and Westecunk Creek on "
-        "Barnegat Bay, and Raccoon and Mantua Creeks on the Delaware. More of the tide now "
-        "reaches up these rivers, as it does in reality. The Garden State Parkway crossing "
-        "of the Mullica no longer holds the water back.",
-        "The Christina River at Wilmington: a narrow false plug, where two elevation "
-        "surveys meet, halved the tide upstream. It is opened from a 2015 Army Corps "
-        "survey.",
-        "Building friction counted once: in New Jersey the buildings are solid blocks in "
-        "the model, so the streets between them now carry street-level friction instead of "
-        "a value that also stood in for the buildings.",
-        "Smoother channels at the heads of tidal rivers: channel beds that had marsh "
-        "friction now have open-water friction.",
-        "The Overpeck Creek tidal dam (Leonia / Ridgefield Park): tested both open and "
-        "closed, to show how much it matters.",
-        "13 more high-water marks scored around Newark Bay, the Hackensack and Overpeck "
-        "Creek, and two scoring corrections (a gauge datum on the Christina River, and how "
-        "the tide range is measured).",
+        "The Hudson waterfront and Upper New York Bay: the model reaches up the Hudson to "
+        "about 40.86 N and through the Upper Bay to Hell Gate, so Hoboken, Jersey City, "
+        "Bayonne's Upper Bay shore and the facing New York waterfront are computed instead "
+        "of left out. The New York side runs on coarser cells and without New York "
+        "buildings.",
+        "Two versions of the ground: 2012, for Sandy itself, and an estimate of 2026 "
+        "(today's dredged channels and shoreline), so the same storm can be run on today's "
+        "coast.",
+        "Piers sorted one by one: piers on piles let water flow underneath, so the ground "
+        "under them is the harbour bed; piers on solid fill are land. 645 piers on the new "
+        "waterfront were classified from OpenStreetMap, NOAA charts and city shoreline "
+        "data.",
+        "Channels from surveys: Newtown Creek, the Gowanus Canal, Wallabout and Bushwick "
+        "Inlet, and the 2012 Army Corps survey of the Hudson channel, each converted to the "
+        "land elevation datum.",
+        "The Arthur Kill: a numerical artefact where steep channel banks meet the model's "
+        "cells is removed.",
+        "More checks: about 275 high-water marks across the larger area.",
+        "Ground fixes found since 1.1: places where the model disagrees with FEMA's flood "
+        "map or with the tide (ridges that hold water back, channels that do not reach) are "
+        "located from the observations and corrected from independent surveys.",
     ),
 }
 
@@ -321,7 +339,7 @@ COMING = {
 #: Plain-language known limitations of the published version (docs/MODEL.md §4 is the
 #: technical list). ⚠️ Keep in step with MODEL.md when the version changes.
 KNOWN_LIMITS = {
-    "as_of": "2026-11-04",
+    "as_of": "2026-11-09",
     "items": (
         "The ground does not move during the storm. In Sandy the dunes eroded and broke "
         "through in places (Mantoloking, Wreck Pond) and the sea washed over into Deal Lake; "
@@ -331,15 +349,16 @@ KNOWN_LIMITS = {
         "Water level, not wave splash: the model computes the water surface, including the "
         "rise that breaking waves cause, but not the splash and run-up of individual waves. "
         "High-water marks left by splash sit above what the model can reach.",
-        "The Delaware Bay and River: the storm's low water is too low upriver, and only a "
-        "few high-water marks there can check the peak.",
-        "The Cape May back bays read about 0.3 m low.",
-        "Water crosses built-up land too slowly in this version (friction from the "
-        "buildings is counted twice), so inland urban depths, around Newark especially, read "
-        "low. Fixed in version 1.1.",
+        "The Delaware Bay and River: the storm's low water is too low upriver, the peak "
+        "reads about 0.2 m low at the upriver gauges, and only a few high-water marks there "
+        "can check it.",
+        "The New Jersey back bays read low, Cape May's most (about 0.2 m at the "
+        "high-water marks); the cause is being investigated.",
+        "Behind the Elizabeth and Rahway levees no observation checks the model: those "
+        "areas stay dry because the levees are assumed to hold.",
         "Not in the model: the Hudson waterfront (Hoboken, eastern Jersey City, Bayonne's "
-        "Upper Bay shore), rivers above today's head of tide, storm drains and culverts. A "
-        "blank area on a map there means not computed, not dry.",
+        "Upper Bay shore; coming in version 2.0), rivers above today's head of tide, storm "
+        "drains and culverts. A blank area on a map there means not computed, not dry.",
         "Levees, walls and dams hold for the whole storm (no failures), and small inland "
         "creeks that enter on large cells (the Salem River at Woodstown, some Pennsylvania and "
         "Delaware creeks) pile water up unrealistically: do not read depths there.",
@@ -353,7 +372,7 @@ KNOWN_LIMITS = {
 def limits_section() -> str:
     items = "".join(f"<li>{esc(t)}</li>" for t in KNOWN_LIMITS["items"])
     return (
-        "<section><h2>Known limitations of Model 1.0.0</h2>"
+        f"<section><h2>Known limitations of Model {esc(NEXT_PREMIER['version'])}</h2>"
         f'<p class="note">Read the figures with these in mind. As of '
         f"{esc(KNOWN_LIMITS['as_of'])}.</p>"
         f'<ul class="next">{items}</ul></section>'
@@ -376,7 +395,7 @@ def next_premier_section() -> str:
     n = NEXT_PREMIER
     items = "".join(f"<li>{esc(t)}</li>" for t in n["items"])
     return (
-        f"<section><h2>What is in Model 1.0.0 ({esc(n['domain'])} / {esc(n['arm'])})</h2>"
+        f"<section><h2>What is in Model {esc(n['version'])} ({esc(n['domain'])} / {esc(n['arm'])})</h2>"
         f'<p class="note">{esc(n["status"])} As of {esc(n["as_of"])}.</p>'
         f'<ul class="next">{items}</ul></section>'
     )
@@ -509,6 +528,14 @@ def read_domain(domain_name: str, exp_root: Path | None = None) -> dict:
                     "text": "This arm has a gallery but no current metrics.csv row.",
                 }
             ]
+        hide = SITE_HIDE_FIGURES.get((domain_name, arm), ())
+        if man is not None and hide:
+            man = {
+                **man,
+                "figures": [
+                    f for f in man.get("figures", []) if f.get("key") not in hide
+                ],
+            }
         arms[arm] = {
             "manifest": man,
             "row": row,
@@ -841,16 +868,16 @@ def site_index(domains: dict) -> str:
         e = domains[n["domain"]][n["arm"]]
         start = (
             f" Start with <b><a href='{esc(n['domain'])}/{esc(e['slug'])}/index.html'>"
-            f"Model 1.0.0's figures and scores</a></b>."
+            f"Model {esc(n['version'])}'s figures and scores</a></b>."
         )
     body = (
         mast(
-            "<b>NJ Bight SFINCS</b> · Model 1.0.0",
+            f"<b>NJ Bight SFINCS</b> · Model {esc(n['version'])}",
             "Hurricane Sandy flood model",
             "A compound-flood hindcast of Hurricane Sandy (28-31 October 2012) on the New "
             "Jersey coast: storm surge, waves, wind, rain and river flow together, checked "
             "against tide gauges, USGS high-water marks and FEMA's mapped flood extent. This "
-            "site shows the current model version, 1.0.0, and what is coming next."
+            f"site shows the current model version, {esc(n['version'])}, and what is coming next."
             + start,
         )
         + '<section><table class="sortable"><thead><tr><th>model run</th><th class="num">runs</th>'

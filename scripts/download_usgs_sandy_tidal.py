@@ -52,10 +52,14 @@ OUT_DIR = ROOT / "data/gtsm"
 from nj_sfincs import domain as _domain  # noqa: E402
 
 _DOM = _domain.active()
+#: The gauge set a domain scores against. Every domain on v4's mesh (``mesh_key="v4"``:
+#: v4_hot*, v4_refreeze*, the 1.x models) reads ``usgs_sandy_tidal_v4.nc`` (domain.py
+#: ``_V4_USGS``); keyed by bare name they fell back to the 15-station v3 list (11-09 fix).
+_FAMILY = "v4" if (_DOM.name == "v4" or _DOM.mesh_key == "v4") else _DOM.name
 OUT = OUT_DIR / (
     "usgs_sandy_tidal_nj.nc"
     if _DOM.name in _domain.ARCHIVED_TIER_DOMAINS
-    else f"usgs_sandy_tidal_{_DOM.name}.nc"
+    else f"usgs_sandy_tidal_{_FAMILY}.nc"
 )
 
 FT_TO_M = 0.3048
@@ -159,7 +163,7 @@ STATIONS_V4 = STATIONS_V3 + [
 # fmt: on
 STATIONS_BY_DOMAIN = {"v4": STATIONS_V4}
 if _DOM.name not in _domain.ARCHIVED_TIER_DOMAINS:
-    STATIONS = STATIONS_BY_DOMAIN.get(_DOM.name, STATIONS_V3)
+    STATIONS = STATIONS_BY_DOMAIN.get(_FAMILY, STATIONS_V3)
 
 
 def fetch(st: dict) -> tuple[pd.Series, pd.Series]:

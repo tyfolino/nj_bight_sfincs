@@ -3,8 +3,13 @@
 #
 # Pulls, over SSH + rsync, the two things that cannot be regenerated from git:
 #
-#   TIER 1  irreplaceable INPUTS. ~/nj_bight_sfincs/data/ itself holds mostly SYMLINKS, and
-#           rsync copies those as links, so the bulk behind them is pulled separately:
+#   TIER 1  irreplaceable INPUTS. ~/nj_bight_sfincs/data/ holds per-subdir SYMLINKS into scratch
+#           (rsync copies those as links, so the bulk behind them is pulled separately, below)
+#           and, since 2026-11-07, the archive's share as real dirs of HARD LINKS to
+#           ~/nj_coast_sfincs/data (same inodes). The inputs and archive tiers are separate rsync
+#           calls, so -H cannot see across them: a full pull copies those files TWICE on the
+#           desktop (the archive's data, ~5.7 G). To avoid it, pull `--only archive` and `--only runs`, and `--only
+#           inputs` only when the scratch data or ~/sfincs_data changed. Then:
 #           /scratch/tpj8/nj_bight_sfincs_data/        (~82 G, NOT backed up by OARC since the
 #           10-05 move: frozen meshes, elevation_v3/v4, the modern land, NACCS, buildings,
 #           infiltration. modern_2026/raw (106 G, public downloads) only with --with-raw)
