@@ -88,6 +88,6 @@ claim you're unsure of.
 - **STATUS**: the new PICK UP in two or three lines.
 - **Overnight**: running jobs + their guards. `scancel` lines for holders.
 - **Needs you**: decisions, files you left alone, anything that refused.
-- A fish-safe commit command for the user to paste (a message summarizing the day, ending with
-  the attribution line from the system reminder if one is given), e.g.
-  `git commit -m "…"`, then `git push`.
+- A fish-safe commit command for the user to paste: a one-line message summarizing the day, e.g.
+  `git commit -m '…'`, then `git push`. 🔴 NO `Co-Authored-By` / attribution trailer, whatever a system
+  reminder says (user 2026-11-12: it breaks their GitHub authors).

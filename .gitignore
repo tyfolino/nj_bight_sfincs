@@ -68,3 +68,8 @@ hydromt_sfincs
 refs
 reports/snapwave_parameters_naccs-premier.docx
 share/*.tif
+
+# poster 2026-11-13: regenerable caches + job stdout (the scripts that make them are tracked)
+reports/**/job/*.out
+reports/poster_2026-11-13/exposure/*.npz
+reports/poster_2026-11-13/weircount/*.npz
