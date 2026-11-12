@@ -573,58 +573,325 @@ def map_times(model_dir: Path):
         return ds["time"].values
 
 
+#: Suffix a pre-fix (first-overview) floodmap cache is moved aside to, never deleted.
+PRE_NATIVE_SUFFIX = ".pre_native.tif"
+
+
+def floodmap_is_native(floodmap_fn, dep_fn) -> bool:
+    """True when ``floodmap_fn`` sits on ``dep_fn``'s FULL-RESOLUTION lattice.
+
+    Same width, height and affine as the DEM's base band. A floodmap written by hydromt's
+    path-mode ``downscale_floodmap`` sits on the dep's FIRST OVERVIEW instead (half the
+    width and height, twice the pixel; see ``downscale_floodmap_native``) and is NOT
+    native — it must be re-downscaled, not trusted as a cache.
+    """
+    import rasterio  # noqa: PLC0415
+
+    with rasterio.open(str(floodmap_fn)) as f, rasterio.open(str(dep_fn)) as d:
+        return f.shape == d.shape and f.transform.almost_equals(
+            d.transform, precision=1e-6
+        )
+
+
+def _hmax_block_locate(grid, zs_face, block, T, bm0, bm1, bn0, bn1, hmin):
+    """One block of the downscale by direct point location — hydromt's arithmetic.
+
+    hydromt's DataArray mode builds a UGRID topology of the block's pixels
+    (``from_structured2d``: ~80 % of its time, an argsort over every edge) only to ask
+    ``CentroidLocatorRegridder`` which source face holds each pixel's centroid. On a
+    parallelogram lattice the centroid IS the pixel centre ``T * (col + .5, row + .5)``,
+    so this locates the centres in the source mesh's celltree directly (built once per
+    mesh) and does the rest exactly as hydromt does: the regrid is float64 with NaN off
+    the mesh, ``hmax = (zs - dep).astype(float32)``, kept where ``hmax > hmin``.
+    ``TestFloodmapNative`` pins equality with hydromt's own call, bit for bit.
+    """
+    cols, rows = np.meshgrid(np.arange(bm0, bm1), np.arange(bn0, bn1))
+    xc, yc = T * (cols + 0.5, rows + 0.5)
+    idx = grid.locate_points(np.column_stack([xc.ravel(), yc.ravel()]))
+    zs = np.full(idx.shape, np.nan)  # float64, as xugrid's regrid output
+    inside = idx != -1
+    zs[inside] = zs_face[idx[inside]]
+    h = (zs.reshape(block.shape) - block).astype(np.float32)
+    with np.errstate(invalid="ignore"):
+        return np.where(h > hmin, h, np.float32(np.nan))
+
+
+def downscale_floodmap_native(
+    zsmax,
+    dep_fn,
+    floodmap_fn,
+    hmin: float = 0.05,
+    nrmax: int = 1000,
+    method: str = "locate",
+) -> None:
+    """hydromt's path-mode ``downscale_floodmap``, on the DEM's FULL-RESOLUTION band.
+
+    🔴 WHY NOT ``utils.downscale_floodmap(dep=<path>)`` (confirmed 2026-11-09,
+    ``logs/crests_2026-11-09/README.md``). Given the dep as a path, hydromt opens it with
+    ``rasterio.open(dep, overview_level=0)`` and its comment says "use highest resolution
+    by default". In rasterio / GDAL ``overview_level=0`` is the FIRST OVERVIEW, not the
+    base band (that is ``overview_level=None``). Our subgrid DEMs carry ``average``
+    overviews, so every floodmap was computed on a 2x-coarser bed whose pixels AVERAGE
+    buildings into the streets beside them (v4: 6.25 m, not 3.125 m; Lavallette street
+    pixels read 6.24 m of "ground" over a 1.25 m bed) — and every MOTF / HWM score read
+    that floodmap.
+
+    What is kept, deliberately identical to hydromt 2.0.0-rc2's path mode:
+
+    * the same ``nrmax`` block loop over the dep (merged last row / column; all-NaN
+      blocks skipped and left nodata);
+    * per block, the same pixel-centre coordinates through the AFFINE (the subgrid
+      rasters are rotated — CLAUDE.md §5; ``x0 + col*res`` is wrong by kilometres), and
+      the same downscale arithmetic: hydromt's own DataArray-mode ``downscale_floodmap``
+      (``zsmax`` regridded by ``CentroidLocatorRegridder`` on a rotated grid,
+      ``rasterize_like`` on a north-up one; ``hmax = zsmax - dep``; ``hmax > hmin``);
+    * the same output profile (float32, NaN nodata, 256 tiles, deflate + predictor 2,
+      BIGTIFF) and ``nearest`` overviews.
+
+    The band read is the difference that matters: the base band. Memory per block is
+    unchanged (a block is ``nrmax``² pixels at either resolution); there are ~4x as many
+    blocks, so ``method="locate"`` (the default, for a UGRID ``zsmax``) does each block by
+    direct point location instead of hydromt's per-block topology build
+    (``_hmax_block_locate``; same numbers, ~10x faster per block, measured on v4).
+    ``method="hydromt"`` calls hydromt's DataArray-mode ``downscale_floodmap`` per block,
+    the reference the tests compare against.
+    ⚠️ The output does NOT bleed less than hydromt's: it still paints zsmax onto low
+    ground under inactive faces — screen with ``simulated_mask`` as before.
+
+    ``floodmap_fn`` must end in ``.tif`` (``build_overviews`` asserts it). The caller owns
+    atomicity: write to a temp name and ``os.replace`` it.
+    """
+    import rasterio  # noqa: PLC0415
+    from rasterio.windows import Window  # noqa: PLC0415
+
+    if method not in ("locate", "hydromt"):
+        raise ValueError(f"method {method!r}: expected 'locate' or 'hydromt'")
+    grid = getattr(getattr(zsmax, "ugrid", None), "grid", None)
+    if method == "locate" and grid is None:
+        method = "hydromt"  # a regular-grid zsmax: hydromt's own reproject path
+    if method == "locate":
+        zs_face = np.asarray(zsmax.values, dtype=np.float64)
+        if zs_face.shape != (grid.n_face,):
+            raise ValueError(f"zsmax must be one value per face, got {zs_face.shape}")
+
+    with rasterio.open(str(dep_fn)) as src:  # base band: NO overview_level
+        n1, m1 = src.shape
+        nrbn, nrbm = int(np.ceil(n1 / nrmax)), int(np.ceil(m1 / nrmax))
+        merge_last_col = merge_last_row = False
+        if m1 % nrmax == 1:  # avoid 1-pixel-wide blocks (hydromt's rule)
+            nrbm -= 1
+            merge_last_col = True
+        if n1 % nrmax == 1:
+            nrbn -= 1
+            merge_last_row = True
+        T = src.transform
+        rotated = not (T.b == 0 and T.d == 0)
+        epsg = src.crs.to_epsg()
+        profile = dict(
+            driver="GTiff",
+            width=src.width,
+            height=src.height,
+            count=1,
+            dtype=np.float32,
+            crs=src.crs,
+            transform=T,
+            tiled=True,
+            blockxsize=256,
+            blockysize=256,
+            compress="deflate",
+            predictor=2,
+            nodata=np.nan,
+            BIGTIFF="YES",
+        )
+        with rasterio.open(str(floodmap_fn), "w", **profile) as dst:
+            for ii in range(nrbm):
+                bm0 = ii * nrmax
+                bm1 = min(bm0 + nrmax, m1)
+                if merge_last_col and ii == nrbm - 1:
+                    bm1 += 1
+                for jj in range(nrbn):
+                    bn0 = jj * nrmax
+                    bn1 = min(bn0 + nrmax, n1)
+                    if merge_last_row and jj == nrbn - 1:
+                        bn1 += 1
+                    window = Window(bm0, bn0, bm1 - bm0, bn1 - bn0)
+                    block = src.read(1, window=window)
+                    if np.all(np.isnan(block)):
+                        continue
+                    if method == "locate":
+                        h = _hmax_block_locate(
+                            grid, zs_face, block, T, bm0, bm1, bn0, bn1, hmin
+                        )
+                        dst.write(h, 1, window=window)
+                        continue
+                    if not rotated:
+                        x = T.c + (np.arange(bm0, bm1) + 0.5) * T.a
+                        y = T.f + (np.arange(bn0, bn1) + 0.5) * T.e
+                        coords = {"y": ("y", y), "x": ("x", x)}
+                    else:
+                        cols, rows = np.meshgrid(
+                            np.arange(bm0, bm1), np.arange(bn0, bn1)
+                        )
+                        xc, yc = T * (cols + 0.5, rows + 0.5)
+                        coords = {"yc": (("y", "x"), yc), "xc": (("y", "x"), xc)}
+                    block_dep = xr.DataArray(block, dims=("y", "x"), coords=coords)
+                    block_dep.raster.set_crs(epsg)
+                    hmax = utils.downscale_floodmap(
+                        zsmax=zsmax, dep=block_dep, hmin=hmin
+                    )
+                    dst.write(
+                        np.asarray(hmax.values, dtype=np.float32), 1, window=window
+                    )
+    utils.build_overviews(fn=str(floodmap_fn), resample_method="nearest")
+
+
+def _open_north_up(fn, match=None):
+    """Read a ROTATED raster and de-rotate it to north-up (onto ``match``'s grid if given).
+
+    Same values as ``open_rasterio(fn, masked=True).rio.reproject(crs)`` /
+    ``.rio.reproject_match(match)`` — bit for bit (``logs/floodmap_fix_2026-11-12/``) —
+    at about a third of the peak memory, which the native-resolution floodmap needs
+    (v4: two ~60,000 x 80,000 grids where there was one 30,000 x 40,000):
+
+    * ``parse_coordinates=False``: on a rotated raster rioxarray otherwise builds 2-D
+      float64 ``xc`` / ``yc`` arrays, 16 bytes per pixel on a 4-byte band — the largest
+      allocation of the whole load. The reprojection reads the GeoTransform, not them.
+    * ``cache=False`` + ``del``: the rotated source is freed as soon as it is warped;
+      cached, it stayed resident beside its north-up copy.
+
+    Without parsed coordinates the warped array carries none, so its 1-D pixel-centre
+    ``x`` / ``y`` are put back from its transform (``match``'s, for a matched read) —
+    the scorers read ``rio.transform()`` off them.
+    """
+    import gc  # noqa: PLC0415
+
+    # rioxarray's own coordinate builder, so the coords are the ones reproject makes
+    from rioxarray._spatial_utils import _generate_spatial_coords  # noqa: PLC0415
+
+    src = rioxarray.open_rasterio(
+        str(fn), masked=True, cache=False, parse_coordinates=False
+    ).squeeze(drop=True)
+    if match is None:
+        out = src.rio.reproject(src.rio.crs)
+        dst_affine = out.rio.transform()
+    else:
+        out = src.rio.reproject_match(match)
+        dst_affine = match.rio.transform()
+    del src
+    gc.collect()
+    ny, nx = out.shape[-2:]
+    return out.assign_coords(
+        _generate_spatial_coords(affine=dst_affine, width=nx, height=ny)
+    )
+
+
+def subgrid_dep(model_dir: Path) -> Path:
+    """The subgrid DEM a run's floodmap is downscaled onto.
+
+    Prefer the ALL-LEVEL merged DEM (scripts/build_merged_subgrid_dep.py). The
+    per-level lev3 raster covers only faces refined to the finest level; on v3 that
+    silently classed 51 in-region HWMs — all on active faces — as off-grid, and left
+    wet coarse faces unpainted in the MOTF extent (STATUS 2026-08-29). Falling back
+    to lev3 keeps v1.5 (measured clean: 0 of 69 marks uncovered) bit-for-bit.
+    """
+    dep_p = Path(model_dir) / "subgrid" / "dep_subgrid_merged.tif"
+    if not dep_p.is_file():
+        dep_p = Path(model_dir) / "subgrid" / "dep_subgrid_lev3.tif"
+    return dep_p
+
+
+def floodmap_cache_fresh(model_dir: Path, fm: Path) -> bool:
+    """Can ``fm`` be read as this run's floodmap without re-downscaling?
+
+    Freshness is against BOTH inputs of the downscale: a re-run rewrites sfincs_map.nc,
+    a rebuilt/merged dep must invalidate a cache computed on the old raster — and against
+    the dep's LATTICE: a first-overview (pre-2026-11-12) floodmap is stale at any mtime.
+    """
+    model_dir, fm = Path(model_dir), Path(fm)
+    dep_p, mp = subgrid_dep(model_dir), model_dir / "sfincs_map.nc"
+    return (
+        fm.is_file()
+        and (not mp.is_file() or fm.stat().st_mtime >= mp.stat().st_mtime)
+        and fm.stat().st_mtime >= dep_p.stat().st_mtime
+        and floodmap_is_native(fm, dep_p)
+    )
+
+
+def floodmap_label(floodmap_fn, dep_fn) -> str:
+    """``native 3.125 m`` / ``overview 6.25 m``: the metric row's ``floodmap`` column.
+
+    Rows scored before 2026-11-12 have no such column: they were all on the dep's first
+    overview. Never pool a row that has this label with one that has not.
+    """
+    import rasterio  # noqa: PLC0415
+
+    with rasterio.open(str(floodmap_fn)) as f:
+        px = float(np.hypot(f.transform.a, f.transform.d))
+    kind = "native" if floodmap_is_native(floodmap_fn, dep_fn) else "overview"
+    return f"{kind} {px:.4g} m"
+
+
+def _move_aside_pre_native(fm: Path) -> Path:
+    """Rename a first-overview floodmap to ``<stem>.pre_native.tif``; never overwrite one."""
+    aside = fm.with_name(fm.stem + PRE_NATIVE_SUFFIX)
+    if aside.exists():  # an earlier one is kept too: stamp this one with its mtime
+        aside = fm.with_name(f"{fm.stem}.{int(fm.stat().st_mtime)}{PRE_NATIVE_SUFFIX}")
+    os.rename(fm, aside)
+    print(f"[floodmap] pre-fix (first-overview) cache kept as {aside.name}")
+    return aside
+
+
 def load_floodmap(
     model_dir: Path,
     force: bool = False,
     memo: bool = True,
     need_model: bool = True,
     data_dir: Path = DATA,
+    floodmap_fn: Path | str | None = None,
 ):
-    """Open the run read-only and downscale zsmax onto the L3 subgrid DEM.
+    """Open the run read-only and downscale zsmax onto the subgrid DEM at its NATIVE res.
 
     Returns ``(mod, da_hmax, da_dep)`` — the model handle plus the north-up depth-max and
     subgrid-DEM rasters the spatial metrics sample.
 
-    The downscale is CACHED as ``floodmap_hmax_lev3.tif`` in the run dir and reused when it
-    is newer than the run's sfincs_map.nc. Staleness is the mtime comparison, not existence:
-    a re-run of the same experiment rewrites sfincs_map.nc and must invalidate the tif.
+    The downscale is CACHED as ``floodmap_hmax_lev3.tif`` in the run dir (or at
+    ``floodmap_fn``, for a re-score that must not touch the run dir) and reused when it is
+    newer than the run's sfincs_map.nc AND the dep, AND on the dep's full-resolution
+    lattice. Staleness is the mtime comparison, not existence: a re-run of the same
+    experiment rewrites sfincs_map.nc and must invalidate the tif.
+
+    🔴 RESOLUTION (2026-11-12). Every floodmap before this date was computed on the dep's
+    FIRST OVERVIEW (hydromt's ``overview_level=0``; see ``downscale_floodmap_native``):
+    6.25 m on v4, buildings averaged into streets. Such a cache is STALE whatever its
+    mtime; it is moved aside to ``<name>.pre_native.tif`` (never deleted) when its
+    replacement is complete.
 
     ``memo`` — the in-process cache. The on-disk tif skips the *downscale*, but every call
-    still pays to de-rotate a 14596x11684 hmax raster and pull a 29192x23368 3.125 m dep
-    raster onto it (both are stored with ~0.76 deg of shear). That is ~2 min a call.
-    ⚠️ The cached arrays are SHARED, not copied — copying would double ~2 GB per entry.
-    Callers must treat them as READ-ONLY.
+    still pays to de-rotate the hmax raster and pull the dep raster onto it (both stored
+    with ~0.8 deg of rotation). On v4 at 3.125 m that is two ~60,000 x 80,000 float32
+    grids (~20 GB each). ⚠️ The cached arrays are SHARED, not copied. Callers must treat
+    them as READ-ONLY.
 
     ``need_model`` — skip the 21 s SfincsModel open. The returned ``mod`` is only required
     to RE-DOWNSCALE a stale cache; callers that want the rasters alone should pass False
     and get ``mod is None``.
     """
     model_dir = Path(model_dir).resolve()
+    fm = (
+        Path(floodmap_fn).resolve()
+        if floodmap_fn is not None
+        else model_dir / "floodmap_hmax_lev3.tif"
+    )
     key = None
     if memo and not force:
-        fm_p = model_dir / "floodmap_hmax_lev3.tif"
         # mtime in the key means a re-run (which rewrites the tif) self-invalidates.
-        key = (model_dir, fm_p.stat().st_mtime if fm_p.is_file() else None)
+        key = (model_dir, fm, fm.stat().st_mtime if fm.is_file() else None)
         if key in _FLOODMAP_MEMO:
             return _FLOODMAP_MEMO[key]
-    # Prefer the ALL-LEVEL merged DEM (scripts/build_merged_subgrid_dep.py). The
-    # per-level lev3 raster covers only faces refined to the finest level; on v3 that
-    # silently classed 51 in-region HWMs — all on active faces — as off-grid, and left
-    # wet coarse faces unpainted in the MOTF extent (STATUS 2026-08-29). Falling back
-    # to lev3 keeps v1.5 (measured clean: 0 of 69 marks uncovered) bit-for-bit.
-    dep_p = model_dir / "subgrid" / "dep_subgrid_merged.tif"
-    if not dep_p.is_file():
-        dep_p = model_dir / "subgrid" / "dep_subgrid_lev3.tif"
+    dep_p = subgrid_dep(model_dir)
     depfile = str(dep_p)
-    floodmap_fn = str(model_dir / "floodmap_hmax_lev3.tif")
-
-    fm, mp = Path(floodmap_fn), model_dir / "sfincs_map.nc"
-    # Freshness is against BOTH inputs of the downscale: a rebuilt/merged dep must
-    # invalidate a cache computed on the old raster, exactly like a re-run does.
-    fresh = fm.is_file() and (
-        (not mp.is_file() or fm.stat().st_mtime >= mp.stat().st_mtime)
-        and fm.stat().st_mtime >= dep_p.stat().st_mtime
-    )
+    floodmap_fn = str(fm)
+    fresh = floodmap_cache_fresh(model_dir, fm)
 
     mod = None
     if need_model or force or not fresh:
@@ -640,17 +907,24 @@ def load_floodmap(
         # (Ctrl-C, kill, quota) a direct write leaves a short raster that reads back with
         # NO ERROR and scores the model bone DRY: CSI 0.00, every HWM "dry". That is a
         # broken file wearing the costume of a dramatic physics result, and it cost an
-        # afternoon. os.replace is atomic within a filesystem.
+        # afternoon. os.replace is atomic within a filesystem, so the temp file sits
+        # BESIDE the target.
         #
-        # The temp name MUST keep the .tif extension: downscale_floodmap calls
-        # build_overviews, which asserts the extension and dies on a .tmp suffix.
-        tmp_fn = str(model_dir / ".floodmap_hmax_lev3.partial.tif")
-        utils.downscale_floodmap(
-            zsmax=da_zsmax, dep=depfile, hmin=0.05, floodmap_fn=tmp_fn, nrmax=1000
-        )
+        # The temp name MUST keep the .tif extension: build_overviews asserts the
+        # extension and dies on a .tmp suffix. It carries the PID: two processes
+        # re-downscaling the same run at once (two agents' test suites on the port
+        # fixture, 2026-11-12) shared one temp name, opened it "w" over each other and
+        # left a 101 MB floodmap with no valid pixel. With a temp each, both are whole
+        # and the last os.replace wins.
+        fm.parent.mkdir(parents=True, exist_ok=True)
+        tmp_fn = str(fm.parent / f".{fm.stem}.partial.{os.getpid()}.tif")
+        downscale_floodmap_native(da_zsmax, depfile, tmp_fn, hmin=0.05, nrmax=1000)
+        if not floodmap_is_native(tmp_fn, dep_p):  # cheap; guards the fix itself
+            raise RuntimeError(f"{tmp_fn} is not on {dep_p}'s full-resolution lattice")
+        if fm.is_file() and not floodmap_is_native(fm, dep_p):
+            _move_aside_pre_native(fm)
         os.replace(tmp_fn, floodmap_fn)
-    da_hmax = rioxarray.open_rasterio(floodmap_fn, masked=True).squeeze(drop=True)
-    da_hmax = da_hmax.rio.reproject(da_hmax.rio.crs)  # de-rotate to north-up
+    da_hmax = _open_north_up(floodmap_fn)  # de-rotate to north-up
 
     # ⚠️ Key on (device, inode), NOT on the path. `dedupe_experiment_inputs.py` HARDLINKS
     # identical subgrid tifs between arms, and Path.resolve() only collapses SYMlinks — so
@@ -663,14 +937,16 @@ def load_floodmap(
     dkey = (st.st_dev, st.st_ino, st.st_mtime, tgt)
     da_dep = _DEP_MEMO.get(dkey)
     if da_dep is None:
-        da_dep = rioxarray.open_rasterio(depfile, masked=True).squeeze(drop=True)
-        da_dep = da_dep.rio.reproject_match(da_hmax)
+        da_dep = _open_north_up(depfile, match=da_hmax)
         if len(_DEP_MEMO) >= _DEP_MEMO_MAX:
             _DEP_MEMO.pop(next(iter(_DEP_MEMO)))
         _DEP_MEMO[dkey] = da_dep
 
     da_hmax = da_hmax.where(da_dep.values > -0.5)  # drop deep ocean
     da_hmax.name = "hmax"
+    # which floodmap this is, for the metric row (``evaluate`` stamps ``floodmap``)
+    da_hmax.attrs["floodmap_fn"] = floodmap_fn
+    da_hmax.attrs["floodmap"] = floodmap_label(floodmap_fn, dep_p)
     out = (mod, da_hmax, da_dep)
     if key is not None:
         if len(_FLOODMAP_MEMO) >= _FLOODMAP_MEMO_MAX:

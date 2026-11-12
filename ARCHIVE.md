@@ -34,10 +34,14 @@ check (manifest with inodes, every VRT's sources read before / after, tests, por
 fingerprint audits: all identical) is `logs/consolidation_2026-11-07/`. `data/` also
 symlinks, since 2026-10-05, into `/scratch/tpj8/nj_bight_sfincs_data/` for the v3 / v4
 builds.
-The 13th, `data/v2_barnegat_runs`, was REMOVED the same day: nothing read it. The v2 Barnegat
-runs live only in `~/nj_coast_sfincs/experiments/v2_barnegat/` (6.2 G, incl. its 2026-08-20
-`metrics.csv`); re-link with `cp -a --link` if ever needed. Deleting the archive frees them; it
-does NOT free the 12 hard-linked dirs above (~2.7 G), which this repo reads.
+The 13th, `data/v2_barnegat_runs`, was REMOVED the same day: nothing read it.
+🔴 **Since 2026-11-12 the archive's `experiments/` (the v1_monmouth + v2_barnegat runs, incl. v2's
+2026-08-20 `metrics.csv`) and `data/frozen_mesh_v2_barnegat` are GONE from Amarel.** Their only copy
+is the user's OneDrive (`desktop_pull_backup.sh --only archive`, md5-verified against
+`/scratch/tpj8/nj_bight_sfincs/archive_manifests/nj_coast_trim.md5`, 642 files;
+`logs/home_trim_2026-11-07/README.md` C2). The port gate's v1_monmouth run has its own copy in this
+repo's `experiments/`. The 12 hard-linked dirs above (~2.7 G) were not touched and this repo still
+reads them.
 Nothing in `nj_sfincs/`, `scripts/`, `tests/` or `hpc/` may import from, exec, or add the
 archive to `sys.path` — `tests/test_repo_hygiene.py` asserts this. The same rule
 `CLAUDE.md` already applies to the toolchain repo, for the same reason: two copies of a
@@ -56,7 +60,7 @@ directory it scores.
 
 ## What was NOT brought across
 
-`data/frozen_mesh_v2_barnegat` (2.7 G) · `sfincs-env.tar.gz` (930 M) · `notebooks/` ·
+`data/frozen_mesh_v2_barnegat` (2.7 G; deleted from the archive 2026-11-12, OneDrive copy) · `sfincs-env.tar.gz` (930 M) · `notebooks/` ·
 `reports/` · `.git` (293 M for 11 commits, almost all of it committed notebook outputs).
 `data/frozen_mesh_v1_monmouth` IS brought across (hard links), for port verification only, and is dropped
 when `v1_monmouth` is retired.

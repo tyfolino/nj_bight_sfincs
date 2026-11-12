@@ -8,6 +8,7 @@
             "type": "command",
             "command": "/usr/bin/python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/guard.py\"",
             "timeout": 20,
+            "onFailure": "block",
             "statusMessage": "guard: queued-job md5 / rmtree flags / git commit"
           }
         ]

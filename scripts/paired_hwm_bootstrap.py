@@ -32,6 +32,8 @@ Usage:
         faber-nowaves+tide-anchor faber-nowaves+tide-shift
     PYTHONPATH=$PWD python scripts/paired_hwm_bootstrap.py A B --thresholds 0.01 0.05
     PYTHONPATH=$PWD python scripts/paired_hwm_bootstrap.py A B --by-basin
+    PYTHONPATH=$PWD python scripts/paired_hwm_bootstrap.py A B \
+        --floodmap-root /scratch/tpj8/floodmap_fix_2026-11-12
 
 ``--by-basin`` adds the grouped read (open coast / NY bays / NJ back bays / rivers) and a
 per-basin line. It replaces the ``grouped_paired_ab.py`` copies that lived in four
@@ -107,11 +109,46 @@ def scored_marks():
     return hwm
 
 
-def residuals(model_dir: Path, estimator: str, radius_m: float):
+#: what ``rescore.sh`` (logs/floodmap_fix_2026-11-12/) writes under its FM_ROOT
+NATIVE_NAME = "floodmap_hmax_native.tif"
+
+
+def pick_floodmap(model_dir: Path, root: Path | None) -> tuple[Path | None, str]:
+    """``(floodmap_fn, why)`` for ``validate.load_floodmap``; ``None`` = the run dir's.
+
+    ``--floodmap-root DIR`` (2026-11-12, the native-floodmap fix): read the floodmap from
+    ``DIR/<domain>/<arm>/floodmap_hmax_native.tif`` when it exists, so a published
+    reference run is scored on the native map WITHOUT anything being written into its
+    run dir. Without that file, a run-dir cache that is already native and fresh is read
+    as it is (read-only); otherwise the downscale is written to the DIR path, never into
+    the run dir (there, ``load_floodmap`` would replace the pre-fix map). No root: the
+    default, the run dir's own cache, exactly as before.
+    """
+    from nj_sfincs.validate import core  # noqa: PLC0415
+
+    if root is None:
+        return None, "run dir floodmap_hmax_lev3.tif (default)"
+    model_dir = Path(model_dir)
+    cand = Path(root) / _domain.active().name / model_dir.name / NATIVE_NAME
+    if cand.is_file():
+        return cand, f"{cand} (floodmap root)"
+    own = model_dir / "floodmap_hmax_lev3.tif"
+    if core.floodmap_cache_fresh(model_dir, own):
+        return own, f"{own} (run dir, native and fresh: read only)"
+    return cand, f"{cand} (absent: downscaled INTO the floodmap root, not the run dir)"
+
+
+def residuals(
+    model_dir: Path, estimator: str, radius_m: float, floodmap_fn: Path | None = None
+):
     """Per-mark (mask, residual) for one run. Mirrors validate.hwm_metrics."""
     from nj_sfincs.validate.metrics import _clip_to_region
 
-    _mod, da_hmax, da_dep = validate.load_floodmap(model_dir)
+    _mod, da_hmax, da_dep = validate.load_floodmap(
+        model_dir, need_model=False, floodmap_fn=floodmap_fn
+    )
+    at = da_hmax.attrs
+    print(f"   floodmap: {at.get('floodmap')} <- {at.get('floodmap_fn')}")
     hwm = gpd.read_file(str(_domain.active().hwm_geojson)).to_crs(da_dep.rio.crs)
     # Same region clip hwm_metrics applies (2026-08-17): an out-of-region mark scores
     # as dry against bare earth in EVERY arm — near-identical large residuals that
@@ -185,6 +222,15 @@ def main() -> int:
         action="store_true",
         help="ALSO report the paired read per basin group (BASIN_GROUPS) and per basin",
     )
+    p.add_argument(
+        "--floodmap-root",
+        type=Path,
+        default=None,
+        metavar="DIR",
+        help="read each arm's floodmap from DIR/<domain>/<arm>/floodmap_hmax_native.tif "
+        "(logs/floodmap_fix_2026-11-12/rescore.sh's FM_ROOT) and write nothing into "
+        "its run dir; see pick_floodmap. Default: the run dir's own cache",
+    )
     a = p.parse_args()
 
     root = exp_root()
@@ -193,7 +239,9 @@ def main() -> int:
         d = root / arm
         if not (d / "sfincs_map.nc").exists():
             raise SystemExit(f"no sfincs_map.nc in {d}")
-        m, r = residuals(d, a.estimator, a.radius_m)
+        fm, why = pick_floodmap(d, a.floodmap_root)
+        print(f"[{arm}] floodmap: {why}")
+        m, r = residuals(d, a.estimator, a.radius_m, floodmap_fn=fm)
         masks[arm], res[arm] = m, r
         print(
             f"{arm:<32} n={m.sum():3d}  RMSE={np.sqrt((r[m] ** 2).mean()):.4f}  "

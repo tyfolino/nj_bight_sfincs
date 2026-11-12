@@ -123,12 +123,15 @@ python scripts/campaign_check.py                # ⭐ the check-in: queue, md5 g
 ✅ **`.claude/hooks/guard.py` (2026-10-25) enforces three traps below** on every Bash / Edit / Write:
 ASK before an edit to a file a PENDING job's EXPECT_MD5 will check (or a RUNNING job's whose
 spooled script still refuses on a requeue), DENY `run_experiments.py` `--inputs-only` /
-`--no-run` / `--dry-run`, DENY `git commit`. A guard bug lets the call through.
+`--no-run` / `--dry-run`, DENY `git commit`. A Python error in the guard lets the call through (shown as a message); a hook that times out (20 s) or cannot start BLOCKS it (`onFailure: "block"`, 2026-11-12).
 
 ⚠️ **This session may be on a LOGIN node** (`hostname` = `amarel*`). Anything heavier than
 a grep — scoring, floodmaps, figures, the test suite — goes through `srun` on an
-allocation (`salloc --no-shell -p main --exclude=halk[0001-0159] …`, then
-`srun --jobid=<id> --overlap …`). A v3 paired score peaks at ~121 GB.
+allocation. 🔴 **Since the Slurm 25.11.8 update (2026-11-12):** a backgrounded `salloc --no-shell` dies
+10 s after it starts, so hold the allocation with a sleeping batch job
+(`sbatch -p main --exclude=halk[0001-0159] -c … --mem=… -t … -J <name> --wrap "sleep <s>"`), then
+`srun --jobid=<id> --overlap -n 1 -c <k> …`. **Always `-n 1`:** without a task count, 25.11's srun runs the
+command allocation-cores / k times in parallel. A v3 paired score peaks at ~121 GB.
 
 ⚠️ **`--tstop` cannot run on a sealed template** (a window change makes the driver try to
 rebuild it, and the seal refuses). For a short window on a finished run use

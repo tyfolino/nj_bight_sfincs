@@ -424,6 +424,16 @@ class Experiment:
     #: path. ``None`` = the template's weirs.
     weir_from: Path | None = None
 
+    #: ``struct-*`` ARMS ONLY (2026-11-12). A SFINCS drainage-structure file (``drnfile``: one line per structure,
+    #: ``x_in y_in x_out y_out type par1``; type 1 pump / 2 culvert / 3 check valve, sfincs_discharges.f90) copied
+    #: into the staged dir as ``sfincs.drn`` (a NEW inode) and keyed in ``sfincs.inp`` after every writer
+    #: (``model.apply_drainage``). The template has none; the mesh, bed and fingerprint are untouched, so an open
+    #: culvert under an embankment the bed reads as solid is an arm, not a bed edit. Types 4 / 5 (controlled gates)
+    #: are REFUSED: with both levels under the sill the engine divides 0 by 0 and sets both faces to their bed
+    #: every step (logs/culverts_drn_2026-11-12/toy). The metrics row carries ``provenance.drainage_label`` (md5,
+    #: count, types, and the engine log's own count), never this path. ``None`` = no drainage structures.
+    drn_from: Path | None = None
+
     #: ``null-*`` ARMS ONLY (2026-10-19). Air density written to the staged ``sfincs.inp``
     #: (``rhoa``; the template's is 1.25) after every writer, so nothing restores 1.25 over
     #: it. A NULL perturbation, not a physics knob: ±0.01 % moves the wind stress by the
@@ -435,6 +445,15 @@ class Experiment:
     #: (``calm.apply``): wind, pressure, rain and discharge come out, the boundary and window
     #: are replaced, and the start is a connected one that respects the weirs.
     calm: CalmForcing | None = None
+
+    #: WAVES-OFF ARMS ONLY (2026-11-09, the Cape May inlet-setup bracket). A directory holding the engine's
+    #: wavemaker TIME-SERIES set (``keys.json`` + the ``wvmfile`` / ``wfpfile`` / ``whifile`` / ``wtifile`` /
+    #: ``wstfile`` it names), copied into the staged dir and keyed in ``sfincs.inp`` after every writer
+    #: (``model.apply_wavemaker_setup``). Each polyline is a weakly reflective internal boundary that holds the
+    #: water on its LEFT at the level on its right + the ``wst`` set-up (sfincs_wavemaker.f90); with ``whi`` = 0
+    #: no IG is injected. Refused on a waves-on arm: with a ``wfpfile`` the engine drives EVERY wavemaker line
+    #: from the files, so it would also take the SnapWave-fed coastal wavemaker over. ``None`` = nothing added.
+    wavemaker_setup_from: Path | None = None
 
 
 def with_window(base: BaseConfig, tstop: datetime) -> BaseConfig:

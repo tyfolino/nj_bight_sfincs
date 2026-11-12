@@ -1812,9 +1812,13 @@ def read_weir_from(src: Path | str) -> bytes:
             rows = lines[i + 2 : i + 2 + n]
             [float(v) for r in rows for v in r]
         except (IndexError, ValueError):
-            raise SystemExit(f"weir_from {src}: not a SFINCS weir file near line {i + 1}")
+            raise SystemExit(
+                f"weir_from {src}: not a SFINCS weir file near line {i + 1}"
+            )
         if ncol != 4 or len(rows) != n or any(len(r) != 4 for r in rows):
-            raise SystemExit(f"weir_from {src}: polyline {lines[i][0]} is not n rows of 4")
+            raise SystemExit(
+                f"weir_from {src}: polyline {lines[i][0]} is not n rows of 4"
+            )
         i += 2 + n
     if i == 0:
         raise SystemExit(f"weir_from {src}: empty")
@@ -1857,6 +1861,99 @@ def _ensure_weirfile_key(text: str, model_dir: Path) -> str:
     if anchor in text:
         return text.replace(anchor, f"{anchor}\n{line}")
     return text.rstrip("\n") + f"\n{line}\n"  # anchor gone — append, never no-op
+
+
+#: The drnfile structure types an arm may stage: 1 pump, 2 culvert, 3 check valve (one parameter each,
+#: sfincs_discharges.f90 read_discharges). 4 / 5 (controlled gates) are refused, see ``Experiment.drn_from``.
+DRN_TYPES = {1: "pump", 2: "culvert", 3: "check_valve"}
+DRN_FILE = "sfincs.drn"
+
+
+def read_drn_from(
+    src: Path | str,
+) -> list[tuple[float, float, float, float, int, float]]:
+    """Parse and check an arm's drainage-structure file (``Experiment.drn_from``).
+
+    Every line must be ``x_in y_in x_out y_out type par1`` with type in ``DRN_TYPES`` and par1 > 0 (the
+    engine counts EVERY line as a structure, so a comment or blank line is a read error there: refused here).
+    The intake (first pair) and outfall must differ. Refuses anything else, so a wrong path cannot stage an
+    empty or malformed structure set.
+    """
+    src = Path(src)
+    if not src.is_absolute():
+        src = ROOT / src
+    if not src.is_file():
+        raise SystemExit(f"drn_from {src}: no such file")
+    lines = src.read_text().split("\n")
+    if lines and lines[-1] == "":
+        lines = lines[:-1]  # the final newline
+    rows = []
+    for i, ln in enumerate(lines):
+        f = ln.split()
+        try:
+            xi, yi, xo, yo = (float(v) for v in f[:4])
+            typ, par = int(f[4]), float(f[5])
+        except (IndexError, ValueError):
+            raise SystemExit(
+                f"drn_from {src}: line {i + 1} is not 'x_in y_in x_out y_out type par1': {ln!r}"
+            )
+        if typ not in DRN_TYPES:
+            raise SystemExit(
+                f"drn_from {src}: line {i + 1} type {typ} not in {sorted(DRN_TYPES)} (types 4 / 5 refused)"
+            )
+        if len(f) != 6 or not par > 0 or (xi, yi) == (xo, yo):
+            raise SystemExit(
+                f"drn_from {src}: line {i + 1}: need exactly 6 fields, par1 > 0, intake != outfall"
+            )
+        rows.append((xi, yi, xo, yo, typ, par))
+    if not rows:
+        raise SystemExit(f"drn_from {src}: empty")
+    return rows
+
+
+def apply_drainage(model_dir: Path, src: Path | str) -> dict:
+    """``Experiment.drn_from``: put an arm's drainage structures into a staged dir.
+
+    The file lands as ``sfincs.drn``, a NEW inode (temp + ``os.replace``, never written through a hard link,
+    CLAUDE.md §5), byte for byte; ``drnfile`` (and ``storeqdrain = 1``, the engine default, so the his file
+    carries ``drainage_discharge``) go on the WRITTEN inp, so call it after ``finalize`` / ``restore_diagnostics``;
+    one line with the md5, count and types is appended to ``provenance.txt``. Refuses a dir that already carries a
+    ``drnfile`` key or an ``sfincs.drn`` (the template has none; a second set would silently replace it).
+
+    ⚠️ The engine snaps each point to the quadtree cell that CONTAINS it (float32) and only warns ("no matching
+    active grid cell") when one lands outside the active mesh — the structure is then skipped. After staging,
+    the run's ``sfincs.log`` must say "(<n> drainage points found)" and must NOT carry that warning
+    (``provenance.drainage_label`` reads both).
+    """
+    import hashlib
+
+    model_dir = Path(model_dir)
+    src = Path(src)
+    if not src.is_absolute():
+        src = ROOT / src
+    rows = read_drn_from(src)
+    inp = model_dir / "sfincs.inp"
+    have = _inp_keys(inp)
+    if have.get("drnfile", "").strip() or (model_dir / DRN_FILE).exists():
+        raise SystemExit(
+            f"{model_dir.name} already has a drainage file; refusing to add a second set"
+        )
+    data = src.read_bytes()
+    tmp = model_dir / f".{DRN_FILE}.tmp"
+    tmp.write_bytes(data)
+    os.replace(tmp, model_dir / DRN_FILE)
+    set_inp_keys(inp, {"drnfile": DRN_FILE, "storeqdrain": "1"})
+    md5 = hashlib.md5(data).hexdigest()
+    types = sorted({DRN_TYPES[r[4]] for r in rows})
+    line = f"drn_from = {src} :: {DRN_FILE} md5 {md5} :: {len(rows)} structures ({', '.join(types)})"
+    prov = model_dir / "provenance.txt"
+    text = prov.read_text() if prov.exists() else ""
+    prov.unlink(missing_ok=True)
+    prov.write_text(
+        text + ("" if text.endswith("\n") or not text else "\n") + line + "\n"
+    )
+    print(f"[drainage] {line}", flush=True)
+    return {"md5": md5, "n": len(rows), "types": types}
 
 
 #: S [inch] at or above this is CN <= ~1: hydromt's clip of the shipped table's water CN 0.
@@ -2002,6 +2099,71 @@ def _inp_keys(inp: Path) -> dict:
     return out
 
 
+#: The five file keys of the engine's wavemaker TIME-SERIES mode (sfincs_input.f90 / sfincs_wavemaker.f90).
+WAVEMAKER_SETUP_FILE_KEYS = ("wvmfile", "wfpfile", "whifile", "wtifile", "wstfile")
+
+
+def apply_wavemaker_setup(model_dir: Path, src: Path | str) -> dict:
+    """``Experiment.wavemaker_setup_from``: copy a wavemaker time-series set into a staged WAVES-OFF dir.
+
+    ``src/keys.json`` maps ``sfincs.inp`` keys to values; the five ``WAVEMAKER_SETUP_FILE_KEYS`` must be there and
+    name files in ``src``; any other key (``wmfred``, ``wmtfilter``) is written as given. The files land as NEW
+    inodes (never written through a hard link, CLAUDE.md §5), the keys go on the written inp (so call it after
+    ``finalize``), and one line with the md5 of every file is appended to ``provenance.txt``.
+
+    Refuses: a waves-ON dir (with a ``wfpfile`` the engine drives EVERY wavemaker line from the files, so the
+    SnapWave-fed coastal wavemaker would be taken over too); a dir that already carries a ``wvmfile``; a set with a
+    file missing. ⚠️ The engine's default ``wmfred`` 0.99 makes a line across a tidal inlet a CHOKE (toy
+    2026-11-09: range 0.82, +40 min); ``wmfred`` 1.0 passes the tide (0.985-0.998, +5-10 min) —
+    logs/capemay_tests_2026-11-09/toy/.
+    """
+    import hashlib
+    import json
+
+    model_dir, src = Path(model_dir), Path(src)
+    if not src.is_absolute():
+        src = ROOT / src
+    inp = model_dir / "sfincs.inp"
+    have = _inp_keys(inp)
+    if have.get("snapwave", "0").strip() not in ("0", ""):
+        raise SystemExit(
+            f"wavemaker_setup_from on a waves-ON dir ({model_dir.name}: snapwave = {have['snapwave']}): the "
+            "time-series wavemaker would also take over the SnapWave-fed coastal wavemaker; waves-off arms only"
+        )
+    if have.get("wvmfile", "").strip():
+        raise SystemExit(
+            f"{model_dir.name} already has wvmfile = {have['wvmfile']}; refusing to add a second set"
+        )
+    kv = json.loads((src / "keys.json").read_text())
+    missing = [k for k in WAVEMAKER_SETUP_FILE_KEYS if k not in kv]
+    if missing:
+        raise SystemExit(f"{src}/keys.json lacks {missing}")
+    md5 = {}
+    for k in WAVEMAKER_SETUP_FILE_KEYS:
+        f = src / str(kv[k])
+        if not f.is_file():
+            raise SystemExit(f"wavemaker_setup_from: {f} (for {k}) not found")
+        dst = model_dir / f.name
+        dst.unlink(missing_ok=True)
+        shutil.copyfile(f, dst)
+        md5[f.name] = hashlib.md5(dst.read_bytes()).hexdigest()
+    set_inp_keys(inp, {k: str(v) for k, v in kv.items()})
+    line = (
+        f"wavemaker_setup_from = {src} :: "
+        + ", ".join(f"{n} md5 {m}" for n, m in md5.items())
+        + " :: keys "
+        + ", ".join(f"{k}={v}" for k, v in kv.items())
+    )
+    prov = model_dir / "provenance.txt"
+    text = prov.read_text() if prov.exists() else ""
+    prov.unlink(missing_ok=True)
+    prov.write_text(
+        text + ("" if text.endswith("\n") or not text else "\n") + line + "\n"
+    )
+    print(f"[wavemaker-setup] {line}", flush=True)
+    return {"files": md5, "keys": kv}
+
+
 def append_extra_discharge(model_dir: Path, src: Path | str) -> dict:
     """APPEND point sources to the staged ``netsrcdisfile`` (``Experiment.extra_discharge``).
 
@@ -2037,7 +2199,8 @@ def append_extra_discharge(model_dir: Path, src: Path | str) -> dict:
         )
     target = model_dir / kv["netsrcdisfile"]
     tref, t0, t1 = (
-        pd.to_datetime(kv[k], format="%Y%m%d %H%M%S") for k in ("tref", "tstart", "tstop")
+        pd.to_datetime(kv[k], format="%Y%m%d %H%M%S")
+        for k in ("tref", "tstart", "tstop")
     )
     epsg = int(kv.get("epsg", 32618))
 
@@ -2051,10 +2214,13 @@ def append_extra_discharge(model_dir: Path, src: Path | str) -> dict:
         ex, ey = ext["x"].values.astype(float), ext["y"].values.astype(float)
     else:
         tr = pyproj.Transformer.from_crs(4326, epsg, always_xy=True)
-        ex, ey = tr.transform(ext["lon"].values.astype(float), ext["lat"].values.astype(float))
+        ex, ey = tr.transform(
+            ext["lon"].values.astype(float), ext["lat"].values.astype(float)
+        )
         ex, ey = np.asarray(ex, float), np.asarray(ey, float)
     names = (
-        [str(n) for n in ext["name"].values] if "name" in ext.coords or "name" in ext
+        [str(n) for n in ext["name"].values]
+        if "name" in ext.coords or "name" in ext
         else [f"extra_{k}" for k in range(ext.sizes[idim])]
     )
     et = pd.DatetimeIndex(ext["time"].values)
@@ -2110,7 +2276,12 @@ def append_extra_discharge(model_dir: Path, src: Path | str) -> dict:
     tmp = target.with_name(f".{target.name}.extra")
     out.to_netcdf(
         tmp,
-        encoding={"time": {"units": f"minutes since {tref:%Y-%m-%d %H:%M:%S}", "dtype": "float64"}},
+        encoding={
+            "time": {
+                "units": f"minutes since {tref:%Y-%m-%d %H:%M:%S}",
+                "dtype": "float64",
+            }
+        },
     )
     os.replace(tmp, target)
 
@@ -2125,14 +2296,19 @@ def append_extra_discharge(model_dir: Path, src: Path | str) -> dict:
         "face": [int(f) for f in face],
         "dist_to_face_centre_m": [round(float(v), 1) for v in dist],
         "peak_m3s": [round(float(eq[:, k].max()), 4) for k in range(ne)],
-        "volume_m3": [round(float(np.sum(0.5 * (eq[1:, k] + eq[:-1, k]) * dsec))) for k in range(ne)],
+        "volume_m3": [
+            round(float(np.sum(0.5 * (eq[1:, k] + eq[:-1, k]) * dsec)))
+            for k in range(ne)
+        ],
         "template_sources": nb,
     }
     (model_dir / EXTRA_DISCHARGE_META).write_text(json.dumps(rec, indent=1) + "\n")
     print(
         f"[src] + {ne} extra source(s) from {src.name} as stations {nb}..{nb + ne - 1}: "
-        + ", ".join(f"{n} peak {p:.2f} m3/s, {v:,.0f} m3" for n, p, v in
-                    zip(names, rec["peak_m3s"], rec["volume_m3"])),
+        + ", ".join(
+            f"{n} peak {p:.2f} m3/s, {v:,.0f} m3"
+            for n, p, v in zip(names, rec["peak_m3s"], rec["volume_m3"])
+        ),
         flush=True,
     )
     return rec
@@ -2279,7 +2455,9 @@ def finalize(
         print(f"[write] private copies before write: {', '.join(broken)}", flush=True)
     _meteo_marked = meteo_grid.marked_in_memory(sf)
     _weir_bytes = _read_weir(model_dir)
-    if weir_from is not None:  # ``Experiment.weir_from``: the arm's weirs replace the template's
+    if (
+        weir_from is not None
+    ):  # ``Experiment.weir_from``: the arm's weirs replace the template's
         _weir_bytes = read_weir_from(weir_from)
     sf.write()
     if restore_weir(model_dir, _weir_bytes):

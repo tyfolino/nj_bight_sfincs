@@ -375,6 +375,26 @@ BRACKETS: dict[str, Bracket] = {
         ),
         forcing_only=True,
     ),
+    # 2026-11-09 (logs/capemay_tests_2026-11-09/): waves OFF + NACCS's own bay-minus-offshore lift (24.84 h mean,
+    # >= 0) imposed across the five Cape May County inlet mouths by the engine's wavemaker set-up input (wstfile),
+    # Model 1.1.0's domain. NACCS's lift carries the wave setup NACCS makes AND anything else that differs between
+    # the two models inside the inlets, and it is imposed whatever this model's own waves would do there.
+    "inlet-setup": Bracket(
+        name="inlet-setup",
+        base_domain="v4_refreeze_swz_v11",
+        fingerprint=V4_REFREEZE_SWZ_V11,
+        bound="upper",
+        inadmissible_why=(
+            "the bay-minus-offshore lift of ANOTHER model (NACCS ADCIRC+STWAVE, low-passed 24.84 h, clipped >= 0) "
+            "is IMPOSED across each Cape May County inlet mouth (Great Egg, Corson, Townsends, Hereford, Cape May "
+            "Inlet) as a wavemaker set-up step, with SnapWave off: a prescribed answer at the inlets, not physics"
+        ),
+        bounds_what=(
+            "how much of the Cape May back-bay low bias (marks, gauges, the county's MOTF miss) a NACCS-sized "
+            "mean lift at the inlet mouths can close"
+        ),
+        forcing_only=True,
+    ),
 }
 
 #: A run directory whose name starts with this is a bracket. Machine-checkable, and

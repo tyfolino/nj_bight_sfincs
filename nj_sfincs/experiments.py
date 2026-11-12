@@ -1053,7 +1053,9 @@ EXPERIMENTS_BY_DOMAIN: dict[str, dict[str, Experiment]] = {
             "(NLD 4505000007 / -09) and Rahway River South Branch RB (4505000027) levee + floodwall lines at the NLD "
             "crest (3.0-3.9 m), the 85 m Bayway wall (no NLD height: lidar ground), 3 end tie-ins and 11 ground "
             "guards at the lidar ridge. Gates closed. Pair: p4-nowaves+weir-overpeck-open.",
-            weir_from=DATA / "structures_v4" / "sfincs_overpeck_open_elizabeth_rahway_ground.weir",
+            weir_from=DATA
+            / "structures_v4"
+            / "sfincs_overpeck_open_elizabeth_rahway_ground.weir",
         ),
         # 2026-11-01: the first 1.x runs, on the modern bed (logs/modern_bed_2026-11-01/).
         **_CALM_ARMS,
@@ -1084,7 +1086,9 @@ EXPERIMENTS_BY_DOMAIN: dict[str, dict[str, Experiment]] = {
             "ground guards (logs/walls_elizabeth_rahway_2026-11-05/). Gates closed. "
             "Pair: p4-premier (this domain) and v4_refreeze_swz/p4-premier.",
             subgrid_from="_subgrid_v1_1c",
-            weir_from=DATA / "structures_v4" / "sfincs_overpeck_open_elizabeth_rahway_ground.weir",
+            weir_from=DATA
+            / "structures_v4"
+            / "sfincs_overpeck_open_elizabeth_rahway_ground.weir",
         ),
         # 2026-11-06: the v1.2a bed test (logs/relevance_fixes_2026-11-06/): waves-off, Overpeck open, v1.1c
         # bed vs v1.1c + the five relevance-fix overlays. Pair: this domain's p4-nowaves.
@@ -1095,6 +1099,22 @@ EXPERIMENTS_BY_DOMAIN: dict[str, dict[str, Experiment]] = {
             subgrid_from="_subgrid_v1_1c",
             weir_from=DATA / "structures_v4" / "sfincs_overpeck_open.weir",
         ),
+        # 2026-11-12: the Gloucester culverts (user eye check 11-09, crests #1 / #13 / #16 of logs/crests_2026-11-09):
+        # open highway culverts the bed reads as solid embankments, added as engine culverts (drnfile type 2), no bed
+        # edit. Waves-off, paired with this domain's p4-nowaves. logs/culverts_drn_2026-11-12/README.md.
+        "p4-nowaves+struct-culverts-gloucester": replace(
+            _V4_REFREEZE["p4-nowaves"],
+            name="p4-nowaves+struct-culverts-gloucester",
+            description="p4-nowaves (this domain) + 7 open culverts as SFINCS drainage structures (type 2, Q = par1 "
+            "sqrt(dh), both ways, no sill), NJDOT 0817154 / 0817155 (Little Timber Creek, Moss Branch under US 130), "
+            "0820166 (Little Timber Creek under I-295), 0821157 / 0821158 (Still Run under I-295 & US 130 and CR 653), "
+            "0821154 / 0821156 (Pargey Creek, London Branch under I-295 & US 130): par1 9-52 m2.5/s from the NJDOT "
+            "span, skew, lidar invert and an assumed rise (data/structures_v4/gloucester_culverts_v11.drn). The bed, "
+            "mask and weirs are this domain's. Pair: p4-nowaves (this domain).",
+            subgrid_from="_subgrid_v1_1c",
+            weir_from=DATA / "structures_v4" / "sfincs_overpeck_open.weir",
+            drn_from=DATA / "structures_v4" / "gloucester_culverts_v11.drn",
+        ),
         "bed-v12a+p4-nowaves": replace(
             _V4_REFREEZE["p4-nowaves"],
             name="bed-v12a+p4-nowaves",
@@ -1103,6 +1123,111 @@ EXPERIMENTS_BY_DOMAIN: dict[str, dict[str, Experiment]] = {
             "logs/relevance_fixes_2026-11-06/VERDICTS.md). Pair: p4-nowaves (this domain).",
             subgrid_from="_subgrid_v1_2a",
             weir_from=DATA / "structures_v4" / "sfincs_overpeck_open.weir",
+        ),
+        # 2026-11-09: the Cape May back-bay tests (logs/capemay_tests_2026-11-09/README.md; the diagnosis is
+        # logs/capemay_backbay_2026-11-09/README.md). Test 1, waves-ON: Model 1.1.0 with the SnapWave boundary Hs x 1.3
+        # (CORA -> STWAVE at the 8 m line); one input file differs (snapwave.bhs). Pair: p4-premier+weir-elizabeth-rahway.
+        "p4-premier+wave-hs130+weir-elizabeth-rahway": replace(
+            _V4_REFREEZE["p4-premier"],
+            name="p4-premier+wave-hs130+weir-elizabeth-rahway",
+            description="Model 1.1.0 (p4-premier+weir-elizabeth-rahway, this domain) with the SnapWave boundary wave "
+            "height x 1.3 at all 69 support points (data/waves_v4/cora_waves_v4_hs130.nc: CORA hs x 1.3; Tp, direction, "
+            "nodes, times unchanged). Asks whether the Cape May back-bay deficit is the incident waves (SnapWave/STWAVE "
+            "0.77 at the 8 m line). A forcing sensitivity, not a candidate. Pair: p4-premier+weir-elizabeth-rahway.",
+            waves=replace(
+                _P4_WAVES,
+                wave_point_dataset=DATA / "waves_v4" / "cora_waves_v4_hs130.nc",
+            ),
+            subgrid_from="_subgrid_v1_1c",
+            weir_from=DATA
+            / "structures_v4"
+            / "sfincs_overpeck_open_elizabeth_rahway_ground.weir",
+        ),
+        # Test 3, waves-OFF bed arms on this domain's p4-nowaves (the flow never reads face z, FINDINGS §63 (f)).
+        "bed-inlets1m+p4-nowaves": replace(
+            _V4_REFREEZE["p4-nowaves"],
+            name="bed-inlets1m+p4-nowaves",
+            description="p4-nowaves (this domain) on _subgrid_v1_1c_inlets1m = v1.1c + inlets_deepen1m_capemay_v4:min: the "
+            "wet bed (< 0 m NAVD88) within 600 m of the Great Egg, Corson, Townsends, Hereford and Cape May Inlet axes "
+            "lowered 1 m (an ASSUMED bed: a conveyance sensitivity, not a survey). Pair: p4-nowaves (this domain).",
+            subgrid_from="_subgrid_v1_1c_inlets1m",
+            weir_from=DATA / "structures_v4" / "sfincs_overpeck_open.weir",
+        ),
+        "bed-marshnhalf+p4-nowaves": replace(
+            _V4_REFREEZE["p4-nowaves"],
+            name="bed-marshnhalf+p4-nowaves",
+            description="p4-nowaves (this domain) on _subgrid_v1_1c_marshnhalf = v1.1c with manning_marsh_half_capemay_v4 "
+            "painted after manning_developed_v4: NLCD 95 marsh in the Cape May County Atlantic back bays at n 0.0225 "
+            "(half of 0.045); lake and channel n still win. Bed tables as v1.1c. Pair: p4-nowaves (this domain).",
+            subgrid_from="_subgrid_v1_1c_marshnhalf",
+            weir_from=DATA / "structures_v4" / "sfincs_overpeck_open.weir",
+        ),
+        # Test 2: the inlet-setup BRACKET and its zero-lift control (same five lines, set-up 0), waves-OFF.
+        # Pairs: bracket vs p4-nowaves (what the lift buys); control vs p4-nowaves (what the lines alone do);
+        # bracket vs control (the lift alone).
+        "BRACKET+inlet-setup+p4-nowaves": replace(
+            _V4_REFREEZE["p4-nowaves"],
+            name="BRACKET+inlet-setup+p4-nowaves",
+            description="INADMISSIBLE upper bound: p4-nowaves (this domain) + NACCS's bay-minus-offshore lift "
+            "(24.84 h mean, >= 0; 0.01-0.54 m, per inlet) imposed across the Great Egg, Corson, Townsends, Hereford "
+            "and Cape May Inlet mouths by the engine's wavemaker set-up input (data/inlet_setup_v4/setup, wmfred 1.0). "
+            "Pair: p4-nowaves and p4-nowaves+tide-inletlines0 (this domain).",
+            subgrid_from="_subgrid_v1_1c",
+            weir_from=DATA / "structures_v4" / "sfincs_overpeck_open.weir",
+            wavemaker_setup_from=DATA / "inlet_setup_v4" / "setup",
+            bracket="inlet-setup",
+        ),
+        "p4-nowaves+tide-inletlines0": replace(
+            _V4_REFREEZE["p4-nowaves"],
+            name="p4-nowaves+tide-inletlines0",
+            description="Mechanism control for BRACKET+inlet-setup: p4-nowaves (this domain) with the same five "
+            "inlet-mouth wavemaker lines at ZERO set-up (data/inlet_setup_v4/setup0): what the lines alone do to the "
+            "tide and the crest. Not a candidate. Pair: p4-nowaves (this domain).",
+            subgrid_from="_subgrid_v1_1c",
+            weir_from=DATA / "structures_v4" / "sfincs_overpeck_open.weir",
+            wavemaker_setup_from=DATA / "inlet_setup_v4" / "setup0",
+        ),
+        # 2026-11-12 (user standing decision 11-09): the rain-OFF twin of Model 1.1.0 is the standard run for MOTF
+        # comparisons (MOTF is a surge extent: it contains no rain). Waves on, one flag differs. Pair: 1.1.0.
+        "p4-premier+rain-off+weir-elizabeth-rahway": replace(
+            _V4_REFREEZE["p4-premier+rain-off"],
+            name="p4-premier+rain-off+weir-elizabeth-rahway",
+            description="Model 1.1.0 (p4-premier+weir-elizabeth-rahway, this domain) with the rain forcing removed "
+            "(netamprfile and the infiltration keys stripped, as v4_refreeze's p4-premier+rain-off): the standard "
+            "rain-off twin for MOTF comparisons (user 11-09). Pair: p4-premier+weir-elizabeth-rahway (this domain).",
+            subgrid_from="_subgrid_v1_1c",
+            weir_from=DATA
+            / "structures_v4"
+            / "sfincs_overpeck_open_elizabeth_rahway_ground.weir",
+        ),
+        # 2026-11-12 (user): Keansburg at its 2012 crests (logs/keansburg_breach_2026-11-09/README.md, "Decision
+        # 2026-11-12"). Waves-OFF, so the pair is well-conditioned; one file differs (sfincs.weir), and only in 15
+        # Keansburg dune vertices (the 2014 beach fill out, the Carr Ave gap open). The waves-off twin of 1.1.0
+        # (Elizabeth / Rahway levees in) did not exist on this domain, so it is registered as the pair.
+        "p4-nowaves+weir-elizabeth-rahway": replace(
+            _V4_REFREEZE["p4-nowaves"],
+            name="p4-nowaves+weir-elizabeth-rahway",
+            description="Waves-off twin of Model 1.1.0: this domain's p4-nowaves (Overpeck open) plus the "
+            "Elizabeth / Rahway levees (the 1.1.0 weir file; 819 engine u/v). Pair: p4-nowaves (this domain) for "
+            "the levees; p4-premier+weir-elizabeth-rahway for SnapWave.",
+            subgrid_from="_subgrid_v1_1c",
+            weir_from=DATA
+            / "structures_v4"
+            / "sfincs_overpeck_open_elizabeth_rahway_ground.weir",
+        ),
+        "p4-nowaves+weir-elizabeth-rahway+weir-keansburg-2012crest": replace(
+            _V4_REFREEZE["p4-nowaves"],
+            name="p4-nowaves+weir-elizabeth-rahway+weir-keansburg-2012crest",
+            description="p4-nowaves+weir-elizabeth-rahway (this domain) with the Keansburg bayfront dune at its "
+            "2012 crests: 15 weir vertices that the 2014 USACE fill raised > 0.3 m above the 2010 pre-storm lidar "
+            "set back to it (the Carr Ave gap K2 4.36-5.22 -> 2.73-4.64 m, 2 at -74.139, 3 on the K3 reach; "
+            "data/structures_v4/sfincs_overpeck_open_elizabeth_rahway_keansburg_2012crest.weir, 819 engine u/v). "
+            "No Pews Creek tide gate (built 2016-20; in neither the weir nor the bed). "
+            "Pair: p4-nowaves+weir-elizabeth-rahway (this domain).",
+            subgrid_from="_subgrid_v1_1c",
+            weir_from=DATA
+            / "structures_v4"
+            / "sfincs_overpeck_open_elizabeth_rahway_keansburg_2012crest.weir",
         ),
     },
     # The breach arms, each on a domain whose face z comes from its own breach bed.

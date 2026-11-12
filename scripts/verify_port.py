@@ -87,6 +87,22 @@ REBASELINED: dict[str, tuple[float, float]] = {
 }
 PINNED.update({k: new for k, (_old, new) in REBASELINED.items()})
 
+#: 🔴 RE-BASELINED AGAIN 2026-11-12 — every key read off the FLOODMAP (MOTF and HWM).
+#: re-baselined 2026-11-12: native 3.125 m floodmap (overview bug), old CSI 0.6842.
+#: hydromt's path-mode ``downscale_floodmap`` opened the dep at ``overview_level=0`` =
+#: its FIRST OVERVIEW, so every floodmap sat on a 2x-coarser, building-averaged bed
+#: (``validate.core.downscale_floodmap_native``; logs/floodmap_fix_2026-11-12/). The
+#: gauge / phase keys do not read the floodmap and stay bit-for-bit on the archive.
+REBASELINED_NATIVE: dict[str, tuple[float, float]] = {
+    # key: (value on the first-overview floodmap, value on the native one)
+    "motf_csi": (0.6841603512860266, 0.6804256557342977),
+    "motf_pod": (0.7926427001558183, 0.7914435121544824),
+    "motf_far": (0.1666966401075916, 0.1709186257626643),
+    "hwm_bias_scored_m": (-0.3631059310561731, -0.36144070903878456),
+    "hwm_rmse_scored_m": (0.5704992999451454, 0.5689095708261023),
+}
+PINNED.update({k: new for k, (_old, new) in REBASELINED_NATIVE.items()})
+
 #: archive key -> ported key. Everything not listed kept its name.
 RENAMES = {
     # `gauge_*` meant "the one NOAA gauge". Now every gauge is scored by registry name.
@@ -133,7 +149,10 @@ def tier1() -> int:
         print("\n[tier1] re-baselined keys (archive value is NOT the target — see the")
         print("        REBASELINED note at the top of this file):")
         for k, (was, now) in REBASELINED.items():
-            print(f"          {k:<22} archive {was:.9g} -> expected {now:.9g}")
+            print(f"          {k:<22} archive {was:.9g} -> 2026-08-20 {now:.9g}")
+        print("        REBASELINED_NATIVE (2026-11-12, native floodmap):")
+        for k, (was, now) in REBASELINED_NATIVE.items():
+            print(f"          {k:<22} overview {was:.9g} -> expected {now:.9g}")
 
     print(f"\n{'metric':<34} {'archive':>18} {'ported':>18}   verdict")
     print("-" * 96)
@@ -141,7 +160,9 @@ def tier1() -> int:
         new_key = RENAMES.get(old_key, old_key)
         got = row.get(new_key)
         note = "" if new_key == old_key else f"  (renamed -> {new_key})"
-        if old_key in REBASELINED:
+        if old_key in REBASELINED_NATIVE:
+            note += "  (re-baselined 2026-11-12, native floodmap)"
+        elif old_key in REBASELINED:
             note += "  (re-baselined 2026-08-20)"
         if got is None:
             fails.append(f"{old_key}: ported row has no key {new_key!r}")
@@ -190,11 +211,13 @@ def tier1() -> int:
             "domain."
         )
         return 1
-    if REBASELINED:
+    if REBASELINED or REBASELINED_NATIVE:
+        n_rb = len(set(REBASELINED) | set(REBASELINED_NATIVE))
         print(
             "\n✅ TIER 1 PASSED — bit for bit against the archive on every key\n"
-            f"   except the {len(REBASELINED)} deliberately re-baselined MOTF keys,"
-            " which match\n   their post-active-mask values bit for bit."
+            f"   except the {n_rb} deliberately re-baselined floodmap keys (active mask\n"
+            "   2026-08-20, native floodmap 2026-11-12), which match their new values\n"
+            "   bit for bit."
         )
     else:
         print("\n✅ TIER 1 PASSED — ported scorer reproduces the archive bit for bit.")

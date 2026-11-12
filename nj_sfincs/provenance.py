@@ -712,3 +712,29 @@ def weir_label(model_dir: Path | str) -> str:
         names.append(lines[i][0])
         i += 2 + int(lines[i + 1][0])
     return f"md5:{hashlib.md5(data).hexdigest()[:8]} " + " ".join(names)
+
+
+def drainage_label(model_dir: Path | str) -> str:
+    """The STAGED ``sfincs.drn`` (``Experiment.drn_from``): md5[:8], structure count and types, plus what the
+    engine's own ``sfincs.log`` says when the run has one — ``log:<n>`` from "(<n> drainage points found)", and
+    ``SKIPPED`` when it warns that a point found no active cell (that structure did nothing). ``none`` when the
+    run has no drainage file."""
+
+    f = Path(model_dir) / "sfincs.drn"
+    if not f.is_file():
+        return "none"
+    data = f.read_bytes()
+    rows = [ln.split() for ln in data.decode().splitlines() if ln.strip()]
+    kinds = {"1": "pump", "2": "culvert", "3": "check_valve"}
+    types = sorted({kinds.get(r[4], f"type{r[4]}") for r in rows if len(r) > 4})
+    lab = f"md5:{hashlib.md5(data).hexdigest()[:8]} n={len(rows)} {'+'.join(types)}"
+    log = Path(model_dir) / "sfincs.log"
+    if log.is_file():
+        import re
+
+        txt = log.read_text(errors="replace")
+        m = re.search(r"\((\d+) drainage points found\)", txt)
+        lab += f" log:{m.group(1) if m else 'absent'}"
+        if "no matching active grid cell" in txt:
+            lab += " SKIPPED"
+    return lab

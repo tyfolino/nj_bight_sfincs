@@ -284,6 +284,13 @@ def prepare_experiment(name: str, base: BaseConfig) -> Path:
     # flux cross-sections — which on a relocated-boundary domain are the headline result,
     # not a diagnostic.
     model.restore_diagnostics(exp_dir)
+    # ``Experiment.drn_from`` (struct-* arms, 2026-11-12): drainage structures (culverts) on the written inp.
+    if exp.drn_from is not None:
+        model.apply_drainage(exp_dir, exp.drn_from)
+    # ``Experiment.wavemaker_setup_from`` (the Cape May inlet-setup bracket, 2026-11-09): on the written inp,
+    # after finalize stripped every wave key from this waves-off arm.
+    if exp.wavemaker_setup_from is not None:
+        model.apply_wavemaker_setup(exp_dir, exp.wavemaker_setup_from)
     # ``Experiment.rhoa`` (null-* arms): last, on the written inp, so no writer above can put
     # the template's 1.25 back.
     if exp.rhoa is not None:
@@ -326,6 +333,7 @@ def collect_metrics(names: list[str]) -> pd.DataFrame:
             rows[name]["sea_level_offset"] = provenance.sea_level_offset_label(exp_dir)
             rows[name]["meteo"] = provenance.meteo_label(exp_dir)
             rows[name]["weir"] = provenance.weir_label(exp_dir)
+            rows[name]["drainage"] = provenance.drainage_label(exp_dir)
             rows[name]["infiltration"] = provenance.infiltration_label(exp_dir)
             rows[name]["engine_seed"] = provenance.engine_seed_label(exp_dir)
             rows[name]["extra_discharge"] = provenance.extra_discharge_label(exp_dir)

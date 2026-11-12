@@ -1040,9 +1040,14 @@ def evaluate(
     gallery_tif: Path | None = None,
     hwm_ids: "set | list | None" = None,
     hwm_estimator: str = HWM_ESTIMATOR_DEFAULT,
+    floodmap_fn: Path | None = None,
 ) -> dict:
     """Full metric row for one run. Robust: a failing metric yields an ``*_error`` key
     rather than aborting the row.
+
+    ``floodmap_fn`` — where ``load_floodmap`` caches the native-resolution downscale; the
+    default is the run dir's ``floodmap_hmax_lev3.tif``. A re-score that must leave the
+    run dir's published floodmap alone passes a path elsewhere.
 
     If ``gallery_tif`` is given, the *masked* (permanent water dropped, north-up)
     ``da_hmax`` is written there — so the figure shows flooding on land, not the full water
@@ -1052,7 +1057,13 @@ def evaluate(
     from .core import load_floodmap
 
     row: dict = {}
-    mod, da_hmax, da_dep = load_floodmap(model_dir, data_dir=data_dir)
+    mod, da_hmax, da_dep = load_floodmap(
+        model_dir, data_dir=data_dir, floodmap_fn=floodmap_fn
+    )
+    # Which floodmap the spatial keys were read off ("native 3.125 m" on v4). Rows
+    # without this column predate 2026-11-12 and were scored on the dep's FIRST
+    # OVERVIEW (6.25 m on v4): never compare the two kinds of row unknowingly.
+    row["floodmap"] = da_hmax.attrs.get("floodmap", "unknown")
 
     if gallery_tif is not None:
         Path(gallery_tif).parent.mkdir(parents=True, exist_ok=True)

@@ -100,10 +100,11 @@ class TestMotfSimulatedMask(unittest.TestCase):
         moves with it, and the REBASELINED note there is the thing to read.
         """
         m = self._score("v1_monmouth", "faber-waves-premier")
-        self.assertGreater(m["motf_km2_unsim_modwet"], 3.0)
-        self.assertAlmostEqual(m["motf_csi"], 0.6841603512860266, places=9)
-        self.assertAlmostEqual(m["motf_pod"], 0.7926427001558183, places=9)
-        self.assertAlmostEqual(m["motf_far"], 0.1666966401075916, places=9)
+        self.assertGreater(m["motf_km2_unsim_modwet"], 3.0)  # 3.68 -> 3.57 km²
+        # re-baselined 2026-11-12: native 3.125 m floodmap (overview bug), old CSI 0.6842
+        self.assertAlmostEqual(m["motf_csi"], 0.6804256557342977, places=9)
+        self.assertAlmostEqual(m["motf_pod"], 0.7914435121544824, places=9)
+        self.assertAlmostEqual(m["motf_far"], 0.1709186257626643, places=9)
 
     def test_mask_is_a_subset_of_the_grid_and_not_everything(self):
         """A mask that is all-True would silently restore the old behaviour."""

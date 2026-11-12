@@ -15,7 +15,11 @@ Wired in ``.claude/settings.json``; reads the hook JSON on stdin, prints a decis
   read-only mode).
 - **DENY** ``git commit``: the user commits and pushes (CLAUDE.md §6).
 
-Any error inside the guard lets the call through: it must never wedge a session.
+Any Python error inside the guard lets the call through (reported as a systemMessage):
+a guard bug must never wedge a session.  But a hook that TIMES OUT (20 s; the squeue
+call below may take up to 60) or cannot START blocks the call: ``onFailure: "block"``
+in ``.claude/settings.json`` (2026-11-12) — a silent pass-through was the one failure
+nobody would see.
 """
 
 from __future__ import annotations

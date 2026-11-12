@@ -50,7 +50,7 @@ Every script reads `NJ_DOMAIN` unless its row names a domain. Run from the repo 
 
 | script | what it does | status |
 |---|---|---|
-| `paired_hwm_bootstrap.py` | Paired HWM comparison of two arms; `--bbox` zone and `--by-basin` groups | live |
+| `paired_hwm_bootstrap.py` | Paired HWM comparison of two arms; `--bbox` zone and `--by-basin` groups; `--floodmap-root` reads the native floodmaps `logs/floodmap_fix_2026-11-12/rescore.sh` wrote (nothing written into a run dir) | live |
 | `v4_first_results.py` | The first waves-on v4 read in one command: setup, scores, paired marks (incl. v4 vs v3), gauge/HWM/zsmax figures, summary skeleton; `submit --preset refreeze` | live |
 | `overflow_check.py` | Where the peak water reaches the model edge; `--compare` for the SLR ladder | live |
 | `power_exposure.py` | First-pass flood read of power plants and substations (`data/power_infra`) against the Sandy bare-ground and MHHW + 2 / + 4 ft maps: wet / dry / NOT COMPUTED per footprint, by the run's own active faces; outputs in `logs/power_exposure_2026-11-02/`, Model 1.0.0, preliminary | live |
