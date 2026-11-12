@@ -1,0 +1,11 @@
+reports/poster_2026-11-13/run_fig4_2026bed.slurm
+nj_sfincs/experiments.py
+nj_sfincs/config.py
+nj_sfincs/model.py
+nj_sfincs/premier.py
+nj_sfincs/restart.py
+run_experiments.py
+hpc/sfincs_run.slurm
+hpc/production_engine.txt
+data/structures_v4/sfincs_modern_overpeck_open_elizabeth_rahway_portmonmouth_ground.weir
+data/structures_v4/portmonmouth_pews_gate_checkvalve.drn

@@ -1,0 +1,34 @@
+hal0327.amarel.rutgers.edu
+max |xz-face_x| 0.07869951706379652 |yz-face_y| 0.5198878990486264
+sfincs_modern_overpeck_open_elizabeth_rahway_portmonmouth_ground.weir ENGINE 864 OLD-EMULATOR 861 extra 9 missing 6
+  extra uv=6470853 dir=u faces 3196428(lev3) -> 3197338(lev3) mid=(571953.5,4477700.5) crest=4.379 oldcrest=nan uv_zmin_raw=1.215 uv_zmin_eng=1.215 z_zmin=(1.205,1.173) hits=[('keansburg_west_tie', 11, 4.379390716552734, None)]
+  extra uv=6472690 dir=v faces 3197338(lev3) -> 4483506(lev4) mid=(571972.0,4477719.6) crest=4.464 oldcrest=nan uv_zmin_raw=1.229 uv_zmin_eng=1.229 z_zmin=(1.173,1.201) hits=[('keansburg_west_tie', 10, 4.463783264160156, None)]
+  extra uv=6472691 dir=v faces 3197338(lev3) -> 4483876(lev4) mid=(571984.5,4477719.8) crest=4.468 oldcrest=nan uv_zmin_raw=1.202 uv_zmin_eng=1.202 z_zmin=(1.173,1.192) hits=[('keansburg_west_tie', 10, 4.468105792999268, None)]
+  extra uv=8906401 dir=u faces 4409199(lev4) -> 4409765(lev4) mid=(566770.6,4501382.5) crest=3.810 oldcrest=nan uv_zmin_raw=0.954 uv_zmin_eng=0.954 z_zmin=(0.143,0.944) hits=[('elizabeth_lb_south_nld4505000009', 58, 3.809999942779541, None)]
+  extra uv=8906402 dir=v faces 4409199(lev4) -> 4409200(lev4) mid=(566757.9,4501394.8) crest=3.810 oldcrest=nan uv_zmin_raw=1.041 uv_zmin_eng=1.041 z_zmin=(0.143,1.031) hits=[('elizabeth_lb_south_nld4505000009', 58, 3.809999942779541, None)]
+  extra uv=8929201 dir=u faces 4420599(lev4) -> 4420971(lev4) mid=(567474.5,4499593.6) crest=3.566 oldcrest=nan uv_zmin_raw=0.853 uv_zmin_eng=0.853 z_zmin=(0.837,-0.392) hits=[('elizabeth_rb_south_nld4505000007', 209, 3.566246509552002, (1, 0, -1, 1))]
+  extra uv=8929944 dir=v faces 4420970(lev4) -> 4420971(lev4) mid=(567487.2,4499581.3) crest=3.572 oldcrest=nan uv_zmin_raw=0.769 uv_zmin_eng=0.769 z_zmin=(0.733,-0.392) hits=[('elizabeth_rb_south_nld4505000007', 209, 3.572246551513672, (1, 0, -1, 1))]
+  extra uv=9059493 dir=u faces 4485745(lev4) -> 4486149(lev4) mid=(572136.4,4477215.9) crest=4.072 oldcrest=nan uv_zmin_raw=1.489 uv_zmin_eng=1.489 z_zmin=(-0.311,1.479) hits=[('keansburg_thornes_reach_nld', 169, 4.072488307952881, None)]
+  extra uv=9060300 dir=v faces 4486148(lev4) -> 4486149(lev4) mid=(572149.1,4477203.6) crest=4.079 oldcrest=nan uv_zmin_raw=1.489 uv_zmin_eng=1.489 z_zmin=(0.677,1.479) hits=[('keansburg_thornes_reach_nld', 169, 4.0785369873046875, None)]
+  missing uv=6472688 dir=v faces 3197337(lev3) -> 3197338(lev3) mid=(571978.9,4477675.9) crest=nan oldcrest=4.463 uv_zmin_raw=2.218 uv_zmin_eng=2.218 z_zmin=(2.184,1.173) hits=None
+  missing uv=6472689 dir=u faces 3197338(lev3) -> 3198257(lev3) mid=(572003.5,4477701.3) crest=nan oldcrest=4.470 uv_zmin_raw=1.517 uv_zmin_eng=1.517 z_zmin=(1.173,1.507) hits=None
+  missing uv=8905361 dir=u faces 4408679(lev4) -> 4409199(lev4) mid=(566745.6,4501382.1) crest=nan oldcrest=3.810 uv_zmin_raw=0.169 uv_zmin_eng=0.169 z_zmin=(0.107,0.143) hits=None
+  missing uv=8906400 dir=v faces 4409198(lev4) -> 4409199(lev4) mid=(566758.3,4501369.8) crest=nan oldcrest=3.810 uv_zmin_raw=0.153 uv_zmin_eng=0.153 z_zmin=(-0.473,0.143) hits=None
+  missing uv=9060301 dir=u faces 4486149(lev4) -> 4486535(lev4) mid=(572161.4,4477216.3) crest=nan oldcrest=4.078 uv_zmin_raw=2.098 uv_zmin_eng=2.098 z_zmin=(1.479,-0.490) hits=None
+  missing uv=9060302 dir=v faces 4486149(lev4) -> 4486150(lev4) mid=(572148.7,4477228.6) crest=nan oldcrest=4.071 uv_zmin_raw=2.098 uv_zmin_eng=2.098 z_zmin=(1.479,0.603) hits=None
+sfincs_modern_elizabeth_rahway_portmonmouth_ground.weir ENGINE 867 OLD-EMULATOR 864 extra 9 missing 6
+  extra uv=6470853 dir=u faces 3196428(lev3) -> 3197338(lev3) mid=(571953.5,4477700.5) crest=4.379 oldcrest=nan uv_zmin_raw=1.215 uv_zmin_eng=1.215 z_zmin=(1.205,1.173) hits=[('keansburg_west_tie', 11, 4.379390716552734, None)]
+  extra uv=6472690 dir=v faces 3197338(lev3) -> 4483506(lev4) mid=(571972.0,4477719.6) crest=4.464 oldcrest=nan uv_zmin_raw=1.229 uv_zmin_eng=1.229 z_zmin=(1.173,1.201) hits=[('keansburg_west_tie', 10, 4.463783264160156, None)]
+  extra uv=6472691 dir=v faces 3197338(lev3) -> 4483876(lev4) mid=(571984.5,4477719.8) crest=4.468 oldcrest=nan uv_zmin_raw=1.202 uv_zmin_eng=1.202 z_zmin=(1.173,1.192) hits=[('keansburg_west_tie', 10, 4.468105792999268, None)]
+  extra uv=8906401 dir=u faces 4409199(lev4) -> 4409765(lev4) mid=(566770.6,4501382.5) crest=3.810 oldcrest=nan uv_zmin_raw=0.954 uv_zmin_eng=0.954 z_zmin=(0.143,0.944) hits=[('elizabeth_lb_south_nld4505000009', 58, 3.809999942779541, None)]
+  extra uv=8906402 dir=v faces 4409199(lev4) -> 4409200(lev4) mid=(566757.9,4501394.8) crest=3.810 oldcrest=nan uv_zmin_raw=1.041 uv_zmin_eng=1.041 z_zmin=(0.143,1.031) hits=[('elizabeth_lb_south_nld4505000009', 58, 3.809999942779541, None)]
+  extra uv=8929201 dir=u faces 4420599(lev4) -> 4420971(lev4) mid=(567474.5,4499593.6) crest=3.566 oldcrest=nan uv_zmin_raw=0.853 uv_zmin_eng=0.853 z_zmin=(0.837,-0.392) hits=[('elizabeth_rb_south_nld4505000007', 209, 3.566246509552002, (1, 0, -1, 1))]
+  extra uv=8929944 dir=v faces 4420970(lev4) -> 4420971(lev4) mid=(567487.2,4499581.3) crest=3.572 oldcrest=nan uv_zmin_raw=0.769 uv_zmin_eng=0.769 z_zmin=(0.733,-0.392) hits=[('elizabeth_rb_south_nld4505000007', 209, 3.572246551513672, (1, 0, -1, 1))]
+  extra uv=9059493 dir=u faces 4485745(lev4) -> 4486149(lev4) mid=(572136.4,4477215.9) crest=4.072 oldcrest=nan uv_zmin_raw=1.489 uv_zmin_eng=1.489 z_zmin=(-0.311,1.479) hits=[('keansburg_thornes_reach_nld', 169, 4.072488307952881, None)]
+  extra uv=9060300 dir=v faces 4486148(lev4) -> 4486149(lev4) mid=(572149.1,4477203.6) crest=4.079 oldcrest=nan uv_zmin_raw=1.489 uv_zmin_eng=1.489 z_zmin=(0.677,1.479) hits=[('keansburg_thornes_reach_nld', 169, 4.0785369873046875, None)]
+  missing uv=6472688 dir=v faces 3197337(lev3) -> 3197338(lev3) mid=(571978.9,4477675.9) crest=nan oldcrest=4.463 uv_zmin_raw=2.218 uv_zmin_eng=2.218 z_zmin=(2.184,1.173) hits=None
+  missing uv=6472689 dir=u faces 3197338(lev3) -> 3198257(lev3) mid=(572003.5,4477701.3) crest=nan oldcrest=4.470 uv_zmin_raw=1.517 uv_zmin_eng=1.517 z_zmin=(1.173,1.507) hits=None
+  missing uv=8905361 dir=u faces 4408679(lev4) -> 4409199(lev4) mid=(566745.6,4501382.1) crest=nan oldcrest=3.810 uv_zmin_raw=0.169 uv_zmin_eng=0.169 z_zmin=(0.107,0.143) hits=None
+  missing uv=8906400 dir=v faces 4409198(lev4) -> 4409199(lev4) mid=(566758.3,4501369.8) crest=nan oldcrest=3.810 uv_zmin_raw=0.153 uv_zmin_eng=0.153 z_zmin=(-0.473,0.143) hits=None
+  missing uv=9060301 dir=u faces 4486149(lev4) -> 4486535(lev4) mid=(572161.4,4477216.3) crest=nan oldcrest=4.078 uv_zmin_raw=2.098 uv_zmin_eng=2.098 z_zmin=(1.479,-0.490) hits=None
+  missing uv=9060302 dir=v faces 4486149(lev4) -> 4486150(lev4) mid=(572148.7,4477228.6) crest=nan oldcrest=4.071 uv_zmin_raw=2.098 uv_zmin_eng=2.098 z_zmin=(1.479,0.603) hits=None

@@ -1246,6 +1246,151 @@ EXPERIMENTS_BY_DOMAIN: dict[str, dict[str, Experiment]] = {
 }
 
 
+# 2026-11-12 (user decisions 11-12; poster 11-13): Sandy on the 2026 bed ("if Sandy happened today"), Model 1.1.0's
+# twin. Model 1.1.0 (this domain's p4-premier+weir-elizabeth-rahway: waves on, rain on, Overpeck dam open, SnapWave on
+# the v1.1c wave bed) with only the ground and today's structures changed: the modern b bed (_subgrid_modern2026b,
+# built from v1.1c's base tiers with v1.1c's fixes, user-approved + audited 11-06, logs/modern_bed_b_2026-11-06/;
+# hard-linked here with this domain's sfincs.nc, so face z = 1.1.0's wave bed), the Elizabeth / Rahway levees re-tied to
+# 2026 ground, Port Monmouth as built by 2026 with the Pews Creek tide gate SHUT (logs/portmonmouth_2026bed_2026-11-12/,
+# variant b) and a type-3 check valve through it, marsh -> bay (variant c), the Overpeck dam OPEN as in 1.1.0.
+# ADDITIVE: no existing arm changes. Engine weir u/v 864 (float32 rule; reports/poster_2026-11-13/weircount/).
+EXPERIMENTS_BY_DOMAIN["v4_refreeze_swz_v11"][
+    "bed-modernb+p4-premier+struct-pews-checkvalve+weir-elizabeth-rahway+weir-portmonmouth"
+] = replace(
+    EXPERIMENTS_BY_DOMAIN["v4_refreeze_swz_v11"]["p4-premier+weir-elizabeth-rahway"],
+    name="bed-modernb+p4-premier+struct-pews-checkvalve+weir-elizabeth-rahway+weir-portmonmouth",
+    description="Sandy on the 2026 bed, PRELIMINARY (an unvalidated bed): Model 1.1.0 (p4-premier+weir-elizabeth-"
+    "rahway, this domain: 2012 storm and sea level, waves + rain on, Overpeck dam open, SnapWave on the v1.1c wave "
+    "bed) on _subgrid_modern2026b (2026 topo / bathy; buildings and land cover still 2012's; "
+    "logs/modern_bed_b_2026-11-06/README.md). Weirs: the Elizabeth / Rahway levees on 2026 ground, the Overpeck "
+    "tidal dam line removed, + the Port Monmouth C2 / C3 lines with the Pews Creek tide gate and the Old Port "
+    "Monmouth Rd gate SHUT (data/structures_v4/sfincs_modern_overpeck_open_elizabeth_rahway_portmonmouth_ground.weir, "
+    "864 engine u/v); drainage: the Pews gate as a type-3 check valve, marsh -> bay, Q = 100.4 sqrt(dh) "
+    "(data/structures_v4/portmonmouth_pews_gate_checkvalve.drn; logs/portmonmouth_2026bed_2026-11-12/README.md, "
+    "decision 11-12). Pair: p4-premier+weir-elizabeth-rahway (Model 1.1.0, this domain).",
+    subgrid_from="_subgrid_modern2026b",
+    weir_from=DATA
+    / "structures_v4"
+    / "sfincs_modern_overpeck_open_elizabeth_rahway_portmonmouth_ground.weir",
+    drn_from=DATA / "structures_v4" / "portmonmouth_pews_gate_checkvalve.drn",
+)
+
+
+# 2026-11-12 (user decisions 11-12): the NORMAL-WEATHER calm arms on Model 1.1.0's domain = the re-issue of the
+# MHHW + 2 / + 4 ft maps for the climate hazard team, plus the +0 ft tide twins (STATUS backlog "+0 ft tidal twin:
+# v1.1 bed + modern b, paired"). Normal weather = closures OPEN (logs/portmonmouth_2026bed_2026-11-12/README.md and
+# logs/waackaack_gate_check_2026-11-12/README.md, "Decision"): the Waackaack navigation gate open (segments 13-16
+# removed), the Pews Creek stop logs out (1.77 m trail floor), the Port Monmouth tide gate + road gate open (weir (a)),
+# the 8 Elizabeth / Rahway NLD closures open (crest lowered to the lidar ground under each), and the Overpeck tidal dam
+# SHUT (crest 1.74 m; user 11-12: a normally-shut tide barrier; storm runs keep 1.1.0's removal). One weir file for
+# all seven: data/structures_v4/sfincs_modern_normalweather_ground.weir
+# (logs/mhhw_v2_2026-11-12/build_weir.py; engine u/v in logs/mhhw_v2_2026-11-12/README.md). Same recipe as the
+# 11-01 calm arms (_calm_arm: waves, wind, rain, rivers off; CalmForcing) but on THIS domain's waves-off arm
+# (p4-nowaves: the v1.1c flow bed, face z = 1.1.0's wave bed, unused waves-off). The still arms are STAGE-ONLY: the
+# still map is read off the connected start (user 11-02), never solved. ADDITIVE: no existing arm changes.
+_NW_WEIR = DATA / "structures_v4" / "sfincs_modern_normalweather_ground.weir"
+_NW_WHY = (
+    " Normal weather, closures OPEN (user 11-12; logs/portmonmouth_2026bed_2026-11-12/README.md + "
+    "logs/waackaack_gate_check_2026-11-12/README.md, 'Decision'): Waackaack gate open, Pews stop logs out, Port "
+    "Monmouth tide + road gates open, the 8 Elizabeth / Rahway closures open, the Overpeck tidal dam SHUT (a "
+    "normally-shut tide barrier; 1.1.0 removes it for storms); weir data/structures_v4/sfincs_modern_normalweather_"
+    "ground.weir (logs/mhhw_v2_2026-11-12/README.md)."
+)
+
+
+def _nw_calm_arm(name: str, description: str, calm: CalmForcing, subgrid_from: str) -> Experiment:
+    return replace(
+        EXPERIMENTS_BY_DOMAIN["v4_refreeze_swz_v11"]["p4-nowaves"],
+        name=name,
+        description=description + _NW_WHY,
+        subgrid_from=subgrid_from,
+        weir_from=_NW_WEIR,
+        meteo_from=None,
+        rain=False,
+        infiltration=False,
+        cnb_effective=None,
+        calm=calm,
+    )
+
+
+def _nw_tide(offset_m: float, tag: str) -> CalmForcing:
+    return CalmForcing(
+        offset_m,
+        str(_TIDE_DIR / f"sfincs_netbndbzsbzifile_tide_ec2015_{tag}.nc"),
+        _CALM_T0,
+        "20121113 000000",
+        level_m=round(offset_m + _TIDE_MEAN_OFFSET, 3),
+        dtmapout=21600.0,
+        dtmaxout=10800.0,
+    )
+
+
+EXPERIMENTS_BY_DOMAIN["v4_refreeze_swz_v11"].update(
+    {
+        **{
+            f"bed-modernb+still-{ft}ft+weir-normalweather": _nw_calm_arm(
+                f"bed-modernb+still-{ft}ft+weir-normalweather",
+                f"Calm still water at VDatum MHHW + {s} m ({ft} ft) on the 2026 bed (_subgrid_modern2026b, "
+                "logs/modern_bed_b_2026-11-06/README.md), Model 1.1.0's domain: boundary constant, start on the same "
+                "sloped surface connected through the sills and weirs. STAGE ONLY: the map is the start "
+                "(nj_sfincs/calm.py). Re-issue of v4_refreeze_swz/bed-modern+still-" + ft + "ft (the 11-04 maps; "
+                "different domain, bed and weir: not a one-file pair).",
+                CalmForcing(s, "mhhw", _CALM_T0, _STILL_TSTOP),
+                "_subgrid_modern2026b",
+            )
+            for ft, s in (("2", 0.61), ("4", 1.22))
+        },
+        **{
+            f"bed-modernb+tide-{ft}ft+weir-normalweather": _nw_calm_arm(
+                f"bed-modernb+tide-{ft}ft+weir-normalweather",
+                f"EC2015 astronomical tide + {s} m ({ft} ft) at the boundary on the 2026 bed (_subgrid_modern2026b), "
+                "Model 1.1.0's domain, 10-12 to 11-13 (first 2.5 d spin-up; logs/modern_bed_2026-10-30/tide/"
+                "README.md). zsmax in 3 h blocks -> mean higher-high + month max. Re-issue of v4_refreeze_swz/"
+                "bed-modern+tide-" + ft + "ft (the 11-04 maps). Pair (same bed, offset only): "
+                "bed-modernb+tide-0ft+weir-normalweather.",
+                _nw_tide(s, tag),
+                "_subgrid_modern2026b",
+            )
+            for ft, s, tag in (("2", 0.61, "p061"), ("4", 1.22, "p122"))
+        },
+        "bed-modernb+tide-0ft+weir-normalweather": _nw_calm_arm(
+            "bed-modernb+tide-0ft+weir-normalweather",
+            "+0 ft tide twin on the 2026 bed (_subgrid_modern2026b): EC2015 astronomical tide at the boundary on "
+            "the NTDE 1983-2001 sea level (VDatum LMSL->NAVD88, the datum the + 2 / + 4 ft arms add to; no "
+            "sea-level trend), 10-12 to 11-13, first 2.5 d spin-up (boundary file p000 = p061 - 0.61, "
+            "logs/mhhw_v2_2026-11-12/make_tide_p000.py). Pair (one file changed: the subgrid): "
+            "p4-nowaves+tide-0ft+weir-normalweather (1.1.0's v1.1c bed); and bed-modernb+tide-0ft-msl2026+weir-normalweather "
+            "(the same at 2026 mean sea level).",
+            _nw_tide(0.0, "p000"),
+            "_subgrid_modern2026b",
+        ),
+        "p4-nowaves+tide-0ft+weir-normalweather": _nw_calm_arm(
+            "p4-nowaves+tide-0ft+weir-normalweather",
+            "+0 ft tide twin on Model 1.1.0's own bed (_subgrid_v1_1c): EC2015 astronomical tide at the boundary on "
+            "the NTDE 1983-2001 sea level, 10-12 to 11-13, first 2.5 d spin-up (p000, as its pair). Today's "
+            "structures on 2012 ground, so the pair isolates the bed. Pair (one file changed: the subgrid): "
+            "bed-modernb+tide-0ft+weir-normalweather.",
+            _nw_tide(0.0, "p000"),
+            "_subgrid_v1_1c",
+        ),
+        # 2026-11-12 (user): the +0 ft twin at 2026 MEAN SEA LEVEL as well: p000 + the 1992 -> 2026 rise (34 yr x the
+        # NOAA CO-OPS trend of the nearest boundary gauge, per point: +0.100 ... +0.174 m, mean 0.148;
+        # logs/mhhw_v2_2026-11-12/make_tide_msl2026.py, msl2026_points.csv).
+        "bed-modernb+tide-0ft-msl2026+weir-normalweather": _nw_calm_arm(
+            "bed-modernb+tide-0ft-msl2026+weir-normalweather",
+            "+0 ft tide twin on the 2026 bed at 2026 MEAN SEA LEVEL: EC2015 astronomical tide + VDatum LMSL->NAVD88 "
+            "(NTDE 1983-2001, midpoint 1992) + the relative sea-level rise 1992 -> 2026 at each boundary point "
+            "(34 yr x the NOAA CO-OPS linear trend of the nearest of Lewes, Cape May, Atlantic City, Sandy Hook, the "
+            "Battery and Bergen Point (Kill van Kull arm only): +0.100 ... +0.174 m, mean 0.148 m; boundary file "
+            "p000_msl2026, logs/mhhw_v2_2026-11-12/make_tide_msl2026.py), 10-12 to 11-13, first 2.5 d spin-up. "
+            "Pair (one file changed: the boundary, + its start level): bed-modernb+tide-0ft+weir-normalweather.",
+            _nw_tide(0.148, "p000_msl2026"),
+            "_subgrid_modern2026b",
+        ),
+    }
+)
+
+
 def experiments(domain_name: str | None = None) -> dict[str, Experiment]:
     """The arms defined for a domain (the ACTIVE one by default).
 
