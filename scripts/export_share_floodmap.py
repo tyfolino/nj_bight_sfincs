@@ -27,7 +27,17 @@ downscaled onto that dir's ``subgrid/dep_subgrid_merged.tif`` instead — the sa
 recipe without the burn, on the same lattice (asserted) — so a footprint carries the
 depth against its building. The hydrodynamics stay the run's, buildings included. On v4:
     --ground experiments/v4_refreeze/_subgrid_refreeze_lakes_min_nobuildings_creeks_cohansey
-v4's merged bed is ~4x v3's pixels: give it a big-memory node.
+v4's merged bed is ~4x v3's pixels: give it a big-memory node. Since 2026-11-13 the
+downscale and every bed read are on the bed's BASE band (3.125 m on v4;
+``validate.core.downscale_floodmap_native``): hydromt's path-mode downscale and a
+rasterio overview-level-0 read both use the FIRST OVERVIEW (6.25 m), which averages
+buildings into the streets beside them (``logs/floodmap_fix_2026-11-12/README.md``).
+The de-rotation goes onto an EXPLICIT north-up lattice (``north_up_grid``): the bed's
+own pixel size (3.125 m on v4), on absolute multiples of it, over the bounding box of the
+run's ACTIVE faces — i.e. a sub-window of ``bed_buildings_v4_cap10``'s lattice. Until
+2026-11-13 ``rio.reproject(crs)`` chose the grid itself: it kept the rotated raster's
+SHAPE and top-left corner, so it clipped a wedge off the west and north edges (176 active
+v4 faces) and its pixel was not exactly the bed's. FIAT export: logs/fiat_geotiffs_2026-11-13/.
 
 The CRS stays the model's native UTM 18N (metres). Reproject downstream if degrees are
 needed; doing it here would resample depths for no reason.
@@ -40,6 +50,7 @@ Run on a compute node (the raster is 620 M px; ~6 GB RSS), e.g.
 from __future__ import annotations
 
 import argparse
+import math
 import os
 from datetime import date
 from pathlib import Path
@@ -51,14 +62,15 @@ import rasterio
 import rioxarray
 import xarray as xr
 from rasterio.enums import Resampling
-from rasterio.warp import transform_bounds
+from rasterio.transform import from_origin
+from rasterio.warp import reproject, transform_bounds
+from rasterio.windows import Window
 from scipy.spatial import cKDTree
 
 import nj_sfincs  # noqa: F401  (PROJ primer — must precede hydromt_sfincs)
-from hydromt_sfincs import utils
 from nj_sfincs import domain, validate
 from nj_sfincs.config import ROOT, exp_root
-from nj_sfincs.validate.core import open_run
+from nj_sfincs.validate.core import downscale_floodmap_native, open_run
 
 DEFAULT_OUT = ROOT / "share"
 HMIN = 0.05  # the downscale floor, as validate.load_floodmap
@@ -116,15 +128,92 @@ def roof_rain_faces(
     return drop
 
 
+def snap_grid(bounds, res: float):
+    """North-up lattice on ABSOLUTE multiples of ``res`` covering ``bounds`` (l, b, r, t).
+
+    Returns ``(transform, (height, width))``. On v4 at 3.125 m this is the lattice of
+    ``bed_buildings_v4_cap10`` (origin 434912.5 / 4539271.875), so every export lines up
+    pixel for pixel with the building burn and with each other.
+    """
+    left, bottom, right, top = bounds
+    x0, x1 = math.floor(left / res) * res, math.ceil(right / res) * res
+    y0, y1 = math.floor(bottom / res) * res, math.ceil(top / res) * res
+    width, height = int(round((x1 - x0) / res)), int(round((y1 - y0) / res))
+    return from_origin(x0, y1, res, res), (height, width)
+
+
+def lattice_res(transform) -> float:
+    """Pixel size of a (possibly rotated) lattice, rounded to the millimetre (3.125 on v4)."""
+    return round(math.hypot(transform.a, transform.d), 3)
+
+
+def active_bounds(model_dir: Path) -> tuple[float, float, float, float]:
+    """Bounding box of the run's ACTIVE faces (``msk > 0``, node geometry of the map)."""
+    with netCDF4.Dataset(Path(model_dir) / "sfincs_map.nc") as m:
+        msk = np.ma.filled(m["msk"][:], 0)
+        fn = m["mesh2d_face_nodes"]
+        nodes = np.ma.filled(fn[np.flatnonzero(msk > 0)], -1).astype("int64") - int(
+            getattr(fn, "start_index", 0)
+        )
+        nx = np.ma.filled(m["mesh2d_node_x"][:], np.nan)
+        ny = np.ma.filled(m["mesh2d_node_y"][:], np.nan)
+    nodes = np.unique(nodes[nodes >= 0])
+    return (
+        float(np.nanmin(nx[nodes])),
+        float(np.nanmin(ny[nodes])),
+        float(np.nanmax(nx[nodes])),
+        float(np.nanmax(ny[nodes])),
+    )
+
+
+def north_up_grid(model_dir: Path, bed: Path):
+    """The export lattice: the bed's pixel size, absolute multiples, active-face bbox."""
+    with rasterio.open(bed) as b:
+        res = lattice_res(b.transform)
+    return snap_grid(active_bounds(model_dir), res)
+
+
+def derotate(fn: Path, transform, shape, threads: int | None = None) -> xr.DataArray:
+    """De-rotate ``fn`` (NEAREST, NaN nodata) onto the north-up ``transform`` / ``shape``.
+
+    GDAL warps straight from the file band, so only the destination is held in memory
+    (v4: ~16 GB at 3.125 m), not the rotated source as well.
+    """
+    dst = np.full(shape, np.nan, dtype="float32")
+    with rasterio.open(fn) as src:
+        crs = src.crs
+        reproject(
+            source=rasterio.band(src, 1),
+            destination=dst,
+            src_nodata=np.nan,
+            dst_transform=transform,
+            dst_crs=crs,
+            dst_nodata=np.nan,
+            resampling=Resampling.nearest,
+            num_threads=threads or len(os.sched_getaffinity(0)),
+            warp_mem_limit=2048,
+        )
+    h, w = shape
+    x = transform.c + (np.arange(w) + 0.5) * transform.a
+    y = transform.f + (np.arange(h) + 0.5) * transform.e
+    da = xr.DataArray(dst, dims=("y", "x"), coords={"y": y, "x": x})
+    return da.rio.write_crs(crs).rio.write_transform(transform)
+
+
 def bare_ground_hmax(model_dir: Path, ground: Path) -> tuple[xr.DataArray, dict]:
     """North-up peak depth from BARE ground (module docstring, ``--ground``), with
     permanent water dropped as the gallery tif does, plus a footprint count.
 
-    ``downscale_floodmap`` works on the bed's first OVERVIEW (6.25 m on v4, 2x the 3.125 m
-    merged raster), so the water mask and the footprint count are taken on that same rotated
-    lattice (asserted), before the one de-rotation. Reading the full 3.125 m beds instead
-    was OOM-killed at 250 G (job 63237278, 2026-10-29). The downscale is cached atomically
-    beside the gallery tifs (scratch) and reused while newer than the run and the bed.
+    Everything is on the beds' BASE band (2026-11-13): the downscale is
+    ``downscale_floodmap_native`` (hydromt's block loop and arithmetic on the full-resolution
+    bed), and the water mask and the footprint count read the base band too, strip by strip
+    on the rotated lattice (asserted), before one de-rotation onto ``north_up_grid``
+    (``derotate``: only the destination in memory). Until 2026-11-13 all three used the bed's first
+    OVERVIEW (6.25 m on v4); reading the two 3.125 m beds whole was OOM-killed at 250 G (job
+    63237278, 2026-10-29), hence the strips. The downscale is cached atomically beside the
+    gallery tifs (scratch) and reused while newer than the run and the bed; the cache name
+    carries ``_native`` so a pre-fix 6.25 m cache is never reused, and the ground dir's
+    name, so a second bare bed for the same arm never reads the first one's map.
     """
     own = model_dir / "subgrid" / "dep_subgrid_merged.tif"
     bare = Path(ground) / "subgrid" / "dep_subgrid_merged.tif"
@@ -132,7 +221,11 @@ def bare_ground_hmax(model_dir: Path, ground: Path) -> tuple[xr.DataArray, dict]
         if (o.shape, o.transform, o.crs) != (b.shape, b.transform, b.crs):
             raise SystemExit(f"{bare} is not on the run's subgrid lattice ({own})")
     # on scratch, not beside the share file: the rotated raster is GBs and home is GPFS-tight
-    cache = exp_root() / "floodmaps" / f".{model_dir.name}_bare_hmax.tif"
+    cache = (
+        exp_root()
+        / "floodmaps"
+        / f".{model_dir.name}_bare_{Path(ground).name}_hmax_native.tif"
+    )
     newest = max((model_dir / "sfincs_map.nc").stat().st_mtime, bare.stat().st_mtime)
     if not (cache.is_file() and cache.stat().st_mtime >= newest):
         zsmax = open_run(model_dir).output.data["zsmax"].max(dim="timemax")
@@ -159,40 +252,47 @@ def bare_ground_hmax(model_dir: Path, ground: Path) -> tuple[xr.DataArray, dict]
         )
         zsmax = zsmax.where(~covered & ~dry & ~roof_rain)
         tmp = cache.with_name(
-            cache.stem + ".partial.tif"
-        )  # .tif: build_overviews asserts it
+            f"{cache.stem}.partial.{os.getpid()}.tif"
+        )  # .tif: build_overviews asserts it; pid: two exports never share a temp
         cache.parent.mkdir(parents=True, exist_ok=True)
-        utils.downscale_floodmap(
-            zsmax=zsmax, dep=str(bare), hmin=HMIN, floodmap_fn=str(tmp), nrmax=1000
-        )
+        downscale_floodmap_native(zsmax, bare, tmp, hmin=HMIN, nrmax=1000)
         os.replace(
             tmp, cache
         )  # atomic: a truncated depth map reads back clean (CLAUDE §5)
-    with rasterio.open(cache) as h, rasterio.open(bare, overview_level=0) as b:
+    # permanent water out + the footprint count, strip by strip on the base band
+    masked = cache.with_name(f"{cache.stem}.masked.{os.getpid()}.tif")
+    n_fp = n_fp_wet = 0
+    with (
+        rasterio.open(cache) as h,
+        rasterio.open(bare) as b,
+        rasterio.open(own) as o,
+    ):
         same = h.shape == b.shape and np.allclose(
             tuple(h.transform), tuple(b.transform), rtol=0, atol=1e-6
         )
         if not same:
-            raise SystemExit(f"{cache} is not on {bare}'s first overview lattice")
-        dep_b = b.read(1, masked=True).filled(np.nan)
-    with rasterio.open(own, overview_level=0) as o:
-        # footprint = where the burn raised the bed (the two recipes differ only there)
-        fp = (o.read(1, masked=True).filled(np.nan) - dep_b) > 0.5
-    da = rioxarray.open_rasterio(cache, masked=True).squeeze(drop=True).load()
-    a = da.values
-    a[~(dep_b > -0.5)] = np.nan  # drop deep ocean, as load_floodmap does
-    del dep_b
-    stats = dict(
-        n_footprint=int(fp.sum()),
-        n_footprint_wet=int((fp & (a >= validate.DEPTH_MIN)).sum()),
-    )
-    del fp
-    da.values = a
-    da = da.rio.reproject(da.rio.crs)  # de-rotate to north-up (CLAUDE.md §5)
-    # the masked open leaves _FillValue in attrs; export()'s write_nodata(NaN) then refuses to
-    # write (job 63242844, 2026-10-29) -- the gallery tif carries none
-    da.attrs.pop("_FillValue", None)
-    da.encoding.pop("_FillValue", None)
+            raise SystemExit(f"{cache} is not on {bare}'s base lattice")
+        prof = h.profile | dict(
+            nodata=np.nan, compress="DEFLATE", BIGTIFF="YES", tiled=True
+        )
+        with rasterio.open(masked, "w", **prof) as dst:
+            step = 2048
+            for r0 in range(0, h.height, step):
+                w = Window(0, r0, h.width, min(step, h.height - r0))
+                a = h.read(1, window=w, masked=True).filled(np.nan)
+                dep_b = b.read(1, window=w, masked=True).filled(np.nan)
+                # footprint = where the burn raised the bed (the recipes differ only there)
+                fp = (o.read(1, window=w, masked=True).filled(np.nan) - dep_b) > 0.5
+                a[~(dep_b > -0.5)] = np.nan  # drop deep ocean, as load_floodmap does
+                n_fp += int(fp.sum())
+                n_fp_wet += int((fp & (a >= validate.DEPTH_MIN)).sum())
+                dst.write(a.astype("float32"), 1, window=w)
+    stats = dict(n_footprint=n_fp, n_footprint_wet=n_fp_wet)
+    try:
+        # de-rotate to north-up (CLAUDE.md §5), on the explicit lattice
+        da = derotate(masked, *north_up_grid(model_dir, bare))
+    finally:
+        masked.unlink(missing_ok=True)
     return da, stats
 
 
@@ -207,6 +307,17 @@ def export(arm: str, out_tif: Path, ground: Path | None = None) -> dict:
         if not gallery.is_file():
             raise SystemExit(f"no gallery tif for {arm!r}: {gallery}")
         da = rioxarray.open_rasterio(gallery, masked=True).squeeze(drop=True).load()
+        bed = model_dir / "subgrid" / "dep_subgrid_merged.tif"
+        if bed.is_file():
+            with rasterio.open(bed) as b:
+                coarse = abs(da.rio.resolution()[0]) > 1.5 * abs(b.res[0])
+            if coarse:  # warn, never gate: a pre-2026-11-12 gallery tif
+                print(
+                    f"WARNING: {gallery.name} is {abs(da.rio.resolution()[0]):.3f} m, the "
+                    f"bed {abs(b.res[0]):.3f} m: a first-overview floodmap (pre-11-12); "
+                    "re-validate the arm for the native map",
+                    flush=True,
+                )
     else:
         da, fp_stats = bare_ground_hmax(model_dir, ground)
     a = da.values.astype("float32", copy=False)
@@ -236,12 +347,15 @@ def export(arm: str, out_tif: Path, ground: Path | None = None) -> dict:
         driver="GTiff",
         dtype="float32",
         compress="DEFLATE",
-        predictor=3,  # float predictor — big win on smooth depth fields
+        # horizontal differencing: lossless on float32 and read by every GDAL / libtiff;
+        # the float predictor (3) compresses a little better but older readers refuse it
+        predictor=2,
         zlevel=6,
         tiled=True,
         blockxsize=512,
         blockysize=512,
-        BIGTIFF="IF_SAFER",
+        BIGTIFF="YES",
+        NUM_THREADS="ALL_CPUS",
     )
     with rasterio.open(tmp, "r+") as ds:
         ds.build_overviews([2, 4, 8, 16, 32, 64], Resampling.average)
@@ -300,17 +414,26 @@ def score_row(arm: str) -> dict:
     )
 
 
-README = """# Hurricane Sandy (2012) maximum flood depth — New Jersey coast, model {domain}
+README = """# {title} — New Jersey coast, model {domain}
 
 `{fname}`
 
-Modelled maximum water depth during Hurricane Sandy (28–31 Oct 2012) over {scope}
-SFINCS compound-flood hindcast: storm surge, wave setup, wind, rain and river
-discharge together. **This is a working dataset from a model still under development,
-not a validated hazard layer** — read the caveats before drawing any conclusion from it.
+Modelled maximum water depth during {event} over {scope}
+{event_text} **This is a PRELIMINARY working dataset from a model still under
+development, not a validated hazard layer** — read the caveats before drawing any
+conclusion from it.
 
 Model run: domain `{domain}`, experiment `{arm}`, exported {today}.
 
+| | |
+|---|---|
+| Model version | {model_version} |
+| Ground (terrain) | {ground_desc} |
+| Depth measured from | {depth_from} |
+| Resolution | {res:.3f} m, the model's native sub-grid terrain pixel (north-up, not rotated) |
+| NaN means | dry, permanent water, or ground the model did not simulate |
+| Status | **Preliminary** |
+{supersedes}
 ## Reading the file
 
 | | |
@@ -372,23 +495,28 @@ values are left in rather than silently deleted, so the choice stays yours.
 
 ## Caveats — please read before trusting a number
 
-1. **Known low bias.** Against surveyed USGS high-water marks this run reads low on
-   average (numbers above). Damages computed from it will be *under*-estimates, and
-   non-linearly so, because damage curves are steep near the low end.
-2. **Hindcast, not a design event.** This is one storm reconstructed after the fact.
-   It is not a return-period product and must not be read as one.
+{event_caveats}
 {regional}
 5. **Depth only.** No velocity, no duration, no wave runup on the beach face, no
    debris — all of which matter for real damage estimation.
 6. {buildings_note}
 
-Comparing this map with its sibling (`..._bareground_...` / the plain `..._p4-premier_...`):
-the same water, so depths match exactly off the footprints. About 7.5 km² of each map's
-wet ground is blank in the other: a thin shoreline strip where the permanent-water cutoff
-(ground near -0.5 m) falls on different pixels. It is not a flood difference; ignore it.
+Off building footprints the ground is the model's own, so there the depths are the
+model's normal flood map, pixel for pixel; only the footprints differ.
 
 Questions to Ty.
 """
+
+
+SANDY_TITLE = "Hurricane Sandy (2012) maximum flood depth"
+SANDY_EVENT = "Hurricane Sandy (28–31 Oct 2012)"
+SANDY_TEXT = """SFINCS compound-flood hindcast: storm surge, wave setup, wind, rain and river
+discharge together."""
+SANDY_CAVEATS = """1. **Known low bias.** Against surveyed USGS high-water marks this run reads low on
+   average (numbers above). Damages computed from it will be *under*-estimates, and
+   non-linearly so, because damage curves are steep near the low end.
+2. **Hindcast, not a design event.** This is one storm reconstructed after the fact.
+   It is not a return-period product and must not be read as one."""
 
 
 # What the map covers and where it is weak: a per-MESH fact (v3 vs v4), keyed on the domain
@@ -466,7 +594,10 @@ BUILDINGS_BARE = """**Depth is measured from the BARE ground, buildings included
    centroid or over the footprint, and subtract the first-floor height as usual.
    {n_footprint_wet:,} of {n_footprint:,} footprint pixels are wet (>= 0.15 m). A
    building large enough to fill a whole model cell can still read dry, and so can one
-   that fills most of a cell where the only water in the model is rain off its own roof."""
+   that fills most of a cell where the only water in the model is rain off its own roof.
+   For a damage model use the companion `..._buildings_...` GeoTIFF and per-building
+   table when they ship beside this file (`scripts/fiat_building_depth.py`): they give
+   every footprint the median water level of the streets within 50 m."""
 
 
 def main() -> int:
@@ -480,7 +611,31 @@ def main() -> int:
         default=None,
         help="subgrid dir of the bare-earth bed: depth from bare ground (for FIAT)",
     )
+    # README wording (defaults = the Sandy hindcast). A text value starting with @ is read
+    # from that file.
+    ap.add_argument("--model-version", default="not stated", help="e.g. 1.1.0")
+    ap.add_argument(
+        "--ground-desc",
+        default=None,
+        help="the terrain, e.g. '2012 (the Sandy-era bed)' (default: from --ground)",
+    )
+    ap.add_argument("--title", default=SANDY_TITLE)
+    ap.add_argument("--event", default=SANDY_EVENT, help="'... during <event> over'")
+    ap.add_argument("--event-text", default=SANDY_TEXT, help="what was modelled")
+    ap.add_argument("--event-caveats", default=SANDY_CAVEATS, help="caveats 1-2")
+    ap.add_argument("--supersedes", default="", help="file name(s) this one replaces")
     a = ap.parse_args()
+    for k in (
+        "model_version",
+        "ground_desc",
+        "title",
+        "event",
+        "event_text",
+        "event_caveats",
+    ):
+        v = getattr(a, k)
+        if isinstance(v, str) and v.startswith("@"):
+            setattr(a, k, Path(v[1:]).read_text().strip())
 
     dom = domain.active().name
     stem = a.stem or (
@@ -500,6 +655,28 @@ def main() -> int:
             arm=a.arm,
             today=date.today().isoformat(),
             score_block=_score_block(sc),
+            title=a.title,
+            event=a.event,
+            event_text=a.event_text,
+            event_caveats=a.event_caveats,
+            model_version=a.model_version,
+            ground_desc=a.ground_desc
+            or (
+                f"bare earth from `{a.ground.name}` (the run's terrain recipe without "
+                "the building burn)"
+                if a.ground
+                else "the run's own terrain (buildings raised)"
+            ),
+            depth_from=(
+                "**bare ground** (buildings removed) — read at a building's centroid"
+                if a.ground
+                else "the model's terrain, buildings raised (blank on most footprints)"
+            ),
+            supersedes=(
+                f"\nSupersedes `{a.supersedes}` (older model / coarser pixels).\n"
+                if a.supersedes
+                else ""
+            ),
             buildings_note=(BUILDINGS_BARE.format(**st) if a.ground else BUILDINGS_BED),
             gb=st["width"] * st["height"] * 4 / 1e9,
             **SCOPE[dom[:2]],

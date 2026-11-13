@@ -411,6 +411,125 @@ class TestPublish(unittest.TestCase):
             self.assertIn("Known limitations", home)
             self.assertNotIn("v3/", home)
 
+    def test_extra_figures_web_copy_and_cleanup(self):
+        """EXTRA_FIGURES: a web copy no wider than WEB_WIDTH beside the full-size file, a
+        missing source skipped, anything else in figures/ removed."""
+        from PIL import Image
+
+        pub = _load_publish()
+        with tempfile.TemporaryDirectory() as d:
+            src = Path(d) / "big.png"
+            Image.new("RGBA", (pub.WEB_WIDTH + 500, 300), (255, 255, 255, 255)).save(
+                src
+            )
+            site = Path(d) / "site"
+            (site / "figures").mkdir(parents=True)
+            (site / "figures" / "stale.png").write_bytes(b"x")
+            figs = {
+                "a": {"src": str(src), "title": "A", "caption": "cap A"},
+                "b": {
+                    "src": str(Path(d) / "missing.png"),
+                    "title": "B",
+                    "caption": "B",
+                },
+            }
+            with mock.patch.object(pub, "EXTRA_FIGURES", figs):
+                keep = pub.copy_extra_figures(site)
+            self.assertEqual(sorted(keep), ["a.png", "a_full.png"])
+            self.assertFalse((site / "figures" / "stale.png").exists())
+            with Image.open(site / "figures" / "a.png") as im:
+                self.assertEqual(im.width, pub.WEB_WIDTH)
+
+    def test_front_page_at_a_glance(self):
+        """Front page: HWM tiles from the premier, MOTF tiles from the rain-off twin (each
+        labelled with its run), every plot inline in FRONT order, the premier's rain-on
+        motf figure left off, an extra figure with its credit, then the version sections
+        and a Details section linking every run page."""
+        pub = _load_publish()
+        n = pub.NEXT_PREMIER
+        off = pub.FRONT["motf_arm"]
+        with tempfile.TemporaryDirectory() as d:
+            src = Path(d) / "x.png"
+            src.write_bytes(b"png")
+            man = {
+                "built": "2026-11-09T11:15:06",
+                "figures": [
+                    {
+                        "key": k,
+                        "file": f"{k}.png",
+                        "title": k.upper(),
+                        "caption": "tech",
+                    }
+                    for k in ("hm0", "motf", "zsmax", "newfig")
+                ],
+            }
+            prem = {
+                "slug": pub.slug(n["arm"]),
+                "manifest": man,
+                "row_published": None,
+                "row": {
+                    "hwm_n_scored": 119,
+                    "hwm_rmse_scored_m": 0.3484,
+                    "hwm_bias_scored_m": -0.0674,
+                    "hwm_within0.5_scored": 0.93,
+                    "hwm_estimator": "median",
+                    "hwm_radius_m": 50.0,
+                    "motf_csi": 0.802,
+                    "floodmap": "native 3.125 m",
+                },
+            }
+            twin = {
+                "slug": pub.slug(off),
+                "manifest": None,
+                "row_published": None,
+                "row": {
+                    "motf_csi": 0.8205,
+                    "motf_pod": 0.8452,
+                    "motf_far": 0.0344,
+                    "motf_km2_excluded_boxes": 2412.7,
+                },
+            }
+            domains = {n["domain"]: {n["arm"]: prem, off: twin}}
+            front = {
+                **pub.FRONT,
+                "figures": (
+                    ("zsmax", "Peak water level", "plain zsmax"),
+                    ("extra1", None, None),
+                    ("hm0", "Peak wave height", "plain hm0"),
+                ),
+            }
+            extra = {
+                "extra1": {
+                    "src": str(src),
+                    "title": "E",
+                    "caption": "cap E",
+                    "credit": "© OpenStreetMap contributors (ODbL).",
+                }
+            }
+            with (
+                mock.patch.object(pub, "FRONT", front),
+                mock.patch.object(pub, "EXTRA_FIGURES", extra),
+            ):
+                h = pub.site_index(domains)
+        self.assertIn("at a glance", h)
+        self.assertIn("0.348", h)  # HWM from the premier
+        self.assertIn("0.821", h)  # CSI from the rain-off twin, not the premier's 0.802
+        self.assertNotIn('<div class="num">0.802</div>', h)
+        self.assertIn(pub.FRONT["labels"][off], h)
+        self.assertIn("ponding", h)
+        self.assertIn("median", h)
+        order = [h.index(f'id="{k}"') for k in ("zsmax", "extra1", "hm0", "newfig")]
+        self.assertEqual(order, sorted(order))
+        self.assertNotIn('id="motf"', h)
+        self.assertIn(f"{n['domain']}/{pub.slug(n['arm'])}/zsmax.png", h)
+        self.assertIn('href="figures/extra1_full.png"', h)
+        self.assertIn("OpenStreetMap", h)
+        for sec in ("What is in Model", "Known limitations", "Coming in version"):
+            self.assertLess(h.index('id="figures"'), h.index(sec))
+            self.assertLess(h.index(sec), h.index('id="details"'))
+        self.assertIn(f"{n['domain']}/{pub.slug(off)}/index.html", h)
+        self.assertIn(f"{n['domain']}/compare.html", h)
+
     def test_slug_is_path_safe_and_distinct(self):
         pub = _load_publish()
         self.assertEqual(pub.slug("a+b-c.d_e"), "a_b-c.d_e")

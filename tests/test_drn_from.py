@@ -142,6 +142,29 @@ class TestDrnFrom(unittest.TestCase):
         ]
         self.assertEqual(diff, ["drn_from"])  # the pair differs in the culverts only
 
+    def test_dikes_levees_cohansey_arm(self):
+        """2026-11-13: the weirs pair. Differs from its pair in the weir file (1.1.0's, byte for byte, + appended
+        polylines) and one type-3 check valve; the name is an alphabetical union."""
+        arms = EXPERIMENTS_BY_DOMAIN["v4_refreeze_swz_v11"]
+        name = "p4-nowaves+struct-cohansey-checkvalve+weir-dikes-levees+weir-elizabeth-rahway"
+        exp, ref = arms[name], arms["p4-nowaves+weir-elizabeth-rahway"]
+        self.assertEqual(name.split("+"), sorted(name.split("+")))
+        self.assertFalse(exp.waves.use_waves)
+        self.assertIsNone(ref.drn_from)
+        rows = model.read_drn_from(exp.drn_from)
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(rows[0][4], 3)
+        base = Path(ref.weir_from).read_bytes()
+        new = Path(exp.weir_from).read_bytes()
+        self.assertTrue(new.startswith(base) and len(new) > len(base))
+        diff = [
+            f.name
+            for f in dataclasses.fields(Experiment)
+            if f.name not in ("name", "description")
+            and getattr(exp, f.name) != getattr(ref, f.name)
+        ]
+        self.assertEqual(sorted(diff), ["drn_from", "weir_from"])
+
 
 if __name__ == "__main__":
     unittest.main()

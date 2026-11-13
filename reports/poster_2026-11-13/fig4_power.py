@@ -1,7 +1,7 @@
 """Poster Figure 4: New Jersey power plants and substations that Sandy floods.
 
     python fig4_power.py 2012   -> fig4_power_2012bed.{png,pdf}   Model 1.1.0 (2012 ground)
-    python fig4_power.py 2026   -> fig4_power_2026bed.{png,pdf}   the same storm on 2026 ground (PRELIMINARY),
+    python fig4_power.py 2026 [--no-title] -> fig4_power_2026bed.{png,pdf}   the same storm on 2026 ground (PRELIMINARY),
                                    with the sites that change against the 2012 ground ringed
 
 Inputs: exposure/<tag>_assets.csv + exposure/<tag>_faces.npz from exposure_poster.py.
@@ -33,6 +33,7 @@ SUFFIX = os.environ.get("FIG4_SUFFIX", "")  # a test render goes beside, never o
 ZOOM = (552_000, 600_000, 4_480_000, 4_532_000)  # Newark Bay / Meadowlands / Raritan (UTM 18N)
 BIN = 300.0  # m, the flood-shading raster
 FLOOD = "#3F8FCC"
+NOTITLE = False  # set by --no-title
 
 
 def load(tag):
@@ -141,7 +142,7 @@ def main(which: str) -> None:
             k = {"flood": "wet", "stay dry": "dry", "not computed": "not_computed"}[lab]
             at.text(0.30, yy - 0.09, f"Model 1.1.0, 2012 ground: {int(c12.get(k, 0))}", fontsize=15,
                     color="#555555", va="center", transform=at.transAxes)
-    at.text(0.02, 0.12, f"of {len(a)} New Jersey power plants and\nsubstations inside the model",
+    at.text(0.02, 0.12, f"of {len(a)} New Jersey power plants and\nsubstations in the region; {len(a) - nnc} inside the model",
             fontsize=16, va="center", transform=at.transAxes)
 
     handles = [
@@ -171,11 +172,15 @@ def main(which: str) -> None:
         cap = ("Model 1.1.0's storm and 2012 sea level on 2026 ground (unvalidated bed; buildings and land cover still "
                "2012) with today's walls:\nElizabeth / Rahway levees re-tied, Port Monmouth floodwall + Pews Creek gate "
                "shut. Rings: sites where the two runs differ. Larger marks = power plants.")
-    fig.suptitle(title, x=0.02, ha="left", y=0.998, fontsize=24, weight="bold")
-    fig.text(0.02, 0.952, cap, ha="left", va="top", fontsize=13, color="#333333")
-    fig.subplots_adjust(top=0.865, bottom=0.10, left=0.02, right=0.98)
+    if NOTITLE:  # the poster prints without title + caption (the poster caption carries them)
+        fig.subplots_adjust(top=0.96, bottom=0.10, left=0.02, right=0.98)
+    else:
+        fig.suptitle(title, x=0.02, ha="left", y=0.998, fontsize=24, weight="bold")
+        fig.text(0.02, 0.952, cap, ha="left", va="top", fontsize=13, color="#333333")
+        fig.subplots_adjust(top=0.865, bottom=0.10, left=0.02, right=0.98)
     save(fig, f"fig4_power_{which}bed{SUFFIX}")
 
 
 if __name__ == "__main__":
+    NOTITLE = "--no-title" in sys.argv[2:]
     main(sys.argv[1])

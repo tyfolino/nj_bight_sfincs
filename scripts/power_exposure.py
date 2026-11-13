@@ -32,6 +32,13 @@ second number, ``bldg_share`` is the footprint's share under a burn, and ``sandy
 The share maps are north-up (asserted) but the beds are ROTATED: every coordinate goes
 through an affine (CLAUDE.md §5), and never ``read(boundless=True)``. Depth is not failure;
 see the README in the output directory.
+
+Ground is read on the bed's BASE band (``open_bed``, 2026-11-13). Until then every bed was
+opened at rasterio's overview level 0, which is the FIRST OVERVIEW (6.25 m on v4, ``average``
+resampled), not the full raster: a street pixel between two burned buildings read building
+height and its water class / depth followed it (``logs/floodmap_fix_2026-11-12/README.md``;
+the 11-02 tables in ``OUT`` were made that way, ``logs/slr_assets_2026-11-13/README.md`` has
+the before / after on the still + 4 ft map).
 """
 
 from __future__ import annotations
@@ -273,6 +280,12 @@ def read_points(src, rows, cols) -> np.ndarray:
     return src.read(1, window=win)[rows - r0, cols - c0]
 
 
+def open_bed(path):
+    """A bed opened for ground reads: its BASE band (full resolution). Never rasterio's
+    overview level 0, which is the first overview, not the base (module docstring)."""
+    return rasterio.open(path)
+
+
 def read_at_xy(src, x, y) -> np.ndarray:
     """Nearest pixel of an open raster at (x, y) through its affine (the beds are
     rotated); NaN off the raster."""
@@ -393,7 +406,7 @@ def sample(names: list[str]) -> None:
         m = MAPS[name]
         with (
             rasterio.open(m["tif"]) as src,
-            rasterio.open(m["bed"], overview_level=0) as bed,
+            open_bed(m["bed"]) as bed,
         ):
             if src.transform.b or src.transform.d or src.crs.to_epsg() != CRS:
                 raise SystemExit(f"{m['tif']} is not north-up EPSG:{CRS}")
@@ -431,8 +444,8 @@ def footprint_context(assets: gpd.GeoDataFrame) -> pd.DataFrame:
     rows = []
     with (
         rasterio.open(tif) as src,
-        rasterio.open(BARE_BED, overview_level=0) as bare,
-        rasterio.open(OWN_BED, overview_level=0) as own,
+        open_bed(BARE_BED) as bare,
+        open_bed(OWN_BED) as own,
     ):
         for i in np.flatnonzero(assets.intersects(box(*src.bounds)).values):
             r, c, _ = pixels(assets.geometry.iloc[i], src.transform, src.shape)

@@ -28,11 +28,22 @@ def _thumb(tif: Path) -> str | None:
     import matplotlib
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
+    import rasterio
+    from rasterio.enums import Resampling
 
-    da = rioxarray.open_rasterio(tif, masked=True).squeeze(drop=True)
+    # Decimated read: a native v4 gallery map is 60k x 80k float32 (19 GB in RAM);
+    # reading it whole OOM-killed every validate of job 63843110 (2026-11-13).
+    # GDAL_CACHEMAX caps the block cache (else it grows toward 5 % of node RAM).
+    with rasterio.Env(GDAL_CACHEMAX=256), rasterio.open(tif) as src:
+        scale = max(1, int(np.ceil(max(src.width, src.height) / 800)))
+        shape = (max(1, src.height // scale), max(1, src.width // scale))
+        a = src.read(1, out_shape=shape, resampling=Resampling.nearest, masked=True)
+        b = src.bounds
+    a = np.ma.masked_where(np.ma.filled(a, 0) <= 0.05, a)
     fig, ax = plt.subplots(figsize=(4.2, 3.6))
-    da.where(da > 0.05).plot.imshow(ax=ax, vmin=0, vmax=5, cmap="viridis",
-                                    add_colorbar=True, cbar_kwargs={"label": "depth [m]"})
+    im = ax.imshow(a, vmin=0, vmax=5, cmap="viridis",
+                   extent=(b.left, b.right, b.bottom, b.top))
+    fig.colorbar(im, ax=ax, label="depth [m]")
     ax.set_aspect("equal")
     ax.set_title("")
     ax.set_xlabel("")

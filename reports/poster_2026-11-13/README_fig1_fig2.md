@@ -77,3 +77,26 @@ Narrows / Kill van Kull boxes.
 - Fig 2 is the scatter alone (the residual map read as worse than it is). Caption to paste on the poster (the estimator must travel with the numbers, CLAUDE.md §6):
 
 > Model 1.1.0 vs USGS high-water marks from Hurricane Sandy (quality excellent/good, inside the model domain, n = 119). Model value = median water level of flooded ground within 50 m of each mark, on the 3.125 m flood map. The few large misses are marks behind coastal lakes (Deal Lake, Wreck Pond) whose outlets the model's ground holds shut; without those five, RMSE 0.24 m (n = 114).
+
+## Poster v3 (2026-11-13): combined Figure 1
+
+`fig1_model_hwm.py` → `fig1_model_hwm.{png,pdf}`: the fig1 map (widened west to 76.5° W so the inset sits
+on empty PA land) with the fig2 scatter as inset (b), all 119 scored marks in one colour (the map's pink; the
+six-region colouring of `fig2_hwm.png` is dropped to fit). Same inputs as the two scripts (cached, plotting only);
+its printout reproduces n 119, RMSE 0.3484, bias −0.0674, within-0.5 0.9328. Sized to print 8.8 in wide;
+legend 17 pt. On the v3 poster it is Fig 1; the FEMA extent is Fig 2 and the power-asset map Fig 3.
+
+## Poster v4 (2026-11-13)
+
+- `fig1_model_fema.py` → `fig1_model_fema.{png,pdf}` (v4 Fig 1): (a) the model map (fig1 inputs, warped to UTM 18N)
+  beside (b) Model 1.1.0 **rain on** vs FEMA MOTF from the cached class raster
+  `/scratch/tpj8/poster_2026-11-13/fig3/v4_refreeze_swz_v11__p4-premier+weir-elizabeth-rahway__motf_classes.tif`,
+  same extent; insets A 0.70 / B 0.87 / C 0.69 (v5: C = Atlantic City, 0.77); CSI 0.801964 / POD 0.867566 / FAR 0.086164 = the 11-12 row (self-check printed).
+  Drawn at print size (18.5 × 8.3 in).
+- `fig2_hwm.py`: tick 17 pt, labels 19 pt, legend 16 pt (printed ~7 in wide in the Methods column). Numbers unchanged.
+- `fig3_power_compact.py` → `fig3_power_compact.{png,pdf}` (v4 Fig 3): fig4_power.py's 2026 panel without the
+  Newark Bay inset; counts today's ground (2012 ground): 52 (60) flood, 130 (122) dry, 71 (71) not computed; 10 rings.
+- v8: `fig3_wet_layer.py` (block-wise, through the rotated affine, `simulated_mask`, GDAL_CACHEMAX 512 → 7.4 GB peak)
+  makes the 15 m wet/dry/water layer behind Fig 3 on Fig 1b's rules; logs `logs/fig3_wet15_{2012,2026}.log`.
+  2012-ground self-check vs Fig 1b: 1,307.7 vs 1,314.6 km² model-wet in the scored NJ area, 99.93 % of cells agree.
+  2026 ground: 1,837 km² wet on all model land (2012 ground: 1,923).

@@ -7,7 +7,7 @@ JS, no framework, no basemap tiles, no API keys — into ``--site`` (default
 ``~/sandy_flood_site`` (GitHub tyfolino/sandy-flood-model, the user 2026-10-19: the one public site), its own git repo: ``git init -b main`` when missing, NEVER committed
 here; the user commits and pushes):
 
-    index.html                     the domains
+    index.html                     the front page: Model <version> at a glance (FRONT)
     <domain>/index.html            sortable arm table (metrics.csv) with flag badges
     <domain>/<arm>/index.html      one page per arm: run card, flags, figures, full row
     <domain>/compare.html          "view runs": one run's figures + scores (default), or two
@@ -22,7 +22,7 @@ small. Superseded PNGs and arm pages are removed in the same pass. Every page is
     python scripts/publish_gallery.py                       # every domain with a gallery
     python scripts/publish_gallery.py --domains v4_refreeze,v3
     python scripts/publish_gallery.py --site /tmp/site_test
-    python scripts/publish_gallery.py --domains v4_refreeze_swz_v11 --arms p4-premier+weir-elizabeth-rahway   # Model 1.1.0 only
+    python scripts/publish_gallery.py --current   # the public site: Model 1.1.0 + its rain-off MOTF twin
 
 Light (no rasters): fine on a login node.
 """
@@ -128,6 +128,7 @@ dl.card dt{color:var(--ink-3)}
 dl.card dd{margin:0;overflow-wrap:anywhere}
 figure{margin:0 0 32px}
 figure h3{font-size:19px;margin:0 0 6px}
+#scores h3{font-size:19px;margin:16px 0 6px}#scores .tiles{margin:4px 0 6px}
 figure img{width:100%;height:auto;display:block;border-radius:4px}
 figcaption{color:var(--ink-2);font-size:15px;max-width:100ch;margin-top:6px}
 .skip{border:1px dashed var(--rule);color:var(--ink-3);padding:14px}
@@ -249,6 +250,136 @@ SITE_HIDE_FIGURES = {
     ("v4_refreeze_swz_v11", "p4-premier+weir-elizabeth-rahway"): {"dzsmax"},
 }
 
+#: Rows re-scored on the NATIVE 3.125 m floodmap that ``metrics.csv`` does not hold yet. The
+#: 11-12 re-score (``logs/floodmap_fix_2026-11-12/``) wrote its rows BESIDE metrics.csv on
+#: purpose (flag, never delete); until the arm is re-validated in place
+#: (``run_experiments.py --validate-only``), the site reads the native row from that file
+#: (2026-11-13). Retires itself: once metrics.csv's row says ``floodmap`` = native, that row
+#: wins and this entry is ignored (delete it then).
+ROW_OVERRIDES = {
+    ("v4_refreeze_swz_v11", "p4-premier+weir-elizabeth-rahway"): (
+        "logs/floodmap_fix_2026-11-12/rows/"
+        "v4_refreeze_swz_v11__p4-premier+weir-elizabeth-rahway.csv"
+    ),
+}
+
+#: Extra figures (made outside the gallery, e.g. for the 2026-11-13 poster), keyed by name;
+#: FRONT["figures"] places them. Each ``src`` is repo-relative; the site gets a web copy
+#: (``WEB_WIDTH`` px wide) linked to the full-size file, both under ``figures/``. ⚠️ Captions
+#: carry numbers: source them in the figure's README, and edit them when the figure changes.
+EXTRA_FIGURES = {
+    "fema_extent": {
+        "src": "reports/poster_2026-11-13/fig3_motf.png",
+        "title": "Flood extent compared with FEMA's map of Sandy's surge",
+        "caption": "Where the model floods against where FEMA mapped Sandy's surge "
+        "(the MOTF extent), on New Jersey land. Blue: both flooded; orange: FEMA "
+        "flooded, model dry; pink: model flooded, FEMA dry. The model counts as "
+        "flooded where the peak water is at least 0.15 m deep. FEMA's map stops at "
+        "the state line, so 2,413 km² of land outside New Jersey (grey) is not scored. "
+        "Agreement: CSI 0.82 (critical success index: of all the land either map "
+        "floods, the share both flood), POD 0.85 (the share of FEMA's flooded land the "
+        "model also floods), FAR 0.03 (the share of the model's flooded land FEMA left "
+        "dry). This map is from the rain-off twin of 1.1.0 (the same model with rain "
+        "switched off, run p4-premier+rain-off+weir-elizabeth-rahway). FEMA mapped the "
+        "surge, so rain ponding inland would count against the model as false alarms. "
+        "Switching rain off removes about 72 km² of those, but it also loses about "
+        "31 km² of real flooding that rain helped to make, the largest share in Cape "
+        "May. With rain on (Model 1.1.0 itself): CSI 0.80, POD 0.87, FAR 0.09. "
+        "Drawn on the full-resolution (3.125 m) flood map (poster, 2026-11-13).",
+    },
+    "power_today": {
+        "src": "reports/poster_2026-11-13/fig4_power_2026bed.png",
+        "title": "If Sandy happened today: power plants and substations (PRELIMINARY)",
+        "caption": "Sandy's 2012 storm (the same tide, winds, waves, rain, rivers and "
+        "2012 sea level) run on an ESTIMATED 2026 ground: elevation and channel "
+        "surveys made since 2012, with today's levees and tide gates (Elizabeth, "
+        "Rahway, Port Monmouth). Power plants and substations that flood are in "
+        "orange; rings mark the sites that differ from the same storm on 2012 ground. "
+        "Of 253 New Jersey power plants and substations in the region (182 of them "
+        "inside the model), 52 flood, 130 stay dry and 71 are not computed (at the "
+        "model's edge); on 2012 "
+        "ground the split is 60 / 122 / 71. Ten sites change: nine go dry, one goes "
+        "wet. These are differences between the two runs: the changed ground and "
+        "today's defences together, not either one alone. A site counts as flooded "
+        "when any normally-dry ground in its outline has at least 0.15 m of water. "
+        "Preliminary: the 2026 ground is an estimate that no observation can check yet, "
+        "and building footprints and land cover are still 2012's (poster, 2026-11-13).",
+        "credit": "Power plant and substation positions © OpenStreetMap contributors "
+        "(ODbL).",
+    },
+}
+WEB_WIDTH = 2000
+
+#: The front page, "Model <version> at a glance" (user 2026-11-13: every plot on the front
+#: page, no click). HWM tiles come from the premier (NEXT_PREMIER["arm"]); the FEMA (MOTF)
+#: tiles from ``motf_arm``, the premier's RAIN-OFF twin (FEMA mapped surge, not rain).
+#: ``figures`` = the order on the page: a key of the premier's gallery (title + short plain
+#: caption here; the run page keeps the technical caption) or a key of EXTRA_FIGURES.
+#: ``labels`` name each published arm in the runs table, on its page and on the tiles.
+#: Publish exactly these arms with ``--current``.
+FRONT = {
+    "motf_arm": "p4-premier+rain-off+weir-elizabeth-rahway",
+    "labels": {
+        "p4-premier+weir-elizabeth-rahway": "Model 1.1.0",
+        "p4-premier+rain-off+weir-elizabeth-rahway": "MOTF reference: 1.1.0 with rain off",
+    },
+    "rain_off_why": "Rain is off for this comparison because FEMA mapped the surge: rain "
+    "ponding inland would count as false alarms. Switching it off also loses about "
+    "31 km² of real hits, the largest share in Cape May.",
+    "figures": (
+        (
+            "zsmax",
+            "Peak water level",
+            "The highest water level the model reached during Sandy, in metres above the "
+            "NAVD88 land datum (a level, not a depth). Shown where the water stood at least "
+            "0.1 m above the ground of the model cell, so some inland rain ponding shows too.",
+        ),
+        (
+            "flood_depth",
+            "Flood depth on land that is normally dry",
+            "How deep the water got on land that is normally dry: peak water level minus the "
+            "ground height at each pixel. Bays, rivers, lakes and ground below the usual high "
+            "tide are left blank.",
+        ),
+        (
+            "hwm_summary",
+            "Peak water at the USGS high-water marks",
+            "Each point is one USGS high-water mark: the measured peak water level against "
+            "the model's (the median of flooded ground within 50 m of the mark). Points on the "
+            "diagonal are exact; dotted lines are ±0.5 m.",
+        ),
+        (
+            "hwm_map",
+            "Where the model reads high or low at the marks",
+            "Model minus measured at each high-water mark. Orange: the model is too low; "
+            "purple: too high; ✕: the model left the mark dry.",
+        ),
+        ("fema_extent", None, None),
+        (
+            "gauges",
+            "Water level through the storm at the tide gauges",
+            "Measured (dark) against modelled (blue) water level at every tide gauge the "
+            "model can be checked against. Where a gauge failed in the storm (dashed orange), "
+            "the trace to its right is the model's alone.",
+        ),
+        (
+            "gauge_peaks",
+            "Storm peak at the gauges: height and timing",
+            "How far off the model's storm peak is at each gauge, in height and in time. "
+            "Hollow points: the gauge failed during the storm, so only the record before the "
+            "failure is compared.",
+        ),
+        (
+            "hm0",
+            "Peak wave height",
+            "The largest significant wave height (the average height of the highest third of "
+            "the waves) the model computed during the storm. Breaking waves raise the water "
+            "level near shore; the splash of single waves is not modelled.",
+        ),
+        ("power_today", None, None),
+    ),
+}
+
 #: The plain-language "what is new in the premier" list, shown at the bottom of the home page
 #: and of that domain's runs page. ⚠️ Edit it whenever the premier changes: a stale list
 #: here gets believed.
@@ -256,12 +387,21 @@ NEXT_PREMIER = {
     "version": "1.1.0",
     "domain": "v4_refreeze_swz_v11",
     "arm": "p4-premier+weir-elizabeth-rahway",
-    "as_of": "2026-11-09",
+    "as_of": "2026-11-13",
+    # Numbers: native rows logs/floodmap_fix_2026-11-12/table.md (1.0.0 CSI 0.7907, 1.1.0
+    # 0.8020; 1.1.0 RMSE 0.3484, median 50 m, n 119); the paired 0.424 vs 0.355 (1.x mark
+    # file, n 119, 6.25 m map) is docs/MODEL.md §6 — not yet redone on the native map.
     "status": "Model version 1.1.0 (tagged v1.1.0, chosen 2026-11-09). Same model grid, "
     "storm forcing and physics as version 1.0.0; the changes are in the ground the water "
-    "flows over, two flood structures and the scoring. On the same 119 high-water marks the "
-    "typical error falls from 0.42 m to 0.36 m, and the agreement with FEMA's mapped flood "
-    "extent rises from 0.784 to 0.795 (CSI). What changed:",
+    "flows over, two flood structures and the scoring. Scores updated 2026-11-13: they are "
+    "now read from the full-resolution (3.125 m) flood map. Until then the scorer had read "
+    "a half-resolution (6.25 m) copy by mistake, which left some narrow streets between "
+    "buildings dry. At 119 high-water marks the typical error (RMSE; the model's value is "
+    "the median peak level within 50 m of each mark) is 0.35 m. On the same 119 marks, "
+    "compared on the earlier 6.25 m map, it fell from 0.42 m in version 1.0.0 to 0.36 m "
+    "(that side-by-side comparison has not been redone at full resolution yet). Agreement "
+    "with FEMA's mapped flood extent rises from 0.791 to 0.802 (CSI, rain on). What "
+    "changed:",
     "items": (
         "Bridge decks taken out of the ground: where the elevation data recorded a bridge "
         "deck as solid ground, the model saw a dam across the water. Each deck is now "
@@ -401,6 +541,158 @@ def next_premier_section() -> str:
     )
 
 
+def copy_extra_figures(site: Path) -> list[str]:
+    """``figures/<key>.png`` (``WEB_WIDTH`` px wide) + ``figures/<key>_full.png`` for each
+    EXTRA_FIGURES entry whose source exists; everything else in ``figures/`` is removed."""
+    out = site / "figures"
+    out.mkdir(exist_ok=True)
+    keep = []
+    for key, f in EXTRA_FIGURES.items():
+        src = ROOT / f["src"]
+        if not src.is_file():
+            print(f"[publish] ⚠️ extra figure missing, skipped: {src}")
+            continue
+        full, web = out / f"{key}_full.png", out / f"{key}.png"
+        shutil.copy2(src, full)
+        from PIL import Image
+
+        with Image.open(src) as im:
+            rgb = im.convert("RGB")
+        few_colours = rgb.getcolors(8192) is not None
+        if rgb.width > WEB_WIDTH:
+            h = round(rgb.height * WEB_WIDTH / rgb.width)
+            rgb = rgb.resize((WEB_WIDTH, h), Image.LANCZOS)
+        if few_colours:  # a chart, not a photo: a 256-colour palette halves the file
+            rgb = rgb.quantize(
+                colors=256, method=Image.Quantize.MEDIANCUT, dither=Image.Dither.NONE
+            )
+        rgb.save(web, optimize=True)
+        keep += [full.name, web.name]
+    for old in out.iterdir():  # clean as you go
+        if old.name not in keep:
+            old.unlink()
+    return keep
+
+
+def _figure(key: str, title: str, caption: str, src: str, full: str, credit="") -> str:
+    return (
+        f'<figure id="{esc(key)}"><h3>{esc(title)}</h3>'
+        f'<a href="{esc(full)}"><img loading="lazy" src="{esc(src)}" alt="{esc(title)}"></a>'
+        f"<figcaption>{esc(caption)}{' ' + esc(credit) if credit else ''} "
+        f'<a href="{esc(full)}">Full-size image</a>.</figcaption></figure>'
+    )
+
+
+def front_figures(domains: dict) -> list[str]:
+    """FRONT["figures"] in order: the premier's gallery PNGs (already copied into its arm
+    folder by ``copy_pngs``) and the EXTRA_FIGURES web copies. A gallery figure the list
+    does not name is appended with its own caption, except the premier's ``motf`` (rain on,
+    6.25 m: the front page's FEMA figure is the rain-off one; it stays on the run page)."""
+    n = NEXT_PREMIER
+    e = domains.get(n["domain"], {}).get(n["arm"])
+    gal = {
+        f["key"]: f
+        for f in ((e or {}).get("manifest") or {}).get("figures", [])
+        if f.get("file")
+    }
+    out, named = [], set()
+    for key, title, caption in FRONT["figures"]:
+        named.add(key)
+        if key in EXTRA_FIGURES:
+            x = EXTRA_FIGURES[key]
+            if (ROOT / x["src"]).is_file():
+                out.append(
+                    _figure(
+                        key,
+                        x["title"],
+                        x["caption"],
+                        f"figures/{key}.png",
+                        f"figures/{key}_full.png",
+                        x.get("credit", ""),
+                    )
+                )
+        elif key in gal:
+            path = f"{n['domain']}/{e['slug']}/{gal[key]['file']}"
+            out.append(_figure(key, title, caption, path, path))
+    for key, f in gal.items():
+        if key not in named and key != "motf":
+            path = f"{n['domain']}/{e['slug']}/{f['file']}"
+            out.append(_figure(key, f["title"], f.get("caption", ""), path, path))
+    return out
+
+
+def _tiles(row: dict, keys) -> str:
+    lab = {k: (lbl, f) for k, lbl, f, _ in HEADLINE}
+    return "".join(
+        f'<div class="tile"><div class="num">{fmt(row.get(k), lab[k][1])}</div>'
+        f'<div class="lbl">{esc(lab[k][0])}</div></div>'
+        for k in keys
+    )
+
+
+def front_scores(domains: dict) -> str:
+    """Two tile rows, each labelled with the run it comes from: HWM from the premier, FEMA
+    extent from FRONT["motf_arm"] (its rain-off twin)."""
+    n = NEXT_PREMIER
+    arms = domains.get(n["domain"], {})
+    lab = FRONT["labels"]
+    parts = []
+    e = arms.get(n["arm"])
+    if e:
+        r = e["row"]
+        src = (
+            "full-resolution (3.125 m) flood map"
+            if str(r.get("floodmap") or "").startswith("native")
+            else esc(r.get("floodmap") or "flood map as scored")
+        )
+        parts.append(
+            f"<h3>High-water marks: {esc(lab.get(n['arm'], n['arm']))} "
+            f'<span class="note">(run <a href="{esc(n["domain"])}/{esc(e["slug"])}/'
+            f'index.html">{esc(n["arm"])}</a>)</span></h3>'
+            '<div class="tiles">'
+            + _tiles(
+                r,
+                (
+                    "hwm_n_scored",
+                    "hwm_rmse_scored_m",
+                    "hwm_bias_scored_m",
+                    "hwm_within0.5_scored",
+                ),
+            )
+            + "</div>"
+            f'<p class="note">USGS high-water marks of good or excellent quality. The '
+            f"model's value at a mark is the {esc(r.get('hwm_estimator', '?'))} peak water "
+            f"level of flooded ground within {fmt(r.get('hwm_radius_m'), 'g')} m of it. RMSE "
+            "is the typical error; bias the average error (negative = the model reads "
+            f"low). Scored on the {src}.</p>"
+        )
+    m = arms.get(FRONT["motf_arm"])
+    if m:
+        r = m["row"]
+        parts.append(
+            f"<h3>FEMA flood extent: {esc(lab.get(FRONT['motf_arm'], FRONT['motf_arm']))} "
+            f'<span class="note">(run <a href="{esc(n["domain"])}/{esc(m["slug"])}/'
+            f'index.html">{esc(FRONT["motf_arm"])}</a>)</span></h3>'
+            '<div class="tiles">'
+            + _tiles(r, ("motf_csi", "motf_pod", "motf_far", "motf_km2_excluded_boxes"))
+            + "</div>"
+            "<p class=\"note\">Agreement with FEMA's map of Sandy's surge (the MOTF "
+            "extent) on New Jersey land; the model counts as flooded where the peak water is "
+            "at least 0.15 m deep. CSI: of all the land either map floods, the share both "
+            "flood. POD: the share of FEMA's flooded land the model also floods. FAR: the "
+            "share of the model's flooded land FEMA left dry. km² excl.: land outside New "
+            f"Jersey, which FEMA's map does not cover, not scored. {esc(FRONT['rain_off_why'])}"
+            "</p>"
+        )
+    elif e:
+        print(
+            f"[publish] ⚠️ {FRONT['motf_arm']} not published: no FEMA tiles (--current)"
+        )
+    if not parts:
+        return ""
+    return '<section id="scores"><h2>Scores</h2>' + "".join(parts) + "</section>"
+
+
 def esc(v) -> str:
     return html.escape("" if v is None else str(v))
 
@@ -499,6 +791,33 @@ def read_domain(domain_name: str, exp_root: Path | None = None) -> dict:
         mp = root / arm / GALLERY / MANIFEST
         man = json.loads(mp.read_text()) if mp.is_file() else None
         row = rows.get(arm) or (man or {}).get("metrics_row") or {}
+        published, row_source = None, None
+        ov = ROW_OVERRIDES.get((domain_name, arm))
+        if ov and str(row.get("floodmap") or "").startswith("native"):
+            print(
+                f"[publish] {domain_name}/{arm}: metrics.csv is native now; "
+                f"ROW_OVERRIDES entry ignored (delete it)"
+            )
+        elif ov and root == ROOT / "experiments" / domain_name:  # not a test's tree
+            src = ROOT / ov
+            new = pd.read_csv(src, low_memory=False)
+            new = new[new["arm"].astype(str) == arm]
+            if len(new) != 1 or not str(new.iloc[0].get("floodmap")).startswith(
+                "native"
+            ):
+                raise SystemExit(
+                    f"ROW_OVERRIDES: no single native row for {arm} in {src}"
+                )
+            published, row_source = row, ov
+            row = {
+                k: (
+                    None
+                    if (isinstance(v, float) and not math.isfinite(v))
+                    else (v.item() if hasattr(v, "item") else v)
+                )
+                for k, v in new.iloc[0].items()
+                if k != "arm"
+            }
         if man is None:
             # no gallery: the row's own labels are all there is
             flags = compute_flags(
@@ -528,6 +847,16 @@ def read_domain(domain_name: str, exp_root: Path | None = None) -> dict:
                     "text": "This arm has a gallery but no current metrics.csv row.",
                 }
             ]
+        if row_source:
+            flags = flags + [
+                {
+                    "code": "native_rescore",
+                    "level": "info",
+                    "text": "Scores from the native 3.125 m flood map (re-score "
+                    f"2026-11-12, {row_source}); metrics.csv still holds the 6.25 m row "
+                    "and the figures were drawn from it.",
+                }
+            ]
         hide = SITE_HIDE_FIGURES.get((domain_name, arm), ())
         if man is not None and hide:
             man = {
@@ -543,6 +872,8 @@ def read_domain(domain_name: str, exp_root: Path | None = None) -> dict:
             "card": card,
             "slug": slug(arm),
             "dir": root / arm / GALLERY,
+            "row_published": published,
+            "row_source": row_source,
         }
     return arms
 
@@ -652,6 +983,28 @@ def arm_page(domain_name: str, arm: str, e: dict, ref: str | None) -> str:
         else None,
     )
     add("reference arm", man.get("reference_arm") or ref)
+    pub = e.get("row_published")
+    native_note, fig_note = "", ""
+    if e.get("row_source"):
+        native_note = (
+            "<p class='note'>Scores read from the full-resolution (3.125 m) flood map, the "
+            f"2026-11-12 re-score (<code>{esc(e['row_source'])}</code>). metrics.csv still "
+            "holds the earlier 6.25 m row"
+            + (
+                f" (CSI {fmt(pub.get('motf_csi'), '.3f')}, RMSE "
+                f"{fmt(pub.get('hwm_rmse_scored_m'), '.3f')} m)"
+                if pub
+                else ""
+            )
+            + ".</p>"
+        )
+        fig_note = (
+            "<p class='note'>These figures were drawn from the earlier 6.25 m flood map "
+            "(gallery built "
+            f"{esc(str(man.get('built', '?'))[:10])}); captions that quote a score quote "
+            "that map's. The headline above is the full-resolution re-score.</p>"
+        )
+    row_word = "the 6.25 m metrics.csv row" if pub else "the metrics.csv row"
     figs = []
     for f in man.get("figures", []):
         sc = f.get("selfcheck") or {}
@@ -667,7 +1020,7 @@ def arm_page(domain_name: str, arm: str, e: dict, ref: str | None) -> str:
                     if ok is False
                     else "could not be checked against"
                 )
-                + " the metrics.csv row to 4 dp."
+                + f" {row_word} to 4 dp."
             )
         if f.get("file"):
             im = (
@@ -695,19 +1048,28 @@ def arm_page(domain_name: str, arm: str, e: dict, ref: str | None) -> str:
         mast(
             f"<b>{esc(domain_name)}</b> · arm",
             arm,
-            f"Run card, flags and the standard figure set. HWM numbers: estimator {esc(est)}."
-            f" <a href='{cmp_link}'>Compare with {esc(ref)}</a>",
-            f'<a href="../../index.html">runs</a> / <a href="../index.html">'
+            (
+                f"<b>{esc(FRONT['labels'][arm])}.</b> "
+                if domain_name == NEXT_PREMIER["domain"] and arm in FRONT["labels"]
+                else ""
+            )
+            + f"Run card, flags and the standard figure set. HWM numbers: estimator "
+            f"{esc(est)}. <a href='{cmp_link}'>Compare with {esc(ref)}</a>",
+            f'<a href="../../index.html">home</a> / <a href="../index.html">'
             f"{esc(domain_name)}</a> / {esc(arm)}",
         )
         + f'<section><h2>Flags</h2><ul class="flags">{flags}</ul></section>'
         + f'<section><h2>Headline</h2><div class="tiles">{tiles}</div>'
         f'<p class="note">HWM: estimator {esc(est)}, q ≤ 2, dry marks scored at ground '
         "(the <code>_scored</code> keys). CSI / POD / FAR on sheet-valid land; km² excl. = "
-        "<code>motf_km2_excluded_boxes</code>.</p></section>"
+        "<code>motf_km2_excluded_boxes</code>.</p>"
+        + native_note
+        + "</section>"
         + f'<section><h2>Run card</h2><dl class="card">{"".join(dl)}</dl></section>'
-        + f"<section><h2>Figures</h2>{''.join(figs)}</section>"
-        + f"<section><h2>Full metrics.csv row</h2><details><summary>{len(row)} columns"
+        + f"<section><h2>Figures</h2>{fig_note}{''.join(figs)}</section>"
+        + "<section><h2>"
+        + ("Full metrics row (native re-score)" if pub else "Full metrics.csv row")
+        + f"</h2><details><summary>{len(row)} columns"
         f'</summary><div class="scroll"><table>{full}</table></div></details></section>'
     )
     return page(
@@ -743,10 +1105,21 @@ def domain_index(domain_name: str, arms: dict, ref: str) -> str:
         )
         lab = e["card"].get("labels") or {}
         cfg = e["card"].get("config") or {}
-        waves = "on" if cfg.get("waves_on") else ("off" if cfg else "?")
+        swd = str(r.get("snapwave_direction") or "")
+        waves = (
+            ("on" if cfg.get("waves_on") else "off")
+            if cfg
+            else (
+                "off" if swd == "off" else "on" if swd else "?"
+            )  # no gallery: the row
+        )
+        lbl = (
+            FRONT["labels"].get(arm) if domain_name == NEXT_PREMIER["domain"] else None
+        )
         trs.append(
             f'<tr><td><a href="{esc(e["slug"])}/index.html">{esc(arm)}</a>'
-            f"{' <span class=note>(reference)</span>' if arm == ref else ''}</td>"
+            f"{' <span class=note>(reference)</span>' if arm == ref else ''}"
+            f"{f'<br><b>{esc(lbl)}</b>' if lbl else ''}</td>"
             f"<td>{badges(e['flags'])}</td>"
             + (f"<td class='lbl'>{esc(measure(r))}</td>" if len(measures) > 1 else "")
             + f"<td class='lbl'>{esc(waves)}</td>"
@@ -768,7 +1141,7 @@ def domain_index(domain_name: str, arms: dict, ref: str) -> str:
             "One row per model run (arm). Click a column header to sort. Badges are "
             "warnings, not filters; hover one for its text. "
             "<b><a href='compare.html'>View runs one at a time, or compare two →</a></b>",
-            '<a href="../index.html">runs</a> / ' + esc(domain_name),
+            '<a href="../index.html">home</a> / ' + esc(domain_name),
         )
         + "<section>"
         + (f'<p class="note">{" ".join(shared)}</p>' if shared else "")
@@ -801,7 +1174,7 @@ def compare_page(domain_name: str) -> str:
             "Pick a run to see its figures and scores. To compare two runs, switch to side "
             "by side, or to one frame and click the image to swap. Every figure is drawn on "
             "the same fixed scale and frame, so two runs compare by eye.",
-            f'<a href="../index.html">runs</a> / <a href="index.html">{esc(domain_name)}'
+            f'<a href="../index.html">home</a> / <a href="index.html">{esc(domain_name)}'
             "</a> / view runs",
         )
         + '<div class="ctl"><span><button type="button" data-mode="one" aria-pressed="true">'
@@ -855,39 +1228,72 @@ def data_js(domain_name: str, arms: dict, ref: str) -> str:
 
 
 def site_index(domains: dict) -> str:
-    trs = "".join(
-        f'<tr><td><a href="{esc(d)}/index.html">{esc(d)}</a></td>'
-        f'<td class="num">{len(a)}</td>'
-        f'<td class="num">{sum(1 for e in a.values() if e["manifest"])}</td>'
-        f'<td><a href="{esc(d)}/compare.html">view runs</a></td></tr>'
-        for d, a in domains.items()
-    )
+    """The front page, "Model <version> at a glance": scores, then every plot inline, then
+    what is in / limits / coming, and a Details section (runs table, compare, run pages)."""
     n = NEXT_PREMIER
-    start = ""
-    if n["domain"] in domains and n["arm"] in domains[n["domain"]]:
-        e = domains[n["domain"]][n["arm"]]
-        start = (
-            f" Start with <b><a href='{esc(n['domain'])}/{esc(e['slug'])}/index.html'>"
-            f"Model {esc(n['version'])}'s figures and scores</a></b>."
+    figs = front_figures(domains)
+    e = domains.get(n["domain"], {}).get(n["arm"])
+    stale = ""
+    pub = (e or {}).get("row_published")
+    if pub:
+        stale = (
+            '<p class="note">The flood-depth and high-water-mark figures from the run '
+            f"gallery were drawn on {esc(str((e['manifest'] or {}).get('built', '?'))[:10])}"
+            " from the earlier half-resolution (6.25 m) flood map, so their numbers differ "
+            f"slightly from the scores above (RMSE {fmt(pub.get('hwm_rmse_scored_m'), '.3f')}"
+            f" m there, {fmt(e['row'].get('hwm_rmse_scored_m'), '.3f')} m above).</p>"
         )
+    figures = (
+        '<section id="figures"><h2>Figures</h2>'
+        '<p class="note">Click a figure for the full-size image.</p>'
+        + stale
+        + "".join(figs)
+        + "</section>"
+        if figs
+        else ""
+    )
+    links = []
+    for d, arms in domains.items():
+        links.append(
+            f'<li><a href="{esc(d)}/index.html">All runs on {esc(d)}</a> (table of scores) '
+            f'· <a href="{esc(d)}/compare.html">view runs one at a time or side by side</a>'
+            "</li>"
+        )
+        for arm, x in arms.items():
+            lab = FRONT["labels"].get(arm)
+            links.append(
+                f'<li><a href="{esc(d)}/{esc(x["slug"])}/index.html">{esc(arm)}</a>'
+                + (f" — {esc(lab)}" if lab else "")
+                + (
+                    ": run card, flags, every figure, full score row</li>"
+                    if x["manifest"]
+                    else ": run card and full score row (no figures for this run)</li>"
+                )
+            )
+    details = (
+        '<section id="details"><h2>Details</h2>'
+        f'<ul class="next">{"".join(links)}</ul></section>'
+        if links
+        else ""
+    )
     body = (
         mast(
             f"<b>NJ Bight SFINCS</b> · Model {esc(n['version'])}",
-            "Hurricane Sandy flood model",
+            f"Hurricane Sandy flood model: Model {n['version']} at a glance",
             "A compound-flood hindcast of Hurricane Sandy (28-31 October 2012) on the New "
             "Jersey coast: storm surge, waves, wind, rain and river flow together, checked "
             "against tide gauges, USGS high-water marks and FEMA's mapped flood extent. This "
-            f"site shows the current model version, {esc(n['version'])}, and what is coming next."
-            + start,
+            f"page shows the current model version, {esc(n['version'])}: its scores and "
+            "figures, what is in it, its known limits and what is coming next.",
         )
-        + '<section><table class="sortable"><thead><tr><th>model run</th><th class="num">runs</th>'
-        f'<th class="num">with figures</th><th></th></tr></thead><tbody>{trs}</tbody>'
-        "</table></section>"
+        + front_scores(domains)
+        + figures
         + next_premier_section()
         + limits_section()
         + coming_section()
+        + details
     )
-    return page("Hurricane Sandy flood model", body, 0)
+    return page(f"Hurricane Sandy flood model {n['version']}", body, 0)
 
 
 def ensure_repo(site: Path) -> None:
@@ -926,8 +1332,17 @@ def main(argv=None) -> int:
         help="comma-separated arm names to publish (default: every arm). "
         "Domain folders left with no published arm are removed from the site.",
     )
+    p.add_argument(
+        "--current",
+        action="store_true",
+        help="the current model only: --domains NEXT_PREMIER's domain, --arms the "
+        "FRONT['labels'] arms (the premier + its rain-off MOTF twin)",
+    )
     p.add_argument("--exp-root", default=None, help=argparse.SUPPRESS)  # tests
     a = p.parse_args(argv)
+    if a.current:
+        a.domains = a.domains or NEXT_PREMIER["domain"]
+        a.arms = a.arms or ",".join(FRONT["labels"])
     site = Path(a.site).expanduser()
     ensure_repo(site)
     from nj_sfincs.premier import premier_arm
@@ -976,6 +1391,8 @@ def main(argv=None) -> int:
         if sub.is_dir() and (sub / "data.js").is_file() and sub.name not in domains:
             shutil.rmtree(sub)
             print(f"[publish] removed {sub.name}/ (not published)")
+    n_x = len(copy_extra_figures(site)) // 2
+    print(f"[publish] figures/: {n_x} extra figure(s)")
     (site / "index.html").write_text(site_index(domains))
     size = sum(
         f.stat().st_size

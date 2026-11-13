@@ -1067,7 +1067,17 @@ def evaluate(
 
     if gallery_tif is not None:
         Path(gallery_tif).parent.mkdir(parents=True, exist_ok=True)
-        da_hmax.rio.to_raster(gallery_tif)
+        # Compressed like the run dir's native map (core.py): uncompressed, the
+        # native 3.125 m v4 map is 18 G per arm against ~2.3 G (scratch, 2026-11-13).
+        da_hmax.rio.to_raster(
+            gallery_tif,
+            tiled=True,
+            blockxsize=256,
+            blockysize=256,
+            compress="deflate",
+            predictor=2,
+            BIGTIFF="YES",
+        )
 
     from .fa_decomp import fa_decomposition
 

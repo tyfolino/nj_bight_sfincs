@@ -129,7 +129,7 @@ def main():
                label=f"River inflows ({len(inflow)})"),
         Line2D([], [], color="black", lw=2.0, label="Levees and dams"),
         Line2D([], [], marker="s", ls="", ms=8, mfc="white", mec="black", mew=1.2,
-               label=f"Tide gauges ({n_check} + 2 at the boundary)"),
+               label=f"Water-level gauges ({n_check} + 2 at the boundary)"),
         Line2D([], [], marker="o", ls="", ms=6, mfc="#CC79A7", mec="white", mew=0.4,
                label=f"High-water marks ({len(hwm)})"),
     ]
@@ -171,7 +171,7 @@ def main():
         y -= 0.005
         side.text(0.0, y, "Checked against:", fontsize=16, va="top", fontweight="bold")
         y -= 0.045
-        side.text(0.0, y, f"{len(hwm)} USGS high-water marks,\n{n_check} NOAA / USGS tide "
+        side.text(0.0, y, f"{len(hwm)} USGS high-water marks,\n{n_check} NOAA / USGS water-level "
                   "gauges inside the model,\nFEMA's mapped Sandy flood extent", fontsize=14, va="top",
                   color="0.2", linespacing=1.2)
 

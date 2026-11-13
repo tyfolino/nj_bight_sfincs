@@ -10,12 +10,9 @@ Estimator: median of the modelled water level over flooded pixels within 50 m of
 import sys
 from pathlib import Path
 
-import geopandas as gpd
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from matplotlib.colors import TwoSlopeNorm
-from shapely.geometry import box
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
@@ -80,6 +77,9 @@ def main():
     apply()
     # Scatter only (user 11-12: the residual map read as "doing terribly"; the poster text
     # carries the description and the caption lives in README_fig1_fig2.md).
+    # v4 poster: printed ~7.8 in wide in the Methods column, so these are printed sizes (user 11-13:
+    # legend readable at print size)
+    plt.rcParams.update({"xtick.labelsize": 17, "ytick.labelsize": 17, "axes.labelsize": 19})
     fig, ax = plt.subplots(figsize=(7.8, 9.4))
 
     # ---- (a) scatter --------------------------------------------------------------
@@ -108,8 +108,8 @@ def main():
         linespacing=1.25,
     )
     ax.legend(
-        loc="upper center", bbox_to_anchor=(0.5, -0.11), ncol=2, fontsize=12.5,
-        handletextpad=0.3, columnspacing=1.0, labelspacing=0.35, frameon=False,
+        loc="upper center", bbox_to_anchor=(0.5, -0.12), ncol=2, fontsize=16,
+        handletextpad=0.25, columnspacing=0.7, labelspacing=0.35, frameon=False,
     )
 
     save(fig, "fig2_hwm")

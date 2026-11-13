@@ -1229,6 +1229,31 @@ EXPERIMENTS_BY_DOMAIN: dict[str, dict[str, Experiment]] = {
             / "structures_v4"
             / "sfincs_overpeck_open_elizabeth_rahway_keansburg_2012crest.weir",
         ),
+        # 2026-11-13 (user decisions 11-12, logs/weirs_dikes_levees_2026-11-12/README.md "Pair prepared 11-13"): the
+        # Delaware-side NLD levees + diked impoundments as weirs, Pennsauken skipped, Hancocks Bridge left open, the
+        # Cohansey (Bacons Neck Rd) tide gate SHUT + a type-3 check valve. Waves-OFF, so the pair is well-conditioned;
+        # two files differ (sfincs.weir: 1.1.0's lines + 25 appended polylines; + sfincs.drn). Engine u/v 3571.
+        "p4-nowaves+struct-cohansey-checkvalve+weir-dikes-levees+weir-elizabeth-rahway": replace(
+            _V4_REFREEZE["p4-nowaves"],
+            name="p4-nowaves+struct-cohansey-checkvalve+weir-dikes-levees+weir-elizabeth-rahway",
+            description="p4-nowaves+weir-elizabeth-rahway (this domain) plus, appended to the 1.1.0 weir file: the "
+            "Rohm & Haas (NLD 1305000013), Chester (4805000005) and Henby Creek (1205000139 / -140) levees at the "
+            "NLD crest; 20 diked-impoundment lines (Forsythe West Pool, Tuckahoe WMA x2, 9 Delaware-bayshore "
+            "over-reach outlines at the r 60 m lidar ridge, 8 agri NLD / NWI alignments); and the Cohansey gate = "
+            "the Bacons Neck Rd levee (NLD 1205000177) SHUT at its NLD 1.80 m across the tide-gate opening the "
+            "lidar reads as open water (data/structures_v4/sfincs_overpeck_open_elizabeth_rahway_dikes_levees_"
+            "cohansey_ground.weir, 3571 engine u/v). Drainage: the Cohansey gate as a type-3 check valve, Pine "
+            "Mount meadow -> Cohansey side, Q = 6.2 sqrt(dh) (ASSUMED 2 x 48 in pipes; "
+            "data/structures_v4/cohansey_bacons_neck_gate_checkvalve.drn). Pennsauken skipped, Hancocks Bridge "
+            "open. Pair: p4-nowaves+weir-elizabeth-rahway (this domain).",
+            subgrid_from="_subgrid_v1_1c",
+            weir_from=DATA
+            / "structures_v4"
+            / "sfincs_overpeck_open_elizabeth_rahway_dikes_levees_cohansey_ground.weir",
+            drn_from=DATA
+            / "structures_v4"
+            / "cohansey_bacons_neck_gate_checkvalve.drn",
+        ),
     },
     # The breach arms, each on a domain whose face z comes from its own breach bed.
     "v4_refreeze_swz_wk0": {

@@ -42,7 +42,8 @@ Every script reads `NJ_DOMAIN` unless its row names a domain. Run from the repo 
 | `dedupe_home.py` | Hard-link identical large files across the four data roots | live |
 | `desktop_pull_backup.sh` | Run on the desktop: rsync the irreplaceable outputs off Amarel; `--units` archives named run units (verified against `--manifest` md5 lists made on Amarel) before a scratch delete | live |
 | `ring_to_geojson.py` | Region GeoJSON from the named-vertex ring CSV | live |
-| `export_share_floodmap.py` | Share-ready max-depth GeoTIFF for a collaborator | live |
+| `export_share_floodmap.py` | Share-ready max-depth GeoTIFF for a collaborator (`--ground <no-buildings subgrid dir>`: depth from bare ground, native 3.125 m, north-up on the absolute 3.125 m lattice) | live |
+| `fiat_building_depth.py` | Depth AT each building for Delft-FIAT: footprint pixels = median wet street level within 50 m − bare ground; filled tif + per-building CSV / GeoPackage (`logs/fiat_geotiffs_2026-11-13/`) | live |
 | `build_gallery.py` | Run-gallery figures (`nj_sfincs/gallery.py`) for finished arms, one subprocess per arm, serially — for arms validated before the `run_experiments.py` hook (which draws them after every validate; `--no-gallery` skips it) or to re-draw (`--only <keys>`); ~17 G peak per v4 arm, compute node | live |
 | `publish_gallery.py` | Collect every domain's arm galleries + `metrics.csv` into the static GitHub Pages site (default `~/sandy_flood_site` = GitHub `tyfolino/sandy-flood-model`, its own repo, never committed here): per-domain sortable arm table with flag badges, a page per arm, a two-arm compare page; PNGs only | live |
 

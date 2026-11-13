@@ -50,8 +50,21 @@ false alarm 113.3 km² (= the row's 42.2 connected + 71.1 disconnected), not sco
 Inset CSIs (local, that box only): A Hoboken / Jersey City / Newark Bay 0.70, B Barnegat Bay / LBI 0.87,
 C Cape May 0.69.
 
-**Rain-off (`fig3_motf`)**: filled in tonight from `experiments/v4_refreeze_swz_v11/metrics.csv`; the
-watcher's log prints the same `[self-check ...]` line.
+**Rain-off (`fig3_motf`, the poster figure)**: `v4_refreeze_swz_v11 / p4-premier+rain-off+weir-elizabeth-rahway`,
+floodmap the run dir's `floodmap_hmax_lev3.tif` (native 3.125 m), row `experiments/v4_refreeze_swz_v11/metrics.csv`
+(`floodmap` = native 3.125 m). Job 63850142, `logs/fig3_rainoff_watch_63850142.out`.
+
+| | class raster | row | |
+|---|---|---|---|
+| CSI | 0.820508 | 0.820508 | plotted 0.82 |
+| POD | 0.845189 | 0.845189 | plotted 0.85 |
+| FAR | 0.034367 | 0.034367 | plotted 0.03 |
+
+Max |diff| 4.2e-17. Areas: hit 1,170.4 km², miss 214.4 km², false alarm 41.7 km² (row: 30.9 connected +
+10.8 disconnected), not scored as outside NJ 2,412.7 km². Inset CSIs (local): A 0.70, B 0.88, C Cape May 0.66.
+Re-rendered 11-13 without the title / subtitle and without the run-id / scoring-rule footer (`--no-title --no-footer`, from the cached class raster, ~1 min, 2.4 GB; the scoring rule is in the poster caption).
+Rain on → off: false alarms −71.6 km², but hits −31.0 km² and misses +31.0 km² (+17 %; Cape May −13.2,
+Cumberland −5.4, Atlantic −4.4, Gloucester −3.2 km² of hits): `logs/motf_classify_v11_2026-11-12/READ.md`.
 
 ## Re-run for the rain-off arm (one command)
 
@@ -72,8 +85,9 @@ srun --jobid=<holder> --overlap -n 1 -c 8 env NJ_DOMAIN=v4_refreeze_swz_v11 PYTH
 
 - The stand-in is RAIN ON. Some of its pink false alarms inland (the Delaware Bay shore, Cape May,
   Ocean County creeks) are probably rain ponding, which is why the rain-off twin is the standard for this
-  comparison (user 11-09). Expect FAR down and CSI up a little in `fig3_motf`; the miss areas should
-  barely move. If the subtitle needs to change, pass `--subtitle "..."`.
+  comparison (user 11-09). Measured: FAR down and CSI up, but the misses did NOT stay put: they rose
+  17 % (183.4 → 214.4 km²), because rain also made 31 km² of real hits (mostly Cape May; `logs/motf_classify_v11_2026-11-12/READ.md`).
+  So rain off is not "the same map minus the rain ponds". If the subtitle needs to change, pass `--subtitle "..."`.
 - The watcher's EXPECT_MD5 guards `fig3_motf.py` only. If that file is edited before the job starts
   (19:00), re-write the md5 (`md5sum reports/poster_2026-11-13/fig3_motf.py >
   reports/poster_2026-11-13/logs/fig3_watch_expected.md5`), or the job refuses. `poster_style.py` is

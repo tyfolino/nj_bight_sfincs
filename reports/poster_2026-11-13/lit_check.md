@@ -103,7 +103,7 @@ Drivers: **T** = tide + surge, **Wv** = waves with setup (radiation stress), **I
   elevation (SWEL) grids, not a Sandy hindcast.
   https://www.nj.gov/dep/docs/flood/final-studies/rutgers-barnegat/barnegat-bay-study-area-flood-mitigation-final-report.pdf
 
-No SFINCS model of New Jersey turned up in any search.
+No SFINCS model of New Jersey turned up in any search. **Correction (2026-11-13): wrong.** The 11-13 poster review (`poster_review_2026-11-13.md` §3, beside this file) found published SFINCS models inside New Jersey: Amini, Marsooli, Orton, Kasaei & Hajj (2026), *Urban Climate* 65, 102771, doi:10.1016/j.uclim.2026.102771 (Hoboken, 1.5 m); Maduwantha, Wahl, Santamaria-Aguilar, Jane, Dangendorf, Kim & Villarini (2026), *HESS* 30, 401–420, doi:10.5194/hess-30-401-2026 (Gloucester City, tidal Delaware); and Goulart et al. (2024, row 17) covers NYC metro "including parts of New Jersey". What still holds is the SCALE: no SFINCS model of the New Jersey coast as a whole was found. Poster v4 wording: "To our knowledge, NJ-SFINCS is the first SFINCS model to cover the New Jersey coast as a whole, from the Narrows to Cape May and up Delaware Bay." (The two 2026 papers are not cited on the poster.)
 
 ### What the table says
 

@@ -1,0 +1,22 @@
+== compare Thu Nov 12 05:53:31 PM EST 2026
+NJ 2012 bed: {'dry': 122, 'not_computed': 71, 'wet': 60}  (n = 253)
+NJ 2026 bed: {'dry': 130, 'not_computed': 71, 'wet': 52}  (n = 253)
+  plants wet: 2012 34 -> 2026 25
+  substations wet: 2012 26 -> 2026 27
+
+NJ sites that change state (10):
+            klass                           name      county  kv_max   mw state_2012 state_2026  wet_share_2012  wet_share_2026  depth_max_2012  depth_max_2026  dlevel  dground
+asset                                                                                                                                                                           
+p54         plant   Paradise Solar Energy Center  Gloucester     NaN  5.0        wet        dry          0.0001          0.0000           0.151             NaN   0.072   -0.183
+p129        plant                          CCMUA      Camden     NaN  1.5        wet        dry          0.0282          0.0000           0.963             NaN   0.563   -0.039
+p177        plant           Salvation Army Solar      Camden     NaN  1.1        wet        dry          0.1027          0.0000           0.898             NaN   0.582   -0.034
+p226        plant                            NaN  Gloucester     NaN  NaN        wet        dry          0.0013          0.0000           0.289             NaN  -0.077   -0.142
+p273        plant              Lower Cape May HS    Cape May     NaN  1.5        wet        dry          0.0030          0.0000           0.247             NaN  -0.055   -0.021
+p530        plant          Delilah Road Landfill    Atlantic     NaN  8.5        wet        dry          0.0001          0.0000           0.196             NaN  -0.085   -0.115
+p938        plant                 KDC Solar ASGM  Cumberland     NaN  3.8        wet        dry          0.0141          0.0000           0.219             NaN  -0.186   -0.149
+p954        plant           DG Camden LLC Holtec      Camden     NaN  2.2        wet        dry          0.2742          0.0000           0.871             NaN   1.221    1.442
+p984        plant  Millville City Sewer Auth WTP  Cumberland     NaN  1.2        wet        dry          0.0127          0.0000           0.513             NaN  -0.557   -0.028
+s756   substation          Churchtown Substation       Salem   230.0  NaN        dry        wet          0.0000          0.0007             NaN           0.178  -0.199    0.130
+
+wet on both beds: 51; median-depth change: median -0.012 m, > +0.1 m at 10, < -0.1 m at 11
+   compare: 0.57 s  maxRSS 116080 KB

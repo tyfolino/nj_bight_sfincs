@@ -218,12 +218,11 @@ def lonlat_box_to_rc(tr, lon0, lon1, lat0, lat1, epsg):
     return (int(min(rows)), int(np.ceil(max(rows))), int(min(cols)), int(np.ceil(max(cols))))
 
 
-def plot(cls_tif: Path, stats: dict, stem: str, subtitle: str, footer: str):
+def plot(cls_tif: Path, stats: dict, stem: str, subtitle: str, footer: str, show_title: bool = True):
     import matplotlib.pyplot as plt
     import rasterio
     from matplotlib.colors import ListedColormap
     from matplotlib.patches import Patch, Rectangle
-
     from poster_style import C, apply, save
 
     apply()
@@ -327,12 +326,14 @@ def plot(cls_tif: Path, stats: dict, stem: str, subtitle: str, footer: str):
                  transform=axs.transAxes, color="k")
         axs.text(x, 0.52, gloss, fontsize=15, va="top", transform=axs.transAxes,
                  color="#333333", linespacing=1.15)
-    fig.suptitle(
-        "Where the model floods vs. where FEMA mapped Sandy's surge", fontsize=22,
-        fontweight="bold", x=0.02, ha="left", y=0.995,
-    )
-    fig.text(0.02, 0.957, subtitle, fontsize=15, ha="left", color="#333333")
-    fig.text(0.02, -0.005, footer, fontsize=13, ha="left", va="top", color="#555555")
+    if show_title:  # the poster prints without it (--no-title; the caption carries it)
+        fig.suptitle(
+            "Where the model floods vs. where FEMA mapped Sandy's surge", fontsize=22,
+            fontweight="bold", x=0.02, ha="left", y=0.995,
+        )
+        fig.text(0.02, 0.957, subtitle, fontsize=15, ha="left", color="#333333")
+    if footer:  # --no-footer drops the run-id + scoring-rule lines (the poster caption carries them)
+        fig.text(0.02, -0.005, footer, fontsize=13, ha="left", va="top", color="#555555")
     save(fig, stem)
     plt.close(fig)
 
@@ -345,6 +346,9 @@ def main():
     ap.add_argument("--subtitle", default=None)
     ap.add_argument("--reclassify", action="store_true", help="ignore a cached class raster")
     ap.add_argument("--cache", type=Path, default=CACHE)
+    ap.add_argument("--no-title", action="store_true", help="omit the title + subtitle (poster)")
+    ap.add_argument("--no-footer", action="store_true",
+                    help="omit the run-id / scoring-rule footer (poster: the caption carries it)")
     a = ap.parse_args()
 
     from nj_sfincs import domain
@@ -385,7 +389,8 @@ def main():
         "Scored only on land the model simulated (its own active cells) inside NJ; "
         "open water, DE / PA / NY land and ground outside the model are not scored."
     )
-    plot(cls_tif, stats, a.stem, subtitle, footer)
+    plot(cls_tif, stats, a.stem, subtitle, None if a.no_footer else footer,
+         show_title=not a.no_title)
 
 
 if __name__ == "__main__":

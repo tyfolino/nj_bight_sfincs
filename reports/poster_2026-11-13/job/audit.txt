@@ -1,0 +1,7 @@
+PREMIER = p4-premier+weir-elizabeth-rahway   template = _template_sealed
+NJ_DOMAIN = v4_refreeze_swz_v11
+expected domain: faces=4881654 boundary_edges=4388 sha(z,mask)=4bc97aae885f0aa4
+
+  OK  experiments/v4_refreeze_swz_v11/bed-modernb+p4-premier+struct-pews-checkvalve+weir-elizabeth-rahway+weir-portmonmouth v4_refreeze_swz_v11 STAGED 2026-11-06 — Model v1.1: v4_refreeze_swz with face z from the v1.1c flow bed (_subgrid_v1_1c) obs OK  output WHOLE
+
+1/1 on domain 'v4_refreeze_swz_v11'
