@@ -184,3 +184,19 @@ obs; rerun: `python -I logs/nj2_edges_2026-11-14/edges_nj2.py`), `naccs_cuts_nj2
 `chester_links.py`, `site_view.py`, `ridge.py`, `notch_check.py`, `fix_set.py`, `door_source_check.py` + their outputs
 (`*_links.png`, `*_view.png`, `regions_*.csv`, `door_source_*.csv`, `levees.csv`, `notch_check.csv`, `engine/`).
 Bulk (not for git): `data/nj2_design/naccs/_sandy_parsed_nj2.npz`, the `*_cudem_utm3m.np[yz]` windows.
+
+## r1054 (Port Penn, DE) — the notch is the NORTHERN TIDE GATE, broken open (user + study, 11-14)
+User imagery check 11-14: a concrete multi-bay gate structure (3 bays?) through the dike between the river and the
+impoundment north of Port Penn (N Congress St), at the lidar channel notch_check found (-75.57129, 39.5273). Region 1054
+(0.84 km²) = that impoundment. Port Penn Flooding Mitigation and Sea Level Rise Adaptation Study (New Castle County /
+Michael Baker, Dec 2015 – Apr 2016; `data/docs/port_penn_slr_study_2016.pdf`), p. 15 Fig. 9: "northernmost tide gate in
+the Augustine Wildlife Area. Tide gate is not functioning and the structure is cracking"; §3 (PDF p. 34): "The northern
+tide gate that separates the Delaware River from the pond north of Port Penn is not operational and provides no
+protection to inland areas from flooding. The tide gate equalizes water levels between the Delaware River and the pond";
+functioning designation 1 (non-functioning) for it and the dike system, "breaches of the dike such as the one that
+occurred during Hurricane Sandy in 2012" (the southern dike, just north of W Market St, repaired early 2015; the 2014
+lidar holds the pre-repair breach). DFW was planning to rebuild the gate (2016; no timeline).
+→ For the 2012 hindcast the r1054 notch should be OPEN (two-way), not storm-shut: fix_set.py change 5, before J3's
+dike-set run. 2026 bed: open unless imagery shows the gate rebuilt (then a one-way drn). Fishers Wharf gate (south end,
+installed 2011, functioning) and the culverts: designation 2 (working).
+User 11-14: "if it's broken, leave it open" → r1054 OPEN (two-way) in BOTH beds' dike sets until evidence of a rebuild.

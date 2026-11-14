@@ -2340,3 +2340,156 @@ manning_marsh_half_capemay_v4:
       the Delaware Bay marshes stay out) -> n 0.0225 (half); NaN elsewhere (the file's nodata). nlcd_2012_v4's own
       grid and CRS (30 m Albers), as manning_developed_v4. 132,147 px, 118.9 km2. Paint AFTER manning_developed_v4
       and BEFORE manning_water_v4 / manning_channel_v4e, so lake and channel n still win.
+
+# ── nj2 (Model 2.0) — added 2026-11-14 (logs/nj2_freeze_2026-11-14/README.md). URIs under
+#    data/elevation_nj2/ (a real dir; `v2` -> /scratch/tpj8/nj_bight_sfincs_data/v2, the 11-04 pull).
+bed_nj2_coarse_25m:
+  data_type: RasterDataset
+  uri: elevation_nj2/bed_nj2_coarse_25m.tif
+  driver:
+    name: rasterio
+    options: {}
+  metadata:
+    category: topography
+    crs: 32618
+    unit: m+NAVD88
+    source: >-
+      A COMPOSITE (2026-11-14, logs/nj2_freeze_2026-11-14/composite_coarse_bed.py): bed_v4_coarse_25m's pixels
+      wherever v4 has one, nj2's own warp (scripts/build_coarse_bed.py, NJ_DOMAIN=nj2, = V4_ELEVATION_LIST) only
+      elsewhere — which is nowhere: v4's box (gmrt everywhere) contains nj2's, so the file is v4's 7560 x 10120 px
+      verbatim (pixels and overviews checked exact; sidecar bed_nj2_coarse_25m.tif.composite.txt). Why not the warp
+      alone: gdalwarp is not extent-independent (same tier, two boxes: 78,687 px differ, max 1.3 cm; on the 16-tier
+      stack 292,857 px > 1 mm, max 4.61 m at steep pixels), and the coarse bed gates refinement and sets face z, so
+      nj2's old-ground faces equal v4's only on v4's own coarse bed. 🔴 FOR QUADTREE REFINEMENT GATING AND FACE z ONLY,
+      never the subgrid.
+
+ehydro_hud_2012_v2:
+  data_type: RasterDataset
+  uri: elevation_nj2/v2/ehydro_hud_2012/hd_hud_2012_5m.tif
+  driver:
+    name: rasterio
+    options: {}
+  metadata:
+    category: topography
+    crs: 32618
+    nodata: -9999.0
+    unit: m+NAVD88
+    source: >-
+      2.0 BED, 2012 VERSION ONLY. USACE eHydro CENAN HD_01_HUD_20120213_CS_3748_30X (Hudson River Edgewater-
+      Weehawken FNP, 2011-10-04..2012-02-13). The RASTER is final: NEGATIVE m NAVD88 (-17.40..-3.91), the source's
+      positive ft depths already negated and taken MLLW -> NAVD88 per sounding by local VDatum (p50 -0.795 m; the
+      header's 2.4 ft MLW is NOT used). Read it as-is: no sign flip, no datum offset, no unit_mult; never through
+      build_carves.py / download_ehydro_nj (they re-derive sign and offset from the raw XYZ). PAINT (plain
+      --overlay, user 11-09), not :min (the file's own 'apply' tag still says min: superseded): after the last
+      plain overlay, before the :min tiers. 2.748 km2, lat 40.773-40.839, 2.29 km short of the 40.860 cut.
+      md5 7129eb2d031189e73c127721d7f721bf. logs/hd_hud_2026-11-09/README.md, logs/v2_bed_inputs_2026-11-12/README.md
+
+carve_v2_2012:
+  data_type: RasterDataset
+  uri: elevation_nj2/v2/carves/carve_v2_2012.tif
+  driver:
+    name: rasterio
+    options: {}
+  metadata:
+    category: topography
+    crs: 32618
+    unit: m+NAVD88
+    source: >-
+      2.0 BED, 2012 VERSION. Brooklyn / Queens creek carves from the USACE CENAN surveys (+ NOAA D00223 at Bushwick):
+      Newtown Creek + Dutch / English Kills + Maspeth (NE 2017-09 + DD26066 2014 fragments), Gowanus Bay + canal (GCK
+      2020-05 with GCK 2013-10 on top), Wallabout (WA 2013-06), Bushwick Inlet (D00223 2016). 5 m UTM18N, water only
+      (z < -1 m). Apply as carve_v2_2012:min (lower only), in the :min group. The upper ~0.6 km of the Gowanus Canal
+      (lat 40.6765 -> the head) is NOT in it (no survey). logs/v2_prep_2026-11-04/README.md §2.
+      md5 d6b069641177803877f0328005a189b7
+
+carve_v2_2026:
+  data_type: RasterDataset
+  uri: elevation_nj2/v2/carves/carve_v2_2026.tif
+  driver:
+    name: rasterio
+    options: {}
+  metadata:
+    category: topography
+    crs: 32618
+    unit: m+NAVD88
+    source: >-
+      2.0 BED, 2026 VERSION. As carve_v2_2012 with the newest survey per feature (Newtown NE 2025-09 + NE 2026-07, Gowanus
+      GCK 2020-05 = pre-Superfund-dredging, Wallabout WA 2013, Bushwick D00223 2016). Apply :min AFTER modern_land.
+      logs/v2_prep_2026-11-04/README.md §2. md5 a72f5845ff60b2e1cd6e3516ae9b290c
+
+nyc_topobathy_2017_m:
+  data_type: RasterDataset
+  uri: elevation_nj2/v2/vrt/nyc_topobathy_2017_m.vrt
+  driver:
+    name: rasterio
+    options: {}
+  metadata:
+    category: topography
+    crs: 6539
+    nodata: -9999.0
+    unit: m+NAVD88
+    source: >-
+      2.0 BED, 2026 VERSION (NY land; via build_modern_land.py, or this tier directly). NOAA OCM 2017 NYC Topobathy
+      Lidar DEM (dataset 9307), bare earth, 1 ft grid, EPSG:6539 (NAD83(2011) / NY Long Island ftUS), vertical NAVD88
+      GEOID12B in US survey FEET. All 21 tiles in modern_2026/raw/nyc_topobathy_2017/ (16 since 10-28 + be_NYC_020/
+      026/030/033/034, hard-linked 2026-11-12 from v2/nyc_topobathy_2017/, md5 = manifest). The VRT converts ft -> m:
+      <ScaleRatio> 1200/3937 in every ComplexSource (source nodata -3.4e38 masked before scaling); do NOT add a
+      unit_mult. Absolute source paths (relativeToVRT=0). Lidar draws water as a flat surface: land only (>= -0.25 m)
+      as in modern_land_2026. 2.0 ring NY land coverage 0.520 -> 0.999; minus CUDEM 1/9" on land p50 +0.037 m.
+      logs/v2_bed_inputs_2026-11-12/README.md
+
+piers_v2_2012:
+  data_type: RasterDataset
+  uri: elevation_nj2/v2/carves/piers_v2_2012.tif
+  driver:
+    name: rasterio
+    options: {}
+  metadata:
+    category: topography
+    crs: 32618
+    nodata: -9999.0
+    unit: m+NAVD88
+    source: >-
+      2.0 BED, 2012 VERSION. PILE-supported piers CARVED open (user 2026-11-14; supersedes the 11-03 "piers solid").
+      Units = the 2026 bed's rule (one classification for both beds): logs/v2_piers_2026-11-06/piers.gpkg carve_2012
+      (PILE + a deck in the 2012 bed, p50 > 1.2 m; minus any the user's 11-12 eye check called fill - none) + the eye
+      check's pile units with a 2012 deck (Brooklyn Bridge Park Piers 2 / 3 / 5, Piers 8 / 9A / 9B, w1012705545):
+      29 units, 26.6 ha. Value per unit = median of the 2012 bed's water (< -0.5 m; HD_HUD 2012 else CUDEM 1/9")
+      in a 5-40 m ring outside it (-0.59 .. -13.11 m; per-unit table piers_v2_2012.csv beside the tif). 5 m UTM18N.
+      Apply as piers_v2_2012:min (lower only). logs/nj2_freeze_2026-11-14/build_piers_2012.py.
+      md5 e9ba895aeec6103b7ba51e0c1994fd57
+
+gowanus_upper_v2:
+  data_type: RasterDataset
+  uri: elevation_nj2/v2/carves/gowanus_upper_v2_2012.tif
+  driver:
+    name: rasterio
+    options: {}
+  metadata:
+    category: topography
+    crs: 32618
+    nodata: -9999.0
+    unit: m+NAVD88
+    source: >-
+      2.0 BED, 2012 VERSION (key name as j2_freeze_nj2.slurm spells it; the 2026 twin is gowanus_upper_v2_2026).
+      Upper Gowanus Canal, ASSUMED depth (no survey north of lat ~40.676; user 11-12 carve, 11-14 depth source):
+      GC_01_GCK_20200512's last main-channel section, median -2.69 m NAVD88, carried flat to the Butler St head
+      (40.6817), on cells carve_v2_2012 does not hold (the 2013 survey reaches further): 1.55 ha. Apply :min after
+      carve_v2_2012. logs/nj2_bed2026_2026-11-14/build_gowanus_upper.py. md5 04b5828ec36c0e290bced1cd7c11869b
+
+naccs_sandy_nj2:
+  data_type: GeoDataset
+  uri: gtsm/naccs_sandy_nj2.nc
+  driver:
+    name: geodataset_xarray
+    options: {}
+  metadata:
+    category: ocean
+    crs: 4326
+    unit: m+NAVD88
+    source: >-
+      NACCS/CHS ADCIRC storm 001 (Sandy) for nj2 (Model 2.0) - the v4 pull + the 2026-11-02 Hudson / East
+      River pull (data/nj2_design/naccs/, symlinks), screened to 2 km of the frozen nj2 mask==2 cells (sea line
+      4 sections + cd_canal + hudson + hell_gate), MSL(1992)->NAVD88 from VDatum's separation grids. NOT BUILT
+      YET (2026-11-14) - written by J2 step 4, logs/nj2_edges_2026-11-14/build_naccs_boundary_nj2.py on the frozen
+      mesh (logs/nj2_freeze_2026-11-14/README.md).

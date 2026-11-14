@@ -1,0 +1,8 @@
+spit zone 14.24 km2; CZMIL covers 59%
+bed LAND where CZMIL 2012-11-16 is water (<=0 m): 0.019 km2; classes hit 0.017, miss 0.000, FA 0.001, dry 0.000, invalid 0.002
+bed WATER where CZMIL 2012-11-16 is land (>0 m): 0.642 km2; MOTF wet there 0.460 km2 (unscored: bed <= 0)
+vs EAARL pre 2012-10-26 (first surface, covers 34%): bed land/EAARL water 0.112 km2 (FA 0.015); bed water/EAARL land 0.619 km2
+MOTF wet but bed <= 0 (not scored): 4.283 km2; of it CZMIL>0 0.460
+FA on spit zone 0.187 km2: bed p50 2.90; tip (lat>40.476) 0.040; within 60 m of the bed's 0 m line 0.085
+miss on spit zone 0.302 km2: bed p50 3.56; tip (lat>40.476) 0.009; within 60 m of the bed's 0 m line 0.046
+figure /cache/home/tpj8/nj_bight_sfincs/logs/sandy_hook_motf_2026-11-14/sandy_hook_motf_classes_bed2026.png

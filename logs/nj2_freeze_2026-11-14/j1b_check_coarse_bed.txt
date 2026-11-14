@@ -1,0 +1,12 @@
+nj2 7560x10120 437000,4539000  res (25.0, 25.0)
+v4  7560x10120 437000,4539000  res (25.0, 25.0)
+overlap 76,507,200 px: max |nj2 - v4| 0.0000 m, n > 1 mm 0
+nj2 ring: 22,990.1 km², NoData inside 0
+new ground 245.4 km²; v1.1.0 ground no longer inside 0.00 km²
+new ground z p1/5/25/50/75/95/99: [-20.37, -16.76, -4.86, 4.44, 17.55, 59.66, 91.17]
+  below -1.00 m: 74.2 km²
+  below +0.00 m: 76.8 km²
+  below +3.00 m: 103.5 km²
+  below +6.44 m: 137.6 km²
+cut hudson: 1941 m, 78 samples; < -1 m: 56, < -0.5 m: 56; min -16.19, max +58.16
+cut hell_gate: 684 m, 28 samples; < -1 m: 21, < -0.5 m: 22; min -29.88, max +8.46

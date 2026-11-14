@@ -1,0 +1,196 @@
+asset,aname,bshare_hybrid_nj2,roles_nj2,bshare_njdep,bshare_usa,bshare_hybrid,d_nj2_minus_v4hybrid
+p161,Jersey City DWP,0.349,"usa_asset_guard,usa_pre2019_kept",,,,
+p370,Rutgers Health Sciences Power Plant,0.879,usa_pre2019_kept,,,,
+p888,Colonial Pipeline Allentown Chesterfield,0.0,,,,,
+s740,Lafayette Road Station,0.005,usa_asset_guard,,,,
+s2139,Hoboken Substation,0.094,usa_post2019,,,,
+s2023,South Waterfront Substation,0.079,"usa_asset_guard,usa_post2019",,,,
+s2608,Metuchen/Pierson Ave,0.0,,,,,
+s3249,Union Substation,0.007,usa_post2019,,,,
+s700,Mill Substation,0.016,"usa_asset_guard,usa_post2019",,,,
+s679,Ward Ave Substation,0.026,usa_post2019,,,,
+s3261,Newport Substation,0.149,"ms_swap,usa_asset_guard,usa_post2019",,,,
+p129,CCMUA,1.0,"usa_asset_guard,usa_bigroof",0.89,1.0,0.656,0.344
+p173,Cedar Creek,0.225,usa_post2019,0.0,0.0,0.0,0.225
+p869,Wheelabrator Gloucester LP,0.281,"ms_swap,usa_asset_guard",0.315,0.278,0.073,0.208
+p368,Camden Cogeneration Plant,0.22,"ms_swap,usa_asset_guard,usa_post2019",0.212,0.217,0.059,0.161
+s1439,Red Bank Substation,0.108,"usa_asset_guard,usa_post2019",0.015,0.108,0.01,0.098
+p357,MCUA Electric Power Generating Facility,0.28,"ms_swap,usa_asset_guard,usa_post2019",0.309,0.283,0.186,0.094
+p268,Sayreville Generating Station,0.147,"ms_swap,usa_asset_guard,usa_post2019",0.166,0.146,0.084,0.063
+s682,Lumberton Substation,0.079,"ms_swap,usa_asset_guard,usa_post2019",0.009,0.081,0.02,0.059
+p369,Linden Generating Station,0.129,"ms_swap,usa_asset_guard,usa_post2019",0.15,0.144,0.079,0.05
+p463,PSEG Sewaren Generating Station,0.2,"ms_swap,usa_asset_guard,usa_post2019",0.1,0.167,0.15,0.05
+p291,Bergen Generating Station,0.119,"ms_swap,usa_asset_guard,usa_post2019",0.141,0.145,0.081,0.038
+p264,Burlington Generating Station,0.085,"ms_swap,usa_asset_guard,usa_post2019",0.072,0.084,0.05,0.035
+s2534,Nejesco Substation,0.026,usa_asset_guard,0.005,0.026,0.0,0.026
+s3268,Red Oak A/B Substation,0.025,"usa_asset_guard,usa_post2019",0.018,0.025,0.003,0.022
+s3253,B.L. England Generation,0.033,"usa_asset_guard,usa_post2019",0.0,0.033,0.012,0.021
+s738,Minue Street Substation,0.054,"usa_asset_guard,usa_post2019",0.048,0.054,0.033,0.021
+s2753,Bayway Substation,0.113,"usa_asset_guard,usa_post2019",0.018,0.113,0.095,0.018
+s739,Woodbridge Substation,0.159,"usa_asset_guard,usa_post2019",0.008,0.159,0.142,0.017
+p270,Covanta Camden Energy Recovery Center,0.298,"ms_swap,usa_asset_guard,usa_post2019",0.327,0.321,0.282,0.016
+s711,Burlington Substation,0.034,"ms_swap,usa_asset_guard,usa_post2019",0.024,0.033,0.021,0.013
+p640,Sayreville Energy Center,0.218,"usa_asset_guard,usa_post2019",0.224,0.218,0.206,0.012
+p292,Red Oak Power,0.179,"usa_asset_guard,usa_post2019",0.21,0.179,0.169,0.01
+s723,Bustleton Substation,0.009,usa_asset_guard,0.0,0.009,0.0,0.009
+s2666,Parlin Substation,0.015,"usa_asset_guard,usa_post2019",0.016,0.015,0.007,0.008
+s3006,North Ave Substation,0.106,"usa_asset_guard,usa_post2019",0.0,0.106,0.098,0.008
+s3265,Werner Substation,0.009,"usa_asset_guard,usa_post2019",0.017,0.009,0.002,0.007
+p750,NAEA Lakewood LLC,0.123,"ms_swap,usa_asset_guard,usa_post2019",0.122,0.123,0.117,0.006
+s2162,Cuthbert Boulevard,0.017,"usa_asset_guard,usa_post2019",0.02,0.017,0.012,0.005
+s716,Gloucester Substation,0.052,"ms_swap,usa_asset_guard,usa_post2019",0.021,0.049,0.048,0.004
+p658,NAEA Ocean Peaking Power LLC Plant,0.147,"usa_asset_guard,usa_post2019",0.149,0.147,0.144,0.003
+s713,Camden Substation,0.03,"ms_swap,usa_asset_guard,usa_post2019",0.024,0.031,0.028,0.002
+p905,Union County Resource Recovery Facility,0.303,"ms_swap,usa_asset_guard,usa_post2019",0.287,0.252,0.302,0.001
+p285,PSEG Salem and Hope Creek Nuclear Generating Stations,0.092,"usa_post2019,usa_pre2019_kept",0.081,0.091,0.091,0.001
+p230,"Florence Solar W3-080, LLC",0.0,usa_post2019,0.0,0.0,0.0,0.0
+p231,Silver Lake Solar Farm,0.0,,0.0,0.0,0.0,0.0
+p45,Trenton Solar Farm,0.007,ms_swap,0.0,0.0,0.007,0.0
+p53,Pennsauken Brownfield Solar,0.184,usa_pre2019_kept,0.192,0.184,0.184,0.0
+p52,Old Bridge Solar Farm,0.0,,0.0,0.0,0.0,0.0
+p106,Toms River Solar Farm,0.0,,0.0,0.0,0.0,0.0
+p97,LTMUA,0.0,usa_post2019,0.0,0.0,0.0,0.0
+p158,Burlington Coat Factory Solar,0.0,,0.0,0.0,0.0,0.0
+p170,Hudson County Solar,0.777,"usa_post2019,usa_pre2019_kept",0.126,0.777,0.777,0.0
+p172,Absegami,0.57,usa_post2019,0.562,0.57,0.57,0.0
+p176,DRPA Ferry Ave Station Solar Project,0.038,usa_post2019,0.0,0.038,0.038,0.0
+p177,Salvation Army Solar,0.425,usa_post2019,0.404,0.425,0.425,0.0
+p123,,0.0,,0.0,0.0,0.0,0.0
+p125,Parlin Solar LLC,0.0,,0.0,0.136,0.0,0.0
+p54,Paradise Solar Energy Center,0.0,,0.0,0.0,0.0,0.0
+p136,CES Cherry Hill Solar,0.91,ms_swap,0.999,1.0,0.91,0.0
+p137,Westside Avenue,1.0,ms_swap,1.0,1.0,1.0,0.0
+p140,US Foods Solar,0.998,ms_swap,1.0,1.0,0.998,0.0
+p139,North Bergen Solar,1.0,ms_swap,1.0,1.0,1.0,0.0
+p141,"Goya Foods, Inc- Jersey City Solar",0.986,usa_pre2019_kept,0.987,0.986,0.986,0.0
+p146,IGS Solar I - EWR6,0.985,ms_swap,1.0,0.975,0.985,0.0
+p153,Lakewood Cheddar School,0.996,usa_post2019,1.0,0.996,0.996,0.0
+p56,Parkland Landfill Solar,0.0,,0.0,0.0,0.0,0.0
+p540,Cinnaminson Landfill Solar,0.004,"ms_swap,usa_post2019",0.002,0.005,0.004,0.0
+p539,Covanta Essex Company,0.213,"usa_post2019,usa_pre2019_kept",0.234,0.213,0.213,0.0
+p530,Delilah Road Landfill,0.0,,0.0,0.0,0.0,0.0
+p519,Highland Park Solar Storage System,0.0,,0.0,0.0,0.0,0.0
+p515,Sayreville Floating Solar Array,0.0,,0.0,0.0,0.0,0.0
+p489,NJ Oak Solar Plant,0.004,usa_post2019,0.0,0.004,0.004,0.0
+p445,L&D Landfill Solar Farm,0.0,ms_swap,0.0,0.0,0.0,0.0
+p436,BNB Camden Solar,0.012,usa_post2019,0.0,0.012,0.012,0.0
+p366,ILR Landfill,0.0,,0.0,0.0,0.0,0.0
+p430,"Summit Water Nexus Mt. Holly, LLC Solar",0.012,ms_swap,0.01,0.009,0.012,0.0
+p386,Linden Solar Farm,0.0,,0.0,0.0,0.0,0.0
+p362,RCSJ Solar Field,0.0,,0.0,0.0,0.0,0.0
+p273,Lower Cape May HS,0.0,,0.0,0.0,0.0,0.0
+p274,PSE&G Yardville Solar Farm,0.001,usa_post2019,0.0,0.001,0.001,0.0
+p348,Kearney Solar Farm,0.0,,0.002,0.0,0.0,0.0
+p361,Mount Laurel Solar,0.002,usa_post2019,0.0,0.002,0.002,0.0
+p238,Solvay Solar,0.0,,0.0,0.0,0.0,0.0
+p246,DG Amaze ACY1,0.0,,0.0,0.0,0.0,0.0
+p267,IFF Solar Farm,0.041,usa_post2019,0.026,0.041,0.041,0.0
+p272,Owens Corning,0.0,,0.0,0.0,0.0,0.0
+p265,Kearny Generating Station,0.108,"usa_post2019,usa_pre2019_kept",0.114,0.108,0.108,0.0
+p179,Community Foodbank of NJ,1.0,usa_pre2019_kept,1.0,1.0,1.0,0.0
+p185,Samuel Mickle School,0.482,"usa_post2019,usa_pre2019_kept",0.329,0.482,0.482,0.0
+p188,,1.0,usa_pre2019_kept,1.0,1.0,1.0,0.0
+p189,,1.0,ms_swap,1.0,1.0,1.0,0.0
+p219,,0.0,,0.0,0.0,0.0,0.0
+p224,River Terminal Development Solar,1.0,usa_pre2019_kept,1.0,1.0,1.0,0.0
+p225,Bridgeport Disposal Solar Farm,0.0,,0.0,0.0,0.0,0.0
+p226,,0.0,,0.0,0.0,0.0,0.0
+p228,Pennsauken Solar,0.075,"ms_swap,usa_post2019",0.0,0.076,0.075,0.0
+p602,Newark Energy Center,0.116,"usa_post2019,usa_pre2019_kept",0.175,0.116,0.116,0.0
+p655,Seaside Heights Power Plant,0.129,usa_post2019,0.0,0.129,0.129,0.0
+p942,Colonial Pipeline Woodbury West Deptford,0.0,,0.0,0.0,0.0,0.0
+p941,Campus Drive Solar,0.996,ms_swap,1.0,1.0,0.996,0.0
+p938,KDC Solar ASGM,0.0,,0.008,0.0,0.0,0.0
+p937,"American Goldfinch SCS ACY2 NJ, LLC",0.973,ms_swap,0.073,0.141,0.973,0.0
+p934,Garfield Solar,0.962,usa_post2019,1.0,0.962,0.962,0.0
+p933,Amazon,1.0,usa_bigroof,1.0,1.0,1.0,0.0
+p924,IOS - ERW9,0.998,ms_swap,1.0,1.0,0.998,0.0
+p943,Mill Creek Solar,0.0,,0.0,0.0,0.0,0.0
+s2,Scull Substation,0.0,,0.0,0.0,0.0,0.0
+p1083,Kinsley Landfill Solar,0.0,,0.0,0.0,0.0,0.0
+s75,Kearny Substation,0.007,usa_pre2019_kept,0.009,0.007,0.007,0.0
+p954,DG Camden LLC Holtec,0.941,ms_swap,0.079,0.198,0.941,0.0
+p1025,Linden Hawk Rise Solar CSG,0.0,,0.0,0.0,0.0,0.0
+p1030,Delanco,0.0,,0.0,0.0,0.0,0.0
+p981,CCUA Solar,0.032,usa_post2019,0.034,0.032,0.032,0.0
+p552,Bordentown Solar,0.003,"ms_swap,usa_post2019",0.004,0.005,0.003,0.0
+p755,CPV Woodbridge Energy Center,0.038,usa_post2019,0.124,0.038,0.038,0.0
+p751,Constellation New Energy Inc,0.0,ms_swap,0.001,0.0,0.0,0.0
+p684,French's Landfill PV,0.001,usa_pre2019_kept,0.0,0.057,0.001,0.0
+p807,Kinsley II Landfill Solar System,0.0,,0.0,0.0,0.0,0.0
+p875,Paulsboro Refinery Power Plant,0.165,usa_pre2019_kept,0.209,0.165,0.165,0.0
+p889,AC Power,0.0,,0.0,0.0,0.0,0.0
+p895,"Wilzig Associates, LLC",0.002,usa_post2019,0.0,0.002,0.002,0.0
+p902,,0.0,,0.0,0.0,0.0,0.0
+p923,DG Iron Mountain,1.0,ms_swap,1.0,1.0,1.0,0.0
+p646,ACUA Solar Farm,0.001,usa_pre2019_kept,0.0,0.001,0.001,0.0
+p663,Cumberland Energy Center,0.067,usa_post2019,0.066,0.067,0.067,0.0
+p662,Eagle Point Generation Power Plant,0.246,"usa_post2019,usa_pre2019_kept",0.221,0.246,0.246,0.0
+p667,West Deptford Energy Station,0.078,"usa_post2019,usa_pre2019_kept",0.085,0.078,0.078,0.0
+p613,Forked River Power Plant,0.046,usa_post2019,0.06,0.046,0.046,0.0
+p566,Reeves Station,0.088,ms_swap,0.0,0.002,0.088,0.0
+p565,Medford WWTP,0.0,,0.0,0.0,0.0,0.0
+s728,Homestead Substation,0.108,usa_post2019,0.0,0.108,0.108,0.0
+s726,Kingsland Landfill Substation,0.073,usa_post2019,0.018,0.073,0.073,0.0
+s724,Yardville Substation,0.011,usa_post2019,0.0,0.011,0.011,0.0
+s715,Eagle Point Substation,0.019,usa_pre2019_kept,0.022,0.019,0.019,0.0
+s714,Cinnaminson Substation,0.097,"ms_swap,usa_post2019",0.033,0.096,0.097,0.0
+s698,Beaver Brook Substation,0.051,"usa_post2019,usa_pre2019_kept",0.0,0.051,0.051,0.0
+s701,Lewis Substation,0.013,usa_post2019,0.011,0.013,0.013,0.0
+s710,Levittown Substation,0.043,usa_post2019,0.037,0.043,0.043,0.0
+s697,Hilltop Substation,0.118,"usa_post2019,usa_pre2019_kept",0.026,0.118,0.118,0.0
+s696,Deptford Substation,0.035,"usa_post2019,usa_pre2019_kept",0.056,0.035,0.035,0.0
+s699,Dorothy Substation,0.025,usa_post2019,0.059,0.025,0.025,0.0
+s80,Mickleton Peaking Plant Substation,0.008,"usa_post2019,usa_pre2019_kept",0.0,0.008,0.008,0.0
+s193,Turnpike Substation,0.013,usa_pre2019_kept,0.0,0.013,0.013,0.0
+s159,Merion Substation,0.126,usa_post2019,0.123,0.126,0.126,0.0
+s676,Hope Creek Substation,0.005,"usa_post2019,usa_pre2019_kept",0.008,0.005,0.005,0.0
+s695,Thorofare Substation,0.007,usa_pre2019_kept,0.0,0.007,0.007,0.0
+p984,Millville City Sewer Auth WTP,0.0,,0.0,0.0,0.0,0.0
+s865,Pedricktown Co Generation Substation,0.006,usa_pre2019_kept,0.007,0.006,0.006,0.0
+s764,Deep Run Substation,0.0,,0.003,0.0,0.0,0.0
+s864,Bridgeport Co Generation Substation,0.005,usa_pre2019_kept,0.0,0.005,0.005,0.0
+s755,Meadow Road Substation,0.033,usa_post2019,0.028,0.033,0.033,0.0
+s1396,Oceanview Substation,0.014,usa_post2019,0.009,0.014,0.014,0.0
+s2291,Maywood Substation,0.091,"usa_post2019,usa_pre2019_kept",0.062,0.091,0.091,0.0
+s756,Churchtown Substation,0.058,"usa_post2019,usa_pre2019_kept",0.006,0.058,0.058,0.0
+s749,Manitou Substation,0.009,usa_post2019,0.015,0.009,0.009,0.0
+s750,Oyster Creek Substation,0.012,usa_post2019,0.003,0.012,0.012,0.0
+s752,Lakewood Substation,0.016,"ms_swap,usa_post2019",0.022,0.016,0.016,0.0
+s729,Penhorn Substation,0.04,usa_post2019,0.0,0.04,0.04,0.0
+s734,Freneau Substation,0.005,usa_post2019,0.024,0.005,0.005,0.0
+s730,North Bergen Substation,0.107,usa_post2019,0.0,0.107,0.107,0.0
+s741,Linden Substation,0.04,ms_swap,0.047,0.047,0.04,0.0
+s748,NJT Aberdeen Substation,0.066,usa_post2019,0.047,0.066,0.066,0.0
+s2607,Mercer Switching Station,0.027,ms_swap,0.026,0.007,0.027,0.0
+s2569,Bayonne Switching Station,0.156,"usa_post2019,usa_pre2019_kept",0.037,0.156,0.156,0.0
+s2553,Warinanco Substation,0.054,"ms_swap,usa_post2019",0.034,0.055,0.054,0.0
+s2505,Bergen Substation,0.1,"ms_swap,usa_asset_guard,usa_post2019",0.083,0.1,0.1,0.0
+s2503,Marion Substation,0.087,"usa_post2019,usa_pre2019_kept",0.028,0.087,0.087,0.0
+s2504,Essex Substation,0.036,"usa_post2019,usa_pre2019_kept",0.019,0.036,0.036,0.0
+s2356,Cedar Substation,0.012,usa_post2019,0.013,0.012,0.012,0.0
+s2339,Crown Point Substation,0.149,usa_post2019,0.006,0.149,0.149,0.0
+s2290,New Milford Substation,0.103,"usa_post2019,usa_pre2019_kept",0.024,0.103,0.103,0.0
+s2971,Middle Substation,0.004,usa_post2019,0.072,0.004,0.004,0.0
+s2860,Leonia Substation,0.035,"usa_post2019,usa_pre2019_kept",0.025,0.035,0.035,0.0
+s3144,Cumberland Peaking Generation Substation,0.006,usa_post2019,0.007,0.006,0.006,0.0
+s3145,Dennis Substation,0.078,"usa_post2019,usa_pre2019_kept",0.009,0.078,0.078,0.0
+s2887,Aldene Substation,0.034,"ms_swap,usa_post2019",0.027,0.033,0.034,0.0
+s2719,Foundry Street Substation,0.063,"usa_post2019,usa_pre2019_kept",0.0,0.063,0.063,0.0
+s2667,Eaton Crest Substation,0.022,"usa_post2019,usa_pre2019_kept",0.007,0.022,0.022,0.0
+s3259,Saddle Brook Substation,0.107,"usa_post2019,usa_pre2019_kept",0.054,0.107,0.107,0.0
+s3258,Bergenfield Substation,0.212,"usa_post2019,usa_pre2019_kept",0.196,0.212,0.212,0.0
+s3254,Chambers Co Generation Substation,0.153,usa_pre2019_kept,0.212,0.153,0.153,0.0
+s3262,East Rutherford Substation,0.07,"usa_post2019,usa_pre2019_kept",0.048,0.07,0.07,0.0
+s3264,Newark Energy Center,0.018,usa_post2019,0.016,0.018,0.018,0.0
+s3269,Woodbridge Energy Center,0.026,usa_post2019,0.0,0.026,0.026,0.0
+s3277,Sewaren 7,0.025,"ms_swap,usa_post2019",0.0,0.025,0.025,0.0
+s3278,White Horse/Clinton Ave,0.086,usa_post2019,0.0,0.086,0.086,0.0
+s3280,Williams Substation,0.0,,0.009,0.0,0.0,0.0
+s3310,,0.808,usa_pre2019_kept,0.0,0.808,0.808,0.0
+s3311,Camden Co Generation,0.294,usa_post2019,0.0,0.294,0.294,0.0
+s3323,Mansfield Substation,0.025,usa_post2019,0.0,0.025,0.025,0.0
+s3343,Newark Airport Substation,0.134,usa_post2019,0.0,0.134,0.134,0.0
+s3442,Future Rancocas Substation,0.044,"ms_swap,usa_post2019",0.027,0.042,0.044,0.0
+s3480,New Washington Substation,0.012,"usa_post2019,usa_pre2019_kept",0.001,0.012,0.012,0.0
+s3608,Raritan River (Sayreville) Substation,0.005,ms_swap,0.007,0.006,0.005,0.0

@@ -389,17 +389,16 @@ NEXT_PREMIER = {
     "arm": "p4-premier+weir-elizabeth-rahway",
     "as_of": "2026-11-13",
     # Numbers: native rows logs/floodmap_fix_2026-11-12/table.md (1.0.0 CSI 0.7907, 1.1.0
-    # 0.8020; 1.1.0 RMSE 0.3484, median 50 m, n 119); the paired 0.424 vs 0.355 (1.x mark
-    # file, n 119, 6.25 m map) is docs/MODEL.md §6 — not yet redone on the native map.
+    # 0.8020; 1.1.0 RMSE 0.3484, median 50 m, n 119); the paired 0.4205 vs 0.3484 (1.x mark
+    # file, n 119, native 3.125 m maps) is logs/native_rescore_2026-11-13/README.md Results.
     "status": "Model version 1.1.0 (tagged v1.1.0, chosen 2026-11-09). Same model grid, "
     "storm forcing and physics as version 1.0.0; the changes are in the ground the water "
     "flows over, two flood structures and the scoring. Scores updated 2026-11-13: they are "
     "now read from the full-resolution (3.125 m) flood map. Until then the scorer had read "
     "a half-resolution (6.25 m) copy by mistake, which left some narrow streets between "
     "buildings dry. At 119 high-water marks the typical error (RMSE; the model's value is "
-    "the median peak level within 50 m of each mark) is 0.35 m. On the same 119 marks, "
-    "compared on the earlier 6.25 m map, it fell from 0.42 m in version 1.0.0 to 0.36 m "
-    "(that side-by-side comparison has not been redone at full resolution yet). Agreement "
+    "the median peak level within 50 m of each mark) is 0.35 m; on the same 119 marks "
+    "version 1.0.0 scores 0.42 m. Agreement "
     "with FEMA's mapped flood extent rises from 0.791 to 0.802 (CSI, rain on). What "
     "changed:",
     "items": (
@@ -586,8 +585,8 @@ def _figure(key: str, title: str, caption: str, src: str, full: str, credit="") 
 def front_figures(domains: dict) -> list[str]:
     """FRONT["figures"] in order: the premier's gallery PNGs (already copied into its arm
     folder by ``copy_pngs``) and the EXTRA_FIGURES web copies. A gallery figure the list
-    does not name is appended with its own caption, except the premier's ``motf`` (rain on,
-    6.25 m: the front page's FEMA figure is the rain-off one; it stays on the run page)."""
+    does not name is appended with its own caption, except the premier's ``motf`` (rain on:
+    the front page's FEMA figure is the rain-off one; it stays on the run page)."""
     n = NEXT_PREMIER
     e = domains.get(n["domain"], {}).get(n["arm"])
     gal = {
@@ -847,14 +846,21 @@ def read_domain(domain_name: str, exp_root: Path | None = None) -> dict:
                     "text": "This arm has a gallery but no current metrics.csv row.",
                 }
             ]
+        figs_native = str(
+            ((man or {}).get("metrics_row") or {}).get("floodmap") or ""
+        ).startswith("native")
         if row_source:
             flags = flags + [
                 {
                     "code": "native_rescore",
                     "level": "info",
                     "text": "Scores from the native 3.125 m flood map (re-score "
-                    f"2026-11-12, {row_source}); metrics.csv still holds the 6.25 m row "
-                    "and the figures were drawn from it.",
+                    f"2026-11-12, {row_source}); metrics.csv still holds the 6.25 m row"
+                    + (
+                        "; the figures were redrawn from the native map."
+                        if figs_native
+                        else " and the figures were drawn from it."
+                    ),
                 }
             ]
         hide = SITE_HIDE_FIGURES.get((domain_name, arm), ())
@@ -874,6 +880,7 @@ def read_domain(domain_name: str, exp_root: Path | None = None) -> dict:
             "dir": root / arm / GALLERY,
             "row_published": published,
             "row_source": row_source,
+            "figs_native": figs_native,
         }
     return arms
 
@@ -998,13 +1005,20 @@ def arm_page(domain_name: str, arm: str, e: dict, ref: str | None) -> str:
             )
             + ".</p>"
         )
+    if e.get("row_source") and not e.get("figs_native"):
         fig_note = (
             "<p class='note'>These figures were drawn from the earlier 6.25 m flood map "
             "(gallery built "
             f"{esc(str(man.get('built', '?'))[:10])}); captions that quote a score quote "
             "that map's. The headline above is the full-resolution re-score.</p>"
         )
-    row_word = "the 6.25 m metrics.csv row" if pub else "the metrics.csv row"
+    row_word = (
+        "the native re-score row"
+        if pub and e.get("figs_native")
+        else "the 6.25 m metrics.csv row"
+        if pub
+        else "the metrics.csv row"
+    )
     figs = []
     for f in man.get("figures", []):
         sc = f.get("selfcheck") or {}
@@ -1235,7 +1249,7 @@ def site_index(domains: dict) -> str:
     e = domains.get(n["domain"], {}).get(n["arm"])
     stale = ""
     pub = (e or {}).get("row_published")
-    if pub:
+    if pub and not e.get("figs_native"):
         stale = (
             '<p class="note">The flood-depth and high-water-mark figures from the run '
             f"gallery were drawn on {esc(str((e['manifest'] or {}).get('built', '?'))[:10])}"

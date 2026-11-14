@@ -1,0 +1,37 @@
+
+== n0_v4only: faces 4,899,636 (+0 vs control)  active 4,320,551
+    200.0 m    919,845
+    100.0 m    262,736
+     50.0 m  2,297,003
+     25.0 m  1,420,052
+   band hudson_waterfront      faces    25,639 ->    25,639  (+0)
+   band newark_meadowlands     faces   116,170 ->   116,170  (+0)
+   band capemay_inlets         faces    97,936 ->    97,936  (+0)
+   dt candidates 10,139
+   min dt 0.684 s; five smallest:
+     dt 0.684  dx  25.0  zmin  -33.04  (-74.0359, 40.5975)
+     dt 0.684  dx  25.0  zmin  -32.99  (-74.0362, 40.5975)
+     dt 0.685  dx  25.0  zmin  -32.95  (-74.0359, 40.5977)
+     dt 0.685  dx  25.0  zmin  -32.90  (-74.0362, 40.5977)
+     dt 0.685  dx  25.0  zmin  -32.90  (-74.0359, 40.5972)
+
+== n1_final: faces 5,179,779 (+280,143 vs control)  active 4,600,665
+    200.0 m    919,643
+    100.0 m    256,124
+     50.0 m  2,240,924
+     25.0 m  1,763,088
+   band hudson_waterfront      faces    25,639 ->    61,490  (+35,851)
+   band newark_meadowlands     faces   116,170 ->   361,875  (+245,705)
+   band capemay_inlets         faces    97,936 ->   107,872  (+9,936)
+   dt candidates 6,986
+   min dt 0.830 s; five smallest:
+     dt 0.830  dx  25.0  zmin  -22.10  (-74.8642, 38.9361)
+     dt 0.830  dx  25.0  zmin  -22.10  (-74.8642, 38.9363)
+     dt 0.830  dx  25.0  zmin  -22.10  (-74.8639, 38.9363)
+     dt 0.830  dx  25.0  zmin  -22.10  (-74.8639, 38.9361)
+     dt 0.830  dx  25.0  zmin  -22.10  (-74.8645, 38.9363)
+
+== runtime estimate (production engine, 72 h waves-on, 64 threads) ==
+   reference: v4 / 1.1.0 mesh 4,881,654 faces, active 3,965,303, dt 0.684 s, 2.51 h
+   n0_v4only        faces  4,899,636 ( +0.4 %)  dt 0.684 s  -> x1.064  ~2.68 h
+   n1_final         faces  5,179,779 ( +6.1 %)  dt 0.830 s  -> x0.987  ~2.48 h

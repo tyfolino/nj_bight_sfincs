@@ -1,0 +1,220 @@
+ring: /cache/home/tpj8/nj_bight_sfincs/data/region_v4.geojson; landward 11,122 km2
+
+new-band vertices (lon, lat):
+  hudson_waterfront (L3, z -1..5):
+     hudson_route_02         -73.96610  40.88340
+     palisades_ec            -73.96000  40.86800
+     hudson_w                -73.95753  40.86000
+     state_hudson_860        -73.94550  40.86000
+     state_hudson_800        -73.98000  40.80000
+     state_hudson_750        -74.01300  40.75000
+     state_hudson_710        -74.02500  40.71000
+     state_upper_bay_695     -74.03000  40.69500
+     state_upper_bay_670     -74.04500  40.67000
+     robbins_reef            -74.06550  40.65750
+     state_kvk_east          -74.07500  40.64550
+     hudson_route_17         -74.09000  40.64400
+     hudson_route_16         -74.09000  40.65450
+     hudson_route_15         -74.10000  40.66000
+     hudson_route_14         -74.11400  40.66800
+     hudson_route_13         -74.10600  40.67900
+     hudson_route_12         -74.10000  40.69000
+     hudson_route_11         -74.09600  40.70000
+     hudson_route_10         -74.08600  40.70800
+     hudson_route_09         -74.07600  40.72400
+     hudson_route_08         -74.05600  40.74800
+     hudson_route_07         -74.03820  40.75920
+     hudson_route_06         -74.01460  40.79000
+     hudson_route_05         -74.01200  40.80400
+     hudson_route_04         -73.99500  40.82800
+     hudson_route_03         -73.98560  40.83930
+     hudson_route_02         -73.96610  40.88340
+  newark_meadowlands (L3, z -1..5):
+     hudson_route_17         -74.09000  40.64400
+     hudson_route_16         -74.09000  40.65450
+     hudson_route_15         -74.10000  40.66000
+     hudson_route_14         -74.11400  40.66800
+     hudson_route_13         -74.10600  40.67900
+     hudson_route_12         -74.10000  40.69000
+     hudson_route_11         -74.09600  40.70000
+     hudson_route_10         -74.08600  40.70800
+     hudson_route_09         -74.07600  40.72400
+     hudson_route_08         -74.05600  40.74800
+     hudson_route_07         -74.03820  40.75920
+     hudson_route_06         -74.01460  40.79000
+     hudson_route_05         -74.01200  40.80400
+     hudson_route_04         -73.99500  40.82800
+     hudson_route_03         -73.98560  40.83930
+     hudson_route_02         -73.96610  40.88340
+     hudson_route_01         -73.96410  40.89160
+     ne_corner               -73.96000  41.00000
+     nw_corner               -74.35000  41.00000
+     sw_corner               -74.35000  40.57500
+     ak_carteret             -74.20900  40.57500
+     ak_goethals             -74.19700  40.63550
+     kvk_bergen_point        -74.16500  40.64000
+     kvk_bayonne_bridge      -74.14200  40.64150
+  capemay_inlets (L3, z -100..3):
+     great_egg_back_sw       -74.56399  39.28861
+     great_egg_back_ne       -74.53719  39.31804
+     great_egg_sea_ne        -74.50122  39.29825
+     great_egg_sea_sw        -74.52802  39.26883
+     corson_back_sw          -74.66307  39.19995
+     corson_back_ne          -74.64571  39.21909
+     corson_sea_ne           -74.62300  39.20661
+     corson_sea_sw           -74.64037  39.18747
+     townsends_back_sw       -74.73168  39.11101
+     townsends_back_ne       -74.71169  39.13311
+     townsends_sea_ne        -74.68521  39.11857
+     townsends_sea_sw        -74.70521  39.09648
+     hereford_back_sw        -74.80755  39.01272
+     hereford_back_ne        -74.78096  39.04220
+     hereford_sea_ne         -74.74695  39.02352
+     hereford_sea_sw         -74.77355  38.99405
+     cape_may_inlet_back_sw  -74.88590  38.93991
+     cape_may_inlet_back_ne  -74.86601  38.96203
+     cape_may_inlet_sea_ne   -74.83201  38.94338
+     cape_may_inlet_sea_sw   -74.85192  38.92126
+  capemay_ebb_12m (L4, z -6..1):
+     great_egg_back_sw       -74.56399  39.28861
+     great_egg_back_ne       -74.53719  39.31804
+     great_egg_sea_ne        -74.50122  39.29825
+     great_egg_sea_sw        -74.52802  39.26883
+     corson_back_sw          -74.66307  39.19995
+     corson_back_ne          -74.64571  39.21909
+     corson_sea_ne           -74.62300  39.20661
+     corson_sea_sw           -74.64037  39.18747
+     townsends_back_sw       -74.73168  39.11101
+     townsends_back_ne       -74.71169  39.13311
+     townsends_sea_ne        -74.68521  39.11857
+     townsends_sea_sw        -74.70521  39.09648
+     hereford_back_sw        -74.80755  39.01272
+     hereford_back_ne        -74.78096  39.04220
+     hereford_sea_ne         -74.74695  39.02352
+     hereford_sea_sw         -74.77355  38.99405
+     cape_may_inlet_back_sw  -74.88590  38.93991
+     cape_may_inlet_back_ne  -74.86601  38.96203
+     cape_may_inlet_sea_ne   -74.83201  38.94338
+     cape_may_inlet_sea_sw   -74.85192  38.92126
+
+[final]: refinement v4 (25 names) -> nj2 (27 names), by NAME:
+  carried  shelf_shoaling             L1  -  area 11,121.6 km2 (same)
+  carried  inland_floodplain          L1  -  area 11,121.6 km2 (same)
+  carried  low_water                  L2  -  area 11,121.6 km2 (same)
+  carried  narrow_channels            L3  -  area 161.8 km2 (same)
+  carried  river_channels_above_tide  L2  -  area 9.2 km2 (same)
+  🔴 DROPPED  narrows_cut  (L3)
+  carried  arthur_kill_cut            L3  -  area 14.4 km2 (same)
+  carried  cape_may_canal             L3  -  area 30.8 km2 (same)
+  carried  surf_dune_00               L3  -  area 98.4 km2 (same)
+  carried  surf_dune_01               L3  -  area 71.3 km2 (same)
+  carried  surf_dune_02               L3  -  area 51.0 km2 (same)
+  carried  surf_dune_03               L3  -  area 83.1 km2 (same)
+  carried  surf_dune_04               L3  -  area 99.6 km2 (same)
+  carried  surf_dune_05               L3  -  area 100.6 km2 (same)
+  carried  surf_dune_06               L3  -  area 61.7 km2 (same)
+  carried  surf_dune_07               L3  -  area 99.3 km2 (same)
+  carried  surf_dune_08               L3  -  area 88.6 km2 (same)
+  carried  surf_dune_09               L3  -  area 49.1 km2 (same)
+  carried  surf_dune_10               L3  -  area 51.4 km2 (same)
+  carried  surf_dune_11               L3  -  area 43.4 km2 (same)
+  carried  surf_dune_12               L3  -  area 70.9 km2 (same)
+  carried  surf_dune_13               L3  -  area 45.1 km2 (same)
+  carried  coastal_corridor           L2  -  area 420.9 km2 (same)
+  carried  shrewsbury_navesink        L3  -  area 99.6 km2 (same)
+  carried  bay_fringe                 L3  -  area 733.3 km2 (same)
+  NEW      hudson_waterfront          L3  z -1..5  area 0.0 km2
+  NEW      newark_meadowlands         L3  z -1..5  area 487.8 km2
+  NEW      capemay_inlets             L3  z -100..3  area 51.8 km2
+  wrote logs/nj2_refinement_2026-11-14/probe_inputs_r3/v4ring.geojson: 1533 rows
+
+[narrows25]: refinement v4 (25 names) -> nj2 (28 names), by NAME:
+  carried  shelf_shoaling             L1  -  area 11,121.6 km2 (same)
+  carried  inland_floodplain          L1  -  area 11,121.6 km2 (same)
+  carried  low_water                  L2  -  area 11,121.6 km2 (same)
+  carried  narrow_channels            L3  -  area 161.8 km2 (same)
+  carried  river_channels_above_tide  L2  -  area 9.2 km2 (same)
+  carried  narrows_cut                L3  -  area 12.4 km2 (same)
+  carried  arthur_kill_cut            L3  -  area 14.4 km2 (same)
+  carried  cape_may_canal             L3  -  area 30.8 km2 (same)
+  carried  surf_dune_00               L3  -  area 98.4 km2 (same)
+  carried  surf_dune_01               L3  -  area 71.3 km2 (same)
+  carried  surf_dune_02               L3  -  area 51.0 km2 (same)
+  carried  surf_dune_03               L3  -  area 83.1 km2 (same)
+  carried  surf_dune_04               L3  -  area 99.6 km2 (same)
+  carried  surf_dune_05               L3  -  area 100.6 km2 (same)
+  carried  surf_dune_06               L3  -  area 61.7 km2 (same)
+  carried  surf_dune_07               L3  -  area 99.3 km2 (same)
+  carried  surf_dune_08               L3  -  area 88.6 km2 (same)
+  carried  surf_dune_09               L3  -  area 49.1 km2 (same)
+  carried  surf_dune_10               L3  -  area 51.4 km2 (same)
+  carried  surf_dune_11               L3  -  area 43.4 km2 (same)
+  carried  surf_dune_12               L3  -  area 70.9 km2 (same)
+  carried  surf_dune_13               L3  -  area 45.1 km2 (same)
+  carried  coastal_corridor           L2  -  area 420.9 km2 (same)
+  carried  shrewsbury_navesink        L3  -  area 99.6 km2 (same)
+  carried  bay_fringe                 L3  -  area 733.3 km2 (same)
+  NEW      hudson_waterfront          L3  z -1..5  area 0.0 km2
+  NEW      newark_meadowlands         L3  z -1..5  area 487.8 km2
+  NEW      capemay_inlets             L3  z -100..3  area 51.8 km2
+  wrote logs/nj2_refinement_2026-11-14/probe_inputs_r3/v4ring_narrows25.geojson: 1534 rows
+
+[inlets12]: refinement v4 (25 names) -> nj2 (28 names), by NAME:
+  carried  shelf_shoaling             L1  -  area 11,121.6 km2 (same)
+  carried  inland_floodplain          L1  -  area 11,121.6 km2 (same)
+  carried  low_water                  L2  -  area 11,121.6 km2 (same)
+  carried  narrow_channels            L3  -  area 161.8 km2 (same)
+  carried  river_channels_above_tide  L2  -  area 9.2 km2 (same)
+  🔴 DROPPED  narrows_cut  (L3)
+  carried  arthur_kill_cut            L3  -  area 14.4 km2 (same)
+  carried  cape_may_canal             L3  -  area 30.8 km2 (same)
+  carried  surf_dune_00               L3  -  area 98.4 km2 (same)
+  carried  surf_dune_01               L3  -  area 71.3 km2 (same)
+  carried  surf_dune_02               L3  -  area 51.0 km2 (same)
+  carried  surf_dune_03               L3  -  area 83.1 km2 (same)
+  carried  surf_dune_04               L3  -  area 99.6 km2 (same)
+  carried  surf_dune_05               L3  -  area 100.6 km2 (same)
+  carried  surf_dune_06               L3  -  area 61.7 km2 (same)
+  carried  surf_dune_07               L3  -  area 99.3 km2 (same)
+  carried  surf_dune_08               L3  -  area 88.6 km2 (same)
+  carried  surf_dune_09               L3  -  area 49.1 km2 (same)
+  carried  surf_dune_10               L3  -  area 51.4 km2 (same)
+  carried  surf_dune_11               L3  -  area 43.4 km2 (same)
+  carried  surf_dune_12               L3  -  area 70.9 km2 (same)
+  carried  surf_dune_13               L3  -  area 45.1 km2 (same)
+  carried  coastal_corridor           L2  -  area 420.9 km2 (same)
+  carried  shrewsbury_navesink        L3  -  area 99.6 km2 (same)
+  carried  bay_fringe                 L3  -  area 733.3 km2 (same)
+  NEW      hudson_waterfront          L3  z -1..5  area 0.0 km2
+  NEW      newark_meadowlands         L3  z -1..5  area 487.8 km2
+  NEW      capemay_inlets             L3  z -100..3  area 51.8 km2
+  NEW      capemay_ebb_12m            L4  z -6..1  area 51.8 km2
+  wrote logs/nj2_refinement_2026-11-14/probe_inputs_r3/v4ring_inlets12.geojson: 1538 rows
+
+[v4only]: refinement v4 (25 names) -> nj2 (25 names), by NAME:
+  carried  shelf_shoaling             L1  -  area 11,121.6 km2 (same)
+  carried  inland_floodplain          L1  -  area 11,121.6 km2 (same)
+  carried  low_water                  L2  -  area 11,121.6 km2 (same)
+  carried  narrow_channels            L3  -  area 161.8 km2 (same)
+  carried  river_channels_above_tide  L2  -  area 9.2 km2 (same)
+  carried  narrows_cut                L3  -  area 12.4 km2 (same)
+  carried  arthur_kill_cut            L3  -  area 14.4 km2 (same)
+  carried  cape_may_canal             L3  -  area 30.8 km2 (same)
+  carried  surf_dune_00               L3  -  area 98.4 km2 (same)
+  carried  surf_dune_01               L3  -  area 71.3 km2 (same)
+  carried  surf_dune_02               L3  -  area 51.0 km2 (same)
+  carried  surf_dune_03               L3  -  area 83.1 km2 (same)
+  carried  surf_dune_04               L3  -  area 99.6 km2 (same)
+  carried  surf_dune_05               L3  -  area 100.6 km2 (same)
+  carried  surf_dune_06               L3  -  area 61.7 km2 (same)
+  carried  surf_dune_07               L3  -  area 99.3 km2 (same)
+  carried  surf_dune_08               L3  -  area 88.6 km2 (same)
+  carried  surf_dune_09               L3  -  area 49.1 km2 (same)
+  carried  surf_dune_10               L3  -  area 51.4 km2 (same)
+  carried  surf_dune_11               L3  -  area 43.4 km2 (same)
+  carried  surf_dune_12               L3  -  area 70.9 km2 (same)
+  carried  surf_dune_13               L3  -  area 45.1 km2 (same)
+  carried  coastal_corridor           L2  -  area 420.9 km2 (same)
+  carried  shrewsbury_navesink        L3  -  area 99.6 km2 (same)
+  carried  bay_fringe                 L3  -  area 733.3 km2 (same)
+  wrote logs/nj2_refinement_2026-11-14/probe_inputs_r3/v4ring_v4only.geojson: 1528 rows

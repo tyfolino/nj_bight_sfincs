@@ -1,0 +1,223 @@
+area = (nj2 ring + 500 m) x (NJ + 250 m): 6483 km2
+USA: 1,186,481 touch the area; kept 1,186,475; dropped by the NJ test {'NY': 4, 'outside NJ+250m': 2}
+MS: 1,125,451 touch the area; kept 1,125,038; dropped by the NJ test {'PA': 362, 'outside NJ+250m': 44, 'NY': 7}
+USA 1,186,475 (296.5 km2): pre-2019 528,504 (136.3 km2)
+MS  1,125,038: release 2 852,863, release 1 272,175
+SWAPPED by the rule: 338,478 (86.7 km2); own counterpart release-1 only (not swapped): 0
+big-roof guard (role 4): 48 (1.09 km2)
+asset guard skips 78 solar sites of 195 assets (user 11-14: panels are not buildings)
+asset guard (role 5): 139 pre-2019 USA polygons on 37 assets kept (0.111 km2): MS release 2 covers < 50% of their overlap with the asset
+
+Hybrid layer, nj2:
+  1 usa_post2019         657,971   160.20 km2
+  2 usa_pre2019_kept     190,026    49.62 km2
+  3 ms_swap              330,845    87.51 km2
+  4 usa_bigroof               48     1.09 km2
+  5 usa_asset_guard          139     0.11 km2
+  total               1,179,029   298.54 km2
+NJ-only check: kept polygons with a representative point in NY / PA / DE: 0; outside NJ + 250 m: 0; outside NJ itself (waterfront, cut by the 1:500k shoreline): 619
+
+nj2 polygons in region_v4 x NJ: 1,082,036 (270.57 km2) vs the v4 layer 1,093,129 (274.87 km2); per role nj2 / v4:
+  usa_post2019         620,494 /   628,917
+  usa_pre2019_kept     158,867 /   159,420
+  ms_swap              302,508 /   304,753
+  usa_bigroof               39 /        39
+  usa_asset_guard          128 /         0
+OUTSIDE region_v4 x NJ (the Hudson waterfront + the ring's 500 m margin): 96,993 polygons, 27.97 km2
+wrote /scratch/tpj8/nj_bight_sfincs_data/modern_2026/derived/round_c/footprints_hybrid_nj2.gpkg (330 MB)
+
+Towns with buildings in the new area (km2 of footprint outside region_v4 x NJ):
+                          n   km2  n_new_area  km2_new_area
+NAME                                                       
+Jersey City (017)     21395 7.669       13058         5.272
+Hoboken (017)           918 1.065         918         1.065
+Newark (013)          22648 8.442        4540         0.968
+Fort Lee (003)         4469 1.114        3843         0.952
+Bayonne (017)         10845 3.101        1526         0.917
+Edison (023)           7737 4.234        2819         0.724
+Mount Laurel (005)     4573 2.036         972         0.614
+Cliffside Park (003)   3486 0.595        3486         0.595
+West New York (017)    2654 0.864        1651         0.572
+Union City (017)       3921 1.161        1918         0.545
+North Bergen (017)     8404 2.503        3015         0.538
+Hamilton (021)        14806 2.461        2011         0.504
+Lakewood (029)         3606 1.968         889         0.501
+Edgewater (003)        1051 0.476        1051         0.476
+Clifton (031)          5223 1.521        2389         0.475
+Weehawken (017)        1535 0.456        1535         0.456
+Woodbridge (023)      25325 6.257        2384         0.426
+Berkeley (029)        15778 3.214        2036         0.421
+East Brunswick (023)   6956 2.097        1256         0.419
+Paramus (003)          3271 0.954        1545         0.392
+
+NJ power assets touching the area: 195; in the v4 table: 184; |nj2 - v4 hybrid| >= 0.10: 4
+asset                                    aname  bshare_hybrid_nj2                            roles_nj2  bshare_njdep  bshare_usa  bshare_hybrid  d_nj2_minus_v4hybrid
+ p161                          Jersey City DWP              0.349     usa_asset_guard,usa_pre2019_kept           NaN         NaN            NaN                   NaN
+ p370      Rutgers Health Sciences Power Plant              0.879                     usa_pre2019_kept           NaN         NaN            NaN                   NaN
+ p888 Colonial Pipeline Allentown Chesterfield              0.000                                                NaN         NaN            NaN                   NaN
+ s740                   Lafayette Road Station              0.005                      usa_asset_guard           NaN         NaN            NaN                   NaN
+s2139                       Hoboken Substation              0.094                         usa_post2019           NaN         NaN            NaN                   NaN
+s2023              South Waterfront Substation              0.079         usa_asset_guard,usa_post2019           NaN         NaN            NaN                   NaN
+s2608                     Metuchen/Pierson Ave              0.000                                                NaN         NaN            NaN                   NaN
+s3249                         Union Substation              0.007                         usa_post2019           NaN         NaN            NaN                   NaN
+ s700                          Mill Substation              0.016         usa_asset_guard,usa_post2019           NaN         NaN            NaN                   NaN
+ s679                      Ward Ave Substation              0.026                         usa_post2019           NaN         NaN            NaN                   NaN
+s3261                       Newport Substation              0.149 ms_swap,usa_asset_guard,usa_post2019           NaN         NaN            NaN                   NaN
+ p129                                    CCMUA              1.000          usa_asset_guard,usa_bigroof         0.890       1.000          0.656                 0.344
+ p173                              Cedar Creek              0.225                         usa_post2019         0.000       0.000          0.000                 0.225
+ p869               Wheelabrator Gloucester LP              0.281              ms_swap,usa_asset_guard         0.315       0.278          0.073                 0.208
+ p368                Camden Cogeneration Plant              0.220 ms_swap,usa_asset_guard,usa_post2019         0.212       0.217          0.059                 0.161
+s1439                      Red Bank Substation              0.108         usa_asset_guard,usa_post2019         0.015       0.108          0.010                 0.098
+ p357  MCUA Electric Power Generating Facility              0.280 ms_swap,usa_asset_guard,usa_post2019         0.309       0.283          0.186                 0.094
+ p268            Sayreville Generating Station              0.147 ms_swap,usa_asset_guard,usa_post2019         0.166       0.146          0.084                 0.063
+ s682                     Lumberton Substation              0.079 ms_swap,usa_asset_guard,usa_post2019         0.009       0.081          0.020                 0.059
+ p369                Linden Generating Station              0.129 ms_swap,usa_asset_guard,usa_post2019         0.150       0.144          0.079                 0.050
+ p463          PSEG Sewaren Generating Station              0.200 ms_swap,usa_asset_guard,usa_post2019         0.100       0.167          0.150                 0.050
+
+Guarded overlaps (asset, name, overlap m2, MS release-2 cover):
+   ('p129', 'CCMUA', 4075, 0.0)
+   ('p161', 'Jersey City DWP', 1947, 0.272)
+   ('p264', 'Burlington Generating Station', 56, 0.0)
+   ('p264', 'Burlington Generating Station', 141, 0.0)
+   ('p264', 'Burlington Generating Station', 158, 0.0)
+   ('p264', 'Burlington Generating Station', 158, 0.0)
+   ('p264', 'Burlington Generating Station', 158, 0.0)
+   ('p264', 'Burlington Generating Station', 230, 0.0)
+   ('p264', 'Burlington Generating Station', 230, 0.0)
+   ('p264', 'Burlington Generating Station', 230, 0.0)
+   ('p264', 'Burlington Generating Station', 274, 0.0)
+   ('p264', 'Burlington Generating Station', 230, 0.0)
+   ('p264', 'Burlington Generating Station', 809, 0.0)
+   ('p264', 'Burlington Generating Station', 81, 0.0)
+   ('p264', 'Burlington Generating Station', 70, 0.0)
+   ('p264', 'Burlington Generating Station', 46, 0.0)
+   ('p264', 'Burlington Generating Station', 368, 0.0)
+   ('p264', 'Burlington Generating Station', 57, 0.0)
+   ('p264', 'Burlington Generating Station', 67, 0.0)
+   ('p264', 'Burlington Generating Station', 208, 0.0)
+   ('p264', 'Burlington Generating Station', 127, 0.0)
+   ('p264', 'Burlington Generating Station', 50, 0.0)
+   ('p264', 'Burlington Generating Station', 158, 0.0)
+   ('p264', 'Burlington Generating Station', 158, 0.0)
+   ('p264', 'Burlington Generating Station', 99, 0.0)
+   ('p264', 'Burlington Generating Station', 158, 0.0)
+   ('p264', 'Burlington Generating Station', 129, 0.0)
+   ('p264', 'Burlington Generating Station', 158, 0.0)
+   ('p264', 'Burlington Generating Station', 158, 0.0)
+   ('p264', 'Burlington Generating Station', 10162, 0.377)
+   ('p264', 'Burlington Generating Station', 1123, 0.0)
+   ('p264', 'Burlington Generating Station', 61, 0.0)
+   ('p268', 'Sayreville Generating Station', 58, 0.0)
+   ('p268', 'Sayreville Generating Station', 187, 0.0)
+   ('p268', 'Sayreville Generating Station', 184, 0.0)
+   ('p268', 'Sayreville Generating Station', 68, 0.0)
+   ('p268', 'Sayreville Generating Station', 8298, 0.274)
+   ('p268', 'Sayreville Generating Station', 184, 0.0)
+   ('p268', 'Sayreville Generating Station', 14, 0.388)
+   ('p270', 'Covanta Camden Energy Recovery Center', 554, 0.0)
+   ('p291', 'Bergen Generating Station', 382, 0.0)
+   ('p291', 'Bergen Generating Station', 1773, 0.0)
+   ('p291', 'Bergen Generating Station', 120, 0.0)
+   ('p291', 'Bergen Generating Station', 6536, 0.002)
+   ('p291', 'Bergen Generating Station', 312, 0.0)
+   ('p291', 'Bergen Generating Station', 63, 0.0)
+   ('p291', 'Bergen Generating Station', 1807, 0.0)
+   ('p291', 'Bergen Generating Station', 60, 0.0)
+   ('p291', 'Bergen Generating Station', 312, 0.0)
+   ('p292', 'Red Oak Power', 61, 0.0)
+   ('p292', 'Red Oak Power', 550, 0.0)
+   ('p357', 'MCUA Electric Power Generating Facility', 74, 0.0)
+   ('p357', 'MCUA Electric Power Generating Facility', 44, 0.0)
+   ('p357', 'MCUA Electric Power Generating Facility', 109, 0.0)
+   ('p357', 'MCUA Electric Power Generating Facility', 218, 0.0)
+   ('p357', 'MCUA Electric Power Generating Facility', 76, 0.0)
+   ('p357', 'MCUA Electric Power Generating Facility', 59, 0.0)
+   ('p368', 'Camden Cogeneration Plant', 169, 0.0)
+   ('p368', 'Camden Cogeneration Plant', 74, 0.0)
+   ('p368', 'Camden Cogeneration Plant', 52, 0.0)
+   ('p368', 'Camden Cogeneration Plant', 2460, 0.0)
+   ('p369', 'Linden Generating Station', 51, 0.0)
+   ('p369', 'Linden Generating Station', 1760, 0.0)
+   ('p369', 'Linden Generating Station', 51, 0.0)
+   ('p369', 'Linden Generating Station', 51, 0.0)
+   ('p369', 'Linden Generating Station', 58, 0.0)
+   ('p369', 'Linden Generating Station', 58, 0.0)
+   ('p369', 'Linden Generating Station', 52, 0.0)
+   ('p369', 'Linden Generating Station', 263, 0.0)
+   ('p369', 'Linden Generating Station', 535, 0.0)
+   ('p369', 'Linden Generating Station', 51, 0.0)
+   ('p369', 'Linden Generating Station', 1668, 0.0)
+   ('p369', 'Linden Generating Station', 432, 0.0)
+   ('p369', 'Linden Generating Station', 96, 0.0)
+   ('p369', 'Linden Generating Station', 10080, 0.061)
+   ('p369', 'Linden Generating Station', 164, 0.0)
+   ('p369', 'Linden Generating Station', 59, 0.0)
+   ('p369', 'Linden Generating Station', 48, 0.0)
+   ('p369', 'Linden Generating Station', 332, 0.052)
+   ('p369', 'Linden Generating Station', 204, 0.0)
+   ('p463', 'PSEG Sewaren Generating Station', 9551, 0.025)
+   ('p463', 'PSEG Sewaren Generating Station', 78, 0.0)
+   ('p463', 'PSEG Sewaren Generating Station', 49, 0.0)
+   ('p463', 'PSEG Sewaren Generating Station', 78, 0.0)
+   ('p463', 'PSEG Sewaren Generating Station', 78, 0.0)
+   ('p463', 'PSEG Sewaren Generating Station', 78, 0.0)
+   ('p463', 'PSEG Sewaren Generating Station', 1152, 0.002)
+   ('p463', 'PSEG Sewaren Generating Station', 589, 0.031)
+   ('p463', 'PSEG Sewaren Generating Station', 83, 0.0)
+   ('p463', 'PSEG Sewaren Generating Station', 217, 0.0)
+   ('p463', 'PSEG Sewaren Generating Station', 595, 0.0)
+   ('p640', 'Sayreville Energy Center', 482, 0.0)
+   ('p640', 'Sayreville Energy Center', 165, 0.0)
+   ('p658', 'NAEA Ocean Peaking Power LLC Plant', 55, 0.0)
+   ('p750', 'NAEA Lakewood LLC', 386, 0.0)
+   ('p750', 'NAEA Lakewood LLC', 104, 0.0)
+   ('p869', 'Wheelabrator Gloucester LP', 3921, 0.098)
+   ('p869', 'Wheelabrator Gloucester LP', 190, 0.0)
+   ('p869', 'Wheelabrator Gloucester LP', 1833, 0.0)
+   ('p905', 'Union County Resource Recovery Facility', 51, 0.067)
+   ('s682', 'Lumberton Substation', 88, 0.139)
+   ('s682', 'Lumberton Substation', 67, 0.0)
+   ('s682', 'Lumberton Substation', 113, 0.0)
+   ('s682', 'Lumberton Substation', 67, 0.0)
+   ('s682', 'Lumberton Substation', 61, 0.0)
+   ('s682', 'Lumberton Substation', 220, 0.0)
+   ('s682', 'Lumberton Substation', 300, 0.0)
+   ('s700', 'Mill Substation', 49, 0.0)
+   ('s711', 'Burlington Substation', 368, 0.0)
+   ('s711', 'Burlington Substation', 57, 0.0)
+   ('s711', 'Burlington Substation', 67, 0.0)
+   ('s711', 'Burlington Substation', 208, 0.0)
+   ('s711', 'Burlington Substation', 127, 0.0)
+   ('s711', 'Burlington Substation', 50, 0.0)
+   ('s713', 'Camden Substation', 126, 0.0)
+   ('s716', 'Gloucester Substation', 48, 0.0)
+   ('s716', 'Gloucester Substation', 44, 0.0)
+   ('s716', 'Gloucester Substation', 124, 0.0)
+   ('s723', 'Bustleton Substation', 49, 0.0)
+   ('s738', 'Minue Street Substation', 69, 0.0)
+   ('s739', 'Woodbridge Substation', 52, 0.0)
+   ('s739', 'Woodbridge Substation', 42, 0.0)
+   ('s740', 'Lafayette Road Station', 43, 0.0)
+   ('s1439', 'Red Bank Substation', 756, 0.0)
+   ('s2023', 'South Waterfront Substation', 45, 0.0)
+   ('s2023', 'South Waterfront Substation', 328, 0.0)
+   ('s2023', 'South Waterfront Substation', 52, 0.0)
+   ('s2023', 'South Waterfront Substation', 57, 0.0)
+   ('s2023', 'South Waterfront Substation', 6, 0.41)
+   ('s2023', 'South Waterfront Substation', 44, 0.0)
+   ('s2162', 'Cuthbert Boulevard', 78, 0.0)
+   ('s2505', 'Bergen Substation', 1249, 0.203)
+   ('s2505', 'Bergen Substation', 57, 0.0)
+   ('s2505', 'Bergen Substation', 46, 0.0)
+   ('s2505', 'Bergen Substation', 93, 0.0)
+   ('s2534', 'Nejesco Substation', 138, 0.0)
+   ('s2534', 'Nejesco Substation', 2, 0.0)
+   ('s2666', 'Parlin Substation', 81, 0.0)
+   ('s2753', 'Bayway Substation', 753, 0.0)
+   ('s3006', 'North Ave Substation', 112, 0.0)
+   ('s3253', 'B.L. England Generation', 76, 0.0)
+   ('s3253', 'B.L. England Generation', 138, 0.0)
+   ('s3261', 'Newport Substation', 228, 0.0)
+   ('s3261', 'Newport Substation', 43, 0.0)
+   ('s3265', 'Werner Substation', 133, 0.0)
+   ('s3268', 'Red Oak A/B Substation', 354, 0.0)

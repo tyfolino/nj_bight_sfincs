@@ -19,8 +19,13 @@ Writes, in ``--out-dir`` (default ``data/nj2_design``):
                                         proposal)
 * ``refinement_nj2_inlets12.geojson``   RECORD, not a candidate (user: no 12.5 m level): the
                                         2.0.0 file PLUS ``capemay_ebb_12m`` (a level-4 patch)
-* ``refinement_nj2_v4only.geojson``     v4's recipe alone on this ring (narrows_cut kept): the
-                                        CONTROL a probe needs to attribute faces to the bands
+* ``refinement_nj2_v4only.geojson``     v4's recipe alone on this ring (narrows_cut kept, NO
+                                        new-ground narrow channels): the CONTROL a probe needs
+                                        to attribute faces to the bands
+
+``--no-narrow-ext`` writes the same set WITHOUT the new-ground narrow channels (for a probe's
+attribution; point ``--out-dir`` at scratch). ``--fetch-nhd`` (network) fills the NHD cache
+the new-ground rule reads, ``data/nj2_design/nhd_new_area/``; a plain run never fetches.
 
 Levels: 0 = base_res 200 m (not listed), 1 = 100 m, 2 = 50 m, 3 = 25 m, 4 = 12.5 m. hydromt
 refines a cell when it lies in a polygon AND the cell's coarse-bed [min, max] OVERLAPS the
@@ -37,12 +42,25 @@ the file the frozen v4 mesh was built from (`data/quadtree/refinement_v4.geojson
   `narrows_cut`, `bay_fringe`, `narrow_channels` etc. do NOT grow into the new area (v3's
   `narrows_cut` / `bay_fringe` reach past v4's Narrows cut into NY ground; v4's clip is kept).
 The diff prints each v4 name as carried / CHANGED (area) / DROPPED and each new name.
+
+NARROW CHANNELS ON THE NEW GROUND (user 2026-11-14): `narrow_channels` = v4's geometry (as
+above) PLUS v4's rule (`build_refinement_v4.narrow_from`, same 50 m width / 50 m buffer / 25 m
+step, same L3 and -ANY..+3 m gate) applied to the new ground only (this landward ring minus
+v4's), so the old ground stays v4's polygon to the vertex. One change of SOURCE, not of rule:
+v4 read NHD StreamRiver areas (ftype 460) and NAMED ArtificialPaths; in New York NHD maps the
+tidal creeks as part of the Estuary waterbody (493; Gowanus, Newtown Creek, English / Dutch
+Kills) and Gowanus's centreline carries no name, so v4's source finds none of them. The new
+ground reads 460 + CanalDitch 336 + BayInlet 312 areas + Estuary 493 waterbodies, and every
+ArtificialPath (558), named or not.
 """
 
 from __future__ import annotations
 
 import argparse
 import hashlib
+import json
+import sys
+import urllib.parse
 from pathlib import Path
 
 import geopandas as gpd
@@ -52,6 +70,9 @@ import shapely
 
 from nj_sfincs import domain as D
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import build_refinement_v4 as V4R  # noqa: E402
+
 ROOT = Path(__file__).resolve().parents[1]
 V4_FILE = ROOT / "data" / "quadtree" / "refinement_v4.geojson"
 V4_MD5 = "709af1ebc208fc113b9848eda444913e"  # the freeze's (v4_freeze_expected.md5)
@@ -60,6 +81,17 @@ CRS = 32618
 ANY = 100.0
 #: v4 names that `build_refinement_v4.RECIPE` builds on the WHOLE landward ring.
 RINGWIDE = ("shelf_shoaling", "inland_floodplain", "low_water")
+#: v4's narrow-channel rule, read from v4's recipe (not retyped): ("narrow", max_w, buf_m)
+NARROW_SPEC = next(r[4] for r in V4R.RECIPE if r[0] == "narrow_channels")
+#: NHD cache for the NEW ground (`--fetch-nhd`); 0.1-degree tiles over each new piece
+NHD_NEW = ROOT / "data" / "nj2_design" / "nhd_new_area"
+NHD_URL = "https://hydro.nationalmap.gov/arcgis/rest/services/nhd/MapServer"
+NHD_LAYERS = (  # (kind, layer, where): Area - Large Scale, Waterbody - LS, Flowline - LS
+    ("area", 9, "ftype IN (460, 336, 312)"),
+    ("wb", 12, "ftype = 493"),
+    ("path", 6, "ftype = 558"),
+)
+NHD_TILE = 0.1
 
 # ── The new bands. Vertices are (name, lon, lat), straight lines between them. ──────────
 # Shared edge of the two north-Jersey bands: v4's own ring vertices along the Palisades /
@@ -262,6 +294,140 @@ def forced_line_of(dom: D.Domain | None) -> shapely.Geometry:
     return ln.to_crs(CRS).iloc[0]
 
 
+def new_ground(land: shapely.Geometry) -> shapely.Geometry:
+    """This landward ring minus v4's (empty on v4's own ring)."""
+    return land.difference(V4R.landward())
+
+
+def _nhd_tiles(new: shapely.Geometry):
+    """(tag, lon/lat box) of every NHD_TILE tile touching a piece of the new ground."""
+    ll = gpd.GeoSeries([new], crs=CRS).to_crs(4326).iloc[0]
+    out = {}
+    for piece in getattr(ll, "geoms", [ll]):
+        x0, y0, x1, y1 = piece.bounds
+        for lo in np.arange(np.floor(x0 / NHD_TILE) * NHD_TILE, x1, NHD_TILE):
+            for la in np.arange(np.floor(y0 / NHD_TILE) * NHD_TILE, y1, NHD_TILE):
+                box = (lo, la, lo + NHD_TILE, la + NHD_TILE)
+                if piece.intersects(shapely.box(*box)):
+                    out[f"{lo:+.2f}_{la:+.2f}"] = box
+    return out
+
+
+def fetch_nhd(new: shapely.Geometry) -> None:
+    """Cache the NHD layers over the new ground (skip-if-present, atomic per file)."""
+    sys.path.insert(0, str(ROOT / "logs" / "v4_design_2026-09-27"))
+    from river_widths import _get  # v4's fetch helper (retries)
+
+    NHD_NEW.mkdir(parents=True, exist_ok=True)
+    for tag, box in _nhd_tiles(new).items():
+        for kind, layer, where in NHD_LAYERS:
+            f = NHD_NEW / f"{kind}_{tag}.geojson"
+            if f.exists():
+                continue
+            feats, off = [], 0
+            while True:
+                q = {
+                    "where": where,
+                    "geometry": ",".join(f"{v:.4f}" for v in box),
+                    "geometryType": "esriGeometryEnvelope",
+                    "inSR": 4326,
+                    "spatialRel": "esriSpatialRelIntersects",
+                    "outFields": "gnis_name,ftype,permanent_identifier",
+                    "outSR": 4326,
+                    "f": "geojson",
+                    "resultOffset": off,
+                    "resultRecordCount": 1000,
+                }
+                got = _get(f"{NHD_URL}/{layer}/query?" + urllib.parse.urlencode(q))
+                got = got.get("features", [])
+                feats += got
+                if len(got) < 1000:
+                    break
+                off += len(got)
+            tmp = f.with_suffix(".tmp")
+            tmp.write_text(json.dumps({"type": "FeatureCollection", "features": feats}))
+            tmp.replace(f)
+            print(f"  nhd {kind} {tag}: {len(feats)}")
+
+
+def _read_nhd(kind: str) -> gpd.GeoDataFrame:
+    parts = [gpd.read_file(f) for f in sorted(NHD_NEW.glob(f"{kind}_*.geojson"))]
+    parts = [p for p in parts if len(p)]
+    if not parts:
+        return gpd.GeoDataFrame(geometry=[], crs=CRS)
+    g = pd.concat(parts, ignore_index=True)
+    g.columns = [c if c == "geometry" else c.lower() for c in g.columns]
+    g = g.drop_duplicates(
+        "permanent_identifier"
+    )  # a feature crossing tiles comes twice
+    return (
+        gpd.GeoDataFrame(g, geometry="geometry")
+        .set_crs(4326, allow_override=True)
+        .to_crs(CRS)
+    )
+
+
+def narrow_new_ground(new: shapely.Geometry) -> shapely.Geometry:
+    """v4's narrow-channel rule on the new ground (the widened NHD source), with a report."""
+    missing = [
+        f"{kind}_{tag}"
+        for tag in _nhd_tiles(new)
+        for kind, _l, _w in NHD_LAYERS
+        if not (NHD_NEW / f"{kind}_{tag}.geojson").exists()
+    ]
+    if missing:
+        raise SystemExit(
+            f"NHD cache {NHD_NEW} lacks {len(missing)} tile files ({missing[:3]} ...): "
+            "run once with --fetch-nhd"
+        )
+    _kind, max_w, buf_m = NARROW_SPEC
+    water = pd.concat([_read_nhd("area"), _read_nhd("wb")], ignore_index=True)
+    path = _read_nhd("path")
+    # only centrelines that reach the new ground (the rule itself is per centreline)
+    path = path[path.intersects(new.buffer(max_w + buf_m))]
+    _g, pts, wid = V4R.narrow_from(water, path, max_w, buf_m, with_points=True)
+    near = shapely.intersects(shapely.buffer(pts, buf_m), new)
+    pts, wid = pts[near], wid[near]
+    g = shapely.union_all(shapely.buffer(pts, buf_m)).intersection(new)
+    # report: each kept sample named by its NHD centreline, grouped by ~1 km cell
+    t = gpd.GeoDataFrame({"w": wid}, geometry=pts, crs=CRS)
+    nm = gpd.sjoin_nearest(t, path[["gnis_name", "geometry"]], max_distance=5.0)
+    nm = nm[~nm.index.duplicated()]
+    ll = t.to_crs(4326).geometry
+    rep = pd.DataFrame(
+        {
+            "name": nm.gnis_name.reindex(t.index).fillna("(unnamed)"),
+            "w": wid,
+            "lon": ll.x.values,
+            "lat": ll.y.values,
+        }
+    )
+    rep["cell"] = (
+        (rep.lon * 100).round().astype(int).astype(str)
+        + "_"
+        + (rep.lat * 100).round().astype(int).astype(str)
+    )
+    print(
+        f"\nnarrow channels on the NEW ground ({new.area / 1e6:,.1f} km2): {len(pts)} "
+        f"samples under {max_w:g} m, buffered {buf_m:g} m -> {g.area / 1e6:.3f} km2 in "
+        f"{len(getattr(g, 'geoms', [g]))} piece(s); by centreline name and ~1 km cell:"
+    )
+    with pd.option_context("display.width", 160):
+        print(
+            rep.groupby(["name", "cell"])
+            .agg(
+                samples=("w", "size"),
+                w_median=("w", "median"),
+                lon=("lon", "median"),
+                lat=("lat", "median"),
+                lat_max=("lat", "max"),
+            )
+            .round({"w_median": 1, "lon": 4, "lat": 4, "lat_max": 4})
+            .to_string()
+        )
+    return g
+
+
 def v4_polygons() -> gpd.GeoDataFrame:
     md5 = hashlib.md5(V4_FILE.read_bytes()).hexdigest()
     if md5 != V4_MD5:
@@ -275,7 +441,11 @@ def v4_polygons() -> gpd.GeoDataFrame:
 
 
 def build(
-    land, v4: gpd.GeoDataFrame, variant: str, forced_line: shapely.Geometry
+    land,
+    v4: gpd.GeoDataFrame,
+    variant: str,
+    forced_line: shapely.Geometry,
+    narrow_ext: shapely.Geometry | None = None,
 ) -> gpd.GeoDataFrame:
     rows, geoms = [], []
     for name, r in v4.iterrows():
@@ -288,6 +458,12 @@ def build(
             if name in RINGWIDE
             else "v4 geometry verbatim, clipped to the nj2 landward ring. "
         ) + str(why)
+        if name == "narrow_channels" and narrow_ext is not None and variant != "v4only":
+            g = g.union(narrow_ext)
+            why = (
+                "nj2: PLUS v4's same rule on the new ground (nj2 ring minus v4's), NHD "
+                "460/336/312 areas + 493 estuary + every 558 path (user 2026-11-14). "
+            ) + why
         rows.append(
             dict(
                 name=name,
@@ -380,6 +556,14 @@ def main() -> int:
     )
     ap.add_argument("--out-dir", type=Path, default=OUT_DIR)
     ap.add_argument("--prefix", default="refinement_nj2")
+    ap.add_argument(
+        "--no-narrow-ext",
+        action="store_true",
+        help="no new-ground narrow channels (probe attribution; write to scratch)",
+    )
+    ap.add_argument(
+        "--fetch-nhd", action="store_true", help="fill the new-ground NHD cache first"
+    )
     args = ap.parse_args()
 
     dom = None
@@ -394,6 +578,15 @@ def main() -> int:
     forced_line = forced_line_of(dom)
     print(f"ring: {args.ring_csv or dom.region}; landward {land.area / 1e6:,.0f} km2")
     v4 = v4_polygons()
+    new = new_ground(land)
+    print(f"new ground (this landward ring minus v4's): {new.area / 1e6:,.1f} km2")
+    if args.fetch_nhd:
+        fetch_nhd(new)
+    narrow_ext = None
+    if args.no_narrow_ext:
+        print("--no-narrow-ext: narrow_channels = v4's geometry only")
+    elif new.area > 0:
+        narrow_ext = narrow_new_ground(new)
 
     print("\nnew-band vertices (lon, lat):")
     for name, lev, zmin, zmax, spec, _why in NEW_BANDS + [EBB_12M]:
@@ -410,7 +603,7 @@ def main() -> int:
         ("inlets12", "_inlets12"),
         ("v4only", "_v4only"),
     ):
-        out = build(land, v4, variant, forced_line)
+        out = build(land, v4, variant, forced_line, narrow_ext)
         diff(v4, out, f"[{variant}]")
         write(out, args.out_dir / f"{args.prefix}{suffix}.geojson")
     return 0

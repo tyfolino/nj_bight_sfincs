@@ -1,0 +1,80 @@
+
+== p0_v4: faces 4,881,654 (+0 vs control)  active 3,974,165
+    200.0 m    946,575
+    100.0 m    259,929
+     50.0 m  2,254,902
+     25.0 m  1,420,248
+   band hudson_waterfront      faces     3,154 ->     3,154  (+0)
+   band newark_meadowlands     faces   116,100 ->   116,100  (+0)
+   band capemay_inlets         faces    97,936 ->    97,936  (+0)
+   band capemay_ebb_12m        faces    97,936 ->    97,936  (+0)
+   band narrows_cut            faces    15,371 ->    15,371  (+0)
+   dt candidates 10,077
+   min dt 0.684 s; five smallest:
+     dt 0.684  dx  25.0  zmin  -33.04  (-74.0359, 40.5975)
+     dt 0.684  dx  25.0  zmin  -32.99  (-74.0362, 40.5975)
+     dt 0.685  dx  25.0  zmin  -32.95  (-74.0359, 40.5977)
+     dt 0.685  dx  25.0  zmin  -32.90  (-74.0362, 40.5977)
+     dt 0.685  dx  25.0  zmin  -32.90  (-74.0359, 40.5972)
+
+== p1r2_base: faces 5,139,027 (+257,373 vs control)  active 4,231,086
+    200.0 m    946,427
+    100.0 m    253,916
+     50.0 m  2,202,284
+     25.0 m  1,736,400
+   band hudson_waterfront      faces     3,154 ->     4,392  (+1,238)
+   band newark_meadowlands     faces   116,100 ->   360,962  (+244,862)
+   band capemay_inlets         faces    97,936 ->   109,355  (+11,419)
+   band capemay_ebb_12m        faces    97,936 ->   109,355  (+11,419)
+   band narrows_cut            faces    15,371 ->    15,371  (+0)
+   dt candidates 14,168
+   min dt 0.684 s; five smallest:
+     dt 0.684  dx  25.0  zmin  -33.04  (-74.0359, 40.5975)
+     dt 0.684  dx  25.0  zmin  -32.99  (-74.0362, 40.5975)
+     dt 0.685  dx  25.0  zmin  -32.95  (-74.0359, 40.5977)
+     dt 0.685  dx  25.0  zmin  -32.90  (-74.0362, 40.5977)
+     dt 0.685  dx  25.0  zmin  -32.90  (-74.0359, 40.5972)
+
+== p2r2_narrows50: faces 5,129,757 (+248,103 vs control)  active 4,221,902
+    200.0 m    946,429
+    100.0 m    253,915
+     50.0 m  2,205,337
+     25.0 m  1,724,076
+   band hudson_waterfront      faces     3,154 ->     4,392  (+1,238)
+   band newark_meadowlands     faces   116,100 ->   360,962  (+244,862)
+   band capemay_inlets         faces    97,936 ->   109,355  (+11,419)
+   band capemay_ebb_12m        faces    97,936 ->   109,355  (+11,419)
+   band narrows_cut            faces    15,371 ->     6,103  (-9,268)
+   dt candidates 7,329
+   min dt 0.830 s; five smallest:
+     dt 0.830  dx  25.0  zmin  -22.10  (-74.8642, 38.9361)
+     dt 0.830  dx  25.0  zmin  -22.10  (-74.8642, 38.9363)
+     dt 0.830  dx  25.0  zmin  -22.10  (-74.8639, 38.9361)
+     dt 0.830  dx  25.0  zmin  -22.10  (-74.8639, 38.9363)
+     dt 0.830  dx  25.0  zmin  -22.10  (-74.8648, 38.9361)
+
+== p3r2_inlets12: faces 5,277,153 (+395,499 vs control)  active 4,369,212
+    200.0 m    946,427
+    100.0 m    253,916
+     50.0 m  2,202,284
+     25.0 m  1,690,358
+     12.5 m    184,168
+   band hudson_waterfront      faces     3,154 ->     4,392  (+1,238)
+   band newark_meadowlands     faces   116,100 ->   360,962  (+244,862)
+   band capemay_inlets         faces    97,936 ->   247,481  (+149,545)
+   band capemay_ebb_12m        faces    97,936 ->   247,481  (+149,545)
+   band narrows_cut            faces    15,371 ->    15,371  (+0)
+   dt candidates 193,204
+   min dt 0.441 s; five smallest:
+     dt 0.441  dx  12.5  zmin  -19.52  (-74.8650, 38.9364)
+     dt 0.441  dx  12.5  zmin  -19.52  (-74.8651, 38.9364)
+     dt 0.441  dx  12.5  zmin  -19.52  (-74.8650, 38.9363)
+     dt 0.441  dx  12.5  zmin  -19.52  (-74.8651, 38.9363)
+     dt 0.464  dx  12.5  zmin  -17.47  (-74.8651, 38.9366)
+
+== runtime estimate (production engine, 72 h waves-on, 64 threads) ==
+   reference: v4 / 1.1.0 mesh 4,881,654 faces, active 3,965,303, dt 0.684 s, 2.51 h
+   p0_v4            faces  4,881,654 ( +0.0 %)  dt 0.684 s  -> x1.002  ~2.52 h
+   p1r2_base        faces  5,139,027 ( +5.3 %)  dt 0.684 s  -> x1.063  ~2.67 h
+   p2r2_narrows50   faces  5,129,757 ( +5.1 %)  dt 0.830 s  -> x0.928  ~2.33 h
+   p3r2_inlets12    faces  5,277,153 ( +8.1 %)  dt 0.441 s  -> x1.524  ~3.83 h

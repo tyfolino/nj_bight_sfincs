@@ -1,0 +1,80 @@
+# v4_refreeze_swz_v11 (Model 1.1.0) -> nj2
+# generated 2026-11-14 12:28 by domain_diff.py (refinement = the refinement agent's working copy at that time; re-run after it settles)
+
+## name
+    'v4_refreeze_swz_v11'
+ -> 'nj2'
+## region
+    PosixPath('/cache/home/tpj8/nj_bight_sfincs/data/region_v4_hot_plus.geojson')
+ -> PosixPath('/cache/home/tpj8/nj_bight_sfincs/data/region_nj2.geojson')
+## mesh_key
+    'v4'
+ -> None
+## building
+    False
+ -> True
+## region_source
+    PosixPath('/cache/home/tpj8/nj_bight_sfincs/data/v4_design/region_v4_hot_plus_vertices.csv')
+ -> PosixPath('/cache/home/tpj8/nj_bight_sfincs/data/nj2_design/region_nj2_vertices.csv')
+## refinement
+    PosixPath('/cache/home/tpj8/nj_bight_sfincs/data/quadtree/refinement_v4.geojson')
+ -> PosixPath('/cache/home/tpj8/nj_bight_sfincs/data/nj2_design/refinement_nj2.geojson')
+## obs_gauges
+    + ADDED   bc_hell_gate: ObsGauge(name='bc_hell_gate', lon=-73.9385, lat=40.776, kind='surge', obs_file=None, obs_var=None, obs_station=None, survives_crest=False...
+    + ADDED   noaa_bergen_point: ObsGauge(name='noaa_bergen_point', lon=-74.1463, lat=40.6391, kind='surge', obs_file='nj2_design/obs_nj2_bergen_point_6min.nc', obs_var='...
+    + ADDED   sss_hoboken: ObsGauge(name='sss_hoboken', lon=-74.0232, lat=40.7439, kind='surge', obs_file=None, obs_var=None, obs_station=None, survives_crest=False...
+    + ADDED   bc_hudson_cut: ObsGauge(name='bc_hudson_cut', lon=-73.946, lat=40.859, kind='surge', obs_file=None, obs_var=None, obs_station=None, survives_crest=False...
+    + ADDED   sss_hackensack_hud002: ObsGauge(name='sss_hackensack_hud002', lon=-74.0661, lat=40.7998, kind='surge', obs_file=None, obs_var=None, obs_station=None, survives_c...
+    + ADDED   noaa_battery: ObsGauge(name='noaa_battery', lon=-74.0142, lat=40.7006, kind='surge', obs_file='gtsm/noaa_sandy_validation_6min.nc', obs_var='waterlevel...
+    + ADDED   sss_gowanus: ObsGauge(name='sss_gowanus', lon=-73.98984, lat=40.67688, kind='surge', obs_file=None, obs_var=None, obs_station=None, survives_crest=Fal...
+## mask_overrides
+    - DROPPED wall_bayonne
+    + ADDED   wall_e88: (588800, 4514300, 589400, 4514800)
+    + ADDED   wall_hellgate_east: (589700, 4514200, 590300, 4514800)
+## boundary_arms
+    - DROPPED narrows
+    - DROPPED kvk_east
+    + ADDED   hell_gate: (588700.0, 4513900.0, 590500.0, 4515200.0)
+    + ADDED   hudson: (587300.0, 4523200.0, 590400.0, 4524300.0)
+## waterlevel_line
+    PosixPath('/cache/home/tpj8/nj_bight_sfincs/data/v4_design/waterlevel_line_v4.csv')
+ -> PosixPath('/cache/home/tpj8/nj_bight_sfincs/data/nj2_design/waterlevel_line_nj2.csv')
+## dry_land_boxes_ll
+    + ADDED   green_wood_cemetery: (-74.0, 40.65, -73.988, 40.658)
+    + ADDED   jersey_city_heights: (-74.058, 40.74, -74.048, 40.75)
+    + ADDED   prospect_park: (-73.976, 40.66, -73.966, 40.67)
+## coarse_elevation_list
+    ({'elevation': 'bed_v4_coarse_25m'},)
+ -> ({'elevation': 'bed_nj2_coarse_25m'},)
+## hwm_geojson
+    PosixPath('/cache/home/tpj8/nj_bight_sfincs/data/validation_v4/sandy_hwms_v4_1x.geojson')
+ -> PosixPath('/cache/home/tpj8/nj_bight_sfincs/data/validation_nj2/sandy_hwms_nj2.geojson')
+## hwm_rules
+    + ADDED   upper_bay_ny: BasinRule(name='upper_bay_ny', xmin=None, ymin=4498500, xmax=None, ymax=4521000, slope_x0=582800, slope_y0=4510000, slope=0.41, side=1, w...
+    + ADDED   upper_bay_islands: BasinRule(name='upper_bay_islands', xmin=580300, ymin=4504600, xmax=581400, ymax=4506100, slope_x0=None, slope_y0=None, slope=0.0, side=1...
+    + ADDED   east_river: BasinRule(name='east_river', xmin=None, ymin=4506300, xmax=None, ymax=4516000, slope_x0=583600, slope_y0=4506400, slope=0.387, side=1, wh...
+    + ADDED   hudson_nj: BasinRule(name='hudson_nj', xmin=579000, ymin=4504500, xmax=None, ymax=4520000, slope_x0=582800, slope_y0=4510000, slope=0.41, side=-1, w...
+## map_windows
+    upper_bay_hudson: None -> (575000, 595000, 4495000, 4526000)
+## face_z_from
+    '_subgrid_v1_1c'
+ -> None
+## n_waterlevel_support
+    3
+ -> None
+## flux_crosssections
+    PosixPath('/cache/home/tpj8/nj_bight_sfincs/data/flux_crosssections.crs')
+ -> PosixPath('/cache/home/tpj8/nj_bight_sfincs/data/nj2_design/flux_crosssections_nj2.crs')
+
+## UNCHANGED (33): epsg, latitude, mask_zmin, nr_subgrid_pixels, frozen, acquisition_only, wall_outflow_near_sources_m, wall_sources_geodataset, wall_outflow_near_forced_m, land_boxes, inactive_polygons_ll, always_active_boxes_ll, waterlevel_line_sea_closure_ll, no_waterlevel_boxes, discharge_geodataset, elevation_list, precip_dataset, cn_dataset, landcover, infiltration, ksat_dataset, cora_waves, motf_tif, motf_exclude_boxes_ll, motf_valid_tif, motf_gap_boxes_xy, merged_dep_base_level, open_coast_max_y, snapwave_footprint_ll, plot_window, gallery_windows, normal_surface_dir, waterlevel_buffer
+
+## inflows (catalog keys unchanged; points by name)
+    usgs_sandy_discharge_v4_hot_plus_walls: usgs_sandy_discharge_v4_hot_plus_walls.nc: 61 points
+    usgs_sandy_discharge_v4_refreeze: usgs_sandy_discharge_v4_refreeze.nc: 61 points
+
+## refinement polygons by name
+    v4_refreeze_swz_v11: refinement_v4.geojson: 1528 polygons
+    nj2: refinement_nj2.geojson: 1513 polygons
+    dropped names: ['narrows_cut']
+    added names:   ['capemay_inlets', 'hudson_waterfront', 'newark_meadowlands']
+    count changed (name: v1.1.0 -> nj2): {'narrow_channels': (1503, 1482)}

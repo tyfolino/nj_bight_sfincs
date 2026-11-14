@@ -1,0 +1,176 @@
+[probe] domain nj2  refinement data/nj2_design/refinement_nj2_v4only.geojson  -> /scratch/tpj8/nj2_refinement_probe/nj2/n0_v4only
+2026-11-14 11:50:08,268 - hydromt - log - INFO - HydroMT version: 1.4.1
+2026-11-14 11:50:08,632 - hydromt.model.model - model - WARNING - No region component found in components.
+2026-11-14 11:50:13,874 - hydromt.data_catalog.adapters.rasterdataset - rasterdataset - WARNING - Dataset [437000.0, 4286000.0, 626000.0, 4534000.0] does not fully cover bbox [432900.280, 4285303.002, 626226.831, 4534244.820]
+2026-11-14 11:50:14,500 - hydromt.data_catalog.adapters.rasterdataset - rasterdataset - WARNING - Dataset [437000.0, 4286000.0, 626000.0, 4534000.0] does not fully cover bbox [432900.280, 4285303.002, 626226.831, 4534244.820]
+2026-11-14 11:50:15,119 - hydromt.data_catalog.adapters.rasterdataset - rasterdataset - WARNING - Dataset [437000.0, 4286000.0, 626000.0, 4534000.0] does not fully cover bbox [432900.280, 4285303.002, 626226.831, 4534244.820]
+Refining ...
+Time elapsed : 965.0963242053986 s
+Finding neighbors ...
+Time elapsed : 1.518484115600586 s
+Setting neighbors left and below ...
+Time elapsed : 25.676803588867188 s
+Getting uv points ...
+Time elapsed : 3.904831886291504 s
+Making XUGrid ...
+Got rid of duplicates in 14.7806 seconds
+Made XUGrid in 0.0845 seconds
+2026-11-14 12:07:29,939 - hydromt.data_catalog.adapters.rasterdataset - rasterdataset - WARNING - Dataset [437000.0, 4286000.0, 626000.0, 4534000.0] does not fully cover bbox [432900.280, 4285303.002, 626226.831, 4534244.820]
+2026-11-14 12:07:33,717 - hydromt.data_catalog.adapters.rasterdataset - rasterdataset - WARNING - Dataset [437000.0, 4286000.0, 626000.0, 4534000.0] does not fully cover bbox [432900.280, 4285303.002, 626226.831, 4534244.820]
+2026-11-14 12:07:37,548 - hydromt.data_catalog.adapters.rasterdataset - rasterdataset - WARNING - Dataset [437000.0, 4286000.0, 626000.0, 4534000.0] does not fully cover bbox [432900.280, 4285303.002, 626226.831, 4534244.820]
+2026-11-14 12:07:41,340 - hydromt.data_catalog.adapters.rasterdataset - rasterdataset - WARNING - Dataset [437000.0, 4286000.0, 626000.0, 4534000.0] does not fully cover bbox [432900.280, 4285303.002, 626226.831, 4534244.820]
+2026-11-14 12:07:41,559 - hydromt.hydromt_sfincs.components.quadtree.quadtree_elevation - quadtree_elevation - WARNING - Interpolate elevation at 3066 cells
+2026-11-14 12:07:41,916 - hydromt.hydromt_sfincs.components.quadtree.quadtree_elevation - quadtree_elevation - WARNING - Interpolate elevation at 3776 cells
+2026-11-14 12:07:42,507 - hydromt.hydromt_sfincs.components.quadtree.quadtree_elevation - quadtree_elevation - WARNING - Interpolate elevation at 4454 cells
+2026-11-14 12:08:35,576 - hydromt.model.components.mesh - mesh - WARNING - Replacing mesh parameter: z
+[mask] inactive polygon sea_of_waterlevel_line: 301597 cells -> inactive
+[mask] filled 408608 interior inactive cells (deepest -75.43 m; x 437806-626067, y 4285356-4534142) — an inactive island inside the model blocks conveyance AND spawns a water-level BC around itself
+[mask] region re-clip after hole-fill: 107011 cells outside the region were re-activated by the fill -> inactive again
+[mask] active domain is a single connected component
+[mask] arm whitelist: 1764 water-level BC cells outside every declared arm demoted 2 -> 1 (interior). The invariants below then assert that NONE remain.
+[mask] override wall_rahway: 4 cells 3 → 1  (Walls river cut rahway: Rahway, crossed once since the 09-26 vertex move (10+ m ground, 300 m span).)
+[mask] override wall_darby_creek: 5 cells 3 → 1  (Walls river cut darby_creek: Darby Creek at pa_delco_04 (walled 09-29 after the gate drained it at +2 / +3 m): CUDEM's ~0 m channel runs ~1 km past the ring to the Fall Line; outside, the +3 m water fills only that channel (2.3 ha), no land.)
+[mask] override wall_brandywine_wilmington: 4 cells 3 → 1  (Walls river cut brandywine_wilmington: Brandywine at Wilmington (surface 9.5 m).)
+[mask] override wall_red_clay: 6 cells 3 → 1  (Walls river cut red_clay: Red Clay Creek above the +3 m end.)
+[mask] override wall_neshaminy: 6 cells 3 → 1  (Walls river cut neshaminy: Neshaminy Creek above the +3 m end.)
+[mask] override wall_cohansey_above_sunset_lake: 10 cells 3 → 1  (Walls river cut cohansey_above_sunset_lake: Cohansey above Sunset Lake (dam crest unchecked; the lake is inside).)
+[mask] override wall_passaic_dundee: 6 cells 3 → 1  (Walls river cut passaic_dundee: Passaic at Dundee Dam: the 7.4 m pool holds against the 6.4 m level.)
+[mask] override wall_delaware_trenton: 51 cells 3 → 1  (Walls river cut delaware_trenton: Delaware at the Trenton falls (head of tide); Q = Trenton 01463500, 1.8 km below.)
+[mask] override wall_raritan_bound_brook: 40 cells 3 → 1  (Walls river cut raritan_bound_brook: Raritan at Bound Brook (lon -74.52), where Sandy's marks end; Q = Manville 01400500 + Blackwells Mills 01402000 + Middle Brook 01403150, all placed here.)
+[mask] override wall_schuylkill_fairmount: 24 cells 3 → 1  (Walls river cut schuylkill_fairmount: Schuylkill at the Fairmount Dam = Philadelphia gauge 01474500.)
+[mask] override wall_christina_white_clay: 67 cells 3 → 1  (Walls river cut christina_white_clay: The bent 09-25 line across the Christina and White Clay Creek (head of tide); Q = 01478000 + 01479000 at their own crossings.)
+[mask] override wall_maurice_millville: 38 cells 3 → 1  (Walls river cut maurice_millville: Maurice at the Union Lake dam crest, Millville (lake and its fake-pit bed OUT; Q placed in the channel 53 m below the spillway).)
+[mask] override wall_hackensack_new_milford: 42 cells 3 → 1  (Walls river cut hackensack_new_milford: Hackensack below the Oradell dam (head of tide); Q = Rivervale 01377000 + Westwood 01377500 (Pascack) placed here.)
+[mask] override wall_cape_henlopen: 68 cells 3 → 1  (Lat 38.725, lon -75.14..-75.083: the Lewes–Rehoboth lowland pinch (0.5 km below +2 m). Shuts Rehoboth Bay (its own inlet) out; Sandy +3 m reaches this line, so open it would drain into a basin the model omits.)
+[mask] override wall_jamaica_bay: 105 cells 3 → 1  (Brooklyn option B (user 09-26): 7.9 km, jamaica_wall_n → mid → s, Marine Park / Mill Basin at 0–6 m with water on BOTH sides at +3 m — no natural divide, so a declared wall. Its wet faces are demoted by the arm whitelist; this box walls the dry ones. Touches the rockaway_inlet arm box at its south end — harmless: walls act on mask 3, arms on mask 2.)
+[mask] override wall_leak_breezy_point_tip: 7 cells 3 → 1  (Leak wall breezy_point_tip: A1: overtopped dry tip, 5 outflow cells wet at +0/+2/+3)
+[mask] override wall_leak_leipsic_millpond: 4 cells 3 → 1  (Leak wall leipsic_millpond: A2: river inflow ponds and spills, wet at all levels)
+[mask] override wall_leak_tuckahoe_head: 8 cells 3 → 1  (Leak wall tuckahoe_head: A3: river inflow ponds past its inflow wall, wet at all levels)
+[mask] override wall_leak_toms_tributary: 4 cells 3 → 1  (Leak wall toms_tributary: A4: creek at nj_atlantic_n_05, wet at +3)
+[mask] override wall_leak_raritan_mile_run: 1 cells 3 → 1  (Leak wall raritan_mile_run: A5: creek (culvert) on the Raritan side, wet at +2/+3)
+[mask] override wall_leak_broadkill_headwater: 5 cells 3 → 1  (Leak wall broadkill_headwater: A6: Broadkill headwater creek, wet at +3)
+[mask] override wall_leak_silver_lake_dover: 5 cells 3 → 1  (Leak wall silver_lake_dover: B1: lake straddles the ring, holds 3 cm)
+[mask] override wall_leak_pennsauken_branch: 5 cells 3 → 1  (Leak wall pennsauken_branch: B2: creek branch, holds 2-5 cm)
+[mask] override wall_leak_creek_burlington_09: 3 cells 3 → 1  (Leak wall creek_burlington_09: B3: creek at nj_burlington_09, holds 2.7 cm)
+[mask] override wall_leak_swimming_river_pond: 3 cells 3 → 1  (Leak wall swimming_river_pond: B5: inflow pond past the inflow wall, holds 2 cm)
+[mask] override wall_e88: 6 cells 3 → 1  (e88 -> hellgate_w, 385-644 m of the 691 m leg: 261 m of 3.22 m ground (Yorkville / East End Ave). Reached from inside only at 8.4-10.4 m but from OUTSIDE at 6.44 m, so under the ring rule it stays a wall (user 11-03 decision 5).)
+[mask] override wall_hellgate_east: 9 cells 3 → 1  (hellgate_e -> astoria, 0-300 m: Astoria's low bank (low point 2.02 m) beside the Hell Gate cut, the ONLY ring ground below 6.44 m reached from inside (1 m walk on 1/9" CUDEM, logs/v2_prep_2026-11-04/README.md §3).)
+[mask] inflow walls (500 m): 289 free-outflow faces → active around 49 of 61 discharge sources
+      source 1484100: 9 faces walled
+      source 1483700: 9 faces walled
+      source 1411300: 8 faces walled
+      source 1483200: 4 faces walled
+      source 1483155: 5 faces walled
+      source 1410500: 9 faces walled
+      source 1483170: 6 faces walled
+      source 1483165: 6 faces walled
+      source 1411000: 8 faces walled
+      source 1410150: 10 faces walled
+      source 1482500: 7 faces walled
+      source 1409280: 8 faces walled
+      source 1410000: 6 faces walled
+      source 1409810: 9 faces walled
+      source 1409400: 8 faces walled
+      source 1409210: 6 faces walled
+      source 1477120: 4 faces walled
+      source 1481500: 1 faces walled
+      source 1477800: 5 faces walled
+      source 1475001: 7 faces walled
+      source 1409095: 9 faces walled
+      source 1477000: 5 faces walled
+      source 1476480: 5 faces walled
+      source 1467150: 7 faces walled
+      source 1408900: 9 faces walled
+      source 1467081: 3 faces walled
+      source 1475548: 5 faces walled
+      source 1465850: 10 faces walled
+      source 1467000: 7 faces walled
+      source 1408500: 7 faces walled
+      source 1467087: 7 faces walled
+      source 1474500: 1 faces walled
+      source 1467048: 5 faces walled
+      source 1465798: 6 faces walled
+      source 1408151: 8 faces walled
+      source 1408120: 6 faces walled
+      source 1465500: 1 faces walled
+      source 1464500: 7 faces walled
+      source 1408029: 7 faces walled
+      source 1407705: 5 faces walled
+      source 1407760: 4 faces walled
+      source 1464000: 4 faces walled
+      source 1407500: 5 faces walled
+      source 1406050: 4 faces walled
+      source 1405030: 4 faces walled
+      source 1393450: 4 faces walled
+      source 1392500: 4 faces walled
+      source 1389890: 1 faces walled
+      source 1391500: 4 faces walled
+[mask] forced-line end walls (500 m): 43 free-outflow faces → active
+[bc] 220 water-level boundary cells, alongshore profile (0.05 deg bands, north to south). READ THE W-EDGE COLUMN: a band whose west edge jumps inland of its neighbours is an intrusion (see _report_waterlevel_boundary).
+     lat band        cells     W edge    E edge    dW km          z range
+      40.85- 40.90     28   -73.9542  -73.9382            -15.33.. -2.55
+      40.75- 40.80     10   -73.9419  -73.9366    +1.04   -29.09.. -4.09
+      40.55- 40.60     44   -73.9131  -73.9042    +2.44   -13.94.. -1.44
+      40.50- 40.55    120   -73.9242  -73.9023    -0.94   -11.87.. -7.21
+      40.45- 40.50     13   -73.9318  -73.9242    -0.64   -24.51..-12.18
+      39.50- 39.55      5   -75.6985  -75.6984  -151.66   -13.33.. -1.49
+[bc] continuity: 13 run(s) over 7 declared arm(s) (link radius 125 m); largest: 132, 33, 28, 10, 5, 4
+[bc] 7 declared boundary arm(s):
+     delaware_mouth   waterlevel      0 cells [550..670]   z —
+     ocean            waterlevel      0 cells [3100..3650]   z —
+     lower_bay_entrance waterlevel    108 cells [320..400]   z -24.51..-8.81
+     rockaway_inlet   waterlevel     69 cells [55..85]   z -13.94..-1.44
+     cd_canal         waterlevel      5 cells [3..8]   z -13.33..-1.49
+     hudson           waterlevel     28 cells [1..10000]   z -15.33..-2.55
+     hell_gate        waterlevel     10 cells [1..10000]   z -29.09..-4.09
+[probe] ⚠️ apply_mask_and_boundary raised (continuing, count unaffected):
+Traceback (most recent call last):
+  File "/cache/home/tpj8/nj_bight_sfincs/logs/nj2_refinement_2026-11-14/probe_variant.py", line 30, in wrap
+    return fn(*a, **k)
+  File "/cache/home/tpj8/nj_bight_sfincs/nj_sfincs/model.py", line 1062, in apply_mask_and_boundary
+    _check_domain_invariants(
+    ~~~~~~~~~~~~~~~~~~~~~~~~^
+        sf, mask, zb, allow_waterlevel_zones=allow_waterlevel_zones
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/cache/home/tpj8/nj_bight_sfincs/nj_sfincs/model.py", line 750, in _check_domain_invariants
+    raise RuntimeError(
+        "[build_static] DOMAIN INVARIANTS FAILED:\n  - " + "\n  - ".join(fail)
+    )
+RuntimeError: [build_static] DOMAIN INVARIANTS FAILED:
+  - 301597 cells are ACTIVE inside the declared inactive polygon 'sea_of_waterlevel_line'.
+  - boundary arm 'delaware_mouth' has 0 waterlevel cells, outside its declared [550, 670]. A count that moves is a different boundary wearing the same arm's name. Cape Henlopen → NACCS 7171 (the cape tip, 24 m) → the ~10 m row across the mouth → up the outside of the Cape May shoals (user route 09-27, node picker). Delaware Bay and river COMPUTED behind it (scope rule 1, the v1.5 structural argument). Starts on the cape's land, which carries no BC.
+  - boundary arm 'ocean' has 0 waterlevel cells, outside its declared [3100, 3650]. A count that moves is a different boundary wearing the same arm's name. The NJ ocean coast off Cape May → off Sea Bright, node to node through NACCS save points at ~10 m (traced once, hand-edited 09-27) — replaces v3's -10 m isobath staircase.
+  - boundary arm 'lower_bay_entrance' has 108 waterlevel cells, outside its declared [320, 400]. A count that moves is a different boundary wearing the same arm's name. East of Sandy Hook, across Ambrose, to the ocean side of Breezy Point (user route 09-27) — replaces v1.5's straight closure at lon -73.94. Lower, Raritan and Sandy Hook Bays COMPUTED behind it.
+[obs] 55 observation points: sss_great_kills, sss_arthur_kill_mouth, sss_narrows_si, sss_narrows_bkln, sandy_hook, usgs_stormtide_sea_bright, usgs_tidal_sea_bright, usgs_tidal_shark_river, noaa_atlantic_city, noaa_cape_may, usgs_tidal_mantoloking, usgs_tidal_barnegat_light, usgs_tidal_ship_bottom, usgs_tidal_tuckerton, usgs_tidal_absecon_creek, usgs_tidal_inside_thorofare, usgs_tidal_absecon_channel, usgs_tidal_ocean_city, usgs_tidal_sea_isle, usgs_tidal_avalon, usgs_tidal_stone_harbor, usgs_tidal_cape_may_harbor, sss_great_bay, sss_great_egg, sss_cape_may, noaa_lewes, noaa_brandywine_shoal, noaa_ship_john_shoal, noaa_reedy_point, noaa_delaware_city, noaa_marcus_hook, noaa_philadelphia, noaa_burlington, noaa_newbold, usgs_tidal_sluice_creek, usgs_tidal_bivalve, usgs_tidal_greenwich, usgs_tidal_waretown, usgs_tidal_pt_pleasant_canal, usgs_tidal_manasquan_pp, usgs_tidal_keansburg, usgs_tidal_south_amboy, usgs_tidal_newark_bay, usgs_tidal_murderkill_frederica, usgs_tidal_murderkill_bowers, usgs_tidal_new_castle, usgs_tidal_christina_newport, usgs_tidal_christina_wilmington, noaa_battery, noaa_bergen_point, sss_gowanus, sss_hoboken, sss_hackensack_hud002, bc_hudson_cut, bc_hell_gate
+[obs] 32 of them survive the storm crest
+[build_static] skip_subgrid=True — stopping after mask/boundary (no subgrid)
+[probe] FACES 4,899,636  active 4,320,551  mask2 220  mask3 4,294
+[probe]    200.0 m     919,845  (active    343,643)
+[probe]    100.0 m     262,736  (active    260,363)
+[probe]     50.0 m   2,297,003  (active  2,296,523)
+[probe]     25.0 m   1,420,052  (active  1,420,022)
+	Command being timed: "python -u logs/nj2_refinement_2026-11-14/probe_variant.py data/nj2_design/refinement_nj2_v4only.geojson /scratch/tpj8/nj2_refinement_probe/nj2/n0_v4only"
+	User time (seconds): 1171.46
+	System time (seconds): 41.04
+	Percent of CPU this job got: 93%
+	Elapsed (wall clock) time (h:mm:ss or m:ss): 21:32.80
+	Average shared text size (kbytes): 0
+	Average unshared data size (kbytes): 0
+	Average stack size (kbytes): 0
+	Average total size (kbytes): 0
+	Maximum resident set size (kbytes): 12701900
+	Average resident set size (kbytes): 0
+	Major (requiring I/O) page faults: 0
+	Minor (reclaiming a frame) page faults: 10894218
+	Voluntary context switches: 30159
+	Involuntary context switches: 1991
+	Swaps: 0
+	File system inputs: 0
+	File system outputs: 32
+	Socket messages sent: 0
+	Socket messages received: 0
+	Signals delivered: 0
+	Page size (bytes): 4096
+	Exit status: 0

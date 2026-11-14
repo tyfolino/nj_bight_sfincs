@@ -153,11 +153,25 @@ def narrow(max_w: float, buf_m: float, step: float = 25.0) -> shapely.Geometry:
         g = pd.concat([p for p in parts if len(p)], ignore_index=True)
         return g.set_crs(4326, allow_override=True).to_crs(CRS)
 
-    area, path = read("area"), read("path")
+    return narrow_from(read("area"), read("path"), max_w, buf_m, step)
+
+
+def narrow_from(
+    area: gpd.GeoDataFrame,
+    path: gpd.GeoDataFrame,
+    max_w: float,
+    buf_m: float,
+    step: float = 25.0,
+    with_points: bool = False,
+):
+    """THE RULE, on any source: sample every centreline of ``path`` every ``step`` m, keep
+    the samples inside the ``area`` water whose width (2 x distance to the bank) is under
+    ``max_w``, buffer them ``buf_m``. ``with_points`` also returns (points, widths).
+    (Split out of `narrow` 2026-11-14 so nj2 applies the same rule to its new ground.)"""
     polys = area.geometry.make_valid().values
     tree = shapely.STRtree(polys)
     lines = shapely.line_merge(shapely.union_all(path.geometry.values))
-    pts = []
+    pts, wid = [], []
     for ln in getattr(lines, "geoms", [lines]):
         if ln.length < step:
             continue
@@ -168,11 +182,15 @@ def narrow(max_w: float, buf_m: float, step: float = 25.0) -> shapely.Geometry:
             continue
         water = shapely.union_all(near)
         p = shapely.line_interpolate_point(ln, np.arange(0.0, ln.length, step))
-        keep = shapely.contains(water, p) & (
-            2 * shapely.distance(water.boundary, p) < max_w
-        )
+        w = 2 * shapely.distance(water.boundary, p)
+        keep = shapely.contains(water, p) & (w < max_w)
         pts.append(p[keep])
-    return shapely.union_all(shapely.buffer(np.concatenate(pts), buf_m))
+        wid.append(w[keep])
+    pts = np.concatenate(pts) if pts else np.array([], dtype=object)
+    g = shapely.union_all(shapely.buffer(pts, buf_m))
+    if with_points:
+        return g, pts, (np.concatenate(wid) if wid else np.array([]))
+    return g
 
 
 def main() -> int:

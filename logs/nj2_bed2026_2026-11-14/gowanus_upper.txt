@@ -1,0 +1,4 @@
+2020 section (GC_01_GCK_20200512, 256 cells in (-73.9915, 40.6752, -73.9885, 40.6762)): p10 -3.62 p50 -2.69 p90 -1.87 m NAVD88 -> ASSUMED depth -2.69 m
+NYC 2017 < 0.6 m north of 40.6755: 1 components; the one(s) at the section: [1], 1382 px (3.46 ha), lat 40.67550..40.68170; lidar there p50 0.20 m
+2012: 622 px (1.55 ha) beyond carve_v2_2012, lat 40.67550..40.68170; the bed's carve already holds 760 canal px -> /scratch/tpj8/nj_bight_sfincs_data/v2/carves/gowanus_upper_v2_2012.tif
+2026: 910 px (2.27 ha) beyond carve_v2_2026, lat 40.67550..40.68170; the bed's carve already holds 472 canal px -> /scratch/tpj8/nj_bight_sfincs_data/v2/carves/gowanus_upper_v2_2026.tif

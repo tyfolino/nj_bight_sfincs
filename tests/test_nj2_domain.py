@@ -42,6 +42,7 @@ class TestNJ2(unittest.TestCase):
                 "map_windows",
                 "waterlevel_line",  # data/nj2_design/waterlevel_line_nj2.csv: v4's vertices
                 "obs_gauges",  # + 7 (the Battery, Bergen Point, 3 STN sensors, 2 cut diagnostics)
+                "flux_crosssections",  # + the two cuts, the Narrows, the KvK (11-14)
             },
         )
 

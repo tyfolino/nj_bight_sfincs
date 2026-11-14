@@ -1,0 +1,43 @@
+faces 4,881,654  active 3,965,303
+
+== Cape May - Great Egg inlets: current cell size (active faces) ==
+  great_egg       throat   n=   365  z[-99,-8) 17x25m/8x50m  z[-8,-2) 158x25m  z[-2,1) 109x25m  z[1,99) 73x25m
+  great_egg       ebb box  n=20,866  z[-99,-8) 602x25m/989x50m  z[-8,-2) 14849x25m  z[-2,1) 2405x25m  z[1,99) 2014x25m/7x50m
+  corson          throat   n=   225  z[-2,1) 135x25m  z[1,99) 90x25m
+  corson          ebb box  n= 8,995  z[-99,-8) 205x25m/330x50m  z[-8,-2) 5330x25m  z[-2,1) 1895x25m  z[1,99) 1235x25m
+  townsends       throat   n=    71  z[-99,-8) 27x25m/2x50m  z[-8,-2) 7x25m  z[-2,1) 24x25m  z[1,99) 10x25m/1x50m
+  townsends       ebb box  n=13,136  z[-99,-8) 467x25m/76x50m  z[-8,-2) 7373x25m  z[-2,1) 2444x25m  z[1,99) 2751x25m/25x50m
+  hereford        throat   n=   434  z[-99,-8) 22x25m/2x50m  z[-8,-2) 50x25m  z[-2,1) 291x25m  z[1,99) 69x25m
+  hereford        ebb box  n=19,696  z[-99,-8) 766x25m/782x50m  z[-8,-2) 10390x25m  z[-2,1) 5247x25m  z[1,99) 2504x25m/7x50m
+  cape_may_inlet  throat   n=   152  z[-99,-8) 18x25m/3x50m  z[-8,-2) 24x25m  z[-2,1) 34x25m  z[1,99) 72x25m/1x50m
+  cape_may_inlet  ebb box  n=12,068  z[-99,-8) 732x25m/1620x50m  z[-8,-2) 4955x25m  z[-2,1) 2685x25m  z[1,99) 2014x25m/48x50m/14x100m
+
+== global flow time step: who holds the minimum (active faces) ==
+
+ zs = +1 m: min dt 0.684 s; p0.01 0.710 s
+   dt 0.684 s  dx  25.0 m  zmin  -33.04  (-74.0359, 40.5975)  [2729 of the 4000 in this 2 km cell]
+   dt 0.725 s  dx  25.0 m  zmin  -29.32  (-74.0362, 40.5921)  [1120 of the 4000 in this 2 km cell]
+   dt 0.833 s  dx  25.0 m  zmin  -21.98  (-74.0308, 40.5874)  [131 of the 4000 in this 2 km cell]
+   dt 0.863 s  dx  25.0 m  zmin  -20.39  (-74.8651, 38.9361)  [2 of the 4000 in this 2 km cell]
+   dt 0.876 s  dx  25.0 m  zmin  -19.78  (-74.0283, 40.5982)  [12 of the 4000 in this 2 km cell]
+   dt 0.894 s  dx  25.0 m  zmin  -18.91  (-74.1070, 39.7641)  [2 of the 4000 in this 2 km cell]
+   dt 0.895 s  dx  25.0 m  zmin  -18.87  (-74.4153, 39.3772)  [2 of the 4000 in this 2 km cell]
+   dt 0.898 s  dx  25.0 m  zmin  -18.76  (-74.1070, 39.7645)  [1 of the 4000 in this 2 km cell]
+   dt 0.905 s  dx  25.0 m  zmin  -18.45  (-74.7158, 39.1182)  [1 of the 4000 in this 2 km cell]
+   smallest at   25 m: dt 0.684 s, zmin -33.0 at (-74.0359, 40.5975)
+   smallest at   50 m: dt 1.139 s, zmin -48.1 at (-75.0796, 38.8470)
+   smallest at  100 m: dt 6.070 s, zmin -5.9 at (-74.1248, 40.6377)
+
+ zs = +3 m: min dt 0.665 s; p0.01 0.692 s
+   dt 0.665 s  dx  25.0 m  zmin  -33.04  (-74.0359, 40.5975)  [2729 of the 4000 in this 2 km cell]
+   dt 0.702 s  dx  25.0 m  zmin  -29.32  (-74.0362, 40.5921)  [1120 of the 4000 in this 2 km cell]
+   dt 0.799 s  dx  25.0 m  zmin  -21.98  (-74.0308, 40.5874)  [131 of the 4000 in this 2 km cell]
+   dt 0.825 s  dx  25.0 m  zmin  -20.39  (-74.8651, 38.9361)  [2 of the 4000 in this 2 km cell]
+   dt 0.836 s  dx  25.0 m  zmin  -19.78  (-74.0283, 40.5982)  [12 of the 4000 in this 2 km cell]
+   dt 0.853 s  dx  25.0 m  zmin  -18.91  (-74.1070, 39.7641)  [2 of the 4000 in this 2 km cell]
+   dt 0.853 s  dx  25.0 m  zmin  -18.87  (-74.4153, 39.3770)  [2 of the 4000 in this 2 km cell]
+   dt 0.855 s  dx  25.0 m  zmin  -18.76  (-74.1070, 39.7645)  [1 of the 4000 in this 2 km cell]
+   dt 0.862 s  dx  25.0 m  zmin  -18.45  (-74.7158, 39.1182)  [1 of the 4000 in this 2 km cell]
+   smallest at   25 m: dt 0.665 s, zmin -33.0 at (-74.0359, 40.5975)
+   smallest at   50 m: dt 1.117 s, zmin -48.1 at (-75.0796, 38.8470)
+   smallest at  100 m: dt 5.346 s, zmin -5.9 at (-74.1248, 40.6377)

@@ -1,0 +1,9 @@
+carve_2026 units 53; of those user-decided fill 0; added by the eye check 9
+62 units to carve, 35.9 ha
+carved 60 units; skipped (no water beside): 2
+osm_id name                                    reach  area_m2  ring_water_px
+            Brooklyn (Upper Bay, Red Hook–Bay Ridge)      326              4
+            Brooklyn (Upper Bay, Red Hook–Bay Ridge)     8386              0
+target p10/p50/p90 [-10.06, -6.2, -1.78] m NAVD88; rings reading ehydro_latest_2026: 35 units
+by reach (units): {'Bayonne (Upper Bay / KVK)': 4, 'Brooklyn (Upper Bay, Red Hook–Bay Ridge)': 17, 'Hudson NJ (Edgewater–Weehawken–Hoboken)': 9, 'Jersey City / Liberty (Hudson + Upper Bay)': 6, 'Manhattan west (Hudson)': 14, 'Newark Bay / Port Elizabeth–Newark': 3, 'Staten Island north shore': 9}
+wrote /scratch/tpj8/nj_bight_sfincs_data/v2/carves/piers_v2_2026.tif (14025 px, 35.1 ha)

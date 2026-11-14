@@ -55,6 +55,7 @@ to run until it is set; tests that need *a* domain declare the `v1_monmouth` fix
 | `v4_refreeze` | `v4_hot_plus_walls` + the Lewes edge, Keansburg + Overpeck weirs, ERA5-bilinear template meteo; the Phase 4 record | STAGED 10-06, `sha=378014e154b4ff41`; side runs retired 11-01 |
 | `v4_refreeze_swz` | `v4_refreeze` with face `z` = the flow bed's mean ground — MODEL 1.0.0 (tag `v1.0.0`), superseded by 1.1.0 | STAGED 10-28, `sha=90cc7468614a5814`; premier `p4-premier` (job 63181564) |
 | `v4_refreeze_swz_v11` | `v4_refreeze_swz` with face `z` = the v1.1c flow bed's mean ground — **MODEL 1.1.0** | STAGED 11-06, `sha=4bc97aae885f0aa4`; premier `p4-premier+weir-elizabeth-rahway` (job 63617802; 819 weir u/v) |
+| `nj2` | **MODEL 2.0 mesh**: 1.1.0's domain + the Upper Bay, Kill van Kull, Hudson to 40.860 and East River to Hell Gate COMPUTED (two short forced cuts replace the Narrows / KvK arms); bed domains `nj2_bed2012` / `nj2_bed2026` after the freeze | BUILDING since 11-14 (probe 5,181,372 faces); freeze J2 submitted 11-14 — `logs/nj2_freeze_2026-11-14/README.md` |
 
 **The same experiment name exists on every domain and means a different model each time.**
 That is why runs live at `experiments/<domain>/<arm>`, why `EXPERIMENTS` is keyed by domain

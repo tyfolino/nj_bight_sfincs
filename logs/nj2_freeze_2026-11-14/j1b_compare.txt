@@ -1,0 +1,74 @@
+v4 / 1.1.0 mesh: 4,881,654 faces
+c0_v4only  faces 4,899,645 (+17,991 vs v4, +0.37 %)  active 4,018,963  [200 m 919,845  100 m 262,736  50 m 2,297,000  25 m 1,420,064]
+f1_final   faces 5,181,372 (+299,718 vs v4, +6.14 %)  active 4,300,646  [200 m 919,643  100 m 256,108  50 m 2,240,473  25 m 1,765,148]
+f2_noext   faces 5,179,788 (+298,134 vs v4, +6.11 %)  active 4,299,077  [200 m 919,643  100 m 256,124  50 m 2,240,921  25 m 1,763,100]
+
+== new-ground narrow channels: f1 - f2 = +1,584 faces (active +1,569); faces only in f1 2,112 (of them 25 m: 2,048), only in f2 528
+   25 m faces gained, by ~1 km cell (lon, lat):
+lon     lat  
+-75.09  38.73    145
+        38.74     60
+-75.08  38.73    107
+-74.07  40.68      4
+-74.03  40.70     36
+-74.02  40.70      4
+-74.01  40.70     36
+-74.00  40.67    166
+        40.68     22
+-73.99  40.67      2
+        40.68    286
+-73.97  40.84      8
+-73.96  40.74     52
+        40.75     40
+-73.95  40.74     80
+-73.94  40.73     78
+        40.74    298
+-73.93  40.71    228
+        40.72    176
+        40.73     24
+-73.92  40.71     44
+        40.72    152
+
+== c0_v4only: old-ground identity vs v4's frozen mesh (common grid, grid row v < 244988 m)
+   faces v4 4,851,978  probe 4,894,329  identical 4,841,627
+   differ: 63,053 (10,351 v4-only, 52,702 probe-only); within 1 km of changed ground 63,018; FARTHER 35
+   farther-than-1-km differences by 5 km cell (UTM km):
+cx   cy  
+470  4405    30
+     4395     5
+
+== f1_final: old-ground identity vs v4's frozen mesh (common grid, grid row v < 244988 m)
+   faces v4 4,851,978  probe 5,175,705  identical 4,761,155
+   differ: 505,373 (90,823 v4-only, 414,550 probe-only); within 1 km of changed ground 505,338; FARTHER 35
+   farther-than-1-km differences by 5 km cell (UTM km):
+cx   cy  
+470  4405    30
+     4395     5
+
+== c0_v4only (control): boundary census
+   faces 4,899,645; active 4,018,963; mask2 4,450; mask3 4,293
+   arm delaware_mouth          606  (bracket 550..670)
+   arm ocean                  3372  (bracket 3100..3650)
+   arm lower_bay_entrance      360  (bracket 320..400)
+   arm rockaway_inlet           69  (bracket 55..85)
+   arm cd_canal                  5  (bracket 3..8)
+   arm hudson                   28  (bracket 1..10000)
+   arm hell_gate                10  (bracket 1..10000)
+   mask2 outside every arm: 0
+   wall_e88: 33 active faces in box, mask3 0
+   wall_hellgate_east: 42 active faces in box, mask3 0
+
+== f1_final: boundary census
+   faces 5,181,372; active 4,300,646; mask2 4,450; mask3 4,293
+   arm delaware_mouth          606  (bracket 550..670)
+   arm ocean                  3372  (bracket 3100..3650)
+   arm lower_bay_entrance      360  (bracket 320..400)
+   arm rockaway_inlet           69  (bracket 55..85)
+   arm cd_canal                  5  (bracket 3..8)
+   arm hudson                   28  (bracket 1..10000)
+   arm hell_gate                10  (bracket 1..10000)
+   mask2 outside every arm: 0
+   wall_e88: 33 active faces in box, mask3 0
+   wall_hellgate_east: 42 active faces in box, mask3 0
+
+RESULT identity_far_c0=35 identity_far_f1=35

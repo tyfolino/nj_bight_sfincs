@@ -1,3 +1,5 @@
+> **SUPERSEDED 2026-11-14.** This file is Model 1.0.0 and was written at 6.25 m (half the model's terrain resolution: the first-overview bug, logs/floodmap_fix_2026-11-12/README.md). Use instead `sandy_hmax_v4_refreeze_swz_v11_bed2012_bareground_EPSG32618.tif` (Sandy 2012, Model 1.1.0) or `sandy_hmax_v4_refreeze_swz_v11_bed2026_bareground_EPSG32618.tif` (Sandy on today's ground), both native 3.125 m from bare ground, each with a `_buildings_` GeoTIFF + per-building table for FIAT. This file is kept unchanged for the record.
+
 # Hurricane Sandy (2012) maximum flood depth — New Jersey coast, model v4_refreeze_swz
 
 `sandy_hmax_v4_refreeze_swz_p4-premier_EPSG32618.tif`

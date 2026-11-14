@@ -1,0 +1,11 @@
+faces 5,179,779; active 4,600,665; mask2 220; mask3 4,294
+  arm delaware_mouth            0  (bracket 550..670)
+  arm ocean                     0  (bracket 3100..3650)
+  arm lower_bay_entrance      108  (bracket 320..400)
+  arm rockaway_inlet           69  (bracket 55..85)
+  arm cd_canal                  5  (bracket 3..8)
+  arm hudson                   28  (bracket 1..10000)
+  arm hell_gate                10  (bracket 1..10000)
+  mask2 outside every arm: 0
+  wall_e88: 33 active faces in box, of them mask3 0
+  wall_hellgate_east: 42 active faces in box, of them mask3 0

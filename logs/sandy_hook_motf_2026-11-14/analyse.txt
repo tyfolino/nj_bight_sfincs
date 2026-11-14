@@ -1,0 +1,18 @@
+DOMAIN hits 1201.349 miss 183.386 FA 113.273 km2; CSI 0.801964 POD 0.867566 FAR 0.086164
+sandy_hook_neck: hits 0.626 miss 0.040 FA 0.036 km2; already-invalid 0.000; correct-dry 0.129
+sandy_hook_mid: hits 0.921 miss 0.041 FA 0.018 km2; already-invalid 0.000; correct-dry 0.050
+sandy_hook_north: hits 5.153 miss 0.549 FA 0.247 km2; already-invalid 0.120; correct-dry 0.760
+SPIT: hits 6.700 miss 0.629 FA 0.301 km2 (share of domain: hits 0.56% miss 0.34% FA 0.27%); newly excluded 8.570 km2
+without spit: CSI 0.801575 POD 0.867318 FAR 0.086395
+delta: CSI -0.0004 POD -0.0002 FAR +0.0002
+usace2010 coverage on scored spit px 85.4%
+cudem coverage on scored spit px 100.0%
+nj10ft coverage on scored spit px 100.0%
+czmil_2012_11_16 coverage on scored spit px 97.1%
+eaarl_pre_2012_10_26 coverage on scored spit px 43.3%
+bed source usace2010: scored 7.318 km2, hits 5.738 miss 0.532 FA 0.275
+bed source cudem: scored 1.252 km2, hits 0.961 miss 0.097 FA 0.027
+bed source other: scored 0.000 km2, hits 0.000 miss 0.000 FA 0.000
+FA: n 1340 bed p50 2.32 m; CZMIL<0 share 0.00; bed-CZMIL p10/50/90 -1.25/0.20/1.64 (n 1204)
+miss: n 2797 bed p50 3.56 m; CZMIL<0 share 0.00; bed-CZMIL p10/50/90 0.09/0.51/3.01 (n 2796)
+hit: n 29777 bed p50 2.08 m; CZMIL<0 share 0.01; bed-CZMIL p10/50/90 -0.09/0.26/0.90 (n 28807)

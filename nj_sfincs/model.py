@@ -230,12 +230,24 @@ def check_dry_land_boxes(boxes, crs, fx, fy, zb) -> list[str]:
     return fail
 
 
-def _inactive_components(sf, mask):
-    """Split the inactive cells into (ocean-connected mass, interior holes).
+def _inactive_components(sf, mask, region=None):
+    """Split the inactive cells into (exterior, interior holes).
 
-    "Ocean-connected" is just the LARGEST connected component of ``mask == 0``. That
-    single blob is the shelf plus all the dry land, which wrap round each other
-    continuously. Anything else is an inactive island sitting inside the model.
+    EXTERIOR = the LARGEST connected component of ``mask == 0`` plus EVERY component that
+    holds a face outside the region (`_outside_region`). A hole is an inactive component
+    lying wholly inside the ring and not the largest — an island inside the model.
+
+    🔴 Until 2026-11-14 the exterior was the largest component ALONE, on the belief that
+    the shelf and the dry land outside the ring "wrap round each other" into one blob.
+    They do only while the ring stays clear of the grid rectangle's edge. The grid is the
+    ring's minimum rotated rectangle, so the ring's extreme points sit ON that edge; on
+    v4 the top was one vertex (New Milford, one face in the top row) and the outside
+    stayed one blob by a single face. nj2's ring (A+ head-of-tide cuts) tops out on the
+    5.2 km flat Hackensack New Milford cut: 217 top-row faces inside the ring split the
+    outside into a west (PA / NJ land) and an east (NY + the sea) component, the west was
+    larger, and the fill RE-ACTIVATED the whole declared sea (408,637 cells; J1 probe
+    63918506). A component that reaches outside the region is never interior. This
+    only ever fills LESS than the old rule (a subset of the non-largest components).
 
     Returns ``(ocean, hole)`` boolean arrays over faces.
     """
@@ -249,15 +261,17 @@ def _inactive_components(sf, mask):
     idx = np.flatnonzero(inactive)
     _, lab = connected_components(adj[inactive][:, inactive], directed=False)
     labels, counts = np.unique(lab, return_counts=True)
-    main = labels[np.argmax(counts)]
+    exterior = {labels[np.argmax(counts)]}
+    exterior |= set(np.unique(lab[_outside_region(sf, region)[idx]]).tolist())
+    is_ext = np.isin(lab, list(exterior))
     ocean = np.zeros(len(mask), dtype=bool)
     hole = np.zeros(len(mask), dtype=bool)
-    ocean[idx[lab == main]] = True
-    hole[idx[lab != main]] = True
+    ocean[idx[is_ext]] = True
+    hole[idx[~is_ext]] = True
     return ocean, hole
 
 
-def _fill_inactive_holes(sf, mask, zb) -> np.ndarray:
+def _fill_inactive_holes(sf, mask, zb, region=None) -> np.ndarray:
     """Activate any inactive island that is not connected to the ocean/land mass.
 
     A depth threshold is a statement about ELEVATION, but the mask it produces is a
@@ -277,7 +291,7 @@ def _fill_inactive_holes(sf, mask, zb) -> np.ndarray:
     Runs BEFORE ``create_boundary`` — filling afterwards would leave the boundary cells
     the holes had already spawned.
     """
-    _, hole = _inactive_components(sf, mask)
+    _, hole = _inactive_components(sf, mask, region)
     n = int(hole.sum())
     if not n:
         print("[mask] no interior inactive holes")
@@ -910,7 +924,9 @@ def apply_mask_and_boundary(
     # MUST come after the region clip and the land boxes (both create their own inactive
     # ground) and BEFORE create_boundary, which is what turns an island into a ring of
     # imposed open-ocean level.
-    mask = _fill_inactive_holes(sf, mask, sf.quadtree_grid.data["z"].values)
+    mask = _fill_inactive_holes(
+        sf, mask, sf.quadtree_grid.data["z"].values, base.region
+    )
 
     # 4c. RE-APPLY THE REGION CLIP -------------------------------------------
     # 🔴 The fill CANNOT be trusted to respect the region, and this is not a bug in it.
@@ -1757,6 +1773,15 @@ def set_inp_keys(inp: Path, kv: dict) -> None:
     Path(inp).write_text("\n".join(out) + "\n")
 
 
+def flux_crosssections_file() -> Path:
+    """The cross-section file staging copies to ``sfincs.crs``: the active domain's
+    ``flux_crosssections``, or the shared ``data/flux_crosssections.crs`` when no domain is
+    set (the default every domain but nj2 carries)."""
+    if os.environ.get("NJ_DOMAIN"):
+        return Path(_domain.active().flux_crosssections)
+    return ROOT / "data" / "flux_crosssections.crs"
+
+
 def restore_diagnostics(model_dir: Path) -> None:
     """Re-enable the flux/mass-budget diagnostics that ``sf.write()`` drops.
 
@@ -1773,9 +1798,14 @@ def restore_diagnostics(model_dir: Path) -> None:
     ``crsfile`` here loses the headline measurement.
 
     Call this after :func:`finalize` on every staging path.
+
+    The file is the active domain's ``Domain.flux_crosssections`` (2026-11-14: nj2 adds its
+    cut / Narrows / KvK sections); every other domain's is the shared
+    ``data/flux_crosssections.crs``, as before. With no ``NJ_DOMAIN`` (unit tests) the
+    shared file.
     """
     model_dir = Path(model_dir)
-    crs_src = ROOT / "data" / "flux_crosssections.crs"
+    crs_src = flux_crosssections_file()
     kv = {
         "storevel": "1",
         # Preemption survival on every arm, whatever the template's vintage (see
@@ -2531,6 +2561,13 @@ def finalize(
             "it are NOT connected to the sea and start dry",
             flush=True,
         )
+        if "weir_uv_points" in info:
+            print(
+                f"[slr] weirs: {info['weir_uv_points']:,} u/v (engine rule), "
+                f"{info['weir_uv_at_or_above_level']:,} crests at / above the level; "
+                f"{info['cells_kept_dry_by_weirs']:,} cells kept dry by them",
+                flush=True,
+            )
 
     # (c) waves: ensure SnapWave keys + write the ASCII boundary forcing.
     if wcfg.use_waves:

@@ -581,6 +581,14 @@ class Domain:
     waterlevel_buffer: int = 100_000
     n_waterlevel_support: int | None = None
 
+    # ── Flux cross-sections (2026-11-14) ─────────────────────────────────────
+    #: The ``crsfile`` every staged arm gets as ``sfincs.crs`` (``model.restore_diagnostics``).
+    #: The default is the one file every domain has always staged (``barrier`` / ``throat``),
+    #: so no existing domain's runs change. nj2 adds sections just inside its two forced cuts and
+    #: across the Narrows and the KvK (computed there). An output request, not geometry: outside
+    #: the fingerprint.
+    flux_crosssections: Path = DATA / "flux_crosssections.crs"
+
     def frozen_mesh_dir(self) -> Path:
         """``data/frozen_mesh_<mesh_key or name>``."""
         return DATA / f"frozen_mesh_{self.mesh_key or self.name}"
@@ -3295,8 +3303,9 @@ _NJ2_SEA_ARMS = waterlevel_line_arms(
     corridor_m=_V4_LINE_CORRIDOR_M,
     counts={n: (_V4_LINE_ARM[n].min_cells, _V4_LINE_ARM[n].max_cells) for n, _ in _NJ2_SEA_SECTIONS},
 )
-#: Cell counts UNBRACKETED (1..10,000) until the first clean mesh probe, then tightened (v4's
-#: practice, 09-27 probe -> 09-28 freeze).
+#: Cell counts from the first CLEAN nj2 mesh probe (J1b 63918563, 2026-11-14: hudson 28,
+#: hell_gate 10 in all three variants — control, 2.0.0, 2.0.0 without the new-ground narrow
+#: channels), bracketed as v4's small arms were (narrows 59 -> 45..75, kvk_east 11 -> 8..16).
 _NJ2_CUT_ARMS = waterlevel_line_arms(
     _NJ2_CUT_HUDSON,
     32618,
@@ -3313,6 +3322,7 @@ _NJ2_CUT_ARMS = waterlevel_line_arms(
         ),
     ),
     corridor_m=_NJ2_CUT_CORRIDOR_M,
+    counts={"hudson": (22, 36)},
 ) + waterlevel_line_arms(
     _NJ2_CUT_HELL_GATE,
     32618,
@@ -3327,6 +3337,7 @@ _NJ2_CUT_ARMS = waterlevel_line_arms(
         ),
     ),
     corridor_m=_NJ2_CUT_CORRIDOR_M,
+    counts={"hell_gate": (7, 14)},
 )
 #: Declared walls on low ring ground (frm 3 -> 1): the run's UTM envelope + 150 m, rounded out.
 #: Both also lie within `wall_outflow_near_forced_m` (500 m) of a forced cut; declared anyway,
@@ -3543,6 +3554,10 @@ NJ2 = replace(
         **V4_REFREEZE_SWZ_V11.map_windows,
         "upper_bay_hudson": (575_000, 595_000, 4_495_000, 4_526_000),
     },
+    # The shared barrier / throat pair VERBATIM + `hudson_cut` / `hell_gate_cut` (the cut lines
+    # moved 110 m inside, through bc_hudson_cut / bc_hell_gate) + `narrows` + `kvk` (computed
+    # now). Built by logs/nj2_freeze_2026-11-14/make_crs_nj2.py; nj2_bed2012 inherits it.
+    flux_crosssections=DATA / "nj2_design" / "flux_crosssections_nj2.crs",
 )
 
 
