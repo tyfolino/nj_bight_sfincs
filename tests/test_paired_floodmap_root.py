@@ -109,6 +109,38 @@ class TestFloodmapRoot(unittest.TestCase):
         self.assertEqual(fm, own)
         self.assertIn("read only", why)
 
+    def test_cross_domain_arm_reads_its_own_domain(self):
+        # 1.1.0 - 1.0.0 (2026-11-13): under NJ_DOMAIN=v4_refreeze_swz_v11 the arm
+        # ``../v4_refreeze_swz/p4-premier`` must be looked up (and, if absent, written)
+        # under v4_refreeze_swz/, not v4_refreeze_swz_v11/ (another arm's tree)
+        exp = self.run.parent.parent
+        other = exp / "v1_monmouth" / ".." / "v1_5_raritan" / "arm-x"
+        (exp / "v1_5_raritan" / "arm-x" / "subgrid").mkdir(parents=True)
+        _tif(
+            exp / "v1_5_raritan/arm-x/subgrid/dep_subgrid_merged.tif", (40, 60), 1, True
+        )
+        self.assertEqual(self.pb.run_domain(other), "v1_5_raritan")
+        self.assertEqual(self.pb.run_domain(self.run), "v1_monmouth")
+        want = self.root / "v1_5_raritan" / "arm-x" / "floodmap_hmax_native.tif"
+        fm, why = self.pb.pick_floodmap(other, self.root)
+        self.assertEqual(fm, want)  # absent: the downscale target, under ITS domain
+        self.assertIn("not the run dir", why)
+        want.parent.mkdir(parents=True)
+        _tif(want, (40, 60), 1.0)
+        mine = self.root / "v1_monmouth" / "arm-x" / "floodmap_hmax_native.tif"
+        mine.parent.mkdir(parents=True)
+        _tif(mine, (40, 60), 1.0)
+        self.assertEqual(self.pb.pick_floodmap(other, self.root)[0], want)
+        # same-domain arm: unchanged, byte for byte
+        self.assertEqual(
+            self.pb.pick_floodmap(self.run, self.root),
+            (mine, f"{mine} (floodmap root)"),
+        )
+
+    def test_unregistered_parent_falls_back_to_the_active_domain(self):
+        odd = Path(self.tmp.name) / "elsewhere" / "arm-x"
+        self.assertEqual(self.pb.run_domain(odd), "v1_monmouth")
+
 
 if __name__ == "__main__":
     unittest.main()

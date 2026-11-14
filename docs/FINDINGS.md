@@ -373,7 +373,14 @@ CLAUDE.md §5.
    extent AND hid skill: CSI 0.83 → 0.70 on the full frame, hits 359 → 702 km². Never quote a
    lev3-only extent score beside a merged-frame one. v4 scores on the lev2 lattice (3.125 m,
    each pixel the mean of its 2×2 lev3 pixels): the 1.56 m bed is 77 GB as float32 and the
-   validate peaks at ~10× its raster (v3 99 G; v4 191 G on 3.125 m). The NJ-only MOTF sheet
+   validate peaks at ~10× its raster (v3 99 G; v4 191 G on 3.125 m). 🔴 **Every floodmap before
+   2026-11-12 was on that bed's FIRST OVERVIEW (6.25 m on v4), not 3.125 m:** hydromt's path-mode
+   `downscale_floodmap` opens `dep` with `overview_level=0`, which in rasterio is the first 2×-shrunk
+   overview; its averaging puts building height into 1-pixel streets, which come out dry
+   (`logs/floodmap_fix_2026-11-12/README.md`; fix `validate.core.downscale_floodmap_native`). Rows
+   since carry a `floodmap` label (`native 3.125 m`); unlabelled rows are the overview — never pool
+   the two. On four v4 arms the native map moves CSI +0.006…+0.009, POD +0.008…+0.009, HWM RMSE
+   −0.007…+0.003 (median, 50 m; `table.md` there); gauge / tide keys do not move. The NJ-only MOTF sheet
    reads NY land as confidently dry (pixels are only {0,1}); v4 screens with a validity
    raster where the NJ-only DEM has data (`Domain.motf_valid_tif`), because a box staircase
    cannot follow the DE/PA river border — the inherited `staten_island` box held 41 km² of NJ
@@ -539,6 +546,13 @@ CLAUDE.md §5.
     3.68 → 4.02 m) while ocean stations did not move, and the his difference is a 40–60
     min oscillation present from hour 3 of the window, before any rain fell. Never read
     bay HWM deltas off a rain-on/off pair.
+
+    **v4, Model 1.1.0 (2026-11-12, infiltration ON, native 3.125 m floodmap, pixel cross-tab of
+    1.1.0 vs its rain-off twin on the MOTF lattice; part 4 (o)):** rain-true FA 71.9 km² (64 % of
+    113.3); `disc_precision` **0.85** (60.2 of 71.1 km² disconnected), `disc_recall` **0.84** —
+    the precision claim is weaker here than on v1.5 / v3. The 10.5 km² that stays disconnected
+    without rain is non-tidal lakes and river reaches fed by inflows or the start (Lake Lenape),
+    which FEMA counts as land. Rain off again costs real flooding: POD 0.868 → 0.845, 31.4 km².
 
 40. ⭐ **The Raritan Bay sub-hourly motion is a REAL, COHERENT basin oscillation — not
     numerical chatter. `zsmax` scoring in the bay STANDS; what is fragile is its PHASE
@@ -2364,17 +2378,79 @@ the tide at −0.36 m, with only a 1–2 px NHD outline tail painted at the 1.61
 the pool (`alloway_pool_v4`, 0.388 km², ~600,000 m³; `logs/inland_water_lines_2026-11-05/`).
 
 (n) **Model 1.1.0 read** (`logs/v1_1_read_2026-11-06/READ.md`; both v1.1 arms on `v4_refreeze_swz_v11`, production
-engine, 32 threads, uninterrupted, output WHOLE). Paired vs 1.0.0, median 50 m, B 200 000: on the 1.x mark file
-(n 119) ΔRMSE −0.069 [−0.158, −0.007] for the levee arm (0.355 vs 0.424), −0.069 [−0.157, −0.006] for the
-Overpeck-only arm; on the v4 file (n 110) −0.072 for both. The gain is the open coast (−0.215 [−0.550, +0.014],
-n 23) and the NJ back bays (−0.055 [−0.092, −0.008], n 19); inlets, NY bays and rivers move by ≤ 0.02. MOTF CSI
-0.784 → 0.795 / 0.794. The upper Delaware gauges read 0.05–0.07 m lower than 1.0.0 (Marcus Hook → Newbold).
+engine, 32 threads, uninterrupted, output WHOLE). Paired vs 1.0.0, median 50 m, B 200 000, seed 20261007, **native
+3.125 m floodmaps** (job 63894123, `logs/native_rescore_2026-11-13/README.md`; the 11-07 6.25 m pairing reproduced line
+for line first): levee arm on the 1.x mark file (n 119) 0.348 vs 0.421, ΔRMSE **−0.072 [−0.166, −0.007]**; on the v4
+file (n 110) 0.360 vs 0.435, −0.075 [−0.174, −0.007]. (On the 6.25 m overview maps, 11-07: −0.069 [−0.158, −0.007] /
+−0.072 [−0.165, −0.006]; the Overpeck-only arm −0.069 [−0.157, −0.006] on the 1.x file, not re-scored natively.) The
+gain is the open coast (−0.221 [−0.575, +0.017], n 23) and the NJ back bays (−0.055 [−0.092, −0.008], n 19); inlets,
+NY bays and rivers move by ≤ 0.015 (1.x file, native). MOTF CSI 0.791 → 0.802 native (6.25 m: 0.784 → 0.795 / 0.794
+Overpeck-only). The upper Delaware gauges read 0.05–0.07 m lower than 1.0.0 (Marcus Hook → Newbold).
+**Rain on 1.1.0** (same job, native, 1.x file, n 119): 1.1.0 − its rain-off twin `p4-premier+rain-off+weir-elizabeth-rahway`
+(uninterrupted; inp differs only in rain + infiltration) ΔRMSE −0.017 [−0.028, −0.007] (0.348 vs 0.365): rain HELPS the
+marks a little, most in the NJ back bays (−0.022 [−0.049, −0.007], n 19) and on the open coast (−0.022 [−0.038, −0.000],
+n 23). On the extent it trades: rain off CSI 0.821 / POD 0.845 / FAR 0.034 vs 0.802 / 0.868 / 0.086 (excluded boxes
+2,412.7 km²; the pixel accounting is (o)). Rain off is the MOTF standard since 11-09 (poster Fig 3).
+**Waves on 1.1.0** (job 63895426, `logs/poster_diagnostics_2026-11-13/README.md` §3; native, median 50 m, 1.x file,
+the same 119 marks, B 200 000): 1.1.0 − this domain's `p4-nowaves` RMSE 0.348 vs 0.534, ΔRMSE **−0.186 [−0.317,
+−0.072]**. ⚠️ `p4-nowaves` here carries the Overpeck-only weir file, not the levees, so the pair also differs by the
+Elizabeth / Rahway levees — which tie on the marks with waves off (+0.0000) and on (−0.0001, above). By basin: open
+coast −0.459 [−0.883, −0.120] (n 23), inlets −0.124 [−0.166, −0.074] (14), NJ back bays −0.146 [−0.252, −0.006] (19),
+NY bays −0.022 [−0.059, +0.008] (47), rivers / Newark Bay −0.007 [−0.020, +0.006] (15); median per-mark rise +0.21 /
++0.22 / +0.20 / +0.07 / +0.003 m. The four `south_coast` lake marks rise +1.35 m (the wavemaker's overwash) and carry
+much of the total: `_excl_lake_blocked` (n 114, unpaired) 0.240 vs 0.298. The coast / inlet / back-bay rises are
+10–15× the §44 null band's median and all one sign; the NY-bay rise is inside its p90. MOTF CSI 0.802 vs 0.790 (POD
+0.868 vs 0.840, FAR 0.086 vs 0.071; waves-off flagged `extent_admissible=False`, finding 4).
+**Gauge peaks on 1.1.0** (`logs/poster_diagnostics_2026-11-13/README.md` §1, `gauge_peaks_summary.csv`; the scorer's
+own native-row keys, none recomputed). The **40 "fair" gauges** = the 48 in the domain minus 3 whose record ends
+before the crest with no published crest (Sandy Hook, Brandywine Shoal, USGS New Castle) and 5 that read the forcing,
+not the model (the two Narrows sensors, NOAA Lewes, the Sea Bright beach sensor, NOAA Atlantic City); each scored on
+its full record (22), on USGS's published crest where the archive has the storm-day hole (15, §60 (f)), or before a
+later failure that caught the crest (3: South Amboy, Cape May Harbor, the Cape May sensor). Peak error RMSE **0.226
+m**, bias **−0.103 m**, **85 %** within ±0.25 m, 92.5 % within ±0.5, median |lag| 34 min; NJ only (29) 0.229 / −0.088
+/ 86 %. Waves-off twin 0.274 / −0.205 / 63 %; waves raise the crest at all 40 (median +0.09 m, NJ +0.12). Without the
+Cape May storm-tide sensor (−0.61 m, reading 0.44 m above the NOAA and USGS gauges 1–6 km away) 0.208 m (n 39).
 **Levees vs Overpeck-only is a tie on everything observed**: ΔRMSE −0.0001 [−0.0034, +0.0031] (n 119); the
 deterministic waves-off pair +0.0000; the waves-on arms differ by 5–8 cm in Raritan Bay, far from any levee
 (SnapWave sensitivity). Scored one-sided, the 15 independent Newark marks move only within 15 m of a levee
 (001WL +0.01 → −0.07, HWM-208 +0.21 → +0.09 m; Elizabeth RMSE 0.149 → 0.119, n 4). No observation lies inside the
 leveed areas; Bayway substation is dry with levees, 97 % wet (median 0.79 m) without. The user chose the levee arm
 (2026-11-09) as mapped flood-control structures (NLD), not on the scores.
+
+(o) **Where 1.1.0 and the MOTF extent disagree** (statewide classification, job 63851106,
+`logs/motf_classify_v11_2026-11-12/READ.md`; native 3.125 m floodmaps on the 15 m MOTF lattice; wet = peak depth ≥
+0.15 m; scored = land > 0 m, active, inside the NJ validity raster; `motf_km2_excluded_boxes` 2,412.7 km²; self-check
+reproduces both rows' CSI to 1e-9). Every miss and false alarm (FA) gets one class, first test wins (BED_QUALITY.md
+§1; codes in the READ). Rain off (`p4-premier+rain-off+weir-elizabeth-rahway`, the MOTF standard) vs rain on (1.1.0):
+
+| km², scored | rain on | rain off |
+|---|---|---|
+| hit / miss / FA | 1201.4 / 183.4 / 113.3 | 1170.4 / 214.4 / 41.7 |
+| CSI / POD / FAR | 0.802 / 0.868 / 0.086 | 0.821 / 0.845 / 0.034 |
+| miss: under a building footprint (scoring artefact) | 38.4 | 38.4 |
+| miss: ground at / above the water, or within 15 cm under it (c1 + thin) | 96.4 | 114.4 |
+| miss: held = c2 + d2 + d1 (below the water, dry; d1 = behind a crest above it) | 48.6 (d1 10.5) | 61.5 (d1 15.3) |
+| FA: no wet path to the sea | 71.1 | 10.8 |
+
+- **Rain off trades −72 km² of FA for +31 km² of misses**; it is not "the same map minus the rain ponds". 60.2 of
+  the 71.6 km² FA drop is ground with no wet path to the sea; 31.4 km² that FEMA and the rain-on model both flood goes
+  dry (Cape May 13.3, Cumberland 5.4, Atlantic 4.5, Gloucester 3.2). Whether that is real compound flooding or rain on
+  ground FEMA paints as surge, these files cannot say; the rain-on POD 0.868 is partly carried by rain.
+- **The misses are mostly not the bed.** Rain off, of 214 km² missed: 7 % (15.3 km²) is behind a crest above the
+  water; 53 % ground at, above or within 15 cm of the local water; 18 % under buildings; 21 % low ground the water
+  could have reached and did not. The largest single miss is Cape May (48.6 km² rain off), mostly c1 + thin: the
+  water level is the suspect before the bed (its 8 marks read 0.20 m low, median 50 m, 6.25 m floodmap).
+- **Levees barely touch the headline**: 41.6 km² of FEMA's flood (3 %) is inside the 81 NLD leveed areas; CSI outside
+  them 0.822 vs 0.821 all (rain off). Inside, the errors are misses (CSI 0.76, POD 0.76) — FEMA's bathtub has no
+  levees, so this cannot say whether a levee held.
+- **Against 1.0.0** (6.25 m, job 63670241, `logs/motf_classify_2026-11-07/`): rain-on 1.1.0 misses 30 km² less,
+  −27.7 km² of it held ground (Newark window held 23.4 → 10.4 km²); building, above-the-water and no-path classes do
+  not move. Model and map resolution change together, so neither gets the credit.
+- **Disagreement locators, not a fix list** (rain off): Cumberland's Delaware Bay marsh fringe (ground 0.3–1 m above
+  the modelled water, c1: likely FEMA's product); d1 crests at Bridgeport / Logan Twp (2.29 m vs 1.44 m water) and the
+  Maurice River marsh (2.50 vs 1.06; berms or dikes, need an independent source); deep model water where FEMA is dry
+  at Bayonne (40.69 N 74.11 W) and Linden (40.60 N 74.21 W); the rain-off "no path to the sea" FA left is mostly
+  non-tidal lakes and river reaches (Lake Lenape, 2.5 km²), a scoring-definition limit.
 
 **Head-of-tide variants on v4's mesh (`v4_hot` = A, `v4_hot_plus` = A+; mask-only, registered
 2026-10-02; read 2026-10-03, `logs/v4_hot_2026-10-03/`).** Marks identical to v4 (RMSE 0.577 /

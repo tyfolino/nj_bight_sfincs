@@ -11,9 +11,14 @@ One pass over everything a check-in used to take a dozen commands for:
   ``DependencyNeverSatisfied`` is flagged, it never clears on its own (CLAUDE.md §5).
 - **EXPECT_MD5 guards** — every PENDING job's checksum file is checked NOW, so an
   edit that would make the job refuse at start ("STALE FILES") is caught while it
-  can still be undone.  SLURM hides a job's environment, so the file is
-  INFERRED: the newest ``*expected.md5`` beside the job script written before the
-  submit (``.bak_*`` copies never match the glob).  The report names the file.
+  can still be undone.  Which file a job checks is read, in order, from: (1) the
+  job's environment as Slurm accounting stored it (``sacct --env-vars``; empty on
+  Amarel, whose ``AccountingStoreFlags`` lacks ``job_env``, 2026-11-14); (2) the
+  SPOOLED script — an ``EXPECT_MD5=<path>`` it sets itself, else the one path its
+  comments name in the documented submit line (``env EXPECT_MD5=… sbatch …``); and
+  only then (3) INFERRED: the newest ``*expected.md5`` beside the job script written
+  before the submit (``.bak_*`` copies never match the glob).  The report names the
+  file and which of the three it came from.
   RUNNING jobs are checked too, because a PREEMPTION requeue re-runs the check
   (job 63524748, 2026-11-04): the job's SPOOLED script (``scontrol write
   batch_script``, what a requeue re-runs) says whether it warns and continues on a
@@ -149,6 +154,63 @@ def spooled_script(jobid: str) -> str:
     return _run(["scontrol", "write", "batch_script", jobid, "-"])
 
 
+#: ``EXPECT_MD5=<path>`` in a shell line: an optional ``export``/``env``, a literal path
+#: (a ``$``-expansion or an empty value is not one); quotes allowed.
+_ASSIGN = re.compile(r"""(?:^|[\s;(])EXPECT_MD5=(["']?)([^\s"';$`|&)]+)\1""")
+
+
+def _read(p: Path) -> str:
+    try:
+        return p.read_text(errors="replace")
+    except OSError:
+        return ""
+
+
+def sacct_env_md5(jobid: str) -> str | None:
+    """``EXPECT_MD5`` from the job's environment as Slurm accounting stored it, or None.
+    Only when the cluster stores job environments (``AccountingStoreFlags=job_env``);
+    otherwise sacct prints ``NONE``."""
+    out = _run(["sacct", "-j", jobid, "--env-vars", "-X"])
+    m = re.search(r"^EXPECT_MD5=(.*)$", out, re.M)
+    return (m.group(1).strip() or None) if m else None
+
+
+def spooled_md5(text: str) -> tuple[str | None, str]:
+    """``(path, how)`` from a spooled script: a value the script SETS on a code line
+    wins; else the single path its comments name (the documented submit line).  None
+    when there is neither, or the comments name more than one."""
+    code, docs = [], []
+    for line in (text or "").splitlines():
+        s = line.strip()
+        found = [m.group(2) for m in _ASSIGN.finditer(s.lstrip("#"))]
+        (docs if s.startswith("#") else code).extend(found)
+    if code:
+        return code[-1], "the spooled script sets it"
+    uniq = list(dict.fromkeys(docs))
+    if len(uniq) == 1:
+        return uniq[0], "the spooled script's documented submit line"
+    return None, ""
+
+
+def job_md5(
+    jobid: str, text: str, workdir: Path, env=sacct_env_md5
+) -> tuple[Path | None, str]:
+    """The EXPECT_MD5 file a job checks when Slurm can tell us (its stored environment,
+    then its spooled script), resolved against the job's working directory; ``(None,
+    "")`` when neither names one, so the caller falls back to ``pick_md5``."""
+    val = env(jobid)
+    if val:
+        p = Path(val) if Path(val).is_absolute() else workdir / val
+        src = "from the job's environment (sacct --env-vars)"
+        return (p, src) if p.is_file() else (None, f"🔴 {val} ({src}) does not exist")
+    val, src = spooled_md5(text)
+    if val:
+        p = Path(val) if Path(val).is_absolute() else workdir / val
+        if p.is_file():  # a stale comment naming a deleted file falls through
+            return p, f"from {src}"
+    return None, ""
+
+
 def pick_md5(
     script: Path, submit: datetime | None, text: str | None = None
 ) -> tuple[Path | None, str]:
@@ -199,16 +261,22 @@ def md5_failures(entries: list[tuple[str, Path]]) -> list[str]:
     return bad
 
 
-def attach_guards(jobs: list[Job], spool=spooled_script) -> None:
+def attach_guards(jobs: list[Job], spool=spooled_script, env=sacct_env_md5) -> None:
     """Pending and running jobs: the md5 file each checks, and the files it lists.
-    ``spool`` is injectable so tests need no SLURM."""
+    ``spool`` and ``env`` are injectable so tests need no SLURM.  The file is the one
+    Slurm names (``job_md5``) when it can, else the inferred one (``pick_md5``)."""
     for j in jobs:
         if j.state not in ("PENDING", "RUNNING") or not j.command or j.name == "vscode":
             continue
         j.spooled = spool(j.jobid)
-        j.md5_file, j.md5_note = pick_md5(Path(j.command), j.submit, j.spooled or None)
+        wd = Path(j.workdir) if j.workdir else Path(j.command).parent
+        script = Path(j.command)
+        j.md5_file, j.md5_note = None, ""
+        if "EXPECT_MD5" in (j.spooled or _read(script)):
+            j.md5_file, j.md5_note = job_md5(j.jobid, j.spooled, wd, env=env)
+        if j.md5_file is None and not j.md5_note:
+            j.md5_file, j.md5_note = pick_md5(script, j.submit, j.spooled or None)
         if j.md5_file is not None:
-            wd = Path(j.workdir) if j.workdir else Path(j.command).parent
             j.guarded = [p for _, p in md5_entries(j.md5_file, wd)]
 
 
@@ -286,6 +354,7 @@ def running_guard(j: Job) -> int:
         kind = "OLD pattern: refuses on a requeue"
     if not j.requeue:
         kind += "; not requeueable (a preemption cancels it)"
+    kind = f"{j.md5_note}; {kind}"  # which source named the md5 file, then the pattern
     if not bad:
         print(
             f"  ✅ {j.jobid} {j.name}: {len(j.guarded)}/{len(j.guarded)} OK "

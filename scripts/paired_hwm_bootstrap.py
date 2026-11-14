@@ -45,6 +45,7 @@ the NY bay marks move together between ANY two arms and can dominate a pooled de
 from __future__ import annotations
 
 import argparse
+import os
 from pathlib import Path
 
 import geopandas as gpd
@@ -113,6 +114,23 @@ def scored_marks():
 NATIVE_NAME = "floodmap_hmax_native.tif"
 
 
+def run_domain(model_dir: Path) -> str:
+    """The domain a run dir BELONGS to: the registered domain whose
+    ``experiments/<domain>/`` holds it, else the active one.
+
+    An arm may name another domain's run (``../v4_refreeze_swz/p4-premier`` under
+    ``NJ_DOMAIN=v4_refreeze_swz_v11``, the 1.0.0 - 1.1.0 pairing): the ACTIVE domain still
+    supplies the marks and the region clip, but that run's floodmap lives under ITS
+    domain. Read off the lexically normalised path (``..`` folded, symlinks NOT followed:
+    ``experiments/`` is a symlink to scratch), then off the resolved one.
+    """
+    model_dir = Path(model_dir)
+    for d in (Path(os.path.normpath(model_dir)), model_dir.resolve()):
+        if d.parent.name in _domain.DOMAINS:
+            return d.parent.name
+    return _domain.active().name
+
+
 def pick_floodmap(model_dir: Path, root: Path | None) -> tuple[Path | None, str]:
     """``(floodmap_fn, why)`` for ``validate.load_floodmap``; ``None`` = the run dir's.
 
@@ -122,14 +140,18 @@ def pick_floodmap(model_dir: Path, root: Path | None) -> tuple[Path | None, str]
     run dir. Without that file, a run-dir cache that is already native and fresh is read
     as it is (read-only); otherwise the downscale is written to the DIR path, never into
     the run dir (there, ``load_floodmap`` would replace the pre-fix map). No root: the
-    default, the run dir's own cache, exactly as before.
+    default, the run dir's own cache, exactly as before. ``<domain>`` is the RUN's
+    domain (``run_domain``), not necessarily the active one: a cross-domain arm
+    (``../<other domain>/<arm>``) is looked up, or downscaled, under its own domain
+    (2026-11-14; before, it went under the active domain's name, i.e. into another
+    domain's tree — why ``logs/native_rescore_2026-11-13/paired_maps.py`` exists).
     """
     from nj_sfincs.validate import core  # noqa: PLC0415
 
     if root is None:
         return None, "run dir floodmap_hmax_lev3.tif (default)"
     model_dir = Path(model_dir)
-    cand = Path(root) / _domain.active().name / model_dir.name / NATIVE_NAME
+    cand = Path(root) / run_domain(model_dir) / model_dir.name / NATIVE_NAME
     if cand.is_file():
         return cand, f"{cand} (floodmap root)"
     own = model_dir / "floodmap_hmax_lev3.tif"
@@ -228,7 +250,8 @@ def main() -> int:
         default=None,
         metavar="DIR",
         help="read each arm's floodmap from DIR/<domain>/<arm>/floodmap_hmax_native.tif "
-        "(logs/floodmap_fix_2026-11-12/rescore.sh's FM_ROOT) and write nothing into "
+        "(logs/floodmap_fix_2026-11-12/rescore.sh's FM_ROOT; <domain> = the RUN's "
+        "domain, so a cross-domain arm ../<domain>/<arm> works) and write nothing into "
         "its run dir; see pick_floodmap. Default: the run dir's own cache",
     )
     a = p.parse_args()

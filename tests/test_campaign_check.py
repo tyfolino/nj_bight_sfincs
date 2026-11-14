@@ -57,6 +57,78 @@ class TestPickMd5(unittest.TestCase):
         self.assertIn("no EXPECT_MD5", note)
 
 
+class TestJobMd5(unittest.TestCase):
+    """The md5 file Slurm names beats the inference (63887750 / 63887749, 2026-11-14:
+    the newest ``expected.md5`` before submit was another job's file)."""
+
+    def setUp(self):
+        self.cc = _cc()
+        self.tmp = Path(tempfile.mkdtemp())
+        self.t0 = datetime(2026, 11, 13, 12, 42)
+        (self.tmp / "a.py").write_text("x = 1\n")
+        ok = hashlib.md5(b"x = 1\n").hexdigest()
+        self.resume = _touch(
+            self.tmp / "expected_resume.md5", f"{ok}  a.py\n", self.t0 - timedelta(1)
+        )
+        self.newest = _touch(self.tmp / "expected.md5", "", self.t0)  # the decoy
+        self.script = self.tmp / "resume.slurm"
+        self.spooled = (
+            "#!/bin/bash\n"
+            "#   env EXPECT_MD5=expected_resume.md5 NWEIR=862 \\\n"
+            "#       sbatch resume.slurm\n"
+            'if [ -n "${EXPECT_MD5:-}" ]; then md5sum -c "$EXPECT_MD5" || exit 3; fi\n'
+        )
+        _touch(self.script, self.spooled, self.t0)
+
+    def _job(self, spooled, env=lambda _id: None):
+        j = self.cc.Job("9", "r", "PENDING", "None", "", "1:00:00", "0:00", "", "")
+        j.command, j.workdir, j.submit = str(self.script), str(self.tmp), self.t0
+        self.cc.attach_guards([j], spool=lambda _id: spooled, env=env)
+        return j
+
+    def test_documented_submit_line_beats_inference(self):
+        j = self._job(self.spooled)
+        self.assertEqual(j.md5_file, self.resume)
+        self.assertIn("documented submit line", j.md5_note)
+        self.assertEqual(j.guarded, [self.tmp / "a.py"])
+
+    def test_environment_beats_the_script(self):
+        other = _touch(self.tmp / "expected_x.md5", "", self.t0)
+        j = self._job(self.spooled, env=lambda _id: str(other))
+        self.assertEqual(j.md5_file, other)
+        self.assertIn("sacct --env-vars", j.md5_note)
+        j = self._job(self.spooled, env=lambda _id: "gone.md5")
+        self.assertIsNone(j.md5_file)
+        self.assertIn("does not exist", j.md5_note)
+
+    def test_a_value_the_script_sets_beats_its_comments(self):
+        j = self._job(self.spooled + "export EXPECT_MD5=expected.md5\n")
+        self.assertEqual(j.md5_file, self.newest)
+        self.assertIn("sets it", j.md5_note)
+
+    def test_ambiguous_or_absent_falls_back_to_inference(self):
+        two = self.spooled + "#   EXPECT_MD5=expected.md5 sbatch resume.slurm\n"
+        for spooled in (two, self.spooled.replace("expected_resume", "deleted")):
+            j = self._job(spooled)
+            self.assertEqual(j.md5_file, self.newest, spooled)
+            self.assertIn("inferred", j.md5_note)
+
+    def test_sacct_env_parse(self):
+        out = (
+            "Environment used for 9 (must be batch to display)\n"
+            + "-" * 80
+            + "\nHOME=/x\nEXPECT_MD5=logs/a/expected_resume.md5\n"
+        )
+        orig = self.cc._run
+        try:
+            self.cc._run = lambda cmd: out
+            self.assertEqual(self.cc.sacct_env_md5("9"), "logs/a/expected_resume.md5")
+            self.cc._run = lambda cmd: out.split("HOME")[0] + "NONE\n"
+            self.assertIsNone(self.cc.sacct_env_md5("9"))
+        finally:
+            self.cc._run = orig
+
+
 class TestMd5Failures(unittest.TestCase):
     def test_changed_and_missing(self):
         cc = _cc()

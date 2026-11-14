@@ -221,25 +221,39 @@ Scores go to `experiments/v4_refreeze_swz_v11/metrics.csv` (1.0.0: `experiments/
 every row carries `engine`, `engine_seed`, `meteo`, `infiltration`, `subgrid`. Arms are compared PAIRED
 (`scripts/paired_hwm_bootstrap.py`). 1.1.0 is scored on the 1.x mark file, 1.0.0 on the v4 file: compare them on
 the PAIRED rows, which put both on one mark set. A bare-ground wave bed scores the same (ΔRMSE −0.000
-[−0.004, +0.004], part 4 (j), on 1.0.0).
+[−0.004, +0.004], part 4 (j), on 1.0.0). **HWM and MOTF scores are on the NATIVE 3.125 m floodmap** (re-scored
+2026-11-12/13, `logs/floodmap_fix_2026-11-12/`, `logs/native_rescore_2026-11-13/`, job 63894123): every floodmap
+before 2026-11-12 was read on the bed's first overview (6.25 m; FINDINGS §37). That is a map-resolution fix, not a
+model change; the 6.25 m numbers are kept below, labelled. `metrics.csv` still holds 1.1.0's 6.25 m row; the native
+rows are in `logs/floodmap_fix_2026-11-12/rows/`. Gauge keys do not depend on the floodmap.
 
 | target | scored as | 1.1.0 (`p4-premier+weir-elizabeth-rahway`) | 1.0.0 (`p4-premier`) |
 |---|---|---|---|
-| USGS HWMs (STN event 24), all | RMSE / bias, **median estimator, 50 m radius** (`_scored` keys) | 1.x file: RMSE 0.355, bias −0.072 m, n 119, 1 dry, 93.3 % within ±0.5 m | v4 file: RMSE 0.439, bias −0.128 m, n 110, 1 dry, 91.8 % within ±0.5 m |
-| paired, 1.1.0 − 1.0.0 | ΔRMSE [95 % CI], B 200 000, same estimator and radius | 1.x file (n 119): 0.355 vs 0.424, **−0.069 [−0.158, −0.007]**; v4 file (n 110): 0.367 vs 0.439, −0.072 [−0.165, −0.006]. By basin (1.x): open coast −0.215 [−0.550, +0.014], NJ back bays −0.055 [−0.092, −0.008], inlets / NY bays / rivers within ±0.015 | — |
-| HWMs without the `lake_outlet_blocked` marks | same estimator and radius (`_excl_lake_blocked`) | RMSE 0.249, bias −0.033 m, n 114, 94.7 % within ±0.5 m | RMSE 0.259, bias −0.066 m, n 105, 95.2 % within ±0.5 m |
-| HWMs without the 6 noted marks (6121, 6155, 6169, 6188, 6202, 6398: run-up, `leak`, questioned; drawn hollow) | same estimator and radius (`_excl_noted`) | RMSE 0.312, bias −0.051 m, n 113, 97.3 % within ±0.5 m | RMSE 0.354, bias −0.093 m, n 104, 97.1 % within ±0.5 m |
+| USGS HWMs (STN event 24), all | RMSE / bias, **median estimator, 50 m radius** (`_scored` keys), native 3.125 m floodmap | 1.x file: **RMSE 0.348, bias −0.067 m**, n 119, 0 dry, 93.3 % within ±0.5 m (6.25 m: 0.355 / −0.072, 1 dry) | v4 file: RMSE 0.435, bias −0.125 m, n 110, 0 dry, 90.9 % within ±0.5 m (6.25 m: 0.439 / −0.128, 1 dry, 91.8 %) |
+| paired, 1.1.0 − 1.0.0 | ΔRMSE [95 % CI], B 200 000, seed 20261007, same estimator and radius, native | 1.x file (n 119): 0.348 vs 0.421, **−0.072 [−0.166, −0.007]**; v4 file (n 110): 0.360 vs 0.435, −0.075 [−0.174, −0.007]. By basin (1.x): open coast −0.221 [−0.575, +0.017], NJ back bays −0.055 [−0.092, −0.008], inlets / NY bays / rivers within ±0.015. (6.25 m, 11-07: −0.069 [−0.158, −0.007] / −0.072 [−0.165, −0.006]) | — |
+| HWMs without the `lake_outlet_blocked` marks | same estimator and radius (`_excl_lake_blocked`), native | RMSE 0.240, bias −0.029 m, n 114, 94.7 % within ±0.5 m (6.25 m: 0.249 / −0.033) | RMSE 0.250, bias −0.062 m, n 105, 94.3 % within ±0.5 m (6.25 m: 0.259 / −0.066) |
+| HWMs without the 6 noted marks (6121, 6155, 6169, 6188, 6202, 6398: run-up, `leak`, questioned; drawn hollow) | same estimator and radius (`_excl_noted`), native | RMSE 0.310, bias −0.049 m, n 113, 97.3 % within ±0.5 m (6.25 m: 0.312 / −0.051) | RMSE 0.352, bias −0.091 m, n 104, 96.2 % within ±0.5 m (6.25 m: 0.354 / −0.093) |
 | NOAA CO-OPS gauges (6-min) | peak error, m | Atlantic City +0.50, Cape May +0.00, Lewes −0.17, Ship John −0.05, Reedy Point −0.11, Delaware City −0.24, Marcus Hook −0.21, Philadelphia −0.18, Burlington −0.17, Newbold −0.19; Sandy Hook −0.30 before the gauge failed. The upper Delaware reads 0.05–0.07 m lower than 1.0.0 | Atlantic City +0.494 (the NACCS forcing, local to there; part 4 (h)), Cape May −0.101, Lewes −0.191, Ship John −0.068, Reedy Point −0.110, Delaware City −0.189, Marcus Hook −0.142, Philadelphia −0.120, Burlington −0.116, Newbold −0.138; Sandy Hook −0.321 before the gauge failed |
-| all gauges with a full peak record (NOAA, USGS tidal, STN storm-tide sensors) | peak error; Great Kills corrected −0.34 m (§50); published crests where USGS's archive has the storm-day hole (`peak_err_pub_*`, §60 (f)) | per gauge in `logs/v1_1_read_2026-11-06/READ.md` §5; Christina gauges re-datumed (re-baseline, no delta) | median \|error\| 0.110 m, median −0.068 m (27 gauges) |
-| FEMA MOTF extent (NJ only) | CSI / POD / FAR inside the validity mask, footprints not masked (§55) | CSI 0.795, POD 0.859, FAR 0.086; `motf_km2_excluded_boxes` 2,412.8 km²; false alarms 42.5 km² connected, 68.8 km² disconnected | CSI 0.784, POD 0.846, FAR 0.086; `motf_km2_excluded_boxes` 2,412.8 km² (incl. `salem_marshes`, 418 km²); false alarms 39.8 km² connected, 70.6 km² disconnected |
+| all gauges with a full peak record (NOAA, USGS tidal, STN storm-tide sensors) | peak error; Great Kills corrected −0.34 m (§50); published crests where USGS's archive has the storm-day hole (`peak_err_pub_*`, §60 (f)) | per gauge in `logs/v1_1_read_2026-11-06/READ.md` §5; Christina gauges re-datumed (re-baseline, no delta). Same 27-gauge recipe: median \|error\| 0.117 m, median −0.067 m | median \|error\| 0.110 m, median −0.068 m (27 gauges) |
+| the 40 "fair" gauges | peak error, the scorer's keys: the 48 gauges minus 3 dead before the crest with no published crest (Sandy Hook, Brandywine Shoal, New Castle) and 5 that read the forcing (2 Narrows sensors, Lewes, Sea Bright beach sensor, Atlantic City); full record (22), published crest (15) or pre-failure crest (3) (`logs/poster_diagnostics_2026-11-13/README.md` §1) | **RMSE 0.226 m, bias −0.103 m, 85 % within ±0.25 m**, 92.5 % within ±0.5 m, median \|lag\| 34 min; NJ (29) 0.229 / −0.088 / 86 %; without the Cape May storm-tide sensor (−0.61 m) 0.208 m (n 39) | — |
+| FEMA MOTF extent (NJ only) | CSI / POD / FAR inside the validity mask, footprints not masked (§55), native 3.125 m floodmap | **CSI 0.802, POD 0.868, FAR 0.086**; `motf_km2_excluded_boxes` 2,412.7 km²; false alarms 42.2 km² connected, 71.1 km² disconnected (6.25 m: CSI 0.795, POD 0.859, FAR 0.086) | CSI 0.791, POD 0.855, FAR 0.087; `motf_km2_excluded_boxes` 2,412.6 km² (incl. `salem_marshes`, 418 km²); false alarms 40.1 km² connected, 72.2 km² disconnected (6.25 m: CSI 0.784, POD 0.846, FAR 0.086) |
+| FEMA MOTF extent, rain-off twin (the MOTF standard since 11-09) | as above, `p4-premier+rain-off+weir-elizabeth-rahway`, native | CSI 0.821, POD 0.845, FAR 0.034; FA 30.9 / 10.8 km² connected / disconnected. Rain off trades −72 km² of false alarm for +31 km² of misses (FINDINGS part 4 (o)) | — |
 | 15 independent Newark-window marks (SIR 2016-5085 / OFR 2013-1043) | one-sided (no pixel across a levee line), median, 50 m, waves-off pair | levees vs none: all 15 RMSE 0.147 vs 0.154; Elizabeth (n 4) 0.119 vs 0.149 (`logs/walls_elizabeth_rahway_2026-11-05/README.md` "One-sided mark read") | — |
 
 The levee arm and the Overpeck-only arm (`p4-premier` on this domain) tie on the marks: ΔRMSE −0.0001
 [−0.0034, +0.0031], n 119; MOTF CSI 0.7947 vs 0.7942. The levees were chosen because they are mapped flood-control
 structures (NLD) and scoring them one-sided hurts no mark, not because the scores separate the arms (user 2026-11-09).
+(Those two figures are 6.25 m; the Overpeck-only arm was not re-scored natively.)
+
+**Sensitivities (1.1.0)** (median, 50 m, 1.x file, n 119, paired, B 200 000, native 3.125 m; FINDINGS part 4 (n)):
+
+| what | result |
+|---|---|
+| waves on vs off (job 63895426; the waves-off arm is this domain's `p4-nowaves`, Overpeck-only weirs, no levees) | −0.186 [−0.317, −0.072]; RMSE 0.348 vs 0.534. Open coast −0.459 [−0.883, −0.120], inlets −0.124 [−0.166, −0.074], NJ back bays −0.146 [−0.252, −0.006], NY bays −0.022 [−0.059, +0.008], rivers −0.007 [−0.020, +0.006]. Without the lake marks (unpaired) 0.240 vs 0.298. 40 fair gauge peaks: RMSE 0.226 vs 0.274 m, every crest higher with waves (median +0.09 m) |
+| rain on vs off (job 63894123) | −0.017 [−0.028, −0.007] (0.348 vs 0.365); extent: rain off CSI 0.821 / POD 0.845 / FAR 0.034 vs 0.802 / 0.868 / 0.086 |
 
 **Sensitivities (1.0.0)** (ΔRMSE of `p4-premier` − the arm, median, 50 m, n 110, paired, B 200 000, 95 % CI;
-parts 4 (i)–(j)); not re-run on 1.1.0. Rain and soil were measured on the previous wave bed; non-lake effects should carry over.
+parts 4 (i)–(j); 6.25 m overview floodmaps); only waves and rain were re-run on 1.1.0 (above). Rain and soil were measured on the previous wave bed; non-lake effects should carry over.
 
 | what | result |
 |---|---|

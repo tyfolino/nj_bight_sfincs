@@ -459,3 +459,23 @@ flooded if any part has ≥ 0.15 m; blue = flood extent as in Fig 1b. B = Newark
 **Conclusion 3:** It turns floods into risk (Experiment 2): nearly one-third of New Jersey's power plants and
 substations in the model (52 of 182) would flood if Sandy struck today's coast, and the same depths feed building
 damage estimates. [add the impact number]
+
+## Poster v10 changes (2026-11-14; `build_v10.py` on v9, v9 kept in `drafts/`)
+
+- **Results 1** (now 26 pt, as Results 2), two bullets added (`logs/poster_diagnostics_2026-11-13/README.md`):
+  - **Tide gauges:** at 40 gauges, Newark Bay to Cape May and up the Delaware to Philadelphia, the peak is within
+    0.25 m at 85 % (RMSE 0.23 m, 0.10 m low), timed to about half an hour. (40 = the fair set: 46 placed minus 3 dead
+    before the crest and 3 that read the forcing.)
+  - **Waves matter:** without them the peak drops about 0.2 m on the ocean coast, at the inlets and in the NJ back
+    bays; the error at the marks grows from 0.35 to 0.53 m (0.24 to 0.30 m without the five lake marks, where waves
+    wash over the beach). (Job 63895426, median 50 m, n 119 / 114 `_excl_lake_blocked`, native 3.125 m; user 11-14:
+    quote both, since the five Deal Lake / Wreck Pond marks carry most of the all-mark gain.)
+- **SLR count "about 30 (still water, first 2026 ground)" → 22** of the 182 on a typical high tide: the + 4 ft
+  (1.22 m) tidal run's mean higher-high, on today's ground estimate (`_subgrid_modern2026b`, Model 1.1.0 domain), 15
+  plants / 7 substations, 3 with ≥ half their land wet (`logs/slr_assets_2026-11-13/results/v11modernb_tidal4ft_mhh_summary.txt`).
+  Changed in the Abstract, Methods (Experiment 2) and Results 2.
+- Not done: the hydrograph panel (no room without shrinking Fig 1); the FIAT box and its red stubs are unchanged.
+- ⚠️ The waves-off twin (`p4-nowaves`) also lacks the Elizabeth / Rahway levees (Overpeck-only weir file), so the
+  waves pair differs by the levees too (found 11-14, FINDINGS part 4 (n)). The levees alone leave the 119-mark RMSE
+  unchanged (0.355 vs 0.355, `logs/v1_1_read_2026-11-06/READ.md`), and the waves effect sits on the open coast,
+  inlets and NJ back bays, far from them (rivers / Newark Bay group Δ −0.007). The bullet stands as written.

@@ -27,11 +27,18 @@ The levee arm and the Overpeck-only arm tie on the marks; the levees were chosen
 **Validation inputs:** the 1.x mark file (+13 Newark Bay / Hackensack / Overpeck marks, 206); the Christina
 USGS gauges re-datumed NGVD29 → NAVD88. Scores before 2026-11-05 carry the old gauge numbers: re-baseline.
 
-**Scores (median estimator, 50 m):** HWM 1.x file RMSE 0.355 / bias −0.072 m (n 119); paired vs 1.0.0 ΔRMSE −0.069
-[−0.158, −0.007] (1.x file, n 119), −0.072 [−0.165, −0.006] (v4 file, n 110); MOTF CSI 0.795 (POD 0.859, FAR 0.086;
-excluded boxes 2,412.8 km²). Upper Delaware gauges read 0.05–0.07 m lower than 1.0.0.
+**Scores (median estimator, 50 m; native 3.125 m floodmap, re-scored 2026-11-12/13, job 63894123):** HWM 1.x file
+RMSE 0.348 / bias −0.067 m (n 119); paired vs 1.0.0 ΔRMSE −0.072 [−0.166, −0.007] (1.x file, n 119), −0.075
+[−0.174, −0.007] (v4 file, n 110); MOTF CSI 0.802 (POD 0.868, FAR 0.086; excluded boxes 2,412.7 km²); rain-off twin
+CSI 0.821 (POD 0.845, FAR 0.034). As first published on the 6.25 m overview floodmap: HWM 0.355 / −0.072; ΔRMSE −0.069
+[−0.158, −0.007] / −0.072 [−0.165, −0.006]; CSI 0.795 (POD 0.859). Upper Delaware gauges read 0.05–0.07 m lower than
+1.0.0. 40 "fair" gauge peaks (MODEL.md §6): RMSE 0.226 m, bias −0.103 m, 85 % within ±0.25 m.
+
+**Not a version change, 2026-11-12:** every floodmap had been downscaled on the bed's first overview (6.25 m), not its
+native 3.125 m (`logs/floodmap_fix_2026-11-12/README.md`). The model is unchanged; HWM and MOTF scores of both
+versions moved, gauge scores did not.
 
 ## 1.0.0 — 2026-11-01
 
-`p4-premier` on `v4_refreeze_swz` / `90cc7468614a5814`, job 63181564. HWM RMSE 0.439 / bias −0.128 m (median, 50 m,
-n 110); MOTF CSI 0.784. See the `v1.0.0` tag's `docs/MODEL.md`.
+`p4-premier` on `v4_refreeze_swz` / `90cc7468614a5814`, job 63181564. HWM RMSE 0.435 / bias −0.125 m (median, 50 m,
+n 110, native 3.125 m floodmap); MOTF CSI 0.791 (as published on the 6.25 m overview: 0.439 / −0.128, CSI 0.784). See the `v1.0.0` tag's `docs/MODEL.md`.
