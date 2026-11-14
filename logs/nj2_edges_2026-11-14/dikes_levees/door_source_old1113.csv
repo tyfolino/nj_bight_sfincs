@@ -1,0 +1,3 @@
+source,qmax_m3s,x,y,nearest_line,d_line_m,face,level_base,level_set,rise_m,flag
+26,45.81,467581.1,4411657.0,chester_nld4805000005_00,929,1664186,-0.0,3.41,3.41,ENCLOSED: the source's inflow can only leave over a crest
+27,26.37,470165.5,4412648.8,chester_nld4805000005_00,1693,1731468,0.01,0.01,0.0,

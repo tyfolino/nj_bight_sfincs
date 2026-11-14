@@ -17,7 +17,17 @@ bathymetry, so a survey pixel only counts where the current bed says it may (``a
 The current bed is the premier's recipe without the building burn. 🔴 It is ROTATED; reading
 goes through its affine via ``reproject``, never ``x0 + col*res`` (CLAUDE.md §5).
 
-    python scripts/build_modern_land.py --workers 16
+    python scripts/build_modern_land.py --workers 16 --report <dir>
+
+``--bed`` / ``--out`` (2026-11-14, for Model 2.0's mesh): judge the surveys against another
+current bed — any GDAL raster, rotated or not, e.g. a new mesh's 2012 ``dep_subgrid_merged.tif``
+— and write into another directory (the per-source VRTs go to ``<out>/vrt``). The raster's
+extent is the bed's bounding box. Without them the script reads ``BED`` and writes ``OUT``,
+exactly as before (``tests/test_build_modern_land.py`` pins it).
+
+    python scripts/build_modern_land.py --workers 32 --report <dir> \
+        --bed experiments/<nj2 domain>/<2012 subgrid>/subgrid/dep_subgrid_merged.tif \
+        --out /scratch/tpj8/nj_bight_sfincs_data/elevation_modern_2026/<new dir>
 
 Writes the raster, ``modern_land_2026_source.tif`` (uint8, ``SOURCES`` index + 1) and, beside
 ``--report``, a per-source table + overview figure. Check the medians before building a bed:
@@ -130,7 +140,7 @@ def _read(path, shape, transform, resampling, factor=1.0):
 
 def do_block(job):
     """Fill one block, newest source first. Returns the arrays and per-source tallies."""
-    r0, c0, h, w, t0, sources = job
+    r0, c0, h, w, t0, sources, bed = job
     tr = rasterio.Affine(t0.a, 0, t0.c + c0 * t0.a, 0, t0.e, t0.f + r0 * t0.e)
     x0, y1 = tr.c, tr.f
     x1, y0 = x0 + w * RES, y1 - h * RES
@@ -142,7 +152,7 @@ def do_block(job):
     tally = {}
     if not near:
         return r0, c0, None, None, tally
-    old = _read(BED, (h, w), tr, Resampling.nearest)
+    old = _read(bed, (h, w), tr, Resampling.nearest)
     z = np.full((h, w), np.nan, "float32")
     who = np.zeros((h, w), "uint8")
     for i, s in near:
@@ -172,15 +182,20 @@ def _hist_pct(hist, q):
     return float(HIST_EDGES[np.searchsorted(c, q * c[-1]) + 1]) if c[-1] else float("nan")
 
 
-def main() -> int:
+def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     ap.add_argument("--workers", type=int, default=16)
     ap.add_argument("--report", type=Path, required=True, help="dir for the table + figure")
-    a = ap.parse_args()
+    ap.add_argument("--bed", type=Path, default=BED, help="the current bed (default: v4's)")
+    ap.add_argument("--out", type=Path, default=OUT, help="output dir (default: 1.x's)")
+    a = ap.parse_args(argv)
+    if not a.bed.exists():
+        raise SystemExit(f"--bed not found: {a.bed}")
+    print(f"bed {a.bed}\nout {a.out}", flush=True)
     a.report.mkdir(parents=True, exist_ok=True)
-    OUT.mkdir(parents=True, exist_ok=True)
-    sources = build_vrts(OUT / "vrt")
-    with rasterio.open(BED) as b:
+    a.out.mkdir(parents=True, exist_ok=True)
+    sources = build_vrts(a.out / "vrt")
+    with rasterio.open(a.bed) as b:
         # rotated (CLAUDE.md §5): the bounding box of its four corners
         xs, ys = zip(*(b.transform * p for p in
                        ((0, 0), (b.width, 0), (0, b.height), (b.width, b.height))))  # fmt: skip
@@ -191,7 +206,7 @@ def main() -> int:
     T = from_origin(x0, y1, RES, RES)
     print(f"raster {W} x {H} px, {T}", flush=True)
     jobs = [
-        (r, c, min(BLOCK, H - r), min(BLOCK, W - c), T, sources)
+        (r, c, min(BLOCK, H - r), min(BLOCK, W - c), T, sources, str(a.bed))
         for r in range(0, H, BLOCK)
         for c in range(0, W, BLOCK)
     ]
@@ -199,7 +214,7 @@ def main() -> int:
         driver="GTiff", width=W, height=H, count=1, crs=CRS, transform=T, tiled=True,
         blockxsize=512, blockysize=512, compress="DEFLATE", BIGTIFF="YES",
     )  # fmt: skip
-    tif, stif = OUT / "modern_land_2026.tif", OUT / "modern_land_2026_source.tif"
+    tif, stif = a.out / "modern_land_2026.tif", a.out / "modern_land_2026_source.tif"
     tmp, stmp = tif.with_suffix(".partial.tif"), stif.with_suffix(".partial.tif")
     totals = {
         i: dict(valid=0, refused=0, taken=0, beyond=0, hist=np.zeros(len(HIST_EDGES) - 1, "int64"))

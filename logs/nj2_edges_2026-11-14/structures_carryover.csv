@@ -1,0 +1,43 @@
+kind,file,piece,n_vertices,length_m,in_new_area,d_new_area_m,inside_nj2_ring,frac_inside_nj2_ring,nearest_forced,d_forced_m
+weir: 1.1.0 premier (DEFAULT),sfincs_overpeck_open_elizabeth_rahway_ground.weir,keansburg_levee_waackaack_gate_fixed,172,2631,False,17446,True,1.0,sea_line (delaware_mouth/ocean/lower_bay_entrance/rockaway_inlet),14893
+weir: 1.1.0 premier (DEFAULT),sfincs_overpeck_open_elizabeth_rahway_ground.weir,keansburg_thornes_reach_nld,251,1957,False,18991,True,1.0,sea_line (delaware_mouth/ocean/lower_bay_entrance/rockaway_inlet),16299
+weir: 1.1.0 premier (DEFAULT),sfincs_overpeck_open_elizabeth_rahway_ground.weir,keansburg_west_tie,30,316,False,18857,True,1.0,sea_line (delaware_mouth/ocean/lower_bay_entrance/rockaway_inlet),16797
+weir: 1.1.0 premier (DEFAULT),sfincs_overpeck_open_elizabeth_rahway_ground.weir,east_keansburg_bayfront_dune,229,2420,False,17635,True,1.0,sea_line (delaware_mouth/ocean/lower_bay_entrance/rockaway_inlet),13031
+weir: 1.1.0 premier (DEFAULT),sfincs_overpeck_open_elizabeth_rahway_ground.weir,pews_levee_gapclosed,212,2253,False,18177,True,1.0,sea_line (delaware_mouth/ocean/lower_bay_entrance/rockaway_inlet),13042
+weir: 1.1.0 premier (DEFAULT),sfincs_overpeck_open_elizabeth_rahway_ground.weir,overpeck_bypass_sill_turnpike_east_toe,4,102,False,2130,True,1.0,hudson (new cut),5908
+weir: 1.1.0 premier (DEFAULT),sfincs_overpeck_open_elizabeth_rahway_ground.weir,elizabeth_rb_south_nld4505000007,218,2059,False,7859,True,1.0,sea_line (delaware_mouth/ocean/lower_bay_entrance/rockaway_inlet),25627
+weir: 1.1.0 premier (DEFAULT),sfincs_overpeck_open_elizabeth_rahway_ground.weir,elizabeth_lb_south_nld4505000009,411,4102,False,7110,True,1.0,sea_line (delaware_mouth/ocean/lower_bay_entrance/rockaway_inlet),25051
+weir: 1.1.0 premier (DEFAULT),sfincs_overpeck_open_elizabeth_rahway_ground.weir,rahway_south_branch_rb_nld4505000027,194,1541,False,15012,True,1.0,sea_line (delaware_mouth/ocean/lower_bay_entrance/rockaway_inlet),30586
+weir: 1.1.0 premier (DEFAULT),sfincs_overpeck_open_elizabeth_rahway_ground.weir,bayway_elizabeth_river_wall_nld1205000013,29,84,False,7827,True,1.0,sea_line (delaware_mouth/ocean/lower_bay_entrance/rockaway_inlet),25559
+weir: 1.1.0 premier (DEFAULT),sfincs_overpeck_open_elizabeth_rahway_ground.weir,elizabeth_rb_south_upstream_tie,10,27,False,8253,True,1.0,hell_gate (new cut),26288
+weir: 1.1.0 premier (DEFAULT),sfincs_overpeck_open_elizabeth_rahway_ground.weir,elizabeth_lb_south_east_tie,13,36,False,7097,True,1.0,sea_line (delaware_mouth/ocean/lower_bay_entrance/rockaway_inlet),25051
+weir: 1.1.0 premier (DEFAULT),sfincs_overpeck_open_elizabeth_rahway_ground.weir,rahway_sb_rb_upstream_tie,9,24,False,15022,True,1.0,sea_line (delaware_mouth/ocean/lower_bay_entrance/rockaway_inlet),30746
+weir: 1.1.0 premier (DEFAULT),sfincs_overpeck_open_elizabeth_rahway_ground.weir,rahway_sb_west_flank_lidar_sill,61,180,False,16010,True,1.0,sea_line (delaware_mouth/ocean/lower_bay_entrance/rockaway_inlet),31083
+weir: 1.1.0 premier (DEFAULT),sfincs_overpeck_open_elizabeth_rahway_ground.weir,elizabeth_rb_south_bayway_gap_lidar_sill,39,114,False,7788,True,1.0,sea_line (delaware_mouth/ocean/lower_bay_entrance/rockaway_inlet),25473
+weir: 1.1.0 premier (DEFAULT),sfincs_overpeck_open_elizabeth_rahway_ground.weir,elizabeth_rb_upstream_strip_lidar_sill,9,24,False,8255,True,1.0,hell_gate (new cut),26298
+weir: 1.1.0 premier (DEFAULT),sfincs_overpeck_open_elizabeth_rahway_ground.weir,elizabeth_rb_south_rail_corridor_lidar_sill,41,120,False,8192,True,1.0,sea_line (delaware_mouth/ocean/lower_bay_entrance/rockaway_inlet),25914
+weir: 1.1.0 premier (DEFAULT),sfincs_overpeck_open_elizabeth_rahway_ground.weir,elizabeth_rb_mesh_guard_1,32,93,False,8170,True,1.0,sea_line (delaware_mouth/ocean/lower_bay_entrance/rockaway_inlet),25805
+weir: 1.1.0 premier (DEFAULT),sfincs_overpeck_open_elizabeth_rahway_ground.weir,elizabeth_rb_mesh_guard_2,21,60,False,8117,True,1.0,sea_line (delaware_mouth/ocean/lower_bay_entrance/rockaway_inlet),25809
+weir: 1.1.0 premier (DEFAULT),sfincs_overpeck_open_elizabeth_rahway_ground.weir,elizabeth_rb_mesh_guard_3,16,45,False,7809,True,1.0,sea_line (delaware_mouth/ocean/lower_bay_entrance/rockaway_inlet),25484
+weir: 1.1.0 premier (DEFAULT),sfincs_overpeck_open_elizabeth_rahway_ground.weir,elizabeth_rb_mesh_guard_4,21,60,False,7861,True,1.0,sea_line (delaware_mouth/ocean/lower_bay_entrance/rockaway_inlet),25521
+weir: 1.1.0 premier (DEFAULT),sfincs_overpeck_open_elizabeth_rahway_ground.weir,elizabeth_rb_mesh_guard_5,11,30,False,7821,True,1.0,sea_line (delaware_mouth/ocean/lower_bay_entrance/rockaway_inlet),25504
+weir: 1.1.0 premier (DEFAULT),sfincs_overpeck_open_elizabeth_rahway_ground.weir,rahway_sb_mesh_guard_9,16,45,False,16073,True,1.0,sea_line (delaware_mouth/ocean/lower_bay_entrance/rockaway_inlet),31128
+weir: 1.1.0 premier (DEFAULT),sfincs_overpeck_open_elizabeth_rahway_ground.weir,rahway_sb_mesh_guard_10,11,30,False,16049,True,1.0,sea_line (delaware_mouth/ocean/lower_bay_entrance/rockaway_inlet),31097
+wvm: 1.1.0 premier,v4_wavemaker_5m_mhw_snapbeach.wvm,wvm01,92,9095,False,175682,True,1.0,sea_line (delaware_mouth/ocean/lower_bay_entrance/rockaway_inlet),954
+wvm: 1.1.0 premier,v4_wavemaker_5m_mhw_snapbeach.wvm,wvm02,91,8999,False,164182,True,1.0,sea_line (delaware_mouth/ocean/lower_bay_entrance/rockaway_inlet),1881
+wvm: 1.1.0 premier,v4_wavemaker_5m_mhw_snapbeach.wvm,wvm03,103,10197,False,152760,True,1.0,sea_line (delaware_mouth/ocean/lower_bay_entrance/rockaway_inlet),1804
+wvm: 1.1.0 premier,v4_wavemaker_5m_mhw_snapbeach.wvm,wvm04,113,11194,False,141297,True,1.0,sea_line (delaware_mouth/ocean/lower_bay_entrance/rockaway_inlet),2917
+wvm: 1.1.0 premier,v4_wavemaker_5m_mhw_snapbeach.wvm,wvm05,97,9577,False,131268,True,1.0,sea_line (delaware_mouth/ocean/lower_bay_entrance/rockaway_inlet),3655
+wvm: 1.1.0 premier,v4_wavemaker_5m_mhw_snapbeach.wvm,wvm06,331,32964,False,94428,True,1.0,sea_line (delaware_mouth/ocean/lower_bay_entrance/rockaway_inlet),792
+wvm: 1.1.0 premier,v4_wavemaker_5m_mhw_snapbeach.wvm,wvm07,363,36198,False,56379,True,1.0,sea_line (delaware_mouth/ocean/lower_bay_entrance/rockaway_inlet),297
+wvm: 1.1.0 premier,v4_wavemaker_5m_mhw_snapbeach.wvm,wvm08,396,39495,False,17142,True,1.0,sea_line (delaware_mouth/ocean/lower_bay_entrance/rockaway_inlet),236
+drn: 1.x side arm (NOT in 1.1.0),cohansey_bacons_neck_gate_checkvalve.drn,pair0,2,335,False,174696,True,1.0,"cd_canal (box arm, kept)",32608
+drn: 1.x side arm (NOT in 1.1.0),gloucester_culverts_v11.drn,pair0,2,100,False,139083,True,1.0,"cd_canal (box arm, kept)",42567
+drn: 1.x side arm (NOT in 1.1.0),gloucester_culverts_v11.drn,pair1,2,113,False,139756,True,1.0,"cd_canal (box arm, kept)",41883
+drn: 1.x side arm (NOT in 1.1.0),gloucester_culverts_v11.drn,pair2,2,112,False,139144,True,1.0,"cd_canal (box arm, kept)",42547
+drn: 1.x side arm (NOT in 1.1.0),gloucester_culverts_v11.drn,pair3,2,70,False,136193,True,1.0,"cd_canal (box arm, kept)",45542
+drn: 1.x side arm (NOT in 1.1.0),gloucester_culverts_v11.drn,pair4,2,75,False,136133,True,1.0,"cd_canal (box arm, kept)",45570
+drn: 1.x side arm (NOT in 1.1.0),gloucester_culverts_v11.drn,pair5,2,90,False,137175,True,1.0,"cd_canal (box arm, kept)",44525
+drn: 1.x side arm (NOT in 1.1.0),gloucester_culverts_v11.drn,pair6,2,103,False,136698,True,1.0,"cd_canal (box arm, kept)",44994
+drn: 1.x side arm (NOT in 1.1.0),portmonmouth_pews_gate_checkvalve.drn,pair0,2,75,False,18400,True,1.0,sea_line (delaware_mouth/ocean/lower_bay_entrance/rockaway_inlet),12963
+ini region: Overpeck pool,overpeck_pool.geojson,overpeck_pool,15,14387,False,964,True,1.0,hudson (new cut),2496

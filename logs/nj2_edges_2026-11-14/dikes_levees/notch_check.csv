@@ -1,0 +1,7 @@
+site,lon,lat,readme_raw_to_filled,readme_d_sill_m,sill_level,nearest_line,d_line_m,crest_written,cudem_notch_min_15m,channel_below_0_through_line,frac_below_0_r60,read
+Forsythe West Pool (NE dike),-74.42625,39.47277,1.37 -> 2.31,53,-0.03,forsythe_brigantine_r1303_p0_r60,0.4,2.48,-0.04,False,0.49,"dip in the crest only (no < 0 m channel through the line) -> filled, as built"
+r1054 DE New Castle,-75.57129,39.5273,2.21 -> 2.75,68,-0.07,dbay_de_newcastle_r1054_r1054_p0_r60,0.1,2.82,-0.06,True,0.76,channel through the line: creek / culvert / gate opening in the lidar -> storm-SHUT kept; needs imagery for a normal-weather drn
+r1047 DE New Castle,-75.62163,39.43131,1.98 -> 2.46,88,0.25,dbay_de_newcastle_r1047_r1047_p0_r60,0.1,2.98,0.83,False,0.0,"dip in the crest only (no < 0 m channel through the line) -> filled, as built"
+r1069 Salem,-75.51741,39.53994,0.97 -> 1.50,9,0.38,dbay_nj_salem_r1069_r1069_p0_r60,0.1,1.77,0.25,False,0.0,"dip in the crest only (no < 0 m channel through the line) -> filled, as built"
+r1078 Salem,-75.50805,39.58976,1.05 -> 2.02,139,0.74,dbay_nj_salem_r1078_r1078_p0_r60,0.5,2.25,0.77,False,0.0,"dip in the crest only (no < 0 m channel through the line) -> filled, as built"
+r1139 DE Kent (r60 build),-75.4393,39.30729,1.74 -> 2.04,108,0.47,agri_nwi_E0025_0,24.2,1.51,0.94,False,0.0,"dip in the crest only (no < 0 m channel through the line) -> filled, as built"

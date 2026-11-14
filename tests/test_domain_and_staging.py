@@ -1337,8 +1337,8 @@ class TestBuilding(_DomainEnv):
     def test_no_domain_is_building(self):
         """v3 was the building domain 2026-08-24..26 and froze 2026-08-26; v4 was building
         2026-09-27..28 and froze 2026-09-28 (premier.V4). Any domain that appears here
-        must be added deliberately."""
-        self.assertEqual(set(self._bld()), set())
+        must be added deliberately. nj2 (Model 2.0) is building since 2026-11-14."""
+        self.assertEqual(set(self._bld()), {"nj2"})
 
     def test_one_state_at_a_time(self):
         for name, dom in domain.DOMAINS.items():

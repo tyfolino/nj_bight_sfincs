@@ -31,7 +31,7 @@ Every script reads `NJ_DOMAIN` unless its row names a domain. Run from the repo 
 | `build_wind_naccs_blend.py` | NACCS ADCIRC save-point wind + pressure (Delaunay on u, v, p; long / land triangles dropped) blended into ERA5 bilinear over a 15 km taper, on a 500 m UTM grid covering every active + SnapWave face; writes `sfincs_netamuv.nc` / `sfincs_netamp.nc` with the engine corner convention + marker to `data/wind_v4/naccs_blend/` (`--extra-dir` adds CHS save points; 2026-10-06, `nj_sfincs/meteo_blend.py`, `logs/wind_naccs_blend_2026-10-06/`) | live |
 | `setup_boundary_depth.py` | Stage a mask-variant domain (boundary depth, trimmed ring) from its frozen mesh | live |
 | `setup_face_z.py` | Stage a face-z-variant domain: mesh `z` = a subgrid bed's mean ground, so SnapWave sees that bed (FINDINGS §63) | live |
-| `build_modern_land.py` | The modern land + beach overlay for a 2026 bed: newest survey wins, and land lidar is refused over today's water | live |
+| `build_modern_land.py` | The modern land + beach overlay for a 2026 bed: newest survey wins, and land lidar is refused over today's water; `--bed` / `--out` judge against another mesh's bed (2.0) | live |
 | `restage_mask_repair.py` | Stage a mask repair from the frozen mesh and show the diff | live |
 | `sync_obs_points.py` | Rewrite `sfincs.obs` from the registry without a rebuild | live |
 | `sfincs_restart.py` | Resume / stitch a preempted solve (called by `hpc/sfincs_run.slurm`) | live |
@@ -102,6 +102,7 @@ Every script reads `NJ_DOMAIN` unless its row names a domain. Run from the repo 
 | `build_breach_overlay_v4.py` | lower-only breach bed overlays for the `bed-breach` arms: Wreck Pond a stated channel (0.0 / 1.65 m), Mantoloking the EAARL post-Sandy surface, in the user's polygons | live |
 | `eurotop_overtopping.py` | EurOtop (2018) mean wave-overtopping q over a front, from a finished run's own toe Hm0 / Tp / zs (segments CSV + crest columns), scenario table (crest ±0.5, Hm0 ±20 %, pre crest, setup-free SWL, vertical wall) + Stockdon R2% check; writes a one-point discharge NetCDF for `Experiment.extra_discharge` (2026-10-17, Deal Lake, `logs/overtopping_2026-10-17/`) | live |
 | `build_refinement_v4.py` | v4 quadtree refinement polygons from a readable recipe; diffs names vs v3 | live |
+| `build_refinement_nj2.py` | nj2 (2.0.0) refinement: v4's polygons carried + Hudson / Newark-Meadowlands / Cape May inlet bands, Narrows-50 m and 12.5 m-inlet variants, v4-only control; diffs names vs v4 | live |
 | `build_riverbeds_v4.py` | v4 river beds where no survey reaches, one carving raster per reach | live |
 | `build_usace_unpave_v4.py` | CUDEM painted back where the 2010 USACE lidar paves deep water (3 boxes), an overlay tier | live |
 | `build_usace_unpave_backbay_v4.py` | The same un-paving in 11 back-bay channel / basin boxes (Ocean City → Wildwood incl. Beach Creek, LBI, Atlantic City, Keansburg), a second overlay tier | live |

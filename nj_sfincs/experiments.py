@@ -1268,6 +1268,9 @@ EXPERIMENTS_BY_DOMAIN: dict[str, dict[str, Experiment]] = {
     "v4_refreeze_swz_bare": {
         k: _V4_REFREEZE[k] for k in ("p4-premier", "bed-nobuildings+p4-premier")
     },
+    # nj2 (Model 2.0, 2026-11-14): the MESH domain, building then frozen — no arms (they live on
+    # nj2_bed2012 / nj2_bed2026 after the freeze; logs/nj2_freeze_2026-11-14/README.md).
+    "nj2": {},
 }
 
 

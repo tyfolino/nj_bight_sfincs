@@ -1,0 +1,137 @@
+# nj2 (Model 2.0.0) FORCED SEA LINE. The VERTICES are v4's (data/v4_design/waterlevel_line_v4.csv), byte for byte below
+# this header: Cape Henlopen -> the Delaware mouth -> the NJ ocean coast -> the Lower Bay entrance -> Rockaway Inlet ->
+# jamaica_wall_s. nj2 changes nothing south of the Narrows, so the sea line, its four sections (delaware_mouth, ocean,
+# lower_bay_entrance, rockaway_inlet) and its sea closure (+ v4_refreeze's two Lewes vertices) carry over unchanged.
+# The nj2 CHANGES are elsewhere (logs/nj2_edges_2026-11-14/README.md):
+#   DROPPED  narrows   (box arm; the Narrows is interior in nj2)
+#   DROPPED  kvk_east  (box arm; the Kill van Kull is interior; wall_bayonne goes with it)
+#   KEPT     cd_canal  (box arm, unchanged)
+#   NEW      hudson    = cut_hudson_nj2.csv     (hudson_w -> hudson_e along 40.8600 N, 1.94 km)
+#   NEW      hell_gate = cut_hell_gate_nj2.csv  (hellgate_w -> hellgate_e, 0.68 km)
+# The two cuts are SEPARATE two-vertex files: Domain.waterlevel_line is ONE path that also closes the sea polygon, so
+# the cuts must not be appended here. Build each as a corridor arm with waterlevel_line_arms(<cut csv>, 32618,
+# ((<arm>, <first vertex>, why),), corridor_m=...) - flat ends, so the walls they meet are nobody's.
+# ---- v4 header follows ----
+# v4 FORCED SEA LINE (the water-level boundary): NAMED vertices joined by straight lines, Cape Henlopen → Brooklyn.
+# SOURCE OF TRUTH, edited by hand. One continuous line, as v3's ocean arm was one arm: the Delaware mouth (Henlopen →
+# Cape May Point), the NJ ocean coast node-to-node through NACCS save points (replacing the jagged -10 m isobath; user
+# 2026-09-27), the Lower Bay entrance east of Sandy Hook and Rockaway Inlet, node to node (user route), to the
+# jamaica_bay_wall. Raritan Bay and Lower Bay stay COMPUTED inside it. Vertices named like ring vertices must sit ON the
+# ring, and cape_henlopen / cape_may_point ON v4_crossings.geojson's delaware_mouth — the audit checks both.
+# Coast part traced ONCE by logs/v4_design_2026-09-27/trace_ocean_line.py (ADCIRC nodes wet all window at 10-15 m,
+# 8-18 m to fill a gap, one per 2.5 km of coast, nearest the smoothed offshore distance). HAND EDITS 2026-09-27 (with the
+# user): dropped sp_11321 (a 2 km dog-leg off Ocean City) and sp_3797 (hooked 140° past the closure); the south end runs
+# Cape May Point → sp_5512 directly (dropped sp_5499 / 5504 / 5518, the staircase round the shoal field and the meridian
+# stub); the mouth, closure and inlet vertices added so the whole forced line is one file.
+# USER ROUTE 2026-09-27 (NACCS node picker): the Delaware mouth runs node to node — cape_henlopen → 7171 (24 m, the
+#   cape tip) → the ~10 m row 5480 … 5504 → up the outside of the Cape May shoals 5506 … 5523 → 5531. Replaces the straight
+#   cape-to-cape line; cape_may_point is no longer on the line (Cape May Point is computed). The Atlantic side of Cape
+#   Henlopen stays walled (out of scope: v4 = NJ + Delaware Bay).
+# USER ROUTE 2026-09-27 (NACCS node picker): the Lower Bay entrance runs node to node — 3767 … 3779 → 3788 → 3797 →
+#   3870 → 3879 → 3897 → 3903 (the ocean side of Breezy Point, ~10 m) → over the peninsula (dry) → 14089 (3.3 m, IN
+#   Rockaway Inlet — kept: its peak 3.21 m is the inlet's own funnelled level, cf. the USGS Rockaway Inlet gauge 3.25) →
+#   jamaica_wall_s. Replaces v1.5's straight closure at -73.94 (ocean_rockaway_s → rockaway_1 → rockaway_2); the ring
+#   now follows this line from jamaica_wall_s to 3870.
+# Check: python scripts/audit_ocean_line_v4.py --line <this csv> [--maps]
+# Columns: name, lon, lat, sp (NACCS save point id; blank = not a node), naccs_depth_m (ADCIRC, +down),
+# sandy_peak_msl_m (NACCS max over 10-24..11-01, MSL 1992), note.
+name,lon,lat,sp,naccs_depth_m,sandy_peak_msl_m,note
+cape_henlopen,-75.09300,38.79500,,,,delaware_mouth SW end (v4_crossings.geojson)
+sp_7171,-75.08333,38.80000,7171,23.57,1.688,user 09-27 (node picker): Delaware mouth route
+sp_5480,-75.00092,38.83222,5480,9.70,1.621,user 09-27 (node picker): Delaware mouth route
+sp_5481,-74.98452,38.83233,5481,9.57,1.610,user 09-27 (node picker): Delaware mouth route
+sp_15255,-74.97560,38.83160,15255,10.25,1.611,user 09-27 (node picker): Delaware mouth route
+sp_5484,-74.96055,38.83991,5484,9.95,1.606,user 09-27 (node picker): Delaware mouth route
+sp_5489,-74.94962,38.84798,5489,9.87,1.596,user 09-27 (node picker): Delaware mouth route
+sp_5496,-74.93823,38.85738,5496,10.22,1.598,user 09-27 (node picker): Delaware mouth route
+sp_5497,-74.92119,38.85901,5497,9.89,1.581,user 09-27 (node picker): Delaware mouth route
+sp_5499,-74.90456,38.86308,5499,10.02,1.583,user 09-27 (node picker): Delaware mouth route
+sp_5504,-74.87560,38.87747,5504,10.06,1.583,user 09-27 (node picker): Delaware mouth route
+sp_5506,-74.84912,38.88764,5506,9.73,1.690,user 09-27 (node picker): Delaware mouth route
+sp_5508,-74.83446,38.89188,5508,11.46,1.675,user 09-27 (node picker): Delaware mouth route
+sp_5510,-74.82664,38.89902,5510,10.17,1.729,user 09-27 (node picker): Delaware mouth route
+sp_5518,-74.82519,38.91989,5518,10.28,1.801,user 09-27 (node picker): Delaware mouth route
+sp_5523,-74.82324,38.94360,5523,9.87,1.877,user 09-27 (node picker): Delaware mouth route
+sp_5531,-74.79713,38.95905,5531,10.48,1.971,10-15 m; 4.1 km offshore (target 4.1)
+sp_15289,-74.78860,38.97210,15289,11.29,2.017,10-15 m; 3.2 km offshore (target 4.0)
+sp_5551,-74.75911,39.01316,5551,10.18,2.084,10-15 m; 2.1 km offshore (target 3.8)
+sp_5558,-74.74157,39.03693,5558,10.08,2.166,10-15 m; 1.8 km offshore (target 2.6)
+sp_5561,-74.73229,39.04861,5561,10.04,2.189,10-15 m; 1.8 km offshore (target 1.8)
+sp_5563,-74.72217,39.05985,5563,9.99,2.208,8-18 m (gap fill); 1.8 km offshore (target 1.8)
+sp_5568,-74.70365,39.08270,5568,10.22,2.227,10-15 m; 1.7 km offshore (target 1.7)
+sp_5579,-74.68718,39.10699,5579,10.21,2.236,10-15 m; 1.3 km offshore (target 1.3)
+sp_5584,-74.66761,39.12867,5584,10.10,2.332,10-15 m; 1.3 km offshore (target 1.2)
+sp_5588,-74.64889,39.15196,5588,10.82,2.328,10-15 m; 1.2 km offshore (target 1.0)
+sp_5593,-74.64137,39.17021,5593,10.10,2.355,10-15 m; 0.6 km offshore (target 0.7)
+sp_5597,-74.63032,39.18093,5597,10.24,2.340,10-15 m; 0.7 km offshore (target 0.8)
+sp_5606,-74.61171,39.21298,5606,9.94,2.397,8-18 m (gap fill); 0.0 km offshore (target 0.9)
+sp_5608,-74.59774,39.22138,5608,9.94,2.402,8-18 m (gap fill); 0.5 km offshore (target 0.9)
+sp_5611,-74.57116,39.23947,5611,10.21,2.372,10-15 m; 1.2 km offshore (target 1.2)
+sp_5613,-74.55860,39.24905,5613,10.07,2.371,10-15 m; 1.5 km offshore (target 1.2)
+sp_5620,-74.52643,39.27496,5620,10.26,2.373,10-15 m; 1.2 km offshore (target 1.3)
+sp_5622,-74.51148,39.28208,5622,10.10,2.369,10-15 m; 1.4 km offshore (target 1.5)
+sp_5625,-74.48113,39.29555,5625,10.23,2.403,10-15 m; 2.0 km offshore (target 2.4)
+sp_5628,-74.44738,39.30367,5628,9.97,2.386,8-18 m (gap fill); 3.2 km offshore (target 4.0)
+sp_5636,-74.39338,39.32333,5636,10.80,2.450,10-15 m; 4.6 km offshore (target 4.7)
+sp_5638,-74.37607,39.32581,5638,10.06,2.427,10-15 m; 5.4 km offshore (target 4.8)
+sp_5647,-74.35457,39.34981,5647,10.41,2.485,10-15 m; 4.8 km offshore (target 4.7)
+sp_5651,-74.33973,39.35684,5651,11.49,2.472,10-15 m; 5.1 km offshore (target 4.8)
+sp_5661,-74.31559,39.38778,5661,10.20,2.524,10-15 m; 4.2 km offshore (target 4.8)
+sp_5663,-74.30356,39.39654,5663,8.59,2.525,8-18 m (gap fill); 4.2 km offshore (target 4.5)
+sp_5669,-74.28061,39.43267,5669,9.65,2.608,8-18 m (gap fill); 3.6 km offshore (target 4.2)
+sp_5675,-74.26837,39.45612,5675,10.35,2.595,10-15 m; 3.4 km offshore (target 3.4)
+sp_5680,-74.25879,39.48258,5680,10.03,2.611,10-15 m; 2.8 km offshore (target 2.8)
+sp_5688,-74.25129,39.49480,5688,10.39,2.604,10-15 m; 2.7 km offshore (target 2.7)
+sp_5696,-74.23665,39.51862,5696,9.79,2.615,8-18 m (gap fill); 2.6 km offshore (target 2.7)
+sp_5700,-74.22863,39.53087,5700,9.40,2.637,8-18 m (gap fill); 2.5 km offshore (target 2.5)
+sp_5707,-74.21561,39.55451,5707,10.04,2.648,10-15 m; 2.3 km offshore (target 1.8)
+sp_5715,-74.20737,39.58092,5715,10.14,2.670,10-15 m; 1.5 km offshore (target 1.8)
+sp_5718,-74.18469,39.60205,5718,10.24,2.594,10-15 m; 2.1 km offshore (target 1.7)
+sp_5722,-74.18217,39.61562,5722,9.78,2.720,8-18 m (gap fill); 1.5 km offshore (target 1.7)
+sp_5729,-74.16265,39.64398,5729,9.81,2.621,8-18 m (gap fill); 1.5 km offshore (target 2.1)
+sp_5731,-74.15200,39.65497,5731,10.12,2.602,10-15 m; 1.7 km offshore (target 2.2)
+sp_5734,-74.12846,39.67554,5734,10.18,2.557,10-15 m; 2.4 km offshore (target 2.4)
+sp_5736,-74.11719,39.68605,5736,10.22,2.575,10-15 m; 2.7 km offshore (target 2.4)
+sp_5741,-74.10643,39.70642,5741,10.26,2.647,10-15 m; 2.4 km offshore (target 2.4)
+sp_5751,-74.08849,39.74400,5751,10.09,2.614,10-15 m; 1.7 km offshore (target 2.4)
+sp_5754,-74.07384,39.76601,5754,10.57,2.608,10-15 m; 2.1 km offshore (target 2.1)
+sp_5758,-74.07237,39.78853,5758,9.64,2.649,8-18 m (gap fill); 2.0 km offshore (target 1.7)
+sp_5762,-74.07105,39.81508,5762,8.52,2.674,8-18 m (gap fill); 1.7 km offshore (target 1.7)
+sp_5764,-74.06926,39.82776,5764,10.05,2.645,10-15 m; 1.7 km offshore (target 1.4)
+sp_5777,-74.07534,39.85435,5777,9.64,2.702,8-18 m (gap fill); 0.8 km offshore (target 0.8)
+sp_5781,-74.07325,39.86799,5781,10.39,2.698,10-15 m; 0.8 km offshore (target 0.8)
+sp_5797,-74.07031,39.90855,5797,10.30,2.735,10-15 m; 0.5 km offshore (target 0.7)
+sp_5804,-74.06664,39.92198,5804,10.85,2.727,10-15 m; 0.7 km offshore (target 0.6)
+sp_5806,-74.06256,39.93532,5806,9.71,2.745,8-18 m (gap fill); 0.8 km offshore (target 0.5)
+sp_5810,-74.06058,39.96261,5810,10.40,2.774,10-15 m; 0.5 km offshore (target 0.5)
+sp_5814,-74.05495,39.98971,5814,9.89,2.777,8-18 m (gap fill); 0.4 km offshore (target 0.4)
+sp_5816,-74.05156,40.00320,5816,10.53,2.765,10-15 m; 0.4 km offshore (target 0.4)
+sp_5821,-74.04401,40.03005,5821,10.29,2.770,10-15 m; 0.4 km offshore (target 0.4)
+sp_5825,-74.03787,40.05696,5825,9.84,2.769,8-18 m (gap fill); 0.3 km offshore (target 0.3)
+sp_5827,-74.03526,40.07044,5827,10.29,2.770,10-15 m; 0.2 km offshore (target 0.2)
+sp_3725,-74.02677,40.10742,3725,10.62,2.694,10-15 m; 0.1 km offshore (target 0.1)
+sp_3727,-74.02430,40.12102,3727,9.89,2.782,8-18 m (gap fill); 0.0 km offshore (target 0.2)
+sp_3731,-74.01656,40.14782,3731,10.26,2.763,10-15 m; 0.1 km offshore (target 0.2)
+sp_3733,-74.01203,40.16110,3733,10.21,2.754,10-15 m; 0.2 km offshore (target 0.2)
+sp_3737,-74.00260,40.18758,3737,9.96,2.740,8-18 m (gap fill); 0.5 km offshore (target 0.3)
+sp_3739,-73.99972,40.20113,3739,10.59,2.753,10-15 m; 0.4 km offshore (target 0.4)
+sp_3743,-73.99157,40.22787,3743,10.05,2.758,10-15 m; 0.5 km offshore (target 0.5)
+sp_3747,-73.98383,40.25467,3747,9.89,2.767,8-18 m (gap fill); 0.6 km offshore (target 0.6)
+sp_3749,-73.97997,40.26808,3749,10.48,2.773,10-15 m; 0.7 km offshore (target 0.7)
+sp_3755,-73.97165,40.30876,3755,10.09,2.805,10-15 m; 0.8 km offshore (target 0.9)
+sp_3757,-73.96888,40.32227,3757,10.69,2.838,10-15 m; 1.1 km offshore (target 1.1)
+sp_3759,-73.96004,40.33422,3759,9.50,2.818,8-18 m (gap fill); 1.9 km offshore (target 1.3)
+sp_3763,-73.96500,40.35570,3763,10.67,2.854,10-15 m; 1.6 km offshore (target 1.7)
+sp_3767,-73.96454,40.38123,3767,10.19,2.841,user 09-27 (node picker): Lower Bay entrance route
+sp_3769,-73.96195,40.39479,3769,9.51,2.903,user 09-27 (node picker): Lower Bay entrance route
+sp_3771,-73.95626,40.40781,3771,9.80,2.915,user 09-27 (node picker): Lower Bay entrance route
+sp_3775,-73.95022,40.42053,3775,10.16,2.853,user 09-27 (node picker): Lower Bay entrance route
+sp_3779,-73.95115,40.43420,3779,10.76,2.894,user 09-27 (node picker): Lower Bay entrance route
+sp_3788,-73.94926,40.44782,3788,9.63,2.946,user 09-27 (node picker): Lower Bay entrance route
+sp_3797,-73.95269,40.46047,3797,8.74,3.034,user 09-27 (node picker): Lower Bay entrance route
+sp_3870,-73.92199,40.50596,3870,9.01,2.994,user 09-27 (node picker): Lower Bay entrance route
+sp_3879,-73.90721,40.51193,3879,9.31,2.944,user 09-27 (node picker): Lower Bay entrance route
+sp_3897,-73.90345,40.53067,3897,9.33,2.996,user 09-27 (node picker): Lower Bay entrance route
+sp_3903,-73.90216,40.53836,3903,10.09,3.016,user 09-27 (node picker): Lower Bay entrance route
+sp_14089,-73.91274,40.57326,14089,3.25,3.214,user 09-27 (node picker): Lower Bay entrance route
+jamaica_wall_s,-73.90200,40.58000,,,,ring vertex: the line comes ashore; jamaica_bay_wall starts

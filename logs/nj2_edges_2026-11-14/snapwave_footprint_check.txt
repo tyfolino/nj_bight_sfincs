@@ -1,0 +1,14 @@
+new area (nj2 ring minus v4_hot_plus ring): 245.4 km2
+of it inside v4's snapwave_footprint_ll (v3 region U delaware_bay): 0.000 km2
+v3 region's northern limit: lat 40.6109
+  Battery                          in footprint: False  in nj2 ring: True
+  Robbins Reef                     in footprint: False  in nj2 ring: True
+  Kill van Kull                    in footprint: False  in nj2 ring: True
+  Bergen Point                     in footprint: False  in nj2 ring: True
+  Hoboken                          in footprint: False  in nj2 ring: True
+  Hudson cut                       in footprint: False  in nj2 ring: True
+  Hell Gate cut                    in footprint: False  in nj2 ring: True
+  Gowanus                          in footprint: False  in nj2 ring: True
+  Bay Ridge                        in footprint: False  in nj2 ring: True
+  Narrows (old forced line, mid)   in footprint: True   in nj2 ring: True
+  Lower Bay N                      in footprint: True   in nj2 ring: True

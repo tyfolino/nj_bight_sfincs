@@ -1,0 +1,9 @@
+# nj2 forced cut: the EAST RIVER at HELL GATE, just below the Harlem's mouth (hudson_design_2026-11-02 Decisions 1 and 6:
+# keep as drawn; NACCS may run ~0.2 m high here, a 2.1 note). Vertices = the `forced` vertices of
+# logs/v2_prep_2026-11-04/ring_recommended_v2edit.csv; must stay ON the nj2 ring. NACCS: SP19080 and SP11877 lie ON the
+# line (5 / 15 m), SP11892 0.33 km off; dry-flagged nearby (dropped by the builder): 13895, 4298, 13909, 4294, ...
+# The ring leg hellgate_e -> astoria carries the declared 300 m Hell Gate EAST WALL (low bank, 2.02 m): it needs a
+# frm=3 -> to=1 wall box in the domain (the domain agent's), and this arm's flat end keeps it out of the forced set.
+name,lon,lat,sp,naccs_depth_m,sandy_peak_msl_m,note
+hellgate_w,-73.94250,40.7765,,,,"ring vertex, Carl Schurz Park (Manhattan)"
+hellgate_e,-73.93450,40.7775,,,,"ring vertex, Hallets Point (Queens)"

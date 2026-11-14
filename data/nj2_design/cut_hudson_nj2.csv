@@ -1,0 +1,9 @@
+# nj2 forced cut: the HUDSON at 40.8600 N, ~1 km above the George Washington Bridge (hudson_design_2026-11-02 Decision 1,
+# user 11-03). Vertices = the `forced` vertices of logs/v2_prep_2026-11-04/ring_recommended_v2edit.csv (hudson_w moved
+# 45 m W, user 11-04) and must stay ON the nj2 ring. NACCS at the cut (logs/nj2_edges_2026-11-14/naccs_cuts_nj2.csv):
+# wet all window SP4481 0.30 km, SP4471 0.41 km, SP4487 0.64 km off the line; SP4465 / 4466 / 4489 dry-flagged (dropped).
+# The line holds ~330 m of low bank at the hudson_w end (ground -0.6 .. +10 m): faces there are z > -1 m so they are not
+# mask 2; wall_outflow_near_forced_m (500) walls any outflow they produce.
+name,lon,lat,sp,naccs_depth_m,sandy_peak_msl_m,note
+hudson_w,-73.95753,40.8600,,,,"ring vertex, NJ bank below the Palisades (moved 45 m W, user 11-04)"
+hudson_e,-73.93450,40.8600,,,,"ring vertex, Fort Tryon ridge (Manhattan)"
