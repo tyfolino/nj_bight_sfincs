@@ -479,3 +479,16 @@ damage estimates. [add the impact number]
   waves pair differs by the levees too (found 11-14, FINDINGS part 4 (n)). The levees alone leave the 119-mark RMSE
   unchanged (0.355 vs 0.355, `logs/v1_1_read_2026-11-06/READ.md`), and the waves effect sits on the open coast,
   inlets and NJ back bays, far from them (rivers / Newark Bay group Δ −0.007). The bullet stands as written.
+
+## Poster v11 (2026-11-15): FIAT out for Monday's print
+
+User 11-15: Nithila is having trouble with FIAT, so the printed poster leaves it out; a with-FIAT version is kept for
+later. `build_v11.py` (reads the archived `drafts/poster_draft_2026-11-13_v10.pptx`, re-runnable) writes:
+- `poster_draft_2026-11-13.pptx` (+ `.pdf`, `_preview.png`) = **v11, no FIAT, the print file.** Fig 4 box, FIAT bullets
+  and caption gone; Results 2 = "Power grid", its four findings in two 28 pt columns where the box was; Methods'
+  Impact-model row dropped; Experiment 2 = "power grid"; abstract: "the same flood depths are being coupled with an
+  impact model …"; Conclusion 3 ends at "… struck today's coast."; future work names Delft-FIAT. Title unchanged
+  ("power-grid and community risk").
+- `poster_draft_2026-11-13_withFIAT.pptx` (+ `_preview.png`) = v10 as it was, red FIAT stubs in place. Fill it when
+  FIAT results arrive (Fig 4 box, FIAT bullets, caption 4, Results 2 bullet 5, Impact-model row, the conclusion's
+  impact number).

@@ -240,7 +240,9 @@ not trip that guard. Do not run the sweep driver to "just rebuild" a template.
   move in 0.5 m steps at UTM northings ~4.5e6) and counts a centre lying ON a segment as crossing every link of
   that face; `weir_on_mesh.snap` + 1 predicted 817 for a file the engine reads as 819 and the job refused to score
   (2026-11-06). `logs/walls_elizabeth_rahway_2026-11-05/engine_snap_f32.py <rundir> <weirfile>` reproduces every
-  logged count (`weircount_819.md`).
+  logged count (`weircount_819.md`). 🔴 **The count is per BED, not per mesh:** the engine drops a point whose crest
+  is ≤ the link's `uv_zmin` (the ground already stands higher), so one weir file on one mesh read 862 on the modern
+  bed and 865 on the 2012 bed (2026-11-15, `logs/mhhw_v2_2026-11-12/README.md`). Run the script on each bed's run dir.
 - **A roughness or elevation change needs a SUBGRID rebuild on the frozen mesh.**
   `build_static` copies the frozen mesh and returns early, so it will silently produce a
   no-op template. A *mask* change is the opposite: no subgrid rebuild, but the fingerprint
