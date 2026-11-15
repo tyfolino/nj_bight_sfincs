@@ -511,3 +511,16 @@ later. `build_v11.py` (reads the archived `drafts/poster_draft_2026-11-13_v10.pp
   - Conclusion 3 lead: "It turns floods into exposure".
   - Experiment 2: "sea level 1.2 m above its 1983–2001 average … (the typical daily high tide and the month's highest)".
   - References: Kopp et al. (2025). With-FIAT copy: Results 2 findings at 24 pt so the FIAT bullet fits.
+
+## v12 drafts (2026-11-15 afternoon; handed to James + Nithila)
+
+Not the print file yet — the user edits text on Monday and picks one. Both in `drafts/` (gitignored), built by
+tracked scripts from the v11 print file:
+- `build_v12_proposal.py` → `drafts/poster_draft_2026-11-13_v12_proposal.pptx` (no FIAT): main text ~850 words
+  (user: nobody reads more than ~800); Abstract + Introduction = the user's wording, unchanged (user 11-15);
+  Experiments / Results / captions trimmed, every audit qualifier kept; Conclusions 22 → 30 pt in a wider box
+  (Fast / Accurate for Sandy / Useful / Next), References narrowed, two author lists → "et al.".
+- `build_v12_fiat.py` → `drafts/poster_draft_2026-11-13_v12_withFIAT.pptx`: the proposal + a Delft-FIAT slot
+  for Nithila (figure box 11.25 × 4.6 in, one bullet stub, Fig 4 caption stub); Fig 3 shrunk to 12.2 in; our
+  Results 2 findings in one column of three bullets at 26 pt; FIAT wording back in the abstract (the user's v10
+  sentence), Experiment 2 and the Results 2 heading.

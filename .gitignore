@@ -68,6 +68,9 @@ hydromt_sfincs
 refs
 reports/snapwave_parameters_naccs-premier.docx
 share/*.tif
+# per-building depth tables handed to FIAT (100s of MB; their READMEs are tracked)
+share/*.gpkg
+share/*_buildings_*.csv
 
 # poster 2026-11-13: regenerable caches + job stdout (the scripts that make them are tracked)
 reports/**/job/*.out
