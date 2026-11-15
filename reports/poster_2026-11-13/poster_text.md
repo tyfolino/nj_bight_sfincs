@@ -489,6 +489,15 @@ later. `build_v11.py` (reads the archived `drafts/poster_draft_2026-11-13_v10.pp
   Impact-model row dropped; Experiment 2 = "power grid"; abstract: "the same flood depths are being coupled with an
   impact model …"; Conclusion 3 ends at "… struck today's coast."; future work names Delft-FIAT. Title unchanged
   ("power-grid and community risk").
-- `poster_draft_2026-11-13_withFIAT.pptx` (+ `_preview.png`) = v10 as it was, red FIAT stubs in place. Fill it when
+- **Both versions:** the sea-level-rise bullet gains today's baseline: "22 of the 182 sit in water on a typical high
+  tide, against 1 at today's high tide" (`logs/slr_assets_2026-11-13/README.md`, "Today's-tide baseline").
+- `poster_draft_2026-11-13_withFIAT.pptx` (+ `_preview.png`) = v10 + the edits common to both, red FIAT stubs in place. Fill it when
   FIAT results arrive (Fig 4 box, FIAT bullets, caption 4, Results 2 bullet 5, Impact-model row, the conclusion's
   impact number).
+- **SLR bullet (11-15, both versions):** "1.2 m of sea-level rise, no storm (3.8 ft above the 2005 sea level: the top
+  of New Jersey's likely range for 2100 under intermediate emissions; Kopp et al. 2025): on a typical high tide 22 of
+  the 182 get water on some part of the site and 3 have at least half their ground under water; today none do".
+  Abstract: "(the top of New Jersey's likely range for 2100 under intermediate emissions) would put water on 22".
+  References: Kopp et al. (2025), the 2025 NJ STAP report. Sources: `logs/slr_assets_2026-11-13/README.md` (counts,
+  STAP table), `logs/slr_stap_2026-11-15/README.md` (the central-projection runs, 63941099). "Today none do" = the
+  ≥ half count (0); the 1 "touched" today is the Sewaren bank-face artefact (STATUS).

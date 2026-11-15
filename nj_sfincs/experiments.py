@@ -1419,6 +1419,29 @@ EXPERIMENTS_BY_DOMAIN["v4_refreeze_swz_v11"].update(
 )
 
 
+# 2026-11-15 (user): tide twins at the 2025 NJ STAP CENTRAL sea-level projections (Table B2, Atlantic City, "~50 %
+# chance" row, above the 1995-2014 mean): 2050 0.40 m (all scenarios), 2100 SSP2-4.5 0.88 m; + 0.059 m NTDE -> STAP
+# baseline (Table 4) = boundary offsets 0.459 / 0.939 m on p000 (logs/slr_stap_2026-11-15/make_tide_stap.py). ADDITIVE.
+EXPERIMENTS_BY_DOMAIN["v4_refreeze_swz_v11"].update(
+    {
+        f"bed-modernb+tide-{tag}+weir-normalweather": _nw_calm_arm(
+            f"bed-modernb+tide-{tag}+weir-normalweather",
+            f"EC2015 astronomical tide + {s} m at the boundary on the 2026 bed (_subgrid_modern2026b), Model 1.1.0's "
+            f"domain, 10-12 to 11-13 (first 2.5 d spin-up): {why} (2025 NJ STAP, Table B2, Atlantic City, central = "
+            "~50 % chance of being exceeded; + 0.059 m from the STAP 1995-2014 baseline to the NTDE 1983-2001 datum "
+            "the + 2 / + 4 ft arms add to; logs/slr_stap_2026-11-15/). Offset pairs: bed-modernb+tide-0ft+..., "
+            "-2ft / -4ft.",
+            _nw_tide(s, ptag),
+            "_subgrid_modern2026b",
+        )
+        for tag, s, ptag, why in (
+            ("stap2050", 0.459, "p046_stap2050", "2050 central projection, 0.40 m above 2005, all emissions scenarios"),
+            ("stap2100ssp245", 0.939, "p094_stap2100", "2100 central projection, intermediate emissions (SSP2-4.5), "
+             "0.88 m above 2005"),
+        )
+    }
+)
+
 def experiments(domain_name: str | None = None) -> dict[str, Experiment]:
     """The arms defined for a domain (the ACTIVE one by default).
 
