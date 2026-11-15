@@ -31,8 +31,8 @@ class TestNJ2(unittest.TestCase):
                 "refinement",
                 "mesh_key",  # v11 borrows v4's mesh; nj2 has its own
                 "face_z_from",
-                "building",
-                "n_waterlevel_support",
+                # building / n_waterlevel_support: equal to 1.1.0's since the freeze
+                # (False / 3, 2026-11-15) — they left this set at GATE 1
                 "coarse_elevation_list",
                 "boundary_arms",
                 "mask_overrides",
@@ -46,12 +46,16 @@ class TestNJ2(unittest.TestCase):
             },
         )
 
-    def test_building_state(self):
-        self.assertTrue(NJ2.building)
-        self.assertIsNone(NJ2.mesh_key)
-        self.assertIsNone(NJ2.face_z_from)
-        self.assertIsNone(NJ2.n_waterlevel_support)
-        self.assertNotIn("nj2", premier.EXPECTED)
+    def test_frozen_state(self):
+        """GATE 1 (2026-11-15): frozen by J2 63919024 pass 1, registered by hand."""
+        self.assertFalse(NJ2.building)
+        self.assertIsNone(NJ2.mesh_key)  # its own mesh, by name
+        self.assertIsNone(NJ2.face_z_from)  # face z = the coarse bed
+        self.assertEqual(NJ2.n_waterlevel_support, 3)  # base noaa_sandy_nj, J2 step 4b
+        self.assertEqual(
+            premier.EXPECTED["nj2"],
+            premier.DomainFingerprint(5181372, 4367, "5759f6fa6cca6826"),
+        )
         self.assertEqual(NJ2.frozen_mesh_dir().name, "frozen_mesh_nj2")
         self.assertIsNone(domain.region_source_mismatch(NJ2))
 
@@ -147,7 +151,20 @@ class TestNJ2(unittest.TestCase):
         self.assertEqual(NJ2.snapwave_footprint_ll, V11.snapwave_footprint_ll)
         self.assertEqual(NJ2.motf_tif, V11.motf_tif)
         self.assertEqual(NJ2.motf_valid_tif, V11.motf_valid_tif)
-        self.assertEqual(NJ2.motf_exclude_boxes_ll, ())
+        # the four Newark Bay / Arthur Kill product-cutoff boxes (V4, 2026-11-13), inherited
+        self.assertEqual(NJ2.motf_exclude_boxes_ll, V11.motf_exclude_boxes_ll)
+        self.assertEqual(
+            [b[0] for b in NJ2.motf_exclude_boxes_ll],
+            [
+                "newark_bay_bergen_point",
+                "newark_bay_bayonne_west",
+                "newark_bay_jc_route440",
+                "linden_arthur_kill",
+            ],
+        )
+        for name, d in domain.DOMAINS.items():  # every v4 variant carries them too
+            if name.startswith("v4"):
+                self.assertEqual(d.motf_exclude_boxes_ll, NJ2.motf_exclude_boxes_ll, name)
 
     def test_bed_tiers(self):
         self.assertEqual(NJ2.elevation_list, domain.V4_ELEVATION_LIST)

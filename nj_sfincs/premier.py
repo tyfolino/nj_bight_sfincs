@@ -227,6 +227,14 @@ V4_REFREEZE_SWZ_BARE = DomainFingerprint(4881654, 4388, "aa543d5b17e5ed2c")
 #: logs/v1_1_premier_2026-11-06/setup_face_z.log): Model v1.1's domain, face z = the v1.1c flow bed's
 #: mean ground on 3,936,632 active faces; against v4_refreeze_swz face z differs on 15,746.
 V4_REFREEZE_SWZ_V11 = DomainFingerprint(4881654, 4388, "4bc97aae885f0aa4")
+#: nj2 FROZEN 2026-11-15 (J2 63919024 pass 1, hal0129, freeze 03:12 → 09:59;
+#: logs/nj2_freeze_2026-11-14/fingerprint_nj2.txt): MODEL 2.0's MESH — 1.1.0's domain + the
+#: Upper Bay, Kill van Kull, Hudson to 40.860 and the East River to Hell Gate COMPUTED, two
+#: short forced cuts (`hudson` 28 cells, `hell_gate` 10) in place of the Narrows / KvK arms.
+#: Its own mesh (data/frozen_mesh_nj2, base grid = v4's x0 / y0 / rotation / dx), face z =
+#: the 25 m coarse bed. = the J1b probe's `f1_final` (5,181,372 faces). The bed domains
+#: `nj2_bed2012` / `nj2_bed2026` (GATE 2) share the mesh and differ only in the sha.
+NJ2 = DomainFingerprint(5181372, 4367, "5759f6fa6cca6826")
 
 EXPECTED: dict[str, DomainFingerprint] = {
     "v1_monmouth": V1_MONMOUTH,
@@ -243,6 +251,7 @@ EXPECTED: dict[str, DomainFingerprint] = {
     "v4_refreeze_swz_wk165": V4_REFREEZE_SWZ_WK165,
     "v4_refreeze_swz_bare": V4_REFREEZE_SWZ_BARE,
     "v4_refreeze_swz_v11": V4_REFREEZE_SWZ_V11,
+    "nj2": NJ2,
 }
 
 KNOWN = {
@@ -291,6 +300,10 @@ KNOWN = {
     V4_REFREEZE_SWZ_V11: (
         "v4_refreeze_swz_v11 STAGED 2026-11-06 — Model v1.1: v4_refreeze_swz with face z from "
         "the v1.1c flow bed (_subgrid_v1_1c)"
+    ),
+    NJ2: (
+        "nj2 FROZEN 2026-11-15 — Model 2.0's mesh: 1.1.0's domain + the Upper Bay, KvK, "
+        "Hudson to 40.860 and East River to Hell Gate computed; face z = the coarse 25 m bed"
     ),
     V4_HOT_PLUS: "v4_hot_plus RE-STAGED 2026-10-05, RETIRED 2026-10-15 (records in _retired/)"
     " (Maurice cut on the Union Lake dam crest)"

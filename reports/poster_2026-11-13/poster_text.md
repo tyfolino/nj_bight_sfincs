@@ -489,15 +489,25 @@ later. `build_v11.py` (reads the archived `drafts/poster_draft_2026-11-13_v10.pp
   Impact-model row dropped; Experiment 2 = "power grid"; abstract: "the same flood depths are being coupled with an
   impact model …"; Conclusion 3 ends at "… struck today's coast."; future work names Delft-FIAT. Title unchanged
   ("power-grid and community risk").
-- **Both versions:** the sea-level-rise bullet gains today's baseline: "22 of the 182 sit in water on a typical high
-  tide, against 1 at today's high tide" (`logs/slr_assets_2026-11-13/README.md`, "Today's-tide baseline").
-- `poster_draft_2026-11-13_withFIAT.pptx` (+ `_preview.png`) = v10 + the edits common to both, red FIAT stubs in place. Fill it when
-  FIAT results arrive (Fig 4 box, FIAT bullets, caption 4, Results 2 bullet 5, Impact-model row, the conclusion's
-  impact number).
-- **SLR bullet (11-15, both versions):** "1.2 m of sea-level rise, no storm (3.8 ft above the 2005 sea level: the top
-  of New Jersey's likely range for 2100 under intermediate emissions; Kopp et al. 2025): on a typical high tide 22 of
-  the 182 get water on some part of the site and 3 have at least half their ground under water; today none do".
-  Abstract: "(the top of New Jersey's likely range for 2100 under intermediate emissions) would put water on 22".
-  References: Kopp et al. (2025), the 2025 NJ STAP report. Sources: `logs/slr_assets_2026-11-13/README.md` (counts,
-  STAP table), `logs/slr_stap_2026-11-15/README.md` (the central-projection runs, 63941099). "Today none do" = the
-  ≥ half count (0); the 1 "touched" today is the Sewaren bank-face artefact (STATUS).
+- **Both versions, 11-15 (final, after the Fable audit `logs/poster_audit_2026-11-15/AUDIT.md`; no number was wrong,
+  11 wording items fixed; the title is the user's call, unchanged):**
+  - SLR bullet: "Sea level 1.2 m above its 1983–2001 average, no storm (about 1.1 m above today; the top of the likely
+    2100 range under intermediate emissions, Kopp et al. 2025): on a typical high tide 3 of the 182 have at least half
+    their ground under water, 6 on the month's highest spring tide, and up to 22 get some water on site; today, only a
+    waterfront sliver of one (preliminary)." Sources: `logs/slr_assets_2026-11-13/README.md` (counts, STAP table,
+    spring tide, Sewaren artefact); the STAP-central runs (63941099) are `logs/slr_stap_2026-11-15/README.md`.
+  - Abstract / Conclusion 3: "more than a quarter … (52 of 182) would have flood water on site … (preliminary)"
+    (52 / 182 = 28.6 %; "nearly one-third" was the 2012-ground 60); abstract SLR clause "sea level about 1.1 m above
+    today's (the top of the likely 2100 range under intermediate emissions) would put water on up to 22"; abstract at
+    25 pt; "built on the fast SFINCS flood model".
+  - Intro: "To our knowledge, NJ-SFINCS is the first …" (lit_check.md:106); "detailed coastal flood models are often too
+    slow to run many cases".
+  - Results 1: gauges "the 40 gauges with a usable crest record … median timing error about half an hour"; FEMA "inside
+    the model's New Jersey area"; false alarms "71 have no wet path to the sea, mostly rain ponds … (though some real
+    flooding is lost too)". Fig 2 caption: "Three ~2 m misses sit behind Deal Lake and Wreck Pond, where Sandy breached
+    the dune and the model's dune holds" (MODEL.md l.162 / 190).
+  - Results 2: "27 substations flood, 23 of them high-voltage (230 kV and above, as most mapped substations are)";
+    no-FIAT columns = left (Sandy today, substations + plants), right (Newark Bay, sea level).
+  - Conclusion 3 lead: "It turns floods into exposure".
+  - Experiment 2: "sea level 1.2 m above its 1983–2001 average … (the typical daily high tide and the month's highest)".
+  - References: Kopp et al. (2025). With-FIAT copy: Results 2 findings at 24 pt so the FIAT bullet fits.

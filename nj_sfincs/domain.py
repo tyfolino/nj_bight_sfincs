@@ -2843,6 +2843,38 @@ V4 = Domain(
             "rectangular holes here, marsh that flooded reads 0.",
         ),
     ),
+    # Found 2026-11-13 (logs/motf_cutoff_jc_2026-11-13/README.md): the NJ MOTF layer is DRY
+    # on ground Sandy flooded along Newark Bay and the Arthur Kill — straight cuts in FEMA's
+    # own grid (identical in its depth grid and its final NJ+NY boundary), not our render.
+    # Lon/lat boxes, scored out by `metrics.motf_exclude_mask` (no raster rebuild);
+    # inherited by every v4 variant and nj2 via `replace`. Estimated on 1.1.0's native
+    # class rasters: −2.33 km² FA, CSI +0.001; every MOTF row moves — re-score, not delta.
+    motf_exclude_boxes_ll=(
+        (
+            "newark_bay_bergen_point",
+            (-74.1480, 40.6400, -74.1246, 40.6593),
+            "Bergen Point / Collins Park: FEMA dry, HWM 6087 3.54 m on 2.92 m ground "
+            "(model 3.56).",
+        ),
+        (
+            "newark_bay_bayonne_west",
+            (-74.1323, 40.6593, -74.1114, 40.6889),
+            "Bayonne's Newark Bay shore: FEMA dry on 1.6-3.2 m ground under a 3.5-3.7 m "
+            "bay.",
+        ),
+        (
+            "newark_bay_jc_route440",
+            (-74.1183, 40.6889, -74.0986, 40.7077),
+            "W Jersey City: FEMA's grid ends on a straight line, N 4,506,702 m x "
+            "E 576,046 m, 0.2-0.37 m deep to the N, nothing to the S, same ground.",
+        ),
+        (
+            "linden_arthur_kill",
+            (-74.2082, 40.5875, -74.1984, 40.6222),
+            "Linden shore E of a straight line at lon -74.209: NJ layer clipped near the "
+            "NY line; FEMA's final NJ+NY boundary calls 86% of it wet. HWM 6211 3.69 m.",
+        ),
+    ),
     merged_dep_base_level=2,  # the 3.125 m scoring bed (1.56 m lev3 OOMs the scorer)
     # Where waves are computed (user 09-29): 3.23 M of the 3.97 M active faces — v3's
     # 1.90 M + the bay's 1.33 M (0.77 M wet bed, 0.56 M land). A +5 m cap on the bay's
@@ -3256,7 +3288,8 @@ V4_REFREEZE_SWZ_V11 = replace(
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # nj2 — MODEL 2.0 (user 2026-11-14: domain name `nj2`). A NEW MESH (CLAUDE.md §6: 2.0 = a new
-# mesh). BUILDING since 2026-11-14: ring drawn and walked, no frozen mesh / fingerprint yet.
+# mesh). BUILDING 2026-11-14; FROZEN 2026-11-15 (J2 63919024 pass 1) — premier.NJ2,
+# 5,181,372 faces / 4,367 boundary edges / sha 5759f6fa6cca6826, data/frozen_mesh_nj2.
 # ═══════════════════════════════════════════════════════════════════════════════
 # = 1.1.0's domain (V4_REFREEZE_SWZ_V11: v4_refreeze's river cuts at today's head of tide,
 # leak walls, the Lewes edge, Keansburg / Overpeck weirs as hand-placed files) with the Upper
@@ -3492,8 +3525,12 @@ NJ2 = replace(
     refinement=DATA / "nj2_design" / "refinement_nj2.geojson",
     mesh_key=None,  # its own data/frozen_mesh_nj2
     face_z_from=None,  # the mesh domain: face z = the coarse bed (the bed domains set it)
-    building=True,  # cleared at the freeze, with the fingerprint and the support count
-    n_waterlevel_support=None,  # asserted on the real mesh at the freeze
+    building=False,  # FROZEN 2026-11-15 — premier.NJ2 (5181372 / 4367 / 5759f6fa6cca6826)
+    # BASE (noaa_sandy_nj) selection on the frozen mask, 2026-11-15 (J2 step 4b,
+    # logs/nj2_freeze_2026-11-14/base_support_nj2.txt): Battery 8518750 + Atlantic City
+    # 8534720 + Cape May 8536110 in the 100 km buffer of the 5 forced lines — v4's three.
+    # The arms force from NACCS 244 (`naccs_sandy_nj2`), declared on each Experiment.
+    n_waterlevel_support=3,
     # Same tier list as v4 / 1.x: the NY ground is CUDEM 1/9" (cudem_nj_v3 holds the 2015v1 NY
     # tiles) over 3DEP / GMRT. The 2012 Hudson channel (HD_HUD), the Brooklyn creek carves and
     # the pier carves are OVERLAYS in the 2012-bed recipe, never prepended (CLAUDE.md §5).
@@ -3546,7 +3583,8 @@ NJ2 = replace(
     # there as sandy_hwms_v2.geojson; copied byte-identical, md5 1e0214e9…).
     hwm_geojson=DATA / "validation_nj2" / "sandy_hwms_nj2.geojson",
     # MOTF: unchanged (user 11-03 decision 5): the v4 render covers the new area, and the
-    # NJ-validity raster already excludes NY ground; no new exclusion boxes.
+    # NJ-validity raster already excludes NY ground; no NEW-AREA exclusion boxes. The four
+    # Newark Bay / Arthur Kill product-cutoff boxes (V4, 2026-11-13) are inherited.
     # SnapWave: v4's footprint (v3's area + Delaware Bay) UNCHANGED — so the Upper New York
     # Bay, the KvK and the lower Hudson get NO waves, the same treatment as Newark Bay in 1.1.0
     # (user 2026-11-14). V3.region ends at the Narrows. Outside the fingerprint.

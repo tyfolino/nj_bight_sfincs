@@ -100,6 +100,19 @@ sp_id,offset_navd88_m,source
 4124,-0.0572,grid NJncstemb11_8301
 4126,-0.0543,grid NJncstemb11_8301
 4133,-0.0558,grid NJncstemb11_8301
+4304,-0.0185,grid NJncstemb11_8301
+4308,-0.0091,grid NJncstemb11_8301
+4310,-0.0134,grid NJncstemb11_8301
+4325,-0.0189,grid NJncstemb11_8301
+4448,-0.0317,grid NJncstemb11_8301
+4459,-0.0303,grid NJncstemb11_8301
+4470,-0.0266,grid NJncstemb11_8301
+4471,-0.0290,grid NJncstemb11_8301
+4479,-0.0238,grid NJncstemb11_8301
+4481,-0.0280,grid NJncstemb11_8301
+4487,-0.0288,grid NJncstemb11_8301
+4493,-0.0255,grid NJncstemb11_8301
+4505,-0.0240,grid NJncstemb11_8301
 5480,-0.1106,grid DEdelbay22_8301
 5481,-0.1106,grid DEdelbay22_8301
 5484,-0.1104,grid DEdelbay22_8301
@@ -317,6 +330,15 @@ sp_id,offset_navd88_m,source
 11780,-0.0662,grid NJncstemb11_8301
 11864,-0.0555,grid NJncstemb11_8301
 11865,-0.0563,grid NJncstemb11_8301
+11876,-0.0440,grid NJncstemb11_8301
+11877,-0.0037,grid NJncstemb11_8301
+11878,-0.0451,grid NJncstemb11_8301
+11879,-0.0197,grid NJncstemb11_8301
+11884,-0.0284,grid NJncstemb11_8301
+11892,-0.0157,grid NJncstemb11_8301
+11893,-0.0249,grid NJncstemb11_8301
+11909,-0.0309,grid NJncstemb11_8301
+11910,-0.0262,grid NJncstemb11_8301
 11934,-0.0645,grid NJncstemb11_8301
 11935,-0.0724,grid NJncstemb11_8301
 11936,-0.0808,grid NJncstemb11_8301
@@ -333,6 +355,12 @@ sp_id,offset_navd88_m,source
 13760,-0.0780,vdatum
 13815,-0.0775,grid NJncstemb11_8301
 13820,-0.0540,grid NJncstemb11_8301
+13866,-0.0251,grid NJncstemb11_8301
+13892,-0.0144,grid NJncstemb11_8301
+13893,-0.0087,grid NJncstemb11_8301
+13894,-0.0133,grid NJncstemb11_8301
+13908,-0.0121,grid NJncstemb11_8301
+13911,-0.0207,grid NJncstemb11_8301
 14073,-0.1414,grid NJncstemb11_8301
 14089,-0.1374,grid NJncstemb11_8301
 14182,-0.1367,grid NJncstemb11_8301
@@ -346,3 +374,4 @@ sp_id,offset_navd88_m,source
 15260,-0.1106,grid DEdelbay22_8301
 15262,-0.1040,grid NJscstemb21_8301
 15289,-0.1042,grid NJscstemb21_8301
+19080,-0.0016,grid NJncstemb11_8301

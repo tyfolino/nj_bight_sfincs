@@ -2432,6 +2432,8 @@ reproduces both rows' CSI to 1e-9). Every miss and false alarm (FA) gets one cla
 | miss: held = c2 + d2 + d1 (below the water, dry; d1 = behind a crest above it) | 48.6 (d1 10.5) | 61.5 (d1 15.3) |
 | FA: no wet path to the sea | 71.1 | 10.8 |
 
+*MOTF numbers in this file are BEFORE the 4 Newark Bay / Arthur Kill cutoff boxes (`Domain.motf_exclude_boxes_ll` on V4, kept, user 11-15). With them: CSI 0.802 → 0.803 (1.1.0), 0.821 → 0.822 rain off, 0.791 → 0.792 (1.0.0); POD unchanged, FAR −0.002. Not re-quoted everywhere (user: not worth it for 0.001); rows in `logs/motf_cutoff_jc_2026-11-13/rescore/`.*
+
 - **Rain off trades −72 km² of FA for +31 km² of misses**; it is not "the same map minus the rain ponds". 60.2 of
   the 71.6 km² FA drop is ground with no wet path to the sea; 31.4 km² that FEMA and the rain-on model both flood goes
   dry (Cape May 13.3, Cumberland 5.4, Atlantic 4.5, Gloucester 3.2). Whether that is real compound flooding or rain on

@@ -530,6 +530,9 @@ class TestWaterlevelSupportOverride(_DomainEnv):
             "v4_refreeze_swz_bare": 3,
             # Model v1.1 (11-06): face z from the v1.1c bed, again.
             "v4_refreeze_swz_v11": 3,
+            # Model 2.0's mesh (11-15, J2 step 4b on the frozen mask): the same three
+            # (100 km buffer of the 5 forced lines). Its arms force from the NACCS 244.
+            "nj2": 3,
         }
         self.assertEqual(
             set(PINNED),
@@ -1337,8 +1340,9 @@ class TestBuilding(_DomainEnv):
     def test_no_domain_is_building(self):
         """v3 was the building domain 2026-08-24..26 and froze 2026-08-26; v4 was building
         2026-09-27..28 and froze 2026-09-28 (premier.V4). Any domain that appears here
-        must be added deliberately. nj2 (Model 2.0) is building since 2026-11-14."""
-        self.assertEqual(set(self._bld()), {"nj2"})
+        must be added deliberately. nj2 (Model 2.0) was building 2026-11-14..15 and froze
+        2026-11-15 (premier.NJ2)."""
+        self.assertEqual(set(self._bld()), set())
 
     def test_one_state_at_a_time(self):
         for name, dom in domain.DOMAINS.items():
