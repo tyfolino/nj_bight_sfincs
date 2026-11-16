@@ -235,6 +235,11 @@ V4_REFREEZE_SWZ_V11 = DomainFingerprint(4881654, 4388, "4bc97aae885f0aa4")
 #: the 25 m coarse bed. = the J1b probe's `f1_final` (5,181,372 faces). The bed domains
 #: `nj2_bed2012` / `nj2_bed2026` (GATE 2) share the mesh and differ only in the sha.
 NJ2 = DomainFingerprint(5181372, 4367, "5759f6fa6cca6826")
+#: nj2_bed2012 STAGED 2026-11-16 (GATE 2; setup_face_z.py --from nj2 --bed _subgrid_nj2_2012;
+#: logs/nj2_freeze_2026-11-14/setup_face_z_nj2_bed2012.log): MODEL 2.0.0, 2012 bed — nj2 with face z =
+#: the 2012 bed's subgrid mean ground on 4,273,668 active faces (26,978 on hydromt's −20 m volume
+#: floor kept). Same mesh, mask and counts as nj2 — the sha is the only tell.
+NJ2_BED2012 = DomainFingerprint(5181372, 4367, "c183d1a5f1d7bef6")
 
 EXPECTED: dict[str, DomainFingerprint] = {
     "v1_monmouth": V1_MONMOUTH,
@@ -252,6 +257,7 @@ EXPECTED: dict[str, DomainFingerprint] = {
     "v4_refreeze_swz_bare": V4_REFREEZE_SWZ_BARE,
     "v4_refreeze_swz_v11": V4_REFREEZE_SWZ_V11,
     "nj2": NJ2,
+    "nj2_bed2012": NJ2_BED2012,
 }
 
 KNOWN = {
@@ -304,6 +310,10 @@ KNOWN = {
     NJ2: (
         "nj2 FROZEN 2026-11-15 — Model 2.0's mesh: 1.1.0's domain + the Upper Bay, KvK, "
         "Hudson to 40.860 and East River to Hell Gate computed; face z = the coarse 25 m bed"
+    ),
+    NJ2_BED2012: (
+        "nj2_bed2012 STAGED 2026-11-16 — Model 2.0.0, 2012 bed: nj2 with face z from the 2012 "
+        "bed (_subgrid_nj2_2012)"
     ),
     V4_HOT_PLUS: "v4_hot_plus RE-STAGED 2026-10-05, RETIRED 2026-10-15 (records in _retired/)"
     " (Maurice cut on the Union Lake dam crest)"

@@ -3598,6 +3598,19 @@ NJ2 = replace(
     flux_crosssections=DATA / "nj2_design" / "flux_crosssections_nj2.crs",
 )
 
+#: MODEL 2.0.0, 2012 bed (GATE 2, 2026-11-16): nj2's mesh with face ``z`` = the 2012 bed's
+#: subgrid mean ground (``_subgrid_nj2_2012``, J2 63941532 pass 2: v1.1c's tiers + HD_HUD 2012
+#: paint + the v1.2a five + the Brooklyn creek / upper Gowanus / pile-pier carves;
+#: logs/nj2_freeze_2026-11-14/README.md §5), staged by ``scripts/setup_face_z.py --from nj2``,
+#: so SnapWave reads the bed the flow uses (§63). Same mesh, mask and counts as nj2 — the sha is
+#: the only tell (premier.NJ2_BED2012). Every other field = nj2's. Arms: the 2.0 design gate (J3).
+NJ2_BED2012 = replace(
+    NJ2,
+    name="nj2_bed2012",
+    mesh_key="nj2",  # = data/frozen_mesh_nj2
+    face_z_from="_subgrid_nj2_2012",
+)
+
 
 DOMAINS: dict[str, Domain] = {
     d.name: d
@@ -3617,6 +3630,7 @@ DOMAINS: dict[str, Domain] = {
         V4_REFREEZE_SWZ_BARE,
         V4_REFREEZE_SWZ_V11,
         NJ2,
+        NJ2_BED2012,
     )
 }
 

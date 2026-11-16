@@ -1,5 +1,11 @@
 # Poster text: DRAFT (2026-11-12, for the Rutgers climate poster, 11-13; user's 8 text decisions applied 11-13)
 
+> **FINAL (printed 2026-11-16): `poster_final_2026-11-16.pptx`** (+ `.pdf`, `_preview.png`) = v13 ink-light: the
+> user's + Nithila's 11-16 edit (Delft-FIAT Fig 4 in) with typo / layout fixes, white banner and section bars
+> (James: colour ink). The novelty sentence is the user's, UNHEDGED. Every draft (v1–v13, `drafts/`) and the
+> build_v10–v13 scripts were deleted 11-16 at the user's request; the sections below are the version log only
+> (the files they name no longer exist; v10 / v11 / the with-FIAT v11 are in git history before that date).
+
 A draft to edit, not to paste whole. [Brackets] = numbers still coming tonight or a
 choice for you. Every number below has its source in the figure READMEs beside this file.
 

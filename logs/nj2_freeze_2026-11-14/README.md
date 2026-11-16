@@ -267,3 +267,21 @@ exception). Read-outs: `j1b_probe_summary.txt`, `j1b_compare.txt`, `j1b_probe_*.
   mask 2 outside every arm 0; `wall_e88` / `wall_hellgate_east` boxes hold no outflow cell. Brackets set in
   `domain.py`: `hudson` [22, 36], `hell_gate` [7, 14] (v4's small-arm practice).
 
+
+**J2 pass 1 (63919024) → GATE 1 (11-15)** froze nj2 (`5181372 / 4367 / 5759f6fa6cca6826`); record
+`gate1_draft/README.md`. **J2 pass 2 (63941532, hal0129, 11-15 22:52 → 11-16 02:00) — DONE**: template + 1.1.0's
+hand steps, compare gate clean, 2012 bed `_subgrid_nj2_2012` in 1,264 s (16 workers; provenance checks all True),
+bed_audit + deck re-check (WARN only), dedupe (`J2_CHECKS.txt`). Its engine-snap strays (written to CWD by
+`engine_snap_f32.py`) are in `engine_snap_pass2/`.
+
+**GATE 2 (11-16) — DONE.** `nj2_bed2012` = `replace(NJ2, name="nj2_bed2012", mesh_key="nj2",
+face_z_from="_subgrid_nj2_2012")` (every other field = nj2's; test-pinned). `setup_face_z.py --from nj2 --bed
+_subgrid_nj2_2012` (`setup_face_z_nj2_bed2012.log`, 10 s): 4,273,668 of 4,300,646 active faces set from the 2012
+bed's mean ground (26,978 on the −20 m floor kept); Δz p1/p50/p99 −1.57 / +0.00 / +6.09 m (v4_refreeze → swz: −1.39 /
++0.00 / +4.30; the NY-harbour corner's p99 is +10 m — buildings / piers in the mean ground; face z is SnapWave's bed
+only, so the waves-off J3 arms do not read it). **`premier.EXPECTED["nj2_bed2012"]` = `DomainFingerprint(5181372,
+4367, "c183d1a5f1d7bef6")`**; audit 2/2 OK. J3's four arms applied to `experiments.py` from `experiments_nj2_block.py`
+with `_NJ2_NACCS_SUPPORT = 244` (`naccs_nj2.log`); `--check` OK on all four; J3's precondition block passes.
+Tests: `PINNED["nj2_bed2012"] = 3`; `test_bed_arms` measures a non-bed arm on a face-z domain with no premier arm
+against the domain's `face_z_from`; `TestNJ2Bed2012` (3 tests). **Next: J3** — write its md5 AFTER the Port Penn
+notch edit to the dike-set weir is finished (that file is in `j3_md5_files.txt`).

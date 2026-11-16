@@ -132,10 +132,11 @@ $D/sfincs.nc --window 495000 4285000 605000 4492000 --contour-stride 2 --float32
 
 ## 5. Dikes-and-levees set for 2.0, fixed (user scope addition 11-14; `dikes_levees/`)
 
-**Files** (`data/nj2_design/structures/`): `dikes_levees_cohansey_set_nj2.weir` (the set alone, 25 polylines, md5
-`0f78b694…`) and `sfincs_overpeck_open_elizabeth_rahway_dikes_levees_cohansey_nj2.weir` (= the premier file byte for byte
-+ the set, 49 polylines, md5 `fc0c9cdf…`: the arm's `weir_from`), + `cohansey_bacons_neck_gate_checkvalve.drn` (`drn_from`).
-Built by `dikes_levees/fix_set.py` from the 11-12 `cand_recommended.weir` + `cand_cohansey_gate.weir`; 22 of 25 lines byte for byte.
+**Files** (`data/nj2_design/structures/`): `dikes_levees_cohansey_set_nj2.weir` (the set alone, 26 polylines, md5
+`6e0ce4fd…`) and `sfincs_overpeck_open_elizabeth_rahway_dikes_levees_cohansey_nj2.weir` (= the premier file byte for byte
++ the set, 50 polylines, md5 `fcd9e1c5…`: the arm's `weir_from`), + `cohansey_bacons_neck_gate_checkvalve.drn` (`drn_from`).
+Built by `dikes_levees/fix_set.py` from the 11-12 `cand_recommended.weir` + `cand_cohansey_gate.weir`; 21 of 25 lines byte
+for byte (change 5, 11-16, splits r1054 into two pieces; before it: 25 / 49 polylines, md5 `0f78b694…` / `fc0c9cdf…`).
 **Engine u/v on the v4 mesh / v1.1c bed: 3551** (= 819 + 2,732; the 11-13 set was 3571). Re-count on nj2.
 
 | line | what changed | check (static door, 1.1.0 mesh) |
@@ -143,7 +144,7 @@ Built by `dikes_levees/fix_set.py` from the 11-12 `cand_recommended.weir` + `can
 | **Chester** `chester_nld4805000005_redraw_2026-11-14` | The NLD route runs ON the creek's inner bank; on the mesh the creek is one 25–50 m face wide, so the 11-12 line blocked **18 creek-to-creek links** and dammed the creek (`cand_chester_links.png`). Redrawn on the cell edges between the leveed ground cells (face centre in the NLD leveed area AND `z_zmin` ≥ 1 m; 56 cells, 8 creek faces left out) and the creek: same side, NLD crest (4.56–5.80 m), 19 m median / 90 m max landward of the 11-12 line, 181 vertices (`chester_redraw.py`, `chester_redraw_links.png`) | **0** creek-to-creek links. Source 26 (Chester Creek, 45.8 m³/s, 1.0 km upstream) joins the boundary at −0.00 m (11-12 line: **3.41 m, ENCLOSED**). Leveed ground door **4.37 m** (11-12: 4.18; pixel door 4.49; Sandy 3.41): still holds |
 | **Forsythe** `…r1303_p0_r60_sw_2026-11-14` | SW corner: the outline ran 40–70 m north of the dike and took 0.47–0.84 m crests. Vertices 587–594 → a detour onto the dike crest, traced on 1/9″ CUDEM between hand-picked ends (`ridge.py`; crest 1.97–2.20 m) | region 1303 spill 0.58 → **0.91 m**, closed share 0.00 → **1.00** (MHHW 0.55) |
 | **Tuckahoe 1286** `…r1286_p0_r60_ridge_2026-11-14` | The outline went round a low-marsh triangle south of the pool, along the upland toe, where the lidar shows no dike (0.72–0.88 m at the leak). Vertices 257–376 → the pool's diagonal dike crest (1.34–1.53 m) | region spill 0.72 → **1.10 m**, closed 0.001 → **0.913**; the open 9 % (~0.08 km²) is the triangle, **left open on purpose** (no dike to close it) |
-| 6 structure notches | **kept filled = storm-shut**, the user's tide-gate rule (11-12). Lidar pass (`notch_check.csv`): only **r1054** (New Castle) has a < 0 m channel running through the line (a creek, culvert or gate opening) → **needs the imagery eye check** before any normal-weather `drn`; the other five are dips in the crest (min ground 0.25–0.94 m), Forsythe's NE notch −0.04 m but no through-channel | — |
+| 6 structure notches | **kept filled = storm-shut**, the user's tide-gate rule (11-12) — **except r1054, OPENED 11-16 (change 5, the r1054 section below)**. Lidar pass (`notch_check.csv`): only **r1054** (New Castle) has a < 0 m channel running through the line (a creek, culvert or gate opening) → **needs the imagery eye check** before any normal-weather `drn`; the other five are dips in the crest (min ground 0.25–0.94 m), Forsythe's NE notch −0.04 m but no through-channel | — |
 
 All other regions and the three other levees read exactly as in the 11-13 set (Rohm & Haas 3.57, Henby 1.26 / 1.26).
 Closed outright: 12.2 of 20.2 km² of assessed over-reach (11-13: 7.8). 0 HWMs within 50 m of any line (nearest 2.1 km);
@@ -155,7 +156,7 @@ only leave over a crest). It reproduces the Chester failure on the 11-13 file (+
 only sources 26 and 27 are within 3 km of any line. It also prints the regions' spill/closed table and the levees'
 2 % door, now also on leveed ground only (a creek face inside the NLD polygon is not the leveed area). Static only: no
 inflow volume, so a pond below a crest is still possible where the rise is small; run it on nj2 after the freeze.
-Still open (user): imagery eye check of the r1054 notch and of the Tuckahoe triangle; the Cohansey valve size is
+Still open (user): imagery eye check of the Tuckahoe triangle (r1054 done 11-14: a broken tide gate, opened 11-16); the Cohansey valve size is
 assumed (6.2); the dikes are lidar-traced locators, not surveyed lines.
 
 ## Paths for the domain agent
@@ -200,3 +201,23 @@ lidar holds the pre-repair breach). DFW was planning to rebuild the gate (2016; 
 dike-set run. 2026 bed: open unless imagery shows the gate rebuilt (then a one-way drn). Fishers Wharf gate (south end,
 installed 2011, functioning) and the culverts: designation 2 (working).
 User 11-14: "if it's broken, leave it open" → r1054 OPEN (two-way) in BOTH beds' dike sets until evidence of a rebuild.
+
+**Done 2026-11-16 — `fix_set.py` change 5.** The r1054 ring (`dbay_de_newcastle_r1054_r1054_p0_r60`, 902 vertices,
+closed) is now two open pieces, `…_gate_open_2026-11-16_a` (vertices 0–816) and `_b` (818–901, ending on vertex 0), so
+segments 816→817→818 are gone: **1 vertex, 2 segments, 30 m of line** at x 450950, y 4375415 → 4375445 (UTM 18N; the
+river-side toe, crest 2.82 written). Segment order is otherwise unchanged. The gap sits on the dike's lidar dip: the crest
+runs 2.4–2.8 m along the dike and drops to **1.34 m at (450939, 4375420) = (−75.57084, 39.52703)**, ~12 m wide, the
+only dip within ±130 m — the gate. The gap midpoint is 15 m from it. It is **54 m from (−75.57129, 39.5273)**: that
+coordinate is the 11-12 r30 line's vertex (450900, 4375450), on the pond side 35–40 m west of the crest, not on the dike
+(`r1054_gate_open_view.png`: 1/9″ CUDEM, the two pieces, nj2 links with engine `uv_zmin`). Diff old → new: only the
+r1054 block's header lines and the one vertex (7 diff lines); every other line byte for byte.
+**Engine u/v (float32 rule, `engine_snap_f32.py`), old → new:** `experiments/nj2/_template_sealed` **3582 → 3581**;
+`experiments/nj2/_subgrid_nj2_2012` (the 2012 bed) **3579 → 3578**. On both beds the one point removed is uv 2512824
+(crest 2.819), the u-link from pond face 1236936 to river face 1237714 through the gate dip (`uv_zmin` −0.11 on both
+beds); no point added, no other crest changed. Connectivity (2012 bed, links below a level and not weired): the pond
+component (318–337 faces ≈ region 1054's 0.84 km²) was sea-closed at 0.0 / 0.5 / 1.0 m and is now sea-connected at
+all three. The opening is a whole 50 m link with no crest — wider than the multi-bay gate, i.e. the study's
+"equalizes water levels", not a sized culvert. Backups (gitignored): `data/nj2_design/structures/*.weir.pre_portpenn_2026-11-16`.
+Re-count on each staged bed run dir before J3 (`EXPECT_NWEIR`):
+`python -I logs/walls_elizabeth_rahway_2026-11-05/engine_snap_f32.py experiments/nj2_bed2012/<arm> data/nj2_design/structures/sfincs_overpeck_open_elizabeth_rahway_dikes_levees_cohansey_nj2.weir`
+(run from a scratch dir: it writes `*.crests.npz` / `engine_snap_*.json` into the cwd).

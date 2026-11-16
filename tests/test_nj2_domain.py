@@ -77,7 +77,9 @@ class TestNJ2(unittest.TestCase):
     def test_cut_arm_boxes_hold_their_forced_vertices(self):
         from pyproj import Transformer
 
-        verts = {n: (lo, la) for n, lo, la in domain.read_waterlevel_line(NJ2.region_source)}
+        verts = {
+            n: (lo, la) for n, lo, la in domain.read_waterlevel_line(NJ2.region_source)
+        }
         t = Transformer.from_crs(4326, NJ2.epsg, always_xy=True)
         arms = {a.name: a for a in NJ2.boundary_arms}
         for arm, (v0, v1) in {
@@ -87,18 +89,27 @@ class TestNJ2(unittest.TestCase):
             x0, y0, x1, y1 = arms[arm].box
             for v in (v0, v1):
                 x, y = t.transform(*verts[v])
-                self.assertTrue(x0 + 250 < x < x1 - 250 and y0 + 250 < y < y1 - 250, (arm, v))
+                self.assertTrue(
+                    x0 + 250 < x < x1 - 250 and y0 + 250 < y < y1 - 250, (arm, v)
+                )
         self.assertEqual(verts["hudson_w"], (-73.95753, 40.86))  # user 11-04: 45 m W
         self.assertEqual(verts["astoria"], (-73.92297, 40.76945))  # user 11-03: inland
 
     def test_gauges(self):
         v11 = list(V11.obs_gauges)
         self.assertEqual(list(NJ2.obs_gauges[: len(v11)]), v11)
-        new = [g.name for g in NJ2.obs_gauges[len(v11):]]
+        new = [g.name for g in NJ2.obs_gauges[len(v11) :]]
         self.assertEqual(
             new,
-            ["noaa_battery", "noaa_bergen_point", "sss_gowanus", "sss_hoboken",
-             "sss_hackensack_hud002", "bc_hudson_cut", "bc_hell_gate"],
+            [
+                "noaa_battery",
+                "noaa_bergen_point",
+                "sss_gowanus",
+                "sss_hoboken",
+                "sss_hackensack_hud002",
+                "bc_hudson_cut",
+                "bc_hell_gate",
+            ],
         )
 
     def test_obs_file_matches_the_obs_agents(self):
@@ -121,11 +132,15 @@ class TestNJ2(unittest.TestCase):
             self.assertEqual((o.frm, o.to), (3, 1), o.name)
 
     def test_ring_is_v4_hot_plus_with_the_new_legs(self):
-        hp = domain.read_waterlevel_line(domain.DATA / "v4_design" / "region_v4_hot_plus_vertices.csv")
+        hp = domain.read_waterlevel_line(
+            domain.DATA / "v4_design" / "region_v4_hot_plus_vertices.csv"
+        )
         nj = domain.read_waterlevel_line(NJ2.region_source)
         gone = {n for n, *_ in hp} - {n for n, *_ in nj}
         self.assertEqual(
-            gone, {f"hudson_route_{i:02d}" for i in range(3, 22)} | {"narrows_w", "narrows_e"}
+            gone,
+            {f"hudson_route_{i:02d}" for i in range(3, 22)}
+            | {"narrows_w", "narrows_e"},
         )
         kept = {n: (lo, la) for n, lo, la in hp}
         for n, lo, la in nj:
@@ -136,7 +151,9 @@ class TestNJ2(unittest.TestCase):
         import geopandas as gpd
 
         names = domain.hwm_basin_names(NJ2)
-        self.assertEqual(names[:4], ("upper_bay_islands", "hudson_nj", "east_river", "upper_bay_ny"))
+        self.assertEqual(
+            names[:4], ("upper_bay_islands", "hudson_nj", "east_river", "upper_bay_ny")
+        )
         self.assertEqual(names[4:], domain.hwm_basin_names(V11))
         g = gpd.read_file(V11.hwm_geojson).to_crs(NJ2.epsg)
         x, y = g.geometry.x.values, g.geometry.y.values
@@ -164,11 +181,64 @@ class TestNJ2(unittest.TestCase):
         )
         for name, d in domain.DOMAINS.items():  # every v4 variant carries them too
             if name.startswith("v4"):
-                self.assertEqual(d.motf_exclude_boxes_ll, NJ2.motf_exclude_boxes_ll, name)
+                self.assertEqual(
+                    d.motf_exclude_boxes_ll, NJ2.motf_exclude_boxes_ll, name
+                )
 
     def test_bed_tiers(self):
         self.assertEqual(NJ2.elevation_list, domain.V4_ELEVATION_LIST)
-        self.assertEqual(NJ2.coarse_elevation_list, ({"elevation": "bed_nj2_coarse_25m"},))
+        self.assertEqual(
+            NJ2.coarse_elevation_list, ({"elevation": "bed_nj2_coarse_25m"},)
+        )
+
+
+class TestNJ2Bed2012(unittest.TestCase):
+    """GATE 2 (2026-11-16): the 2012-bed face-z domain and the J3 design-gate arms."""
+
+    def test_only_name_mesh_key_and_face_z_differ_from_nj2(self):
+        b = domain.DOMAINS["nj2_bed2012"]
+        diff = {
+            f.name
+            for f in dataclasses.fields(b)
+            if getattr(b, f.name) != getattr(NJ2, f.name)
+        }
+        self.assertEqual(diff, {"name", "mesh_key", "face_z_from"})
+        self.assertEqual(b.mesh_key, "nj2")
+        self.assertEqual(b.face_z_from, "_subgrid_nj2_2012")
+        self.assertEqual(b.frozen_mesh_dir(), NJ2.frozen_mesh_dir())
+
+    def test_fingerprint_shares_nj2s_counts(self):
+        fp, mesh = premier.EXPECTED["nj2_bed2012"], premier.EXPECTED["nj2"]
+        self.assertEqual(
+            fp, premier.DomainFingerprint(5181372, 4367, "c183d1a5f1d7bef6")
+        )
+        self.assertEqual(
+            (fp.n_faces, fp.n_boundary_edges), (mesh.n_faces, mesh.n_boundary_edges)
+        )
+        self.assertNotEqual(fp.sha_z_mask, mesh.sha_z_mask)
+
+    def test_j3_arms(self):
+        from nj_sfincs.experiments import EXPERIMENTS_BY_DOMAIN
+
+        self.assertEqual(EXPERIMENTS_BY_DOMAIN["nj2"], {})
+        arms = EXPERIMENTS_BY_DOMAIN["nj2_bed2012"]
+        self.assertEqual(
+            set(arms),
+            {
+                "p4-nowaves+rain-off+slr-0m",
+                "p4-nowaves+rain-off+slr-2m",
+                "p4-nowaves+rain-off+slr-3m",
+                "p4-nowaves+rain-off+slr-0m+struct-cohansey-checkvalve+weir-dikes-levees",
+            },
+        )
+        for name, e in arms.items():
+            with self.subTest(arm=name):
+                self.assertEqual(e.subgrid_from, "_subgrid_nj2_2012")
+                self.assertEqual(e.waterlevel_geodataset, "naccs_sandy_nj2")
+                # naccs_nj2.log "[out] 244 support points" (J2 63919024 step 4)
+                self.assertEqual(e.n_waterlevel_support, 244)
+                self.assertFalse(e.rain)
+                self.assertFalse(e.waves.use_waves)
 
 
 if __name__ == "__main__":

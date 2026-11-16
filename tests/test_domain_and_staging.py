@@ -533,6 +533,9 @@ class TestWaterlevelSupportOverride(_DomainEnv):
             # Model 2.0's mesh (11-15, J2 step 4b on the frozen mask): the same three
             # (100 km buffer of the 5 forced lines). Its arms force from the NACCS 244.
             "nj2": 3,
+            # Model 2.0.0, 2012 bed (11-16, GATE 2): nj2 with face z from the 2012 bed —
+            # same mask and line, so the same three. Its arms force from the NACCS 244.
+            "nj2_bed2012": 3,
         }
         self.assertEqual(
             set(PINNED),

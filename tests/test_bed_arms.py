@@ -17,6 +17,7 @@ from pathlib import Path
 from unittest import mock
 
 from nj_sfincs.config import Experiment, WaveConfig
+from nj_sfincs.domain import DOMAINS
 from nj_sfincs.experiments import EXPERIMENTS_BY_DOMAIN, reference_arm
 
 
@@ -39,9 +40,16 @@ class TestBedArms(unittest.TestCase):
                 # Relative to the arm's OWN family premier (2026-10-19: the p4- candidates
                 # run a new bed and pair against p4-premier / p4-ref, not naccs-premier).
                 ref = reference_arm(name, dom)
+                is_bed = name.startswith("bed-") or "+bed-" in name
                 base = arms[ref].subgrid_from if ref is not None else None
+                if ref is None and not is_bed:
+                    # A face-z domain with no premier arm yet (nj2_bed2012 at GATE 2,
+                    # 2026-11-16: only the J3 design-gate arms): a non-bed arm must run the
+                    # bed the domain DECLARES — the subgrid its face z was taken from, which
+                    # its premier will run. (``None`` on a domain without face_z_from.)
+                    base = DOMAINS[dom].face_z_from
                 with self.subTest(domain=dom, arm=name):
-                    if name.startswith("bed-") or "+bed-" in name:
+                    if is_bed:
                         self.assertNotEqual(
                             exp.subgrid_from,
                             base,
