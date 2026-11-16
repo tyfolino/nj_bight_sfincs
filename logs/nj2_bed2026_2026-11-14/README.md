@@ -237,9 +237,11 @@ gowanus_upper_v2_2026:
   uri: elevation_nj2/v2/carves/gowanus_upper_v2_2026.tif
   driver: {name: rasterio, options: {}}
   metadata: {category: topography, crs: 32618, unit: m+NAVD88, source: >-
-    2.0 2026 BED. ASSUMED upper Gowanus Canal carve (user 11-12 / 11-14): GC_01_GCK_20200512's last section median
-    -2.69 m carried to the Butler St head, on cells carve_v2_2026 does not hold. Apply :min after carve_v2_2026.
-    logs/nj2_bed2026_2026-11-14/build_gowanus_upper.py. md5 e5dd87de529fe968c0d61567ab0f178d}
+    2.0 2026 BED. Upper Gowanus Canal carve at the DESIGN cap top (user 11-16): -3.20 m NAVD88 (-10.5 ft, EPA-approved
+    RTA 1 remedial design, Union St - Carroll St; RTA 1 completed 2024-07; no public post-remedy survey), to the
+    Butler St head, on cells carve_v2_2026 does not hold (910 px, 2.27 ha). Apply :min after carve_v2_2026.
+    Was the ASSUMED -2.69 m (2020-section median; kept as gowanus_upper_v2_2026.assumed_m2.69_2026-11-14.tif).
+    logs/nj2_bed2026_2026-11-14/build_gowanus_upper.py. md5 26243d37f6f51ad663b01061379f0d2d}
 gowanus_upper_v2:   # the 2012 bed's key as j2_freeze_nj2.slurm spells it
   data_type: RasterDataset
   uri: elevation_nj2/v2/carves/gowanus_upper_v2_2012.tif
@@ -324,3 +326,84 @@ dropped polygon at this site by source + vintage (pre-2019 = building; a polygon
 - 2026 bed: the ROD's remedy dredges the upper canal's soft sediment (RTA 1 native surface −11.8 to −25.6 ft NAVD88 =
   −3.6 to −7.8 m) and caps it; done ~2020–2024. GC_01_GCK_20200512 likely PREDATES that, so −2.69 m is probably too
   shallow for 2026 — look for a post-remedy survey (EPA / NYC DEP) before the 2026 build.
+
+## 2026-11-16: the prerequisites for the build
+
+### JC DWP canopies → `canopy_eyecheck.md`
+- **2 required sites** (DWP arrays A, 4,044 m², and B, 1,500 m²). Neither 2013 USA nor 2014 NJDEP shows a building
+  under them. The other 6 arrays sit on pre-panel roofs and were decided automatically.
+- **6 optional sites:** the same rule at other low-ground solar plants (ground below 7 m) where post-2019 polygons sit
+  over panels.
+- **Default if unanswered:** no change. DWP keeps its share of 0.35, and the layer is final as it stands.
+- DWP's ground is 6.5–6.9 m NAVD88, so the answer has little hydraulic consequence there.
+
+### Upper Gowanus, 2026 bed: a better number exists. It is a DESIGN value; no as-built survey is public.
+- **eHydro.** It holds only 5 Gowanus surveys (2013, 2017 ×3, 2020-05-12). There is **nothing after the remedy**, and
+  GC_01_GCK_20200512 ends at 40.6762 N.
+- **The approved RTA 1 100% Remedial Design** (B&B, 28 Feb 2020, approved by EPA July 2020; drawings C-1 to C-3, ft
+  NAVD88):
+  - Top of cap (= the finished bed) is mostly **−10 to −12 ft (−3.05 to −3.66 m)**. It runs −10.5 to −12 ft from
+    Union St to Carroll St, and down to −16 to −18 ft near the head and the flushing tunnel.
+  - The "navigational elevation" is −8.77 ft (−2.67 m, 6 ft at MLLW). That is the SHALLOWEST the cap may sit, and
+    today's −2.69 m almost equals it.
+  - Source: https://www.geiconsultants.com/wp-content/uploads/2020/06/RTA1-DESIGN-100-RTA1-REMEDIAL-DESIGN-SUBMITTAL-02282020.pdf
+- **EPA First Five-Year Review** (17 June 2025, https://semspub.epa.gov/work/02/746890.pdf):
+  - RTA 1 was dredged from Nov 2020, with final elevations "verified using … hydrographic surveys". Those surveys are
+    not published.
+  - "Work in RTA 1 was completed in July 2024, other than Turning Basin 1 and the area immediately adjacent to the
+    Carroll Street bridge."
+  - RTA 1 completion notice:
+    https://gowanussuperfund.com/wp-content/uploads/2024/07/2024-RTA-1-Completion-Notice-2.pdf
+- **Size of the change.** Using −10.5 ft = **−3.20 m** in place of −2.69 m deepens the 2.27 ha arm by **51 cm**
+  (−11 ft: 66 cm). It all sits below low water, a dead end whose storage there does not depend on depth, so the
+  effect on peaks should be ~nil.
+- **Recommendation (the user's call):** adopt −3.20 m, labelled DESIGN (2020 100% RD, RTA 1 complete July 2024). That
+  means re-running `build_gowanus_upper.py` with that DEPTH for the 2026 file only (under 1 min), then putting the
+  new md5 into the catalog snippet before the build. The 2012 file stays: it is pre-remedy and correct for 2012.
+- **The as-built surveys exist.** Ask EPA Region 2 or the Gowanus Remediation Team for them if the number has to be
+  "measured".
+- **Why the point median reads deeper than −2.69 m (inference).** The 2020 survey's raw-point median in the SECTION
+  box is −7.0 ft MLLW, which is −2.98 m NAVD88. The carve used VDatum's −0.87 m (`ehydro_check.txt`), which agrees
+  with the Battery's −0.85 m, so the datum is not the cause. The 29 cm gap comes from taking the median of 5 m cells
+  rather than of the dense centreline soundings.
+
+### Build readiness (read-only check, 11-16): NOT READY. One hard blocker and one advisory.
+- **🔴 8 catalog keys are missing.** The preflight refuses on the first one:
+  - `modern_land_paint_nj2`, `modern_land_lower_nj2`, `bed_buildings_hybrid_cap10_nj2`, `bluetopo_newer_nj2`,
+    `gowanus_upper_v2_2026`, `piers_v2_2026`, `manning_nlcd_2025_v4`, `manning_developed_2025_v4`.
+  - The snippets are above, plus `logs/modern_round_c_2026-11-12/README.md` for `manning_developed_2025_v4`.
+  - `cn_2025_v4` (and `nlcd_2025_v4` if the domain route is taken) is needed at the GATE, not by this job.
+  - `data_catalog.yml` is in J3's md5 list, and J3's sweep driver reads the catalog. J3 has started, so a requeue
+    only WARNS, but the safe time to add the keys is after J3 ends.
+- **Everything else is present:**
+  - the template and `_subgrid_nj2_2012` (provenance and merged dep);
+  - `footprints_hybrid_nj2.gpkg`;
+  - `carve_v2_2026.tif`, `gowanus_upper_v2_2026.tif` (md5 e5dd87de…) and `piers_v2_2026.tif` (md5 16a59926…);
+  - `manning_nlcd_2025_v4.tif` and `manning_developed_2025_v4.tif`;
+  - all 16 files in `md5_files.txt`;
+  - every CLI flag the job passes (`--bed/--out`, `--overlay/--manning-overlay/--dst/--force`,
+    `--ground/--footprints/--out`, `--bed/--label`);
+  - `/usr/bin/time`.
+- **Resources.** `nonpre` = 10 nodes of 32 cores and 192,000 MB, so `-c 32 --mem=180G` fits. The 8 h limit is well
+  above the ~2 h estimate. The next maintenance window is 12-15.
+- **⚠️ Disk.**
+  - Scratch is at 862 G of the 1,024 G soft limit (2,048 G hard). J3 adds +55–95 G, which takes it to 917–957 G.
+  - This job peaks at +115 G, which takes it to **1,032–1,072 G**: over the SOFT limit for the P4→A hour, and GPFS
+    grace starts.
+  - It ends at +45 G net, so **962–1,002 G**.
+  - The job's own check only guards the hard limit, so it will not refuse.
+  - Free ~50–100 G (retired runs to OneDrive / dedupe), or accept a short soft overage.
+- **⚠️ Do not edit the guarded files once it is queued.** `md5_files.txt` includes `nj_sfincs/domain.py`, so do not
+  register `nj2_bed2026` until the job has STARTED (better: finished).
+- **Submit** (from the repo root, after the keys land and after J3; fish-safe):
+  ```
+  md5sum (cat logs/nj2_bed2026_2026-11-14/md5_files.txt) > logs/nj2_bed2026_2026-11-14/expected.md5
+  env EXPECT_MD5=logs/nj2_bed2026_2026-11-14/expected.md5 sbatch logs/nj2_bed2026_2026-11-14/build_nj2_2026.slurm
+  ```
+
+**2026-11-16 (user): Gowanus → design depth.** `gowanus_upper_v2_2026.tif` rebuilt at **−3.20 m** (was −2.69 m; same
+910 px / 2.27 ha), md5 `26243d37f6f51ad663b01061379f0d2d`; old file kept as
+`gowanus_upper_v2_2026.assumed_m2.69_2026-11-14.tif`. `build_gowanus_upper.py` now writes the 2026 file only (the 2012
+file, md5 `04b5828e…`, is untouched — it is in `_subgrid_nj2_2012`). Catalog snippet above updated. **Still before the
+build:** the 8 catalog keys (after J3 ends — `data_catalog.yml` is J3-guarded) and the scratch archive pull (user 11-16:
+archive first).

@@ -7,18 +7,19 @@ SWAPPED by the rule: 338,478 (86.7 km2); own counterpart release-1 only (not swa
 big-roof guard (role 4): 48 (1.09 km2)
 asset guard skips 78 solar sites of 195 assets (user 11-14: panels are not buildings)
 asset guard (role 5): 139 pre-2019 USA polygons on 37 assets kept (0.111 km2): MS release 2 covers < 50% of their overlap with the asset
+canopy drop (user 11-16): Hudson County Solar: 7 post-2019 outlines, 5,610 m2
 
 Hybrid layer, nj2:
-  1 usa_post2019         657,971   160.20 km2
+  1 usa_post2019         657,964   160.20 km2
   2 usa_pre2019_kept     190,026    49.62 km2
   3 ms_swap              330,845    87.51 km2
   4 usa_bigroof               48     1.09 km2
   5 usa_asset_guard          139     0.11 km2
-  total               1,179,029   298.54 km2
+  total               1,179,022   298.53 km2
 NJ-only check: kept polygons with a representative point in NY / PA / DE: 0; outside NJ + 250 m: 0; outside NJ itself (waterfront, cut by the 1:500k shoreline): 619
 
-nj2 polygons in region_v4 x NJ: 1,082,036 (270.57 km2) vs the v4 layer 1,093,129 (274.87 km2); per role nj2 / v4:
-  usa_post2019         620,494 /   628,917
+nj2 polygons in region_v4 x NJ: 1,082,029 (270.56 km2) vs the v4 layer 1,093,129 (274.87 km2); per role nj2 / v4:
+  usa_post2019         620,487 /   628,917
   usa_pre2019_kept     158,867 /   159,420
   ms_swap              302,508 /   304,753
   usa_bigroof               39 /        39
@@ -50,7 +51,7 @@ Berkeley (029)        15778 3.214        2036         0.421
 East Brunswick (023)   6956 2.097        1256         0.419
 Paramus (003)          3271 0.954        1545         0.392
 
-NJ power assets touching the area: 195; in the v4 table: 184; |nj2 - v4 hybrid| >= 0.10: 4
+NJ power assets touching the area: 195; in the v4 table: 184; |nj2 - v4 hybrid| >= 0.10: 5
 asset                                    aname  bshare_hybrid_nj2                            roles_nj2  bshare_njdep  bshare_usa  bshare_hybrid  d_nj2_minus_v4hybrid
  p161                          Jersey City DWP              0.349     usa_asset_guard,usa_pre2019_kept           NaN         NaN            NaN                   NaN
  p370      Rutgers Health Sciences Power Plant              0.879                     usa_pre2019_kept           NaN         NaN            NaN                   NaN
@@ -63,6 +64,7 @@ s3249                         Union Substation              0.007               
  s700                          Mill Substation              0.016         usa_asset_guard,usa_post2019           NaN         NaN            NaN                   NaN
  s679                      Ward Ave Substation              0.026                         usa_post2019           NaN         NaN            NaN                   NaN
 s3261                       Newport Substation              0.149 ms_swap,usa_asset_guard,usa_post2019           NaN         NaN            NaN                   NaN
+ p170                      Hudson County Solar              0.119                     usa_pre2019_kept         0.126       0.777          0.777                -0.658
  p129                                    CCMUA              1.000          usa_asset_guard,usa_bigroof         0.890       1.000          0.656                 0.344
  p173                              Cedar Creek              0.225                         usa_post2019         0.000       0.000          0.000                 0.225
  p869               Wheelabrator Gloucester LP              0.281              ms_swap,usa_asset_guard         0.315       0.278          0.073                 0.208

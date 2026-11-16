@@ -176,6 +176,17 @@ out = pd.concat([
     gpd.GeoDataFrame({"role": add.role.values, "src": "ms_r2", "date": "2019", "a_m2": add.a_m2.values},
                      geometry=add.geometry.values, crs=32618),
 ], ignore_index=True)
+# ---- user eye check 11-16 (canopy_eyecheck.md): outlines traced AFTER 2019 over these solar plants are CARPORTS /
+# canopies (open underneath) -> not buildings. By plant asset id + name; JC DWP arrays A/B were already out (default).
+CANOPY_DROP = {"p170": ("Hudson County Solar", 7)}  # asset -> (name, expected polygon count)
+for asset, (nm, n_exp) in CANOPY_DROP.items():
+    row = pa[pa.asset == asset]
+    assert len(row) == 1 and row.aname.iloc[0] == nm, (asset, row.aname.tolist())
+    site = row.geometry.iloc[0]
+    hit = (out.date > "2019") & (shapely.area(shapely.intersection(out.geometry.values, site)) > 20)
+    assert int(hit.sum()) == n_exp, (nm, int(hit.sum()), out[hit][["src", "date", "a_m2"]].to_string())
+    p(f"canopy drop (user 11-16): {nm}: {int(hit.sum())} post-2019 outlines, {out.a_m2[hit].sum():,.0f} m2")
+    out = out[~hit].reset_index(drop=True)
 out["role_name"] = out.role.map(NAMES)
 p("\nHybrid layer, nj2:")
 for k, g in out.groupby("role"):

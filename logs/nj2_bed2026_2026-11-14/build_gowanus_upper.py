@@ -83,19 +83,28 @@ p(f"NYC 2017 < {CANAL_MAX} m north of {LAT0}: {n} components; the one(s) at the 
   f"lidar there p50 {np.nanmedian(ny[canal]):.2f} m")
 
 prof.update(width=W, height=H, transform=tr, nodata=ND, dtype="float32", compress="deflate")
-for bed, zc in (("2012", z12), ("2026", z26)):
+# 2026-11-16 (user): the 2026 bed takes EPA's approved RTA 1 remedial design cap top, -10.5 ft NAVD88 = -3.20 m
+# (Union St - Carroll St; B&B 100% RD, 2020-02-28, approved 2020-07; RTA 1 completed 2024-07 per EPA's 1st Five-Year
+# Review 2025-06-17). No public post-remedy survey exists. The 2012 bed (pre-remedy) keeps the 2020-section median
+# and its file is NOT rewritten (already built into _subgrid_nj2_2012). Rerun writes the 2026 file only.
+DESIGN_2026 = -3.20
+STATUS = {"2012": ("ASSUMED depth (no survey; user 11-12 / 11-14)", depth),
+          "2026": ("DESIGN value: EPA-approved RTA 1 remedial design cap top -10.5 ft NAVD88 (user 11-16); "
+                   "no public post-remedy survey", DESIGN_2026)}
+for bed, zc in (("2026", z26),):
     have = zc != ND
-    out = np.where(canal & ~have, np.float32(depth), np.float32(ND))
+    status, zval = STATUS[bed]
+    out = np.where(canal & ~have, np.float32(zval), np.float32(ND))
     k = out != ND
     f = CV / f"gowanus_upper_v2_{bed}.tif"
     tmp = f.with_suffix(".partial.tif")
     with rasterio.open(tmp, "w", **prof) as dst:
         dst.write(out, 1)
-        dst.update_tags(bed=bed, status="ASSUMED depth (no survey; user 11-12 / 11-14)",
-                        rule=f"canal = NYC 2017 lidar < {CANAL_MAX} m connected to the GCK 2020 section; z = that "
-                             f"section's median {depth:.2f} m; apply as min(bed, layer) AFTER carve_v2_{bed}:min",
+        dst.update_tags(bed=bed, status=status,
+                        rule=f"canal = NYC 2017 lidar < {CANAL_MAX} m connected to the GCK 2020 section; z = "
+                             f"{zval:.2f} m; apply as min(bed, layer) AFTER carve_v2_{bed}:min",
                         made_by="logs/nj2_bed2026_2026-11-14/build_gowanus_upper.py", units="m NAVD88")
     tmp.replace(f)
     p(f"{bed}: {int(k.sum())} px ({k.sum() * 25 / 1e4:.2f} ha) beyond carve_v2_{bed}, lat {LAT[k].min():.5f}.."
       f"{LAT[k].max():.5f}; the bed's carve already holds {int((canal & have).sum())} canal px -> {f}")
-(HERE / "gowanus_upper.txt").write_text("\n".join(L) + "\n")
+(HERE / "gowanus_upper_2026design.txt").write_text("\n".join(L) + "\n")
