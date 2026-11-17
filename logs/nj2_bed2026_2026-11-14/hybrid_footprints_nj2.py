@@ -30,11 +30,11 @@ Outputs (NEW files; the v4 ones are not touched):
 """
 from pathlib import Path
 
+import geopandas as gpd
 import numpy as np
 import pandas as pd
-import pyproj  # noqa: F401
-import geopandas as gpd
 import pyogrio
+import pyproj  # noqa: F401
 import shapely
 
 REPO = Path("/cache/home/tpj8/nj_bight_sfincs")
