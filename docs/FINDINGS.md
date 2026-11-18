@@ -2454,6 +2454,38 @@ reproduces both rows' CSI to 1e-9). Every miss and false alarm (FA) gets one cla
   at Bayonne (40.69 N 74.11 W) and Linden (40.60 N 74.21 W); the rain-off "no path to the sea" FA left is mostly
   non-tidal lakes and river reaches (Lake Lenape, 2.5 km²), a scoring-definition limit.
 
+(p) **Model 2.0.0, 2012 bed** (2026-11-17 / 18; `nj2w_bed2012`, `0f87265091209585`; production engine, seeded,
+uninterrupted; native 3.125 m floodmaps; median, 50 m; paired B 200 000). Design and freeze:
+`logs/nj2_freeze_2026-11-14/README.md`; runs: `logs/nj2_waveson_prep_2026-11-16/` (`waveson_6400360{5,6}.out`, `out/`).
+- **J3 gate** (waves-off, rain off, +0 / +2 / +3 m on `nj2_bed2012`, job 63973887): **one real leak class** — Astoria
+  Park beside the forced Hell Gate cut (wet at +2 m h 0.62, +3 m h 1.19; ring z_zmin 4.71 m under a ~6.6 m forced crest)
+  and a ring cell ~4 km E of Millville (+3 m only, h 0.13) → both walled (`domain._NJ2W_WALLS`, 11 faces; dry at +0, so
+  Sandy itself is untouched). Chester Creek flows with the redrawn levee (+0.03 m at its source vs +3.41 m dammed by the
+  11-12 line).
+- **The dike set costs nothing measurable** (waves-off +0, paired, n 163, job 63997935): ΔRMSE −0.0003 [−0.0007,
+  +0.0001]; CSI 0.787 → 0.785, POD 0.804 → 0.801.
+- **The premier** (`p4-premier+struct-cohansey-checkvalve+weir-dikes-levees`, job 64003605): RMSE **0.322** / bias
+  **−0.032** m (n 163, ±0.5 m 94 %); without the 6 noted marks 0.291 / −0.017 (n 157). New basins: `upper_bay_ny`
+  +0.005 (16), `east_river` +0.106 (13), `hudson_nj` +0.079 (10), `upper_bay_islands` +0.013 (2). Rain-off twin
+  (64003606): 0.331 / −0.046.
+- **Against 1.1.0 on the 1.x mark file** (n 119, both native): 0.346 / −0.052 vs 0.348 / −0.067, ΔRMSE **−0.002
+  [−0.007, +0.005]** — a tie: the new mesh, bed, boundary cuts, wavemaker redraw and dike set together leave the old
+  marks where they were. Rain-off twins: −0.007 [−0.012, −0.003].
+- **MOTF a little lower, and it is real** (`logs/csi_dip_2026-11-18/README.md`; the scorer's own path, every row
+  reproduced to 5 decimals): CSI 0.795 vs 0.803 (1.1.0, 11-15 boxes); on the common scored footprint (4,837 km²)
+  0.797 vs 0.803 rain on, 0.813 vs 0.822 rain off; FAR flat, the loss is POD; ~20 % of the native gap is the 54.6 km²
+  only 2.0 scores. Net new misses 9.7 km² rain on (13.5 rain off): Hackensack Meadowlands 5.6, Newark Bay / lower
+  Passaic / Elizabeth 3.0, Cumberland bayshore 0.8, NJ Hudson shore 0.4. At the new-miss pixels the bed is unchanged
+  (median Δ 0.000 m) and 1.1.0 stood 0.30 m deep; the Meadowlands peak is −0.15…−0.17 m. Within 1 km of a structure
+  only 2.0 has: 1.6 km² rain on (16 %), 3.4 rain off (25 %). The harbour share is most likely the computed Upper Bay /
+  KvK replacing 1.1.0's forced Narrows / KvK (bed, structures and wavemaker ruled out there) — **untested**: no run
+  separates it. The gauges agree on the sign (Newark Bay peak error −0.104 → −0.130 m; Battery −0.067), the marks do
+  not (Newark Bay basin bias +0.114 → −0.002, n 7 → 8).
+- **NY ring near-misses at +3 m hold** (`logs/nj2_freeze_2026-11-14/j3_walls/ny_spill*.txt`; pixel-bed minimax crest
+  to each edge cell vs J3's +3 m water): Bensonhurst (the N cut) +4.0 m, Manhattanville +2.8, Flatbush +1.7, Maspeth
+  +0.29 (decks ≤ 31 m shaved +0.25) on the 2012 bed; on the 2026 bed Maspeth +0.34 (+0.30), Flatbush shaved +0.74 —
+  no mask change (user 11-17).
+
 **Head-of-tide variants on v4's mesh (`v4_hot` = A, `v4_hot_plus` = A+; mask-only, registered
 2026-10-02; read 2026-10-03, `logs/v4_hot_2026-10-03/`).** Marks identical to v4 (RMSE 0.577 /
 bias −0.407) — no mark or gauge lies in a trimmed reach; MOTF CSI 0.684 → 0.687 / 0.686;

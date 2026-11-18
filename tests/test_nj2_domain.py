@@ -277,6 +277,13 @@ class TestNJ2W(unittest.TestCase):
             _changed(b, domain.DOMAINS["nj2_bed2012"]), {"name", "mask_overrides"}
         )
 
+    def test_bed2026_domain_is_nj2w_plus_face_z_and_cn(self):
+        """nj2w_bed2026 (11-18): the 2026 bed's face z + the NLCD 2025 curve number, nothing else."""
+        w, b = domain.DOMAINS["nj2w"], domain.DOMAINS["nj2w_bed2026"]
+        self.assertEqual(_changed(b, w), {"name", "face_z_from", "cn_dataset"})
+        self.assertEqual(b.face_z_from, "_subgrid_nj2_2026")
+        self.assertEqual(b.cn_dataset, "cn_2025_v4")
+
     def test_waveson_arms(self):
         """1.1.0's premier with only the 2.0 domain changed (bed, NACCS file + support count, the wavemaker line
         redrawn on the 2012 bed, user 11-16); the 2.0 premier adds the dike set + Cohansey valve (user 11-17)."""

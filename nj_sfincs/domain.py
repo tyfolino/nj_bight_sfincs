@@ -3641,6 +3641,19 @@ NJ2W_BED2012 = replace(
     face_z_from="_subgrid_nj2_2012",
 )
 
+#: MODEL 2.0.0, 2026 bed (estimated), walled (2026-11-18): nj2w with face z = _subgrid_nj2_2026's mean
+#: ground (63997883's build, cp -al into nj2w with sfincs.nc relinked to nj2w's template; then
+#: scripts/setup_face_z.py --from nj2w; logs/nj2_freeze_2026-11-14/j3_walls/setup_face_z_nj2w_bed2026.log).
+#: cn_dataset = the NLCD 2025 curve number (logs/modern_round_c_2026-11-12/). ⚠️ The CN a run uses is the
+#: ``scs`` variable INSIDE the template's sfincs.nc (written by create_cn at the nj2 template build, from
+#: cn_v4), which setup_face_z carries over: this field alone does not change a staged run's soil.
+NJ2W_BED2026 = replace(
+    NJ2W,
+    name="nj2w_bed2026",
+    face_z_from="_subgrid_nj2_2026",
+    cn_dataset="cn_2025_v4",
+)
+
 #: MODEL 2.0.0, 2012 bed (GATE 2, 2026-11-16): nj2's mesh with face ``z`` = the 2012 bed's
 #: subgrid mean ground (``_subgrid_nj2_2012``, J2 63941532 pass 2: v1.1c's tiers + HD_HUD 2012
 #: paint + the v1.2a five + the Brooklyn creek / upper Gowanus / pile-pier carves;
@@ -3676,6 +3689,7 @@ DOMAINS: dict[str, Domain] = {
         NJ2_BED2012,
         NJ2W,
         NJ2W_BED2012,
+        NJ2W_BED2026,
     )
 }
 

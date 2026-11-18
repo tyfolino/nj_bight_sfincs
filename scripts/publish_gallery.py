@@ -248,6 +248,15 @@ SITE_REFERENCE = {"v4_refreeze": "p4-premier"}
 #: public reader would take for a levee effect (2026-11-09).
 SITE_HIDE_FIGURES = {
     ("v4_refreeze_swz_v11", "p4-premier+weir-elizabeth-rahway"): {"dzsmax"},
+    # 2.0.0 (2026-11-18): the gallery's reference, nj2w p4-premier (1.1.0's weirs), was never
+    # run, so dzsmax is an empty "skipped" panel on both pages.
+    ("nj2w_bed2012", "p4-premier+struct-cohansey-checkvalve+weir-dikes-levees"): {
+        "dzsmax"
+    },
+    (
+        "nj2w_bed2012",
+        "p4-premier+rain-off+struct-cohansey-checkvalve+weir-dikes-levees",
+    ): {"dzsmax"},
 }
 
 #: Rows re-scored on the NATIVE 3.125 m floodmap that ``metrics.csv`` does not hold yet. The
@@ -267,47 +276,10 @@ ROW_OVERRIDES = {
 #: FRONT["figures"] places them. Each ``src`` is repo-relative; the site gets a web copy
 #: (``WEB_WIDTH`` px wide) linked to the full-size file, both under ``figures/``. ⚠️ Captions
 #: carry numbers: source them in the figure's README, and edit them when the figure changes.
-EXTRA_FIGURES = {
-    "fema_extent": {
-        "src": "reports/poster_2026-11-13/fig3_motf.png",
-        "title": "Flood extent compared with FEMA's map of Sandy's surge",
-        "caption": "Where the model floods against where FEMA mapped Sandy's surge "
-        "(the MOTF extent), on New Jersey land. Blue: both flooded; orange: FEMA "
-        "flooded, model dry; pink: model flooded, FEMA dry. The model counts as "
-        "flooded where the peak water is at least 0.15 m deep. FEMA's map stops at "
-        "the state line, so 2,413 km² of land outside New Jersey (grey) is not scored. "
-        "Agreement: CSI 0.82 (critical success index: of all the land either map "
-        "floods, the share both flood), POD 0.85 (the share of FEMA's flooded land the "
-        "model also floods), FAR 0.03 (the share of the model's flooded land FEMA left "
-        "dry). This map is from the rain-off twin of 1.1.0 (the same model with rain "
-        "switched off, run p4-premier+rain-off+weir-elizabeth-rahway). FEMA mapped the "
-        "surge, so rain ponding inland would count against the model as false alarms. "
-        "Switching rain off removes about 72 km² of those, but it also loses about "
-        "31 km² of real flooding that rain helped to make, the largest share in Cape "
-        "May. With rain on (Model 1.1.0 itself): CSI 0.80, POD 0.87, FAR 0.09. "
-        "Drawn on the full-resolution (3.125 m) flood map (poster, 2026-11-13).",
-    },
-    "power_today": {
-        "src": "reports/poster_2026-11-13/fig4_power_2026bed.png",
-        "title": "If Sandy happened today: power plants and substations (PRELIMINARY)",
-        "caption": "Sandy's 2012 storm (the same tide, winds, waves, rain, rivers and "
-        "2012 sea level) run on an ESTIMATED 2026 ground: elevation and channel "
-        "surveys made since 2012, with today's levees and tide gates (Elizabeth, "
-        "Rahway, Port Monmouth). Power plants and substations that flood are in "
-        "orange; rings mark the sites that differ from the same storm on 2012 ground. "
-        "Of 253 New Jersey power plants and substations in the region (182 of them "
-        "inside the model), 52 flood, 130 stay dry and 71 are not computed (at the "
-        "model's edge); on 2012 "
-        "ground the split is 60 / 122 / 71. Ten sites change: nine go dry, one goes "
-        "wet. These are differences between the two runs: the changed ground and "
-        "today's defences together, not either one alone. A site counts as flooded "
-        "when any normally-dry ground in its outline has at least 0.15 m of water. "
-        "Preliminary: the 2026 ground is an estimate that no observation can check yet, "
-        "and building footprints and land cover are still 2012's (poster, 2026-11-13).",
-        "credit": "Power plant and substation positions © OpenStreetMap contributors "
-        "(ODbL).",
-    },
-}
+EXTRA_FIGURES: dict = {}
+#: (2026-11-18, Model 2.0.0: the 1.1.0 poster figures — FEMA extent, power assets on 2026
+#: ground — came off with 1.1.0; the FEMA figure is now the rain-off twin's own gallery
+#: ``motf``. They are in git history (``git log -S fig4_power_2026bed``) to restore.)
 WEB_WIDTH = 2000
 
 #: The front page, "Model <version> at a glance" (user 2026-11-13: every plot on the front
@@ -318,14 +290,15 @@ WEB_WIDTH = 2000
 #: ``labels`` name each published arm in the runs table, on its page and on the tiles.
 #: Publish exactly these arms with ``--current``.
 FRONT = {
-    "motf_arm": "p4-premier+rain-off+weir-elizabeth-rahway",
+    "motf_arm": "p4-premier+rain-off+struct-cohansey-checkvalve+weir-dikes-levees",
     "labels": {
-        "p4-premier+weir-elizabeth-rahway": "Model 1.1.0",
-        "p4-premier+rain-off+weir-elizabeth-rahway": "MOTF reference: 1.1.0 with rain off",
+        "p4-premier+struct-cohansey-checkvalve+weir-dikes-levees": "Model 2.0.0 (2012 ground)",
+        "p4-premier+rain-off+struct-cohansey-checkvalve+weir-dikes-levees": "MOTF reference: "
+        "2.0.0 with rain off",
     },
     "rain_off_why": "Rain is off for this comparison because FEMA mapped the surge: rain "
-    "ponding inland would count as false alarms. Switching it off also loses about "
-    "31 km² of real hits, the largest share in Cape May.",
+    "ponding inland would count as false alarms. Switching it off also loses some real "
+    "hits that rain helped to make (POD 0.86 with rain on, 0.83 off).",
     "figures": (
         (
             "zsmax",
@@ -352,9 +325,18 @@ FRONT = {
             "hwm_map",
             "Where the model reads high or low at the marks",
             "Model minus measured at each high-water mark. Orange: the model is too low; "
-            "purple: too high; ✕: the model left the mark dry.",
+            "purple: too high; ✕: the model left the mark dry (none in this run). Other "
+            "symbols: see the figure's legend.",
         ),
-        ("fema_extent", None, None),
+        (
+            "motf",
+            "Flood extent compared with FEMA's map of Sandy's surge",
+            "Where the model floods against where FEMA mapped Sandy's surge (the MOTF "
+            "extent), on New Jersey land, from the rain-off twin of 2.0.0 (FEMA mapped the "
+            "surge, not rain). The model counts as flooded where the peak water is at least "
+            "0.15 m deep. Land outside New Jersey, which FEMA's map does not cover, is not "
+            "scored.",
+        ),
         (
             "gauges",
             "Water level through the storm at the tide gauges",
@@ -374,9 +356,11 @@ FRONT = {
             "Peak wave height",
             "The largest significant wave height (the average height of the highest third of "
             "the waves) the model computed during the storm. Breaking waves raise the water "
-            "level near shore; the splash of single waves is not modelled.",
+            "level near shore; the splash of single waves is not modelled. Waves are not "
+            "computed in the Upper Bay, the Hudson, the East River or Newark Bay (blank). "
+            "The largest values at the Delaware Bay mouth and the Narrows are not physical "
+            "(see Known limitations).",
         ),
-        ("power_today", None, None),
     ),
 }
 
@@ -384,60 +368,45 @@ FRONT = {
 #: and of that domain's runs page. ⚠️ Edit it whenever the premier changes: a stale list
 #: here gets believed.
 NEXT_PREMIER = {
-    "version": "1.1.0",
-    "domain": "v4_refreeze_swz_v11",
-    "arm": "p4-premier+weir-elizabeth-rahway",
-    "as_of": "2026-11-13",
-    # Numbers: native rows logs/floodmap_fix_2026-11-12/table.md (1.0.0 CSI 0.7907, 1.1.0
-    # 0.8020; 1.1.0 RMSE 0.3484, median 50 m, n 119); the paired 0.4205 vs 0.3484 (1.x mark
-    # file, n 119, native 3.125 m maps) is logs/native_rescore_2026-11-13/README.md Results.
-    "status": "Model version 1.1.0 (tagged v1.1.0, chosen 2026-11-09). Same model grid, "
-    "storm forcing and physics as version 1.0.0; the changes are in the ground the water "
-    "flows over, two flood structures and the scoring. Scores updated 2026-11-13: they are "
-    "now read from the full-resolution (3.125 m) flood map. Until then the scorer had read "
-    "a half-resolution (6.25 m) copy by mistake, which left some narrow streets between "
-    "buildings dry. At 119 high-water marks the typical error (RMSE; the model's value is "
-    "the median peak level within 50 m of each mark) is 0.35 m; on the same 119 marks "
-    "version 1.0.0 scores 0.42 m. Agreement "
-    "with FEMA's mapped flood extent rises from 0.791 to 0.802 (CSI, rain on). What "
-    "changed:",
+    "version": "2.0.0",
+    "domain": "nj2w_bed2012",
+    "arm": "p4-premier+struct-cohansey-checkvalve+weir-dikes-levees",
+    "as_of": "2026-11-18",
+    # Numbers: experiments/nj2w_bed2012/metrics.csv (native 3.125 m maps; median, 50 m);
+    # the paired 119-mark comparison vs 1.1.0 is logs/nj2_waveson_prep_2026-11-16/out/
+    # <arm>/hwm_pair_1x.txt (jobs 64003605 / 64003606, 2026-11-17).
+    "status": "Model version 2.0.0, on the 2012 ground (run 2026-11-17). A new, larger "
+    "model grid: the Hudson waterfront and Upper New York Bay are now computed. Storm "
+    "forcing and physics are those of version 1.1.0. At 163 high-water marks the typical "
+    "error (RMSE; the model's value is the median peak level within 50 m of each mark) is "
+    "0.32 m, and the model reads 0.03 m low on average. On the 119 marks that version 1.1.0 "
+    "also scores, the typical error is the same (RMSE 0.346 against 0.348 m): the new area "
+    "adds marks without changing the old ones.",
     "items": (
-        "Bridge decks taken out of the ground: where the elevation data recorded a bridge "
-        "deck as solid ground, the model saw a dam across the water. Each deck is now "
-        "replaced by the channel bank on its own side (an assumption, not a survey); 588 of "
-        "597 bridges over water are open. The largest were on the coast: Corson Inlet, "
-        "Grassy Sound, and the Atlantic City Expressway over Beach Thorofare.",
-        "26 more crossings opened from the National Bridge Inventory: 8 checked against "
-        "independent elevation data or charts (the Garden State Parkway over the Toms and "
-        "Manasquan Rivers among them), and 18 bridges over federal navigation channels with "
-        "a false sill under the span.",
-        "Deeper river channels from surveys and charts: the lower Mullica River (1935 depth "
-        "soundings), the lower Tuckahoe, the Toms River, Cedar Creek and Westecunk Creek on "
-        "Barnegat Bay, and Raccoon and Mantua Creeks on the Delaware. More of the tide now "
-        "reaches up these rivers, as it does in reality.",
-        "The Christina River at Wilmington: a narrow false plug, where two elevation "
-        "surveys meet, halved the tide upstream. It is opened from a 2015 Army Corps survey.",
-        "Army Corps channel surveys fill holes in 9 places where the older surveys left "
-        "gaps (they can only deepen the bed, never raise it).",
-        "Alloway Lake and Silver Lake (Delaware) held at their normal pool: the elevation "
-        "data had them as empty pits at sea level, open to the tide.",
-        "Building friction counted once: in New Jersey the buildings are solid blocks in "
-        "the model, so the streets between them now carry street-level friction instead of "
-        "a value that also stood in for the buildings. Water now crosses built-up land "
-        "faster, around Newark especially.",
-        "Smoother channels at the heads of tidal rivers: surveyed channel beds that had "
-        "marsh friction now have open-water friction.",
-        "Overpeck Creek (Leonia / Ridgefield Park): the tidal dam is open in the model. "
-        "The valley's peak water level rises to about 2.4 m, close to the Army Corps' "
-        "storm study (NACCS, 2.25 m).",
-        "The Elizabeth River and Rahway River levees: the Army Corps levees on the "
-        "Elizabeth River and the Rahway's South Branch (National Levee Database) now hold "
-        "water back, with their gates closed. They change no high-water mark's score, and "
-        "no observation lies behind them, so whether that land stayed dry in Sandy is the "
-        "model's answer, not a measured one.",
-        "Scoring: 13 more high-water marks around Newark Bay, the Hackensack and Overpeck "
-        "Creek (119 scored in all), and a corrected datum for two USGS gauges on the "
-        "Christina River.",
+        "The Hudson waterfront and Upper New York Bay: the model reaches up the Hudson to "
+        "about 40.86 N and through the Upper Bay and the East River to Hell Gate, so "
+        "Hoboken, Jersey City, Bayonne's Upper Bay shore and the facing New York waterfront "
+        "are computed instead of left out. The storm tide is now applied at two short cuts "
+        "across the Hudson and the East River instead of at the Narrows and the Kill van "
+        "Kull.",
+        "44 more high-water marks scored (163 in all), 41 of them in the new area, and two "
+        "more tide gauges checked: the Battery and Bergen Point.",
+        "Piers sorted one by one: piers on piles let water flow underneath, so the ground "
+        "under them is the harbour bed; piers on solid fill are land.",
+        "Channels from surveys: Newtown Creek, the Gowanus Canal (the upper canal's depth is "
+        "assumed) and the 2012 Army Corps "
+        "survey of the Hudson channel, each converted to the land elevation datum. Narrow "
+        "New York channels run on 25 m cells.",
+        "Dikes and levees: 24 more dikes and levees now hold water back, most on the New "
+        "Jersey and Delaware shores of Delaware Bay, a few on the Delaware River "
+        "(Pennsylvania side) and the Atlantic back bays. The Chester levee was redrawn so it "
+        "no longer dams Chester Creek, the broken Port Penn tide gate is open, and the "
+        "Cohansey River's Bacons Neck tide gate works one way (water drains out, the tide "
+        "cannot come in). In a paired test without waves, they change no score measurably.",
+        "Two leaks at the model's outer edge closed (Astoria Park in Queens, and east of "
+        "Millville); they mattered only in sea-level-rise tests, not in Sandy itself.",
+        "The wave-forcing line along the ocean shore is redrawn on the new ground (about "
+        "200 of its 7,900 links move, at the inlets and at Long Branch).",
     ),
 }
 
@@ -445,32 +414,14 @@ NEXT_PREMIER = {
 #: The plain-language "coming in the next version" list (home page + the premier's runs
 #: page). ⚠️ Edit it when the next version's contents change; empty ``items`` hides it.
 COMING = {
-    "version": "2.0",
-    "as_of": "2026-11-09",
-    "status": "In preparation: a new, larger model grid. Preliminary: items may still "
-    "change, and there is no release date yet.",
+    "version": "2.0.0 on today's (2026) ground",
+    "as_of": "2026-11-18",
+    "status": "In preparation. Preliminary: items may still change.",
     "items": (
-        "The Hudson waterfront and Upper New York Bay: the model reaches up the Hudson to "
-        "about 40.86 N and through the Upper Bay to Hell Gate, so Hoboken, Jersey City, "
-        "Bayonne's Upper Bay shore and the facing New York waterfront are computed instead "
-        "of left out. The New York side runs on coarser cells and without New York "
-        "buildings.",
-        "Two versions of the ground: 2012, for Sandy itself, and an estimate of 2026 "
-        "(today's dredged channels and shoreline), so the same storm can be run on today's "
-        "coast.",
-        "Piers sorted one by one: piers on piles let water flow underneath, so the ground "
-        "under them is the harbour bed; piers on solid fill are land. 645 piers on the new "
-        "waterfront were classified from OpenStreetMap, NOAA charts and city shoreline "
-        "data.",
-        "Channels from surveys: Newtown Creek, the Gowanus Canal, Wallabout and Bushwick "
-        "Inlet, and the 2012 Army Corps survey of the Hudson channel, each converted to the "
-        "land elevation datum.",
-        "The Arthur Kill: a numerical artefact where steep channel banks meet the model's "
-        "cells is removed.",
-        "More checks: about 275 high-water marks across the larger area.",
-        "Ground fixes found since 1.1: places where the model disagrees with FEMA's flood "
-        "map or with the tide (ridges that hold water back, channels that do not reach) are "
-        "located from the observations and corrected from independent surveys.",
+        "The same storm on an estimate of today's (2026) ground: channels dredged since "
+        "2012, today's shoreline, levees and tide gates. The ground is built; the run is "
+        "next. It answers which of today's power plants and substations a Sandy-like storm "
+        "would flood.",
     ),
 }
 
@@ -478,7 +429,7 @@ COMING = {
 #: Plain-language known limitations of the published version (docs/MODEL.md §4 is the
 #: technical list). ⚠️ Keep in step with MODEL.md when the version changes.
 KNOWN_LIMITS = {
-    "as_of": "2026-11-09",
+    "as_of": "2026-11-18",
     "items": (
         "The ground does not move during the storm. In Sandy the dunes eroded and broke "
         "through in places (Mantoloking, Wreck Pond) and the sea washed over into Deal Lake; "
@@ -488,19 +439,36 @@ KNOWN_LIMITS = {
         "Water level, not wave splash: the model computes the water surface, including the "
         "rise that breaking waves cause, but not the splash and run-up of individual waves. "
         "High-water marks left by splash sit above what the model can reach.",
+        "Agreement with FEMA's flood extent is slightly lower than version 1.1.0's (CSI 0.795 "
+        "against 0.803 with rain on; 0.797 against 0.803 scored on exactly the same land). "
+        "Most of the difference is in the Hackensack Meadowlands and around Newark Bay, "
+        "where 2.0.0 peaks about 15 cm lower and leaves some marsh dry that FEMA mapped as "
+        "flooded. The likely cause is that 2.0.0 computes New York Harbor itself instead of "
+        "taking its water levels from a regional model at the Narrows; this is not yet "
+        "tested directly. A smaller part is farmland and marsh that the new Delaware Bay "
+        "and Tuckahoe dikes keep dry. At the Newark Bay high-water marks 2.0.0 fits better "
+        "than 1.1.0.",
+        "Waves are not computed in the Upper Bay, the Hudson, the East River or Newark Bay: "
+        "the wave-height map is blank there by design.",
+        "The New York side runs on coarser cells away from its narrow channels, and "
+        "without New York buildings (New "
+        "Jersey's buildings are in the model as solid blocks), and FEMA's flood map stops at "
+        "the state line, so the New York extent is checked only by the high-water marks.",
         "The Delaware Bay and River: the storm's low water is too low upriver, the peak "
         "reads about 0.2 m low at the upriver gauges, and only a few high-water marks there "
         "can check it.",
-        "The New Jersey back bays read low, Cape May's most (about 0.2 m at the "
-        "high-water marks); the cause is being investigated.",
-        "Behind the Elizabeth and Rahway levees no observation checks the model: those "
-        "areas stay dry because the levees are assumed to hold.",
-        "Not in the model: the Hudson waterfront (Hoboken, eastern Jersey City, Bayonne's "
-        "Upper Bay shore; coming in version 2.0), rivers above today's head of tide, storm "
-        "drains and culverts. A blank area on a map there means not computed, not dry.",
-        "Levees, walls and dams hold for the whole storm (no failures), and small inland "
-        "creeks that enter on large cells (the Salem River at Woodstown, some Pennsylvania and "
-        "Delaware creeks) pile water up unrealistically: do not read depths there.",
+        "Several New Jersey back bays read low at the high-water marks (median, 50 m): "
+        "Barnegat Bay about 0.5 m (6 marks), Cape May's back bays about 0.2 m (4 marks); "
+        "the cause is being investigated.",
+        "Behind the levees (Elizabeth, Rahway and the Delaware Bayshore dikes) no observation "
+        "checks the model: those areas stay dry because the levees are assumed to hold for "
+        "the whole storm (no failures).",
+        "Not in the model: the Hudson above about 40.86 N, the East River above Hell Gate, "
+        "rivers above today's head of tide, storm drains and culverts. A blank area on a map "
+        "there means not computed, not dry.",
+        "Small inland creeks that enter on large cells (the Salem River at Woodstown, some "
+        "Pennsylvania and Delaware creeks) pile water up unrealistically: do not read depths "
+        "there.",
         "The wind data cannot resolve the narrow back bays, and some peak wave heights at "
         "the Narrows and the Delaware Bay mouth are not physical (they do not affect the "
         "published water levels shown here).",
@@ -594,6 +562,12 @@ def front_figures(domains: dict) -> list[str]:
         for f in ((e or {}).get("manifest") or {}).get("figures", [])
         if f.get("file")
     }
+    m = domains.get(n["domain"], {}).get(FRONT["motf_arm"])
+    mgal = {
+        f["key"]: f
+        for f in ((m or {}).get("manifest") or {}).get("figures", [])
+        if f.get("file")
+    }
     out, named = [], set()
     for key, title, caption in FRONT["figures"]:
         named.add(key)
@@ -610,6 +584,9 @@ def front_figures(domains: dict) -> list[str]:
                         x.get("credit", ""),
                     )
                 )
+        elif key == "motf" and mgal.get("motf"):  # the FEMA figure: the rain-off twin's
+            path = f"{n['domain']}/{m['slug']}/{mgal['motf']['file']}"
+            out.append(_figure(key, title, caption, path, path))
         elif key in gal:
             path = f"{n['domain']}/{e['slug']}/{gal[key]['file']}"
             out.append(_figure(key, title, caption, path, path))
@@ -1295,7 +1272,7 @@ def site_index(domains: dict) -> str:
             f"<b>NJ Bight SFINCS</b> · Model {esc(n['version'])}",
             f"Hurricane Sandy flood model: Model {n['version']} at a glance",
             "A compound-flood hindcast of Hurricane Sandy (28-31 October 2012) on the New "
-            "Jersey coast: storm surge, waves, wind, rain and river flow together, checked "
+            "Jersey coast and New York Harbor: storm surge, waves, wind, rain and river flow together, checked "
             "against tide gauges, USGS high-water marks and FEMA's mapped flood extent. This "
             f"page shows the current model version, {esc(n['version'])}: its scores and "
             "figures, what is in it, its known limits and what is coming next.",

@@ -1566,6 +1566,8 @@ EXPERIMENTS_BY_DOMAIN["nj2w_bed2012"]["p4-premier+rain-off+struct-cohansey-check
     "v4_refreeze_swz_v11/p4-premier+rain-off+weir-elizabeth-rahway (1.1.0's rain-off twin) on the 1.x mark file.",
     rain=False,
 )
+#: nj2w_bed2026 (registered 2026-11-18): Model 2.0.0's 2026-bed option. No arms yet (deliberately).
+EXPERIMENTS_BY_DOMAIN["nj2w_bed2026"] = {}
 
 
 def experiments(domain_name: str | None = None) -> dict[str, Experiment]:

@@ -3,6 +3,37 @@
 Model versions (CLAUDE.md §6): 1.0.0 = the frozen swz premier; 1.x = fixes that keep the mesh and name a
 fingerprint; 2.0 = a new mesh. The model card is [docs/MODEL.md](docs/MODEL.md).
 
+## 2.0.0, 2012 bed — 2026-11-18
+
+New mesh (`nj2`, frozen 2026-11-15) + the J3 leak walls: domain `nj2w_bed2012` / `0f87265091209585` (`faces=5181372
+boundary_edges=4367`). Arm `p4-premier+struct-cohansey-checkvalve+weir-dikes-levees`, job 64003605 (hal0432,
+uninterrupted, 2 h 23 solve); rain-off twin `p4-premier+rain-off+struct-cohansey-checkvalve+weir-dikes-levees`, job
+64003606. Engine = `hpc/production_engine.txt` (as 1.1.0). The 2026-bed option (`nj2w_bed2026`) is registered
+separately and not yet run. Design + freeze: `logs/nj2_freeze_2026-11-14/README.md`; run prep:
+`logs/nj2_waveson_prep_2026-11-16/README.md`.
+
+**Domain:** the Upper Bay, Kill van Kull, the Hudson to 40.860 N and the East River to Hell Gate COMPUTED; two short
+forced cuts (Hudson, Hell Gate) replace the Narrows / KvK arms; NACCS at 244 support points (`naccs_sandy_nj2`); NY
+narrow channels at 25 m; SnapWave off over the Upper Bay / Hudson / East River. J3 walls: Astoria Park (5 faces) and
+Millville-east (6 faces) outflow → closed (leaks only at +2 / +3 m SLR).
+
+**Bed (`_subgrid_nj2_2012`):** v1.1c's tiers + `ehydro_hud_2012_v2` (Hudson, PAINT) + the v1.2a five + Brooklyn creek
+(Newtown, Gowanus; upper Gowanus = GCK 2020 section, ASSUMED) and pile-pier carves (29 units). NJ buildings only.
+
+**Structures:** 1.1.0's weirs + the Delaware-bayshore dikes-and-levees set (26 polylines; Chester redrawn off the
+creek, Port Penn r1054 gate open) + the Cohansey Bacons Neck tide gate as a check valve (`sfincs.drn`). Engine weir
+u/v 3578 on this bed. Waves-off paired (J3, +0): HWM ΔRMSE −0.0003 m [−0.0007, +0.0001], CSI 0.787 → 0.785.
+Wavemaker redrawn on the 2012 bed (7934 engine u/v; ~200 links move vs 1.1.0's line).
+
+**Scores (median, 50 m; native 3.125 m floodmap; 2.0 mark file `data/validation_nj2/sandy_hwms_nj2.geojson`):** HWM
+RMSE 0.322 / bias −0.032 m (n 163; ±0.5 m 94 %). Paired vs 1.1.0 on the 1.x mark file (n 119): ΔRMSE −0.002
+[−0.007, +0.005] (2.0 0.346 / −0.052 vs 1.1.0 0.348 / −0.067); rain-off twins −0.007 [−0.012, −0.003]. MOTF CSI
+0.795 (POD 0.859, FAR 0.085; excluded boxes 2,534 km²) vs 1.1.0's 0.803 (11-15 boxes); rain-off twin 0.811 (POD
+0.834, FAR 0.033) vs 0.822 (11-15 boxes). Like for like (common footprint 4,837 km²): CSI 0.797 vs 0.803 rain-on,
+0.813 vs 0.822 rain-off; FAR flat, the loss is POD: net +9.7 km² new misses rain-on, ~60 % Hackensack Meadowlands +
+Newark Bay (bed and structures unchanged there; peak −0.15 m in the Meadowlands; likely the computed harbour vs
+1.1.0's forced Narrows / KvK, untested), ~16 % within 1 km of the new dikes (`logs/csi_dip_2026-11-18/README.md`).
+
 ## 1.1.0 — 2026-11-09
 
 Same mesh as 1.0.0; new fingerprint `v4_refreeze_swz_v11` / `4bc97aae885f0aa4`. Arm

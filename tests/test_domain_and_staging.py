@@ -540,6 +540,9 @@ class TestWaterlevelSupportOverride(_DomainEnv):
             # (mask 2) untouched — the same three. Arms force from the NACCS 244.
             "nj2w": 3,
             "nj2w_bed2012": 3,
+            # Model 2.0.0, 2026 bed (11-18): nj2w with face z from the 2026 bed — same
+            # mask and line, so the same three.
+            "nj2w_bed2026": 3,
         }
         self.assertEqual(
             set(PINNED),
@@ -799,7 +802,14 @@ class TestPremierArm(unittest.TestCase):
         arm = premier.premier_arm("v4_refreeze_swz_v11")
         self.assertEqual(arm, "p4-premier+weir-elizabeth-rahway")
         self.assertIn(arm, experiments("v4_refreeze_swz_v11"))
-        self.assertEqual(premier.MODEL_VERSION, "1.1.0")
+        self.assertEqual(premier.MODEL_VERSION, "2.0.0")
+
+    def test_version_two_is_the_dike_set_premier(self):
+        from nj_sfincs import premier
+
+        arm = premier.premier_arm("nj2w_bed2012")
+        self.assertEqual(arm, "p4-premier+struct-cohansey-checkvalve+weir-dikes-levees")
+        self.assertIn(arm, experiments("nj2w_bed2012"))
 
 
 class TestNoInfiltrationIsWrittenNotMerelyNotWritten(_DomainEnv):

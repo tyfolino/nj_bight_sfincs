@@ -1,16 +1,18 @@
-# MODEL — the v4 premier (model card)
+# MODEL — the premier (model card)
 
-**Version 1.1.0 (user 2026-11-09; git tag `v1.1.0`).** Describes arm
-`p4-premier+weir-elizabeth-rahway` on domain `v4_refreeze_swz_v11` as run (job 63617802). Same mesh,
-forcing and engine physics as 1.0.0 (`v4_refreeze_swz` / `p4-premier`, job 63181564, tag `v1.0.0`); the
-changes are the flow bed, the wave bed that follows it, the weir file and the mark file ("Changes from
-1.0.0", §2). Everything not listed there is 1.0.0's and is described below as written for 1.0.0. Evidence
-lives in [FINDINGS.md](FINDINGS.md) (cited as §n, or "part 4 (x)" for the v4 design record) and the v1.1
-read (`logs/v1_1_read_2026-11-06/READ.md`); this card states what the model IS, not how it got there.
+**Version 2.0.0, 2012 bed (2026-11-18).** Describes arm `p4-premier+struct-cohansey-checkvalve+weir-dikes-levees` on
+domain `nj2w_bed2012` as run (job 64003605); its rain-off twin (job 64003606) is the MOTF reference. 2.0.0 is a NEW
+MESH (`nj2`): 1.1.0's model with New York Harbor computed. One version, two bed options (CLAUDE.md §6): the 2012 bed
+(this card) and the estimated 2026 bed (`nj2w_bed2026`, `sha=f63e8ff0a984c598`, registered 2026-11-18, not yet run).
+What changed from 1.1.0 is "Changes from 1.1.0" (§2); everything else is 1.1.0's (`v4_refreeze_swz_v11` /
+`p4-premier+weir-elizabeth-rahway`, job 63617802, tag `v1.1.0`) or 1.0.0's, and is described below as written for
+them. Evidence: [FINDINGS.md](FINDINGS.md) part 4 (p), `logs/nj2_freeze_2026-11-14/README.md`,
+`logs/nj2_waveson_prep_2026-11-16/README.md`, `logs/csi_dip_2026-11-18/README.md`.
 
 **What it is.** A SFINCS (v2.3.3, patched) compound-flood hindcast of Hurricane Sandy, 28–31 Oct
-2012, on the New Jersey coast from Cape May to the Narrows plus Delaware Bay and the tidal Delaware,
-the Raritan, Newark Bay and the Arthur Kill, with the far banks (DE / PA / Staten Island) computed.
+2012, on the New Jersey coast from Cape May to New York Harbor (the Upper Bay, the Kill van Kull, the Hudson to
+40.860 N and the East River to Hell Gate) plus Delaware Bay and the tidal Delaware, the Raritan, Newark Bay
+and the Arthur Kill, with the far banks (DE / PA / Staten Island / Brooklyn / Manhattan) computed.
 Compound = NACCS storm tide at a drawn sea boundary + SnapWave waves with a wavemaker (IG in the
 water) + wind + pressure + rain with curve-number infiltration + 61 river inflows, together in one
 run. Validated against USGS high-water marks, NOAA / USGS gauges and the FEMA MOTF surge extent.
@@ -19,21 +21,21 @@ run. Validated against USGS high-water marks, NOAA / USGS gauges and the FEMA MO
 
 | | |
 |---|---|
-| domain | `v4_refreeze_swz_v11` — `faces=4881654 boundary_edges=4388 sha(z,mask)=4bc97aae885f0aa4` (`nj_sfincs/premier.py`); same mesh and mask as 1.0.0 (`v4_refreeze_swz`, `90cc7468614a5814`), face `z` moved on 15,746 faces |
-| arm | `p4-premier+weir-elizabeth-rahway` (`nj_sfincs/experiments.py`, block `v4_refreeze_swz_v11`): 1.0.0's `p4-premier` with `subgrid_from="_subgrid_v1_1c"` and `weir_from=data/structures_v4/sfincs_overpeck_open_elizabeth_rahway_ground.weir` (md5 `e11966fcab8b91f2e22583c8733a4dbf`), nothing else |
-| engine | `bin:v2.3.3-winddir-igk-igseed-wmseed-swomp-2-gf11@dd78d82a` = `hpc/production_engine.txt` (user 2026-11-02), upstream commit `091f531a` (tag v2.3.3) + 6 patches (`hpc/patches/`, fork branch `nj/v2.3.3-swomp-2`); sha256 `dd78d82a40480c6ef5fe0a8bbb8cd77df2cfbc336c77c37d9662e48eb1560fa7`. Bit-identical to 1.0.0's `…wmseed-1-gf11@e15ed916` on the full storm (FINDINGS §20); written to each run's `engine.txt` |
-| flow bed | `_subgrid_v1_1c` (built 2026-11-06, job 63578834; recipe in its `provenance.txt`). 1.0.0: `_subgrid_refreeze_lakes_min_creeks_cohansey` (built 2026-10-23, `…@34ba916d`) |
-| wave bed | mesh face `z` = the flow bed's subgrid mean ground, buildings included (`scripts/setup_face_z.py --from v4_refreeze_swz --bed _subgrid_v1_1c`; §2) |
-| weirs | 819 engine structure u/v points (1.0.0: 412): the Overpeck dam removed, the Elizabeth / Rahway levees added. The engine snaps in float32 and counts a centre lying on a line as crossing every link of its face, so it reads 819 where `weir_on_mesh.snap` + 1 predicted 817 (`logs/walls_elizabeth_rahway_2026-11-05/weircount_819.md`) |
-| run | job 63617802, `hal0383`, 32 threads, `restart_count 0`: uninterrupted, seeded. SLURM says FAILED: the job's own weir-count check refused to score (819 ≠ 817) after the solve had finished; scored by 63666636 |
+| domain | `nj2w_bed2012` — `faces=5181372 boundary_edges=4367 sha(z,mask)=0f87265091209585` (`nj_sfincs/premier.py`): the `nj2` mesh (frozen 2026-11-15, `5759f6fa6cca6826`) + the J3 leak walls (`nj2w`, `668a7f853d6801e1`), face `z` = the 2012 bed's mean ground |
+| arm | `p4-premier+struct-cohansey-checkvalve+weir-dikes-levees` (`nj_sfincs/experiments.py`, block `nj2w_bed2012`): 1.1.0's premier with `subgrid_from="_subgrid_nj2_2012"`, NACCS `naccs_sandy_nj2` (244 support points), the wavemaker redrawn on the 2012 bed, `weir_from=data/nj2_design/structures/sfincs_overpeck_open_elizabeth_rahway_dikes_levees_cohansey_nj2.weir` (md5 `fcd9e1c5…`), `drn_from=…/cohansey_bacons_neck_gate_checkvalve.drn` (md5 `8ea24f65…`) |
+| engine | `bin:v2.3.3-winddir-igk-igseed-wmseed-swomp-2-gf11@dd78d82a` = `hpc/production_engine.txt` (as 1.1.0; upstream `091f531a` + 6 patches, `hpc/patches/`); written to each run's `engine.txt` |
+| flow bed | `_subgrid_nj2_2012` (J2 pass 2, job 63941532, 2026-11-16): v1.1c's tiers + `ehydro_hud_2012_v2` (PAINT) + the v1.2a five + Brooklyn creek / upper Gowanus / pile-pier carves; recipe in its `provenance.txt` |
+| wave bed | mesh face `z` = the flow bed's subgrid mean ground (`scripts/setup_face_z.py --from nj2w --bed _subgrid_nj2_2012`); SnapWave off over the Upper Bay / Hudson / East River (and Newark Bay, as 1.1.0) |
+| weirs | 3578 engine structure u/v points on this bed (1.1.0: 819): 1.1.0's lines + the dikes-and-levees set (24 structures in 25 lines, Port Penn r1054 split at its open gate) + the Cohansey Bacons Neck gate line; the gate drains one way (`sfincs.drn` check valve). Wavemaker 7934 u/v (predicted 7937; 1.1.0 7940) |
+| run | job 64003605, `hal0432`, 64 threads, `restart_count 0`: uninterrupted, seeded; solve 8,566 s. Rain-off twin 64003606 (`hal0398`, 7,856 s, uninterrupted) |
 | window, CRS | `tstart` 2012-10-28 00:00 → `tstop` 2012-10-31 00:00 (72 h), `tspinup` 3600 s; EPSG:32618 (UTM 18N), elevations and water levels m NAVD88 |
-| output | his 600 s (48 obs points + cross-sections), map 3600 s, `zsmax` every 21600 s, restart every 21600 s (the restart files are removed when a run finishes) |
+| output | his 600 s (55 obs points + cross-sections incl. `hudson_cut` / `hell_gate_cut`), map 3600 s, `zsmax` every 21600 s, restart every 21600 s (removed when a run finishes) |
 
 **Verify the fingerprint** (reads `z` and `mask` from the run's `sfincs.nc`, checks obs points and output):
 
 ```bash
-NJ_DOMAIN=v4_refreeze_swz_v11 python -m nj_sfincs.premier experiments/v4_refreeze_swz_v11/p4-premier+weir-elizabeth-rahway
-# OK  experiments/v4_refreeze_swz_v11/p4-premier+weir-elizabeth-rahway  v4_refreeze_swz_v11 STAGED 2026-11-06 …  obs OK  output WHOLE
+NJ_DOMAIN=nj2w_bed2012 python -m nj_sfincs.premier experiments/nj2w_bed2012/p4-premier+struct-cohansey-checkvalve+weir-dikes-levees
+# OK  experiments/nj2w_bed2012/p4-premier+struct-cohansey-checkvalve+weir-dikes-levees nj2w_bed2012 STAGED 2026-11-17 …  obs OK  output WHOLE
 ```
 
 With no path it audits every run dir on the domain. Trust neither the name nor the counts: sibling domains on
@@ -41,7 +43,20 @@ this mesh share face and edge counts, and only the sha tells them apart. Read no
 
 ## 2. What is IN
 
-### Changes from 1.0.0 (1.1.0; everything else in this section is 1.0.0's)
+### Changes from 1.1.0 (2.0.0, 2012 bed)
+
+| what | 1.1.0 | 2.0.0 | evidence |
+|---|---|---|---|
+| mesh / domain | `v4` mesh, forced at the Narrows + Kill van Kull | `nj2` mesh: Upper Bay, KvK, Hudson to 40.860 N, East River to Hell Gate computed; two short forced cuts (`hudson`, `hell_gate`) replace the Narrows / KvK arms; Narrows at 50 m, NY narrow channels at 25 m; 5,181,372 faces (+6.1 %) | `logs/nj2_freeze_2026-11-14/README.md` §2–3 |
+| boundary | NACCS `naccs_sandy_v4`, 241 support points | `naccs_sandy_nj2`, 244 (the new cuts) | `logs/nj2_edges_2026-11-14/README.md` §2 |
+| leak walls | — | J3 (waves-off +0 / +2 / +3 m gate): Astoria Park (5 faces) and Millville-east (6) outflow → closed; leaks at +2 / +3 m only | FINDINGS part 4 (p) |
+| flow bed | `_subgrid_v1_1c` | `_subgrid_nj2_2012`: + Hudson 2012 eHydro, Newtown Creek / Gowanus (upper Gowanus = GCK 2020 section, ASSUMED), pile piers carved (29 units, 26.6 ha); v1.1c unchanged elsewhere (harbour channels median Δ 0) | freeze README §4; `logs/csi_dip_2026-11-18/README.md` |
+| structures | 819 u/v (Overpeck open, Elizabeth / Rahway levees) | + Delaware-bayshore / back-bay dikes and levees (Chester redrawn, Port Penn r1054 gate open) + Cohansey check valve; 3578 u/v | waves-off pair (J3, +0, n 163): ΔRMSE −0.0003 [−0.0007, +0.0001]; CSI 0.787 → 0.785 |
+| wavemaker | 1.1.0's 10-17 line (7940 u/v) | redrawn on the nj2 2012 bed (7934; ~200 of ~7,930 links move: Absecon, Barnegat, Manasquan, Long Branch) | user 11-16 |
+| marks / gauges | 1.x file, 206 marks (119 scored) | `data/validation_nj2/sandy_hwms_nj2.geojson`, 276 marks (163 scored; 41 of the 44 new in the new basins); + the Battery and Bergen Point gauges | freeze README §1 |
+| scores (median, 50 m, native 3.125 m) | RMSE 0.348 / bias −0.067 (n 119); CSI 0.803 (11-15 boxes) | RMSE 0.322 / bias −0.032 (n 163); on the same 119 marks 0.346 / −0.052, ΔRMSE −0.002 [−0.007, +0.005]; CSI 0.795, like for like 0.797 vs 0.803 | FINDINGS part 4 (p) |
+
+### Changes from 1.0.0 (1.1.0)
 
 | what | 1.0.0 | 1.1.0 | evidence (waves-off pair vs `p4-nowaves`, median 50 m, n 110, unless stated) |
 |---|---|---|---|
@@ -167,7 +182,7 @@ Mark residuals here are model − observed, **median estimator, 50 m radius**; `
   upriver is unexplained. Peaks are better (§6); the Christina gauges read −0.47 m Newport, −0.23 m Wilmington since their observed
   series was re-datumed NGVD29 → NAVD88 (11-05; re-scored 11-07, job 63666636 — before the fix −0.80 / −0.54).
   Only 3 marks are scored in the Delaware basins (2 river, 1 NJ bay shore).
-- **Cape May back bays.** Bias −0.288, RMSE 0.317 m (median, 50 m, n 4); published-crest gauge errors −0.305 m
+- **Cape May back bays.** Bias −0.232 m in 2.0.0 (1.0.0: −0.288, RMSE 0.317; median, 50 m, n 4); published-crest gauge errors −0.305 m
   Sea Isle, −0.252 m Stone Harbor, −0.190 m Avalon. Open (§57).
 - **Inflow pile-ups on coarse faces.** Ridley, Chester, Frankford, Red Clay, White Clay, Christina and **Salem R. at
   Woodstown** (peak / bed 4.38 / 0.01 m) enter on 100–200 m faces and stand metres above a ~0 m bed (measured on an
@@ -178,11 +193,15 @@ Mark residuals here are model − observed, **median estimator, 50 m radius**; `
   (classes 23 / 24) were tuned on a model without buildings to stand in for them, and this bed burns the buildings in
   as well. Overland flow through built-up land is too slow: the likely cause of the South Ironbound and Newark-airfield
   misses (water reaches the area, then falls 3.66 → 2.4–2.55 m on the way). Read inland urban depths as low.
-- **Newark Bay / Hackensack / Overpeck carry no HWMs in this model's mark file** (pulled on a box that stopped at
-  40.617 N): 13 marks inside the ring, 9 headline, join the mark file in v1.1.
-- **Hudson waterfront and Upper Bay shore: NOT in the model.** Hoboken, east Jersey City (Exchange Place, Liberty State
-  Park) and Bayonne's Upper Bay side are outside the active mask (`mask` 0, nearest active face ~1–3.6 km; confirmed
-  2026-10-30). Blank there means not computed, never dry. Interior Bayonne and its Newark Bay side are active.
+- **New York Harbor (2.0.0).** Computed since 2.0.0, but on coarser cells away from its narrow channels, with no NY
+  buildings (NJ only) and no waves (SnapWave off over the Upper Bay / Hudson / East River, and Newark Bay as before).
+  FEMA's MOTF layer is NJ-only, so the NY extent is judged by the 31 marks in `upper_bay_ny` / `upper_bay_islands` /
+  `east_river` and `hudson_nj` alone. Out: the Hudson above 40.860 N, the East River above Hell Gate.
+- **MOTF agreement a little below 1.1.0 (2.0.0).** CSI 0.795 vs 0.803 (rain on); like for like 0.797 vs 0.803, rain off
+  0.813 vs 0.822; FAR flat, the loss is POD. ~60 % of the net new misses are the Hackensack Meadowlands and Newark Bay,
+  where the bed and structures are unchanged and the peak is ~0.15 m lower (likely the computed harbour replacing
+  1.1.0's forced Narrows / KvK; untested); ~16 % (rain on) lies within 1 km of the new dikes. The Newark Bay marks
+  fit better (basin bias +0.114 → −0.002, median 50 m). `logs/csi_dip_2026-11-18/README.md`.
 - **A resumed run is a different run** (§5). This run was not resumed; read one that is against an uninterrupted twin.
 
 | not represented | what it costs | evidence |

@@ -406,7 +406,7 @@ class TestPublish(unittest.TestCase):
             self.assertTrue((ddir / pub.slug("p4-premier") / "index.html").is_file())
             self.assertFalse((ddir / pub.slug("p4-nowaves")).exists())
             home = (site / "index.html").read_text()
-            self.assertIn("What is in Model 1.1.0", home)
+            self.assertIn(f"What is in Model {pub.NEXT_PREMIER['version']}", home)
             self.assertIn("Coming in version", home)
             self.assertIn("Known limitations", home)
             self.assertNotIn("v3/", home)
@@ -529,6 +529,28 @@ class TestPublish(unittest.TestCase):
             self.assertLess(h.index(sec), h.index('id="details"'))
         self.assertIn(f"{n['domain']}/{pub.slug(off)}/index.html", h)
         self.assertIn(f"{n['domain']}/compare.html", h)
+
+    def test_front_motf_figure_comes_from_the_rain_off_twin(self):
+        """A "motf" entry in FRONT["figures"] places the RAIN-OFF twin's gallery figure,
+        never the premier's rain-on one (2026-11-18, 2.0.0)."""
+        pub = _load_publish()
+        n = pub.NEXT_PREMIER
+        off = pub.FRONT["motf_arm"]
+
+        def ent(arm):
+            return {
+                "slug": pub.slug(arm),
+                "manifest": {"figures": [{"key": "motf", "file": "motf.png"}]},
+                "row_published": None,
+                "row": {},
+            }
+
+        domains = {n["domain"]: {n["arm"]: ent(n["arm"]), off: ent(off)}}
+        front = {**pub.FRONT, "figures": (("motf", "FEMA", "cap"),)}
+        with mock.patch.object(pub, "FRONT", front):
+            figs = "".join(pub.front_figures(domains))
+        self.assertIn(f"{n['domain']}/{pub.slug(off)}/motf.png", figs)
+        self.assertNotIn(f"{n['domain']}/{pub.slug(n['arm'])}/motf.png", figs)
 
     def test_slug_is_path_safe_and_distinct(self):
         pub = _load_publish()

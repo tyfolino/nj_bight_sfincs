@@ -77,14 +77,17 @@ from nj_sfincs.config import exp_root
 #: inferred from a run's name.
 PREMIER_NAME = "naccs-premier"
 
-#: The version a domain's premier carries (CLAUDE.md §6): model 1.1.0 is
+#: The version a domain's premier carries (CLAUDE.md §6): model 2.0.0 (2012 bed) is
+#: ``p4-premier+struct-cohansey-checkvalve+weir-dikes-levees`` on ``nj2w_bed2012``, job 64003605 (2026-11-18); 1.1.0 is
 #: ``p4-premier+weir-elizabeth-rahway`` on ``v4_refreeze_swz_v11`` as run, job 63617802 (user 2026-11-09);
 #: 1.0.0 is ``p4-premier`` on ``v4_refreeze_swz``, job 63181564 (user 2026-11-01). docs/MODEL.md, CHANGELOG.md.
-MODEL_VERSION = "1.1.0"
+MODEL_VERSION = "2.0.0"
 #: Domains whose premier is not PREMIER_NAME.
 PREMIER_ARMS = {
     "v4_refreeze_swz": "p4-premier",
     "v4_refreeze_swz_v11": "p4-premier+weir-elizabeth-rahway",
+    # MODEL 2.0.0, 2012 bed (2026-11-18): job 64003605; rain-off twin 64003606.
+    "nj2w_bed2012": "p4-premier+struct-cohansey-checkvalve+weir-dikes-levees",
 }
 
 
@@ -251,6 +254,11 @@ NJ2W = DomainFingerprint(5181372, 4367, "668a7f853d6801e1")
 #: = nj2_bed2012 bar the 11 wall faces' mask (same 4,273,668 faces set from the mean ground). The 2.0
 #: waves-on runs go here.
 NJ2W_BED2012 = DomainFingerprint(5181372, 4367, "0f87265091209585")
+#: nj2w_bed2026 STAGED 2026-11-18 (setup_face_z.py --from nj2w --bed _subgrid_nj2_2026;
+#: logs/nj2_freeze_2026-11-14/j3_walls/setup_face_z_nj2w_bed2026.log): MODEL 2.0.0, 2026 bed (estimated),
+#: walled — the 2026 bed (63997883) cp -al'd into nj2w with sfincs.nc relinked to nj2w's template;
+#: 4,274,421 faces set from the mean ground. Same counts as nj2 — the sha is the only tell.
+NJ2W_BED2026 = DomainFingerprint(5181372, 4367, "f63e8ff0a984c598")
 
 EXPECTED: dict[str, DomainFingerprint] = {
     "v1_monmouth": V1_MONMOUTH,
@@ -271,6 +279,7 @@ EXPECTED: dict[str, DomainFingerprint] = {
     "nj2_bed2012": NJ2_BED2012,
     "nj2w": NJ2W,
     "nj2w_bed2012": NJ2W_BED2012,
+    "nj2w_bed2026": NJ2W_BED2026,
 }
 
 KNOWN = {
@@ -335,6 +344,10 @@ KNOWN = {
     NJ2W_BED2012: (
         "nj2w_bed2012 STAGED 2026-11-17 — Model 2.0.0, 2012 bed, walled: nj2w with face z from "
         "the 2012 bed (_subgrid_nj2_2012)"
+    ),
+    NJ2W_BED2026: (
+        "nj2w_bed2026 STAGED 2026-11-18 — Model 2.0.0, 2026 bed (estimated), walled: nj2w with "
+        "face z from the 2026 bed (_subgrid_nj2_2026)"
     ),
     V4_HOT_PLUS: "v4_hot_plus RE-STAGED 2026-10-05, RETIRED 2026-10-15 (records in _retired/)"
     " (Maurice cut on the Union Lake dam crest)"
