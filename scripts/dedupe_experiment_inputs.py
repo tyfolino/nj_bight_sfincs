@@ -18,14 +18,19 @@ one experiment dir just decrements the link count.
 NOT touched: sfincs_map.nc / sfincs_his.nc (results, all distinct), sfincs.inp (the
 one file that differs per run), snapwave.upw (SFINCS-generated; delete it instead).
 
-Usage:  python scripts/dedupe_experiment_inputs.py [--apply]      (default = dry run)
+Usage:  python scripts/dedupe_experiment_inputs.py [--apply] [--domain D ...]
+        (default = dry run over every domain; --help prints this and touches nothing)
+
+The dry run still md5s every candidate (~40 min over all domains): pass --domain to
+limit the walk. Grouping only ever links byte-identical files, so a --domain run can
+miss a cross-domain twin, never mislink one.
 """
 
 from __future__ import annotations
 
+import argparse
 import hashlib
 import os
-import sys
 from collections import defaultdict
 from pathlib import Path
 
@@ -51,15 +56,15 @@ def md5(p: Path, chunk: int = 1 << 22) -> str:
     return h.hexdigest()
 
 
-def runs():
-    """Every run dir, across every domain: experiments/<domain>/<arm>.
+def runs(domains: set[str] | None = None):
+    """Every run dir, across every domain (or only `domains`): experiments/<domain>/<arm>.
 
     The extra nesting level arrived with the 2026-08-05 domain namespacing. Walking
     `EXP.iterdir()` directly would iterate the DOMAIN dirs and find no `sfincs.nc` in
     them — which reports "0 files, 0.0 GB" and reads exactly like "already deduped".
     """
     for dom in sorted(EXP.iterdir()):
-        if not dom.is_dir():
+        if not dom.is_dir() or (domains is not None and dom.name not in domains):
             continue
         for run in sorted(dom.iterdir()):
             # _retired/ holds keeps only (scripts/retire_arm.py); floodmaps/ is the gallery
@@ -67,8 +72,8 @@ def runs():
                 yield run
 
 
-def candidates():
-    for run in runs():
+def candidates(domains: set[str] | None = None):
+    for run in runs(domains):
         for f in sorted(run.iterdir()):
             if f.is_file() and f.name in TARGETS and f.stat().st_size >= MIN_BYTES:
                 yield f
@@ -80,11 +85,35 @@ def candidates():
                         yield f
 
 
-def main() -> None:
-    apply = "--apply" in sys.argv
+def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
+    ap = argparse.ArgumentParser(
+        description="Hard-link byte-identical experiment INPUT files "
+        "(sfincs.nc, sfincs_subgrid.nc, roughness.nc, subgrid/*) across "
+        "experiments/<domain>/<arm>. Default is a DRY RUN (it still hashes everything)."
+    )
+    ap.add_argument(
+        "--apply", action="store_true", help="replace duplicates with hard links"
+    )
+    ap.add_argument(
+        "--domain",
+        action="append",
+        metavar="D",
+        help="only walk experiments/D (repeatable; default: every domain)",
+    )
+    return ap.parse_args(argv)
+
+
+def main(argv: list[str] | None = None) -> None:
+    args = parse_args(argv)
+    apply = args.apply
+    domains = set(args.domain) if args.domain else None
+    if domains is not None:
+        missing = sorted(d for d in domains if not (EXP / d).is_dir())
+        if missing:
+            raise SystemExit(f"no such domain dir under {EXP}: {', '.join(missing)}")
     groups: dict[tuple[str, str], list[Path]] = defaultdict(list)
     print("hashing…", flush=True)
-    for f in candidates():
+    for f in candidates(domains):
         groups[(f.name, md5(f))].append(f)
 
     saved = 0

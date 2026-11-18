@@ -536,6 +536,10 @@ class TestWaterlevelSupportOverride(_DomainEnv):
             # Model 2.0.0, 2012 bed (11-16, GATE 2): nj2 with face z from the 2012 bed —
             # same mask and line, so the same three. Its arms force from the NACCS 244.
             "nj2_bed2012": 3,
+            # nj2 + the J3 leak walls (11-17): 11 OUTFLOW faces closed, the forced line
+            # (mask 2) untouched — the same three. Arms force from the NACCS 244.
+            "nj2w": 3,
+            "nj2w_bed2012": 3,
         }
         self.assertEqual(
             set(PINNED),

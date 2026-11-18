@@ -240,6 +240,17 @@ NJ2 = DomainFingerprint(5181372, 4367, "5759f6fa6cca6826")
 #: the 2012 bed's subgrid mean ground on 4,273,668 active faces (26,978 on hydromt's −20 m volume
 #: floor kept). Same mesh, mask and counts as nj2 — the sha is the only tell.
 NJ2_BED2012 = DomainFingerprint(5181372, 4367, "c183d1a5f1d7bef6")
+#: nj2w STAGED 2026-11-17: nj2 + the two J3 leak walls (domain._NJ2W_WALLS: Astoria Park 5 faces, E of
+#: Millville 6 faces, 3 -> 1). Template = nj2's sealed template with ONLY the mask swapped in from a
+#: restage_from_frozen_mesh copy (logs/nj2_freeze_2026-11-14/j3_walls/assemble_nj2w.{py,log}: 11 faces
+#: changed, active set unchanged, every other sfincs.nc variable equal bar the template's waves-off
+#: snapwave_mask). Same counts as nj2 — the sha is the only tell.
+NJ2W = DomainFingerprint(5181372, 4367, "668a7f853d6801e1")
+#: nj2w_bed2012 STAGED 2026-11-17 (setup_face_z.py --from nj2w --bed _subgrid_nj2_2012;
+#: logs/nj2_freeze_2026-11-14/j3_walls/setup_face_z_nj2w_bed2012.log): MODEL 2.0.0, 2012 bed, walled —
+#: = nj2_bed2012 bar the 11 wall faces' mask (same 4,273,668 faces set from the mean ground). The 2.0
+#: waves-on runs go here.
+NJ2W_BED2012 = DomainFingerprint(5181372, 4367, "0f87265091209585")
 
 EXPECTED: dict[str, DomainFingerprint] = {
     "v1_monmouth": V1_MONMOUTH,
@@ -258,6 +269,8 @@ EXPECTED: dict[str, DomainFingerprint] = {
     "v4_refreeze_swz_v11": V4_REFREEZE_SWZ_V11,
     "nj2": NJ2,
     "nj2_bed2012": NJ2_BED2012,
+    "nj2w": NJ2W,
+    "nj2w_bed2012": NJ2W_BED2012,
 }
 
 KNOWN = {
@@ -314,6 +327,14 @@ KNOWN = {
     NJ2_BED2012: (
         "nj2_bed2012 STAGED 2026-11-16 — Model 2.0.0, 2012 bed: nj2 with face z from the 2012 "
         "bed (_subgrid_nj2_2012)"
+    ),
+    NJ2W: (
+        "nj2w STAGED 2026-11-17 — Model 2.0 mask: nj2 + the J3 leak walls (Astoria Park, "
+        "E of Millville); face z = the coarse 25 m bed"
+    ),
+    NJ2W_BED2012: (
+        "nj2w_bed2012 STAGED 2026-11-17 — Model 2.0.0, 2012 bed, walled: nj2w with face z from "
+        "the 2012 bed (_subgrid_nj2_2012)"
     ),
     V4_HOT_PLUS: "v4_hot_plus RE-STAGED 2026-10-05, RETIRED 2026-10-15 (records in _retired/)"
     " (Maurice cut on the Union Lake dam crest)"

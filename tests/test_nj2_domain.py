@@ -241,5 +241,86 @@ class TestNJ2Bed2012(unittest.TestCase):
                 self.assertFalse(e.waves.use_waves)
 
 
+def _changed(x, y, skip=()):
+    return {
+        f.name
+        for f in dataclasses.fields(x)
+        if f.name not in skip and getattr(x, f.name) != getattr(y, f.name)
+    }
+
+
+class TestNJ2W(unittest.TestCase):
+    """nj2w (2026-11-17): nj2 + the two J3 leak walls, nothing else; nj2w_bed2012 its 2012-bed face-z domain,
+    where 2.0's waves-on runs go (logs/nj2_freeze_2026-11-14/README.md §6, j3_walls/)."""
+
+    def test_only_the_walls_differ_from_nj2(self):
+        w = domain.DOMAINS["nj2w"]
+        self.assertEqual(_changed(w, NJ2), {"name", "mesh_key", "mask_overrides"})
+        self.assertEqual(w.mesh_key, "nj2")
+        self.assertEqual(w.frozen_mesh_dir(), NJ2.frozen_mesh_dir())
+        self.assertEqual(
+            w.mask_overrides[: len(NJ2.mask_overrides)], NJ2.mask_overrides
+        )
+        new = w.mask_overrides[len(NJ2.mask_overrides) :]
+        self.assertEqual(
+            {o.name for o in new}, {"wall_astoria_park", "wall_millville_east"}
+        )
+        for o in new:
+            self.assertEqual((o.frm, o.to), (3, 1), o.name)
+            self.assertEqual(len(o.box), 4, o.name)
+
+    def test_bed_domain_is_nj2w_plus_face_z(self):
+        w, b = domain.DOMAINS["nj2w"], domain.DOMAINS["nj2w_bed2012"]
+        self.assertEqual(_changed(b, w), {"name", "face_z_from"})
+        self.assertEqual(b.face_z_from, "_subgrid_nj2_2012")
+        self.assertEqual(
+            _changed(b, domain.DOMAINS["nj2_bed2012"]), {"name", "mask_overrides"}
+        )
+
+    def test_waveson_arms(self):
+        """1.1.0's premier with only the 2.0 domain changed (bed, NACCS file + support count, the wavemaker line
+        redrawn on the 2012 bed, user 11-16); the 2.0 premier adds the dike set + Cohansey valve (user 11-17)."""
+        from nj_sfincs.experiments import EXPERIMENTS_BY_DOMAIN
+
+        self.assertEqual(EXPERIMENTS_BY_DOMAIN["nj2w"], {})
+        arms = EXPERIMENTS_BY_DOMAIN["nj2w_bed2012"]
+        twin = arms["p4-premier"]
+        prem = arms["p4-premier+struct-cohansey-checkvalve+weir-dikes-levees"]
+        b = EXPERIMENTS_BY_DOMAIN["v4_refreeze_swz_v11"][
+            "p4-premier+weir-elizabeth-rahway"
+        ]
+        self.assertEqual(
+            _changed(twin, b, ("name", "description")),
+            {"subgrid_from", "waterlevel_geodataset", "n_waterlevel_support", "waves"},
+        )
+        self.assertEqual(_changed(twin.waves, b.waves), {"wavemaker_line"})
+        self.assertEqual(twin.subgrid_from, "_subgrid_nj2_2012")
+        self.assertEqual(twin.waterlevel_geodataset, "naccs_sandy_nj2")
+        self.assertEqual(twin.n_waterlevel_support, 244)
+        self.assertTrue(twin.waves.use_waves and twin.waves.wavemaker)
+        self.assertEqual(
+            twin.waves.wavemaker_line.name,
+            "nj2_wavemaker_2012bed_5m_mhw_snapbeach.geojson",
+        )
+        self.assertTrue(twin.waves.wavemaker_line.is_file())
+        self.assertEqual(
+            _changed(prem, twin, ("name", "description")), {"weir_from", "drn_from"}
+        )
+        j3 = EXPERIMENTS_BY_DOMAIN["nj2_bed2012"][
+            "p4-nowaves+rain-off+slr-0m+struct-cohansey-checkvalve+weir-dikes-levees"
+        ]
+        self.assertEqual((prem.weir_from, prem.drn_from), (j3.weir_from, j3.drn_from))
+        self.assertTrue(prem.weir_from.is_file() and prem.drn_from.is_file())
+        rainoff = arms[
+            "p4-premier+rain-off+struct-cohansey-checkvalve+weir-dikes-levees"
+        ]
+        self.assertEqual(_changed(rainoff, prem, ("name", "description")), {"rain"})
+        self.assertFalse(rainoff.rain)
+        b_off = EXPERIMENTS_BY_DOMAIN["v4_refreeze_swz_v11"][
+            "p4-premier+rain-off+weir-elizabeth-rahway"
+        ]
+        self.assertEqual(_changed(b_off, b, ("name", "description")), {"rain"})
+
+
 if __name__ == "__main__":
     unittest.main()

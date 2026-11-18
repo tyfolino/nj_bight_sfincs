@@ -2493,3 +2493,128 @@ naccs_sandy_nj2:
       4 sections + cd_canal + hudson + hell_gate), MSL(1992)->NAVD88 from VDatum's separation grids. NOT BUILT
       YET (2026-11-14) - written by J2 step 4, logs/nj2_edges_2026-11-14/build_naccs_boundary_nj2.py on the frozen
       mesh (logs/nj2_freeze_2026-11-14/README.md).
+
+# ── MODEL 2.0, 2026 BED (nj2_bed2026; logs/nj2_bed2026_2026-11-14/README.md, added 2026-11-17) ──────────────
+# Keys build_nj2_2026.slurm's recipe reads. The first four are WRITTEN BY that job (P1-P5) and do not exist
+# until it runs; the rest exist now. The 2012 bed reads none of these.
+modern_land_paint_nj2:
+  data_type: RasterDataset
+  uri: elevation_modern_2026/nj2/modern_land_paint_nj2.tif
+  driver:
+    name: rasterio
+    options: {}
+  metadata:
+    category: topography
+    crs: 32618
+    nodata: -9999.0
+    unit: m+NAVD88
+    source: >-
+      2.0 2026 BED. modern_land_paint_2026b's rule (logs/modern_bed_b_2026-11-06/split_modern_land.py) on modern
+      land judged against the nj2 2012 bed (scripts/build_modern_land.py --bed). Overlay, first after the base
+      stack. Written by logs/nj2_bed2026_2026-11-14/build_nj2_2026.slurm P1-P2.
+modern_land_lower_nj2:
+  data_type: RasterDataset
+  uri: elevation_modern_2026/nj2/modern_land_lower_nj2.tif
+  driver:
+    name: rasterio
+    options: {}
+  metadata:
+    category: topography
+    crs: 32618
+    nodata: -9999.0
+    unit: m+NAVD88
+    source: >-
+      2.0 2026 BED. The LOWER-ONLY half of the split (apply as modern_land_lower_nj2:min right after
+      modern_land_paint_nj2). Written by logs/nj2_bed2026_2026-11-14/build_nj2_2026.slurm P2.
+bluetopo_newer_nj2:
+  data_type: RasterDataset
+  uri: elevation_modern_2026/nj2/bluetopo_newer/bluetopo_newer_2026.vrt
+  driver:
+    name: rasterio
+    options: {}
+  metadata:
+    category: topography
+    crs: 26918
+    nodata: -9999.0
+    unit: m+NAVD88
+    source: >-
+      2.0 2026 BED. bluetopo_newer_2026's rule + MLLW fix, inside the nj2 ring, not under the nj2 modern land.
+      OVERLAY after riverbeds_hierarchy_v4e, before ehydro_latest_2026.
+      logs/nj2_bed2026_2026-11-14/build_bluetopo_newer_nj2.py (build_nj2_2026.slurm P3).
+bed_buildings_hybrid_cap10_nj2:
+  data_type: RasterDataset
+  uri: elevation_modern_2026/nj2/bed_buildings_hybrid_cap10_nj2.tif
+  driver:
+    name: rasterio
+    options: {}
+  metadata:
+    category: topography
+    crs: 32618
+    nodata: -9999.0
+    unit: m+NAVD88
+    source: >-
+      2.0 2026 BED. footprints_hybrid_nj2 (USA Structures 2025 + Microsoft release 2, NJ only; asset guard except
+      on OSM solar plants other than CCMUA and Jersey City DWP; Hudson County Solar's 7 canopy outlines dropped
+      after the 11-16 eye check, logs/nj2_bed2026_2026-11-14/canopy_eyecheck.md; ODbL attribution on the public
+      gallery) burned at the no-buildings nj2 2026 bed + 10 m, not where ground < 0 m. OVERLAY; replaces
+      bed_buildings_v4_cap10 in the 2026 recipe. build_nj2_2026.slurm P4-P5.
+gowanus_upper_v2_2026:
+  data_type: RasterDataset
+  uri: elevation_nj2/v2/carves/gowanus_upper_v2_2026.tif
+  driver:
+    name: rasterio
+    options: {}
+  metadata:
+    category: topography
+    crs: 32618
+    nodata: -9999.0
+    unit: m+NAVD88
+    source: >-
+      2.0 2026 BED. Upper Gowanus Canal carve at the DESIGN cap top (user 11-16): -3.20 m NAVD88 (-10.5 ft,
+      EPA-approved RTA 1 remedial design, Union St - Carroll St; RTA 1 completed 2024-07; no public post-remedy
+      survey), to the Butler St head, on cells carve_v2_2026 does not hold (910 px, 2.27 ha). Apply :min after
+      carve_v2_2026. Was the ASSUMED -2.69 m (kept beside it as
+      gowanus_upper_v2_2026.assumed_m2.69_2026-11-14.tif). logs/nj2_bed2026_2026-11-14/build_gowanus_upper.py.
+      md5 26243d37f6f51ad663b01061379f0d2d
+piers_v2_2026:
+  data_type: RasterDataset
+  uri: elevation_nj2/v2/carves/piers_v2_2026.tif
+  driver:
+    name: rasterio
+    options: {}
+  metadata:
+    category: topography
+    crs: 32618
+    nodata: -9999.0
+    unit: m+NAVD88
+    source: >-
+      2.0 2026 BED. Pile-supported pier carve (user 11-14): carve_2026 units + the 11-12 eye check's piles with a
+      2026 deck (62 units), each to the median water bed (< -0.5 m) 5-40 m around it (ehydro_latest_2026 else
+      CUDEM). Apply :min. logs/nj2_bed2026_2026-11-14/build_pier_carves.py. md5 16a59926221809f990b0f788176ce026
+manning_nlcd_2025_v4:
+  data_type: RasterDataset
+  uri: /scratch/tpj8/nj_bight_sfincs_data/modern_2026/derived/round_c/manning_nlcd_2025_v4.tif
+  driver:
+    name: rasterio
+    options: {}
+  metadata:
+    category: roughness
+    unit: s m-1/3
+    source: >-
+      MODERN BED. hydromt's NLCD_CONUS_mapping reclass of NLCD 2025 C1V2 on nlcd_2012_v4's grid (NaN = NoData).
+      --manning-overlay FIRST = a 2025 base n. logs/modern_round_c_2026-11-12/build_manning_2025.py.
+      md5 ed295b7a5de08628621e17e0fbbe4b28
+manning_developed_2025_v4:
+  data_type: RasterDataset
+  uri: /scratch/tpj8/nj_bight_sfincs_data/modern_2026/derived/round_c/manning_developed_2025_v4.tif
+  driver:
+    name: rasterio
+    options: {}
+  metadata:
+    category: roughness
+    unit: s m-1/3
+    source: >-
+      MODERN BED. manning_developed_v4's rule (logs/developed_manning_2026-11-03/build_overlay.py) on NLCD 2025:
+      classes 22-24 inside NJ (cb_2023 STATEFP 34) -> 0.04, NaN elsewhere; nlcd_2025_v4's grid. Paint with
+      --manning-overlay manning_developed_2025_v4 --manning-overlay manning_water_v4 --manning-overlay
+      manning_channel_v4e. logs/modern_round_c_2026-11-12/build_manning_2025.py. md5 7e242caa761feecaa2c04137f017304f

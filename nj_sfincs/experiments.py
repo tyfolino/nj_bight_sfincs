@@ -1510,6 +1510,63 @@ EXPERIMENTS_BY_DOMAIN["nj2_bed2012"] = {
     },
 }
 
+# ── nj2w_bed2012: Model 2.0's first WAVES-ON Sandy runs (drafted 2026-11-16, applied 11-17) ─────────────────
+# J3 read 11-17 (logs/nj2_freeze_2026-11-14/README.md §6): one leak, Astoria Park at +2 / +3 m (+ 0.13 m E of
+# Millville at +3 m) -> walled (domain.NJ2W, user "wall both"); the 2.0 runs go on the WALLED 2012-bed domain.
+# Model 1.1.0 (v4_refreeze_swz_v11 / p4-premier+weir-elizabeth-rahway) moved onto the 2.0 mesh, 2012 bed. FOUR
+# fields change, all of them the 2.0 domain itself (logs/nj2_waveson_prep_2026-11-16/README.md):
+#   subgrid_from           _subgrid_v1_1c   -> _subgrid_nj2_2012
+#   waterlevel_geodataset  naccs_sandy_v4   -> naccs_sandy_nj2;  n_waterlevel_support 241 -> 244
+#   waves.wavemaker_line   1.1.0's 10-17 line -> the line REDRAWN on the nj2 2012 bed (user 11-16; ~200 of ~7,930
+#                          wavemaker links move: inlet-setback ends at Absecon, Barnegat, Manasquan + Long Branch)
+# Weirs: the 2.0 PREMIER carries the dike set + the Cohansey check valve (user 11-17: J3 showed Chester flowing,
+# +0.03 m at its source vs +3.41 m dammed by the 11-12 line; logs/nj2_freeze_2026-11-14/j3_dikes_diff.txt).
+# `p4-premier` = its 1.1.0-weir twin (registered; pairs out the dike set waves-on).
+#: The 2.0.0 wavemaker line (user 11-16): 1.1.0's builder + parameters redrawn on the nj2 2012 bed.
+_NJ2_WAVEMAKER_2012 = DATA / "nj2_design" / "structures" / "nj2_wavemaker_2012bed_5m_mhw_snapbeach.geojson"
+_V11_PREMIER = EXPERIMENTS_BY_DOMAIN["v4_refreeze_swz_v11"]["p4-premier+weir-elizabeth-rahway"]
+_NJ2_P4_PREMIER = replace(
+    _V11_PREMIER,
+    name="p4-premier",
+    description="Model 2.0 (nj2w_bed2012: the nj2 mesh + the J3 leak walls, the 2012 bed _subgrid_nj2_2012) "
+    "with 1.1.0's weirs: Model 1.1.0 (v4_refreeze_swz_v11 / p4-premier+weir-elizabeth-rahway: waves + wavemaker, "
+    "wind, rain + cnb 1.5, 61 rivers) with only the 2.0 domain changed: the nj2 mesh (Upper Bay, KvK, Hudson to "
+    "40.860 and East River to Hell Gate computed), its 2012 bed, NACCS at 244 support points (naccs_sandy_nj2), "
+    "the wavemaker redrawn on the 2012 bed (user 11-16); SnapWave off over the Upper Bay / Hudson / East River "
+    "(user 11-14). The 1.1.0-weir TWIN of the 2.0 premier (which adds the dike set). "
+    "logs/nj2_waveson_prep_2026-11-16/README.md.",
+    subgrid_from=_NJ2_BED,
+    weir_from=_NJ2_WEIR,
+    waves=replace(_V11_PREMIER.waves, wavemaker_line=_NJ2_WAVEMAKER_2012),
+    **_NJ2_WL,
+)
+EXPERIMENTS_BY_DOMAIN["nj2w"] = {}
+EXPERIMENTS_BY_DOMAIN["nj2w_bed2012"] = {
+    "p4-premier": _NJ2_P4_PREMIER,
+    "p4-premier+struct-cohansey-checkvalve+weir-dikes-levees": replace(
+        _NJ2_P4_PREMIER,
+        name="p4-premier+struct-cohansey-checkvalve+weir-dikes-levees",
+        description="MODEL 2.0 PREMIER (user 11-17): nj2w_bed2012 p4-premier + the edges agent's fixed dikes / "
+        "levees weir set (Chester redraw, Port Penn r1054 gate open) on 1.1.0's weirs + the Cohansey Bacons Neck "
+        "tide gate as a check valve (data/nj2_design/structures/; logs/nj2_edges_2026-11-14/). Pairs: "
+        "p4-premier (this domain; the dike set alone, waves on); v4_refreeze_swz_v11/p4-premier+weir-elizabeth-"
+        "rahway (1.1.0) on the 1.x mark file. Waves-off twin: nj2_bed2012/p4-nowaves+rain-off+slr-0m+struct-"
+        "cohansey-checkvalve+weir-dikes-levees (J3; unwalled, dry at the walls at +0).",
+        weir_from=_NJ2_WEIR_DIKES,
+        drn_from=_NJ2_DRN_COHANSEY,
+    ),
+}
+#: The 2.0 premier's RAIN-OFF twin (user 11-17: run beside it; MOTF maps surge, so rain-off is the cleaner extent
+#: comparison). 1.1.0's own rain-off twin is p4-premier+rain-off+weir-elizabeth-rahway (rain=False, nothing else).
+EXPERIMENTS_BY_DOMAIN["nj2w_bed2012"]["p4-premier+rain-off+struct-cohansey-checkvalve+weir-dikes-levees"] = replace(
+    EXPERIMENTS_BY_DOMAIN["nj2w_bed2012"]["p4-premier+struct-cohansey-checkvalve+weir-dikes-levees"],
+    name="p4-premier+rain-off+struct-cohansey-checkvalve+weir-dikes-levees",
+    description="The Model 2.0 premier (nj2w_bed2012, dike set + Cohansey check valve) with RAIN OFF (rivers on), "
+    "nothing else changed (user 11-17). Pairs: the premier (the rain effect, waves on); "
+    "v4_refreeze_swz_v11/p4-premier+rain-off+weir-elizabeth-rahway (1.1.0's rain-off twin) on the 1.x mark file.",
+    rain=False,
+)
+
 
 def experiments(domain_name: str | None = None) -> dict[str, Experiment]:
     """The arms defined for a domain (the ACTIVE one by default).

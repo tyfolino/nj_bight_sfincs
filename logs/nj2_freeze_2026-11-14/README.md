@@ -285,3 +285,15 @@ with `_NJ2_NACCS_SUPPORT = 244` (`naccs_nj2.log`); `--check` OK on all four; J3'
 Tests: `PINNED["nj2_bed2012"] = 3`; `test_bed_arms` measures a non-bed arm on a face-z domain with no premier arm
 against the domain's `face_z_from`; `TestNJ2Bed2012` (3 tests). **Next: J3** — write its md5 AFTER the Port Penn
 notch edit to the dike-set weir is finished (that file is in `j3_md5_files.txt`).
+
+**J3 READ + WALLS (11-17).** J3 (63973887, 8 h 24, hal0415): one real leak, **Astoria Park** (outflow cells wet at
++2 / +3 m), plus **Millville-east** at +3 m; Chester passes; dike set lowers leveed ground by 1–2 m (`j3_dikes_diff.txt`).
+Walls (user): `nj2w` = nj2 + `wall_astoria_park` (5 faces) + `wall_millville_east` (6 faces), outflow → closed —
+`j3_walls/restage_nj2w.py` (canonical restage) + `assemble_nj2w.py` (nj2's template hard-linked, fresh `sfincs.nc` with the
+walled mask; refuses on any change outside the boxes) → `668a7f853d6801e1`; `nj2w_bed2012` via `setup_face_z` (bed dir's
+`sfincs.nc` relinked to nj2w's template first) → `0f87265091209585`. **Dike score** (`j3_score_dikes.slurm`, 63997935,
+`j3_score/`): HWM ΔRMSE −0.0003 m [−0.0007, +0.0001] (median, 50 m, n 163), MOTF CSI 0.787 → 0.785. **NY ring near-misses
+at +3 m** (`j3_walls/ny_nearmiss.py`, `ny_spill.py` → `ny_spill.txt`, `ny_spill_open10.txt` = ridges ≤ 31 m shaved):
+Bensonhurst / Manhattanville / Flatbush / Maspeth held by broad ground 1.3–3.9 m above the water, decks change nothing,
+except Maspeth's 4th edge cell (−73.9052, 40.7259) at 0.25 m. No mask change (user 11-17). Next: waves-on 2.0
+(`logs/nj2_waveson_prep_2026-11-16/`).

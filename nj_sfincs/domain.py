@@ -3598,6 +3598,49 @@ NJ2 = replace(
     flux_crosssections=DATA / "nj2_design" / "flux_crosssections_nj2.crs",
 )
 
+#: J3 leak walls (2026-11-17, user "wall both"; logs/nj2_freeze_2026-11-14/j3_overflow_{2,3}m.txt).
+#: The only WET OUTFLOW edge cells of J3 (none at +0): each box = the leaking cell + its low
+#: outflow neighbours (z_zmin below the +3 m water there), envelope + 150 m, rounded out — the
+#: _NJ2_WALLS rule. Ring cells only carry mask 3, so the box touches nothing else.
+_NJ2W_WALLS = (
+    MaskOverride(
+        "wall_astoria_park",
+        frm=3,
+        to=1,
+        box=(590_300, 4_513_700, 590_900, 4_514_300),
+        why="Astoria Park, the 3 outflow cells SE of wall_hellgate_east's end: z_zmin 4.71 / 5.95 "
+        "/ 6.48 m; J3 wet the 4.71 m cell (-73.9268, 40.7718) at +2 m (h 0.62) and +3 m (h 1.19) — "
+        "the forced Hell Gate crest at +3 m is ~6.6 m. Dry at +0.",
+    ),
+    MaskOverride(
+        "wall_millville_east",
+        frm=3,
+        to=1,
+        box=(500_600, 4_359_500, 501_300, 4_360_000),
+        why="ring ~4 km E of Millville (-74.989, 39.387): outflow cells z_zmin 4.50 / 4.75 m under "
+        "a +3 m water level of 4.91-5.02 m; J3 wet the 4.50 m cell at +3 m only (h 0.13).",
+    ),
+)
+
+#: MODEL 2.0.0 MASK (2026-11-17): nj2 + the two J3 leak walls. Same frozen mesh
+#: (data/frozen_mesh_nj2): nj2's template with ONLY the mask swapped in from a restage_from_frozen_mesh copy
+#: (logs/nj2_freeze_2026-11-14/j3_walls/{restage,assemble}_nj2w.py); same counts, new sha
+#: (premier.NJ2W). nj2 and nj2_bed2012 stay as the J3 record.
+NJ2W = replace(
+    NJ2,
+    name="nj2w",
+    mesh_key="nj2",
+    mask_overrides=NJ2.mask_overrides + _NJ2W_WALLS,
+)
+
+#: MODEL 2.0.0, 2012 bed, walled (2026-11-17): nj2w with face z = _subgrid_nj2_2012's mean ground
+#: (scripts/setup_face_z.py --from nj2w). The 2.0 waves-on runs go here.
+NJ2W_BED2012 = replace(
+    NJ2W,
+    name="nj2w_bed2012",
+    face_z_from="_subgrid_nj2_2012",
+)
+
 #: MODEL 2.0.0, 2012 bed (GATE 2, 2026-11-16): nj2's mesh with face ``z`` = the 2012 bed's
 #: subgrid mean ground (``_subgrid_nj2_2012``, J2 63941532 pass 2: v1.1c's tiers + HD_HUD 2012
 #: paint + the v1.2a five + the Brooklyn creek / upper Gowanus / pile-pier carves;
@@ -3631,6 +3674,8 @@ DOMAINS: dict[str, Domain] = {
         V4_REFREEZE_SWZ_V11,
         NJ2,
         NJ2_BED2012,
+        NJ2W,
+        NJ2W_BED2012,
     )
 }
 

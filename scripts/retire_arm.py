@@ -58,6 +58,7 @@ KEEP_FILES = {
     "sfincs.weir",
     "sfincs.crs",
     "sfincs.bnd",
+    "tide_stats.nc",  # tidal-run summary the scores were read from (13 MB; tier 2 keeps it)
     "sfincs.bzs",
     "sfincs.src",
     "sfincs.dis",
@@ -76,18 +77,19 @@ KEEP_FILES = {
     "sfincs_cnb.json",
     "face_z_report.json",  # a face_z_from domain's swap record (setup_face_z.py, §63)
     "extra_discharge.json",  # an arm's added point sources (model.append_extra_discharge)
+    "sfincs.drn",  # drainage structures: culverts / check valves (an input, bytes)
 }
 KEEP_GLOBS = (
     "provenance*.txt",
     "solve_*.log",  # a Phase 4 slot's solver / validate stdout
     "validate_*.log",
     ".staged_*",  # a staging job's marker
-
     "sfincs_ini_*",  # a sea_level.py start (binary inifile + its json sidecar; MB-sized)
     "snapwave.b??",
     "snapwave.bnd",
     "subgrid_*diff.json",
     "sfincs_net*.nc",
+    "sfincs_inlets.w*",  # inlet wavemaker forcing (.wvm/.wfp/.whi/.wst/.wti; KB-sized inputs)
 )
 KEEP_DIRS = {"gis", "gallery"}  # gallery: the PNG figures (nj_sfincs/gallery.py), small
 DELETE_FILES = {
