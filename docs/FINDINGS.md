@@ -2485,6 +2485,18 @@ uninterrupted; native 3.125 m floodmaps; median, 50 m; paired B 200 000). Design
   to each edge cell vs J3's +3 m water): Bensonhurst (the N cut) +4.0 m, Manhattanville +2.8, Flatbush +1.7, Maspeth
   +0.29 (decks ≤ 31 m shaved +0.25) on the 2012 bed; on the 2026 bed Maspeth +0.34 (+0.30), Flatbush shaved +0.74 —
   no mask change (user 11-17).
+- **The East River marks read the Hell Gate forcing, and it is high at the PEAK only** (audit
+  `logs/audit_2_0_hwm_2026-11-18/README.md` #2; test `logs/runs_2_0_followup_2026-11-18/`, job 64024900, arm
+  `…+tide-hellgate-m025+…` = the premier with a constant −0.25 m on the cut's two NACCS support points 218 / 243).
+  NACCS at the cut peaks 3.60 m (10-30 01:15) against Battery 3.44, mark 6386 (0.5 km inside) 3.32, Kings Point 3.08;
+  before the storm it is LOW (daily mean −0.1 m vs the Battery, high waters −0.1…−0.5 m). The premier's East River
+  residuals rise toward the cut (+0.26 at 6386, ~0 in the Upper Bay). With −0.25 m (paired, n 163, median 50 m):
+  `east_river` bias +0.106 → +0.022 (n 13, all 13 down), `hudson_nj` +0.079 → +0.060, `upper_bay_ny` +0.005 → −0.024,
+  `raritan_bay` +0.048 → 0.000 (n 21), `newark_bay` −0.002 → −0.028; NJ back bays and open coast Δ 0.000; headline
+  0.3217 → 0.3193, ΔRMSE −0.0024 [−0.0066, +0.0009]. So the whole harbour and Raritan Bay feel the cut by ~3 cm.
+  **Not adopted** (user 2026-11-22): a constant offset also lowers the already-low pre-storm tide, and any offset
+  chosen to fit Sandy's marks is Sandy-specific tuning. Kept as a known limit (MODEL.md §4); the fix is a 2.1 item (a
+  better level at the cut, or the cut moved into Long Island Sound — a new mesh).
 
 **Head-of-tide variants on v4's mesh (`v4_hot` = A, `v4_hot_plus` = A+; mask-only, registered
 2026-10-02; read 2026-10-03, `logs/v4_hot_2026-10-03/`).** Marks identical to v4 (RMSE 0.577 /

@@ -351,13 +351,202 @@ class TestNJ2W(unittest.TestCase):
         self.assertEqual(
             parts[1:], sorted(parts[1:])
         )  # §6: deltas in alphabetical order
-        self.assertEqual(set(EXPERIMENTS_BY_DOMAIN["nj2w_bed2026"]), {name})
-        b26 = EXPERIMENTS_BY_DOMAIN["nj2w_bed2026"][name]
+        # the 11-22 SLR map arms (calm) are tested in test_slr_arms_2026_bed
+        self.assertEqual(
+            {k for k, e in EXPERIMENTS_BY_DOMAIN["nj2w_bed2026"].items() if e.calm is None}, {name}
+        )
+        b26 =EXPERIMENTS_BY_DOMAIN["nj2w_bed2026"][name]
         self.assertEqual(_changed(b26, prem, ("name", "description")), {"subgrid_from"})
         self.assertEqual(b26.subgrid_from, "_subgrid_nj2_2026")
         self.assertEqual(
             b26.waves, prem.waves
         )  # the 2012-bed wavemaker line (user 11-16)
+
+    def test_waves_off_twin(self):
+        """11-22: the rain-on waves-off twin = the 2.0 premier with SnapWave off, nothing else."""
+        from nj_sfincs.experiments import EXPERIMENTS_BY_DOMAIN
+
+        arms = EXPERIMENTS_BY_DOMAIN["nj2w_bed2012"]
+        prem = arms["p4-premier+struct-cohansey-checkvalve+weir-dikes-levees"]
+        tw = arms["p4-nowaves+struct-cohansey-checkvalve+weir-dikes-levees"]
+        self.assertEqual(_changed(tw, prem, ("name", "description")), {"waves"})
+        self.assertFalse(tw.waves.use_waves)
+        self.assertTrue(tw.rain)
+        parts = tw.name.split("+")
+        self.assertEqual(parts[1:], sorted(parts[1:]))
+
+    def test_seawall_arm(self):
+        """11-22: the seawall-notch arm = the rain-off twin on _subgrid_nj2_2012_seawall, nothing else."""
+        from nj_sfincs.experiments import EXPERIMENTS_BY_DOMAIN
+
+        arms = EXPERIMENTS_BY_DOMAIN["nj2w_bed2012"]
+        twin = arms["p4-premier+rain-off+struct-cohansey-checkvalve+weir-dikes-levees"]
+        sw = arms["bed-seawall+p4-premier+rain-off+struct-cohansey-checkvalve+weir-dikes-levees"]
+        self.assertEqual(_changed(sw, twin, ("name", "description")), {"subgrid_from"})
+        self.assertEqual(sw.subgrid_from, "_subgrid_nj2_2012_seawall")
+        parts = sw.name.split("+")
+        self.assertEqual(parts, sorted(parts))
+
+    def test_slr_arms_2026_bed(self):
+        """11-22: 1.1.0's eight normal-weather SLR arms re-issued on nj2w_bed2026 (logs/slr_2_0_2026-11-22/). Each
+        is the 2026-bed premier made calm with the normal-weather weir; the tide arms differ from the +0 ft arm ONLY
+        in the boundary file + its offset / start level, the still arms from each other only in the still level."""
+        from pathlib import Path
+
+        from nj_sfincs.experiments import EXPERIMENTS_BY_DOMAIN
+
+        arms = EXPERIMENTS_BY_DOMAIN["nj2w_bed2026"]
+        v11 = EXPERIMENTS_BY_DOMAIN["v4_refreeze_swz_v11"]
+        prem = arms["p4-premier+struct-cohansey-checkvalve+weir-dikes-levees"]
+        calm = {k: e for k, e in arms.items() if e.calm is not None}
+        # the same set as 1.1.0's normal-weather arms, `bed-modernb+` dropped (this domain IS the 2026 bed)
+        want = {
+            k.removeprefix("bed-modernb+")
+            for k in v11
+            if k.startswith("bed-modernb+") and k.endswith("+weir-normalweather")
+        }
+        self.assertEqual(set(calm), want)
+        self.assertEqual(len(calm), 8)
+        for k, e in calm.items():
+            self.assertEqual(e.name, k)
+            parts = k.split("+")
+            self.assertEqual(parts, sorted(parts))  # §6
+            self.assertEqual(
+                _changed(e, prem, ("name", "description")),
+                {"waves", "weir_from", "meteo_from", "rain", "infiltration", "cnb_effective", "calm"},
+            )
+            self.assertFalse(e.waves.use_waves or e.rain or e.infiltration)
+            self.assertIsNone(e.meteo_from)
+            self.assertEqual(e.weir_from.name, "sfincs_modern_normalweather_dikes_levees_cohansey_nj2.weir")
+            self.assertTrue(e.weir_from.is_file())
+            self.assertEqual((e.drn_from, e.subgrid_from), (prem.drn_from, "_subgrid_nj2_2026"))
+            self.assertEqual((e.waterlevel_geodataset, e.n_waterlevel_support), ("naccs_sandy_nj2", 244))
+            # the same CalmForcing as the 1.1.0 twin, except where the nj2 boundary must differ
+            c11 = v11["bed-modernb+" + k].calm
+            if e.calm.boundary == "mhhw":
+                self.assertEqual(e.calm, c11)
+            else:
+                self.assertEqual(
+                    dataclasses.replace(e.calm, boundary=c11.boundary, level_m=c11.level_m, offset_m=c11.offset_m),
+                    c11,
+                )
+                self.assertIn("/nj2/sfincs_netbndbzsbzifile_tide_ec2015_nj2_", e.calm.boundary)
+                self.assertEqual(
+                    Path(e.calm.boundary).name.removeprefix("sfincs_netbndbzsbzifile_tide_ec2015_nj2_"),
+                    Path(c11.boundary).name.removeprefix("sfincs_netbndbzsbzifile_tide_ec2015_"),
+                )
+                self.assertAlmostEqual(e.calm.level_m, round(e.calm.offset_m - 0.077, 3))
+                if "msl2026" not in k:  # uniform offsets: the 1.1.0 values; msl2026's mean moves with the points
+                    self.assertEqual(e.calm.offset_m, c11.offset_m)
+        z = calm["tide-0ft+weir-normalweather"]
+        for k, e in calm.items():
+            if e.calm.boundary == "mhhw" or e is z:
+                continue
+            self.assertEqual(_changed(e, z, ("name", "description")), {"calm"})
+            self.assertEqual(_changed(e.calm, z.calm), {"offset_m", "boundary", "level_m"})
+        s2, s4 = calm["still-2ft+weir-normalweather"], calm["still-4ft+weir-normalweather"]
+        self.assertEqual(_changed(s4, s2, ("name", "description")), {"calm"})
+        self.assertEqual(_changed(s4.calm, s2.calm), {"offset_m"})
+
+
+class TestNJ2WOldcut(unittest.TestCase):
+    """nj2w_oldcut (2026-11-22, the harbour CSI-dip Experiment 1): nj2w's mesh with Model 1.1.0's ring and forced
+    Narrows / KvK-east lines; nj2w_oldcut_bed2012 its 2012-bed face-z domain. logs/csi_dip_design_2026-11-22/."""
+
+    MASK_AND_LINES = {
+        "region",
+        "region_source",
+        "boundary_arms",
+        "mask_overrides",
+        "obs_gauges",
+        "dry_land_boxes_ll",
+        "flux_crosssections",
+    }
+
+    def test_differs_from_nj2w_only_in_mask_and_forcing_lines(self):
+        w, o = domain.DOMAINS["nj2w"], domain.DOMAINS["nj2w_oldcut"]
+        self.assertEqual(_changed(o, w), {"name"} | self.MASK_AND_LINES)
+        self.assertEqual(o.mesh_key, "nj2")
+        self.assertEqual(o.frozen_mesh_dir(), w.frozen_mesh_dir())
+        # 1.1.0's ring, verbatim
+        self.assertEqual((o.region, o.region_source), (V11.region, V11.region_source))
+        # 2.0's sea sections (v4's vertices) + 1.1.0's three box arms, in 1.1.0's order; no 2.0 cut
+        sea = [a for a in w.boundary_arms if a.line and a.name not in ("hudson", "hell_gate")]
+        self.assertEqual(list(o.boundary_arms[: len(sea)]), sea)
+        self.assertEqual(
+            [a.name for a in o.boundary_arms[len(sea) :]], ["narrows", "kvk_east", "cd_canal"]
+        )
+        v11_box = {a.name: a for a in V11.boundary_arms if not a.line}
+        for a in o.boundary_arms[len(sea) :]:
+            b = v11_box[a.name]
+            self.assertEqual(
+                _changed(a, b, ("min_cells", "max_cells")), set(), a.name
+            )  # same box / type / bed rule
+            self.assertLessEqual(a.min_cells, a.max_cells)
+        # 1.1.0's walls (wall_bayonne back) + 2.0's Millville wall; none of the walls on the dropped ground
+        names = [m.name for m in o.mask_overrides]
+        self.assertEqual(o.mask_overrides[: len(V11.mask_overrides)], V11.mask_overrides)
+        self.assertEqual(names[len(V11.mask_overrides) :], ["wall_millville_east"])
+        self.assertIn("wall_bayonne", names)
+        for gone in ("wall_e88", "wall_hellgate_east", "wall_astoria_park"):
+            self.assertNotIn(gone, names)
+        # 1.1.0's 48 gauges + Bergen Point + HUD-002 (both inside 1.1.0's ring)
+        self.assertEqual(o.obs_gauges[:48], V11.obs_gauges)
+        self.assertEqual(
+            [g.name for g in o.obs_gauges[48:]], ["noaa_bergen_point", "sss_hackensack_hud002"]
+        )
+        self.assertEqual(o.dry_land_boxes_ll, V11.dry_land_boxes_ll)
+        self.assertTrue(o.flux_crosssections.exists())
+        crs = o.flux_crosssections.read_text().split()
+        for s in ("barrier", "throat", "kvk", "newark_bay_s", "arthur_kill_carteret"):
+            self.assertIn(s, crs)
+        for s in ("narrows", "hudson_cut", "hell_gate_cut"):
+            self.assertNotIn(s, crs)
+
+    def test_bed_domain_is_oldcut_plus_face_z(self):
+        o, b = domain.DOMAINS["nj2w_oldcut"], domain.DOMAINS["nj2w_oldcut_bed2012"]
+        self.assertEqual(_changed(b, o), {"name", "face_z_from"})
+        self.assertEqual(b.face_z_from, "_subgrid_nj2_2012")
+        # = the 2.0 domain it is paired with, bar the mask / forcing lines
+        self.assertEqual(
+            _changed(b, domain.DOMAINS["nj2w_bed2012"]), {"name"} | self.MASK_AND_LINES
+        )
+
+    def test_fingerprints_registered_same_mesh_new_sha(self):
+        w = premier.EXPECTED["nj2w"]
+        for name in ("nj2w_oldcut", "nj2w_oldcut_bed2012"):
+            fp = premier.EXPECTED[name]
+            self.assertEqual(fp.n_faces, w.n_faces, name)
+            self.assertNotEqual(fp.sha_z_mask, w.sha_z_mask, name)
+            self.assertIn(fp, premier.KNOWN, name)
+        self.assertNotEqual(
+            premier.EXPECTED["nj2w_oldcut"].sha_z_mask,
+            premier.EXPECTED["nj2w_oldcut_bed2012"].sha_z_mask,
+        )
+
+    def test_arm_differs_from_the_twin_only_in_what_the_domain_forces(self):
+        from nj_sfincs.experiments import EXPERIMENTS_BY_DOMAIN
+
+        self.assertEqual(EXPERIMENTS_BY_DOMAIN["nj2w_oldcut"], {})
+        arms = EXPERIMENTS_BY_DOMAIN["nj2w_oldcut_bed2012"]
+        name = "p4-nowaves+struct-cohansey-checkvalve+weir-dikes-levees"
+        self.assertEqual(set(arms), {name})
+        twin = EXPERIMENTS_BY_DOMAIN["nj2w_bed2012"][name]
+        x = arms[name]
+        self.assertEqual(x.name, twin.name)
+        self.assertEqual(
+            _changed(x, twin, ("description",)),
+            {"waterlevel_geodataset", "n_waterlevel_support"},
+        )
+        # 1.1.0's NACCS file and count (its own arms declare the same pair)
+        v11 = EXPERIMENTS_BY_DOMAIN["v4_refreeze_swz_v11"]["p4-nowaves+weir-elizabeth-rahway"]
+        self.assertEqual(
+            (x.waterlevel_geodataset, x.n_waterlevel_support),
+            (v11.waterlevel_geodataset, v11.n_waterlevel_support),
+        )
+        self.assertFalse(x.waves.use_waves)
+        self.assertTrue(x.rain)
+        self.assertEqual(x.subgrid_from, "_subgrid_nj2_2012")
 
 
 if __name__ == "__main__":

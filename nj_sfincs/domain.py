@@ -3657,6 +3657,53 @@ NJ2W_BED2026 = replace(
     cn_dataset="cn_2025_v4",
 )
 
+# ── nj2w_oldcut: Model 1.1.0's FORCED LINES on Model 2.0's MESH (2026-11-22, user-approved Experiment 1) ──────
+# The harbour CSI-dip test (logs/csi_dip_design_2026-11-22/README.md): nj2w's mesh + 2012 bed + weirs, but 1.1.0's
+# ring and boundary — the Upper Bay, Hudson and East River INACTIVE again, the `narrows` and `kvk_east` arms forced
+# (from naccs_sandy_v4, declared on the arm), `wall_bayonne` back. Paired with nj2w_bed2012's waves-off twin it
+# isolates the computed harbour; paired with 1.1.0's waves-off run it isolates the mesh (the 25 m
+# `newark_meadowlands` band). A MASK variant of the frozen nj2 mesh (no freeze): same faces, new sha, new
+# boundary-edge count. Two registrations as nj2w -> nj2w_bed2012. A DIAGNOSTIC domain, never a candidate model.
+#: Cell counts of the two 1.1.0 arms ON THE nj2 MESH: in-memory probe 2026-11-22
+#: (logs/csi_dip_design_2026-11-22/probe_fingerprint.py -> probe_nj2w_oldcut.log): narrows 30 (v4: 59 — the Narrows
+#: runs at 50 m on nj2, `narrows_cut` dropped, so v4's [45, 75] would refuse), kvk_east 12 (v4: 11, its [8, 16] kept).
+_NJ2W_OLDCUT_ARM_COUNTS = {"narrows": (23, 38), "kvk_east": (8, 16)}
+#: 2.0 gauges kept (active inside 1.1.0's ring): Bergen Point (scored) + the Hackensack HUD-002 sensor (output only).
+_NJ2W_OLDCUT_EXTRA_GAUGES = ("noaa_bergen_point", "sss_hackensack_hud002")
+NJ2W_OLDCUT = replace(
+    NJ2W,
+    name="nj2w_oldcut",
+    mesh_key="nj2",
+    region=V4_REFREEZE_SWZ_V11.region,
+    region_source=V4_REFREEZE_SWZ_V11.region_source,
+    boundary_arms=_NJ2_SEA_ARMS
+    + tuple(
+        replace(
+            a,
+            min_cells=_NJ2W_OLDCUT_ARM_COUNTS[a.name][0],
+            max_cells=_NJ2W_OLDCUT_ARM_COUNTS[a.name][1],
+        )
+        if a.name in _NJ2W_OLDCUT_ARM_COUNTS
+        else a
+        for a in V4_REFREEZE_SWZ_V11.boundary_arms
+        if not a.line
+    ),
+    mask_overrides=V4_REFREEZE_SWZ_V11.mask_overrides
+    + tuple(o for o in _NJ2W_WALLS if o.name == "wall_millville_east"),
+    obs_gauges=V4_REFREEZE_SWZ_V11.obs_gauges
+    + tuple(g for g in _NJ2_NEW_GAUGES if g.name in _NJ2W_OLDCUT_EXTRA_GAUGES),
+    dry_land_boxes_ll=V4_REFREEZE_SWZ_V11.dry_land_boxes_ll,
+    # barrier / throat / kvk verbatim from nj2's file + `newark_bay_s` (lat 40.670, north of both Kills: the net
+    # flow into Newark Bay) + `arthur_kill_carteret` (lat 40.600). Outside the fingerprint.
+    flux_crosssections=DATA / "nj2_design" / "flux_crosssections_nj2_oldcut.crs",
+)
+#: nj2w_oldcut with face z = _subgrid_nj2_2012's mean ground (scripts/setup_face_z.py --from nj2w_oldcut).
+NJ2W_OLDCUT_BED2012 = replace(
+    NJ2W_OLDCUT,
+    name="nj2w_oldcut_bed2012",
+    face_z_from="_subgrid_nj2_2012",
+)
+
 #: MODEL 2.0.0, 2012 bed (GATE 2, 2026-11-16): nj2's mesh with face ``z`` = the 2012 bed's
 #: subgrid mean ground (``_subgrid_nj2_2012``, J2 63941532 pass 2: v1.1c's tiers + HD_HUD 2012
 #: paint + the v1.2a five + the Brooklyn creek / upper Gowanus / pile-pier carves;
@@ -3693,6 +3740,8 @@ DOMAINS: dict[str, Domain] = {
         NJ2W,
         NJ2W_BED2012,
         NJ2W_BED2026,
+        NJ2W_OLDCUT,
+        NJ2W_OLDCUT_BED2012,
     )
 }
 

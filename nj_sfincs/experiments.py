@@ -1584,6 +1584,31 @@ EXPERIMENTS_BY_DOMAIN["nj2w_bed2012"]["p4-premier+struct-cohansey-checkvalve+tid
         boundary_arm_offsets=(("hell_gate", -0.25),),
     )
 )
+#: The 2.0 premier's WAVES-OFF, RAIN-ON twin (2026-11-22, user: "rain-on waves-off 2.0 twin"): the premier with
+#: SnapWave (and so the wavemaker) off, nothing else — same template start (sfincs_ini_regional.bin), weirs, drn,
+#: rain + cnb. Pair with the premier for the wave effect on the walled 2.0 domain (J3's waves-off run sits on the
+#: unwalled nj2_bed2012 with the sea-level start and rain off). logs/runs_2_0_twin_2026-11-22/README.md.
+EXPERIMENTS_BY_DOMAIN["nj2w_bed2012"]["p4-nowaves+struct-cohansey-checkvalve+weir-dikes-levees"] = replace(
+    _NJ2_PREMIER_DIKES,
+    name="p4-nowaves+struct-cohansey-checkvalve+weir-dikes-levees",
+    description="The Model 2.0 premier (nj2w_bed2012, dike set + Cohansey check valve) with WAVES OFF (rain on), "
+    "nothing else changed (2026-11-22). Pair: the premier (the wave effect, rain on).",
+    waves=WaveConfig(use_waves=False),
+)
+#: The seawall / dune NOTCH fix (2026-11-22, a 2.0.x candidate; logs/seawall_fix_2026-11-22/README.md): the 2.0
+#: rain-off twin on _subgrid_nj2_2012_seawall = the 2012 bed + `seawall_notch_fix_2012` painted last (raise-only, 22
+#: stretches where the 2010 tier dives at its edge on the dune line). Face z stays the domain's (a bed ARM, as the 1.x
+#: bed- arms); if adopted, a 2.0.x domain with face z from the new bed. Pair: the rain-off twin.
+EXPERIMENTS_BY_DOMAIN["nj2w_bed2012"]["bed-seawall+p4-premier+rain-off+struct-cohansey-checkvalve+weir-dikes-levees"] = (
+    replace(
+        EXPERIMENTS_BY_DOMAIN["nj2w_bed2012"]["p4-premier+rain-off+struct-cohansey-checkvalve+weir-dikes-levees"],
+        name="bed-seawall+p4-premier+rain-off+struct-cohansey-checkvalve+weir-dikes-levees",
+        description="The Model 2.0 rain-off twin (nj2w_bed2012, dike set + Cohansey check valve, waves on) on the 2012 "
+        "bed with the seawall / dune notches refilled raise-only (_subgrid_nj2_2012_seawall; 2026-11-22). Pair: "
+        "p4-premier+rain-off+struct-cohansey-checkvalve+weir-dikes-levees.",
+        subgrid_from="_subgrid_nj2_2012_seawall",
+    )
+)
 #: nj2w_bed2026 (registered 2026-11-18): Model 2.0.0's 2026-bed option. ONE arm: the 2.0 premier's recipe, same
 #: name (CLAUDE.md §6: from 2.0 a version names a mesh; "2.0.0, 2026 bed" = this domain + this arm). Only the bed
 #: changes: subgrid_from = _subgrid_nj2_2026 (the domain's face z is already its mean ground, and its template
@@ -1601,6 +1626,112 @@ EXPERIMENTS_BY_DOMAIN["nj2w_bed2026"] = {
         subgrid_from="_subgrid_nj2_2026",
     ),
 }
+#: nj2w_oldcut_bed2012 (2026-11-22, user-approved Experiment 1; logs/csi_dip_design_2026-11-22/README.md): Model 1.1.0's
+#: FORCED LINES on Model 2.0's mesh. ONE arm: nj2w_bed2012's waves-off rain-on twin, same name (the domain is what
+#: changed), forced from 1.1.0's NACCS file at its 241 support points — the 215 sea points 2.0 shares bit for bit + the
+#: 26 on the Narrows / KvK lines (checked 11-22, mesh_levels.txt). Pairs: nj2w_bed2012's twin (the computed harbour
+#: alone, same mesh) and v4_refreeze_swz_v11/p4-nowaves+weir-elizabeth-rahway (the mesh + 2012 bed, same boundary).
+EXPERIMENTS_BY_DOMAIN["nj2w_oldcut"] = {}
+EXPERIMENTS_BY_DOMAIN["nj2w_oldcut_bed2012"] = {
+    "p4-nowaves+struct-cohansey-checkvalve+weir-dikes-levees": replace(
+        EXPERIMENTS_BY_DOMAIN["nj2w_bed2012"]["p4-nowaves+struct-cohansey-checkvalve+weir-dikes-levees"],
+        description="DIAGNOSTIC (harbour CSI dip, 2026-11-22): nj2w_bed2012's waves-off rain-on twin on nj2w_oldcut_bed2012 "
+        "= the 2.0 mesh + 2012 bed with 1.1.0's ring and forced Narrows / KvK-east lines (Upper Bay, Hudson, East River "
+        "inactive), NACCS from naccs_sandy_v4 (241). Pairs: nj2w_bed2012/p4-nowaves+struct-cohansey-checkvalve+weir-"
+        "dikes-levees (the boundary alone) and v4_refreeze_swz_v11/p4-nowaves+weir-elizabeth-rahway (the mesh alone).",
+        waterlevel_geodataset="naccs_sandy_v4",
+        n_waterlevel_support=241,
+    ),
+}
+
+
+# ── 2026-11-22 (user: "update the sea level rise ones on the 2026 grid"): the SLR map set on Model 2.0.0's 2026 bed ────
+# The SAME eight arms as 1.1.0's normal-weather set (v4_refreeze_swz_v11 `bed-modernb+{still,tide}-…+weir-normalweather`,
+# 11-12 / 11-15), re-issued on nj2w_bed2026 (logs/slr_2_0_2026-11-22/README.md). Names drop `bed-modernb`: this
+# domain IS the 2026 bed. Recipe = 1.1.0's calm arms (waves, wind, rain, rivers off; CalmForcing, nj_sfincs/calm.py) on
+# the 2.0 2026-bed premier: _subgrid_nj2_2026, naccs_sandy_nj2's 244 points (the calm boundary replaces its series),
+# the Cohansey check valve kept. Weir = 1.1.0's normal-weather file (the user's 11-12 decisions: closures OPEN,
+# Overpeck tidal dam SHUT at 1.74 m, E/R closures at the lidar ground under each gate; today's structures) + the 2.0
+# dike set byte for byte (data/nj2_design/structures/sfincs_modern_normalweather_dikes_levees_cohansey_nj2.weir,
+# logs/slr_2_0_2026-11-22/build_weir_nj2.py). Tide files = EC2015 rebuilt at the nj2 points (Hudson + Hell Gate cuts,
+# no Narrows / KvK arms; logs/slr_2_0_2026-11-22/make_tide_nj2.py). ADDITIVE: no existing arm changes.
+_NJ2_NW_WEIR = DATA / "nj2_design" / "structures" / "sfincs_modern_normalweather_dikes_levees_cohansey_nj2.weir"
+_NJ2_TIDE_DIR = _TIDE_DIR / "nj2"
+#: Mean LMSL -> NAVD88 over the 244 nj2 points (logs/slr_2_0_2026-11-22/points_244.csv; v4's 241: -0.082).
+_NJ2_TIDE_MEAN_OFFSET = -0.077
+_NJ2_NW_WHY = (
+    " Model 2.0.0, 2026 bed (nj2w_bed2026, _subgrid_nj2_2026). Normal weather, closures OPEN (user 11-12): Waackaack "
+    "gate open, Pews stop logs out, Port Monmouth tide + road gates open, the 8 Elizabeth / Rahway closures open, the "
+    "Overpeck tidal dam SHUT; + the 2.0 dike set (tide-gate notches shut as in the premier, Port Penn r1054 open) and "
+    "the Cohansey check valve; weir data/nj2_design/structures/sfincs_modern_normalweather_dikes_levees_cohansey_nj2.weir "
+    "(logs/slr_2_0_2026-11-22/README.md)."
+)
+_NJ2_PREM26 = EXPERIMENTS_BY_DOMAIN["nj2w_bed2026"]["p4-premier+struct-cohansey-checkvalve+weir-dikes-levees"]
+
+
+def _nj2_nw_calm_arm(name: str, description: str, calm: CalmForcing) -> Experiment:
+    return replace(
+        _NJ2_PREM26,
+        name=name,
+        description=description + _NJ2_NW_WHY,
+        waves=WaveConfig(use_waves=False),
+        weir_from=_NJ2_NW_WEIR,
+        meteo_from=None,
+        rain=False,
+        infiltration=False,
+        cnb_effective=None,
+        calm=calm,
+    )
+
+
+def _nj2_nw_tide(offset_m: float, tag: str) -> CalmForcing:
+    return CalmForcing(
+        offset_m,
+        str(_NJ2_TIDE_DIR / f"sfincs_netbndbzsbzifile_tide_ec2015_nj2_{tag}.nc"),
+        _CALM_T0,
+        "20121113 000000",
+        level_m=round(offset_m + _NJ2_TIDE_MEAN_OFFSET, 3),
+        dtmapout=21600.0,
+        dtmaxout=10800.0,
+    )
+
+
+EXPERIMENTS_BY_DOMAIN["nj2w_bed2026"].update(
+    {
+        **{
+            f"still-{ft}ft+weir-normalweather": _nj2_nw_calm_arm(
+                f"still-{ft}ft+weir-normalweather",
+                f"Calm still water at VDatum MHHW + {s} m ({ft} ft): boundary constant, start on the same sloped "
+                "surface connected through the sills and weirs. STAGE ONLY: the map is the start (nj_sfincs/calm.py). "
+                f"Re-issue of v4_refreeze_swz_v11/bed-modernb+still-{ft}ft+weir-normalweather on the 2.0 mesh.",
+                CalmForcing(s, "mhhw", _CALM_T0, _STILL_TSTOP),
+            )
+            for ft, s in (("2", 0.61), ("4", 1.22))
+        },
+        **{
+            f"tide-{tag}+weir-normalweather": _nj2_nw_calm_arm(
+                f"tide-{tag}+weir-normalweather",
+                f"EC2015 astronomical tide at the 244 nj2 boundary points + {why}, 10-12 to 11-13 (first 2.5 d "
+                "spin-up); zsmax in 3 h blocks -> mean higher-high + month max. Re-issue of v4_refreeze_swz_v11/"
+                f"bed-modernb+tide-{tag}+weir-normalweather on the 2.0 mesh. Offset pair: tide-0ft+weir-normalweather.",
+                _nj2_nw_tide(s, ptag),
+            )
+            for tag, s, ptag, why in (
+                ("0ft", 0.0, "p000", "0 (the NTDE 1983-2001 sea level: VDatum LMSL->NAVD88, the datum the + 2 / + 4 ft "
+                 "add to; no trend)"),
+                ("0ft-msl2026", 0.144, "p000_msl2026", "the 1992 -> 2026 rise per point (34 yr x the NOAA CO-OPS trend "
+                 "of the nearest of Lewes, Cape May, Atlantic City, Sandy Hook, the Battery: +0.100 ... +0.174 m, mean "
+                 "0.144 m; Bergen Point dropped with the KvK arm)"),
+                ("2ft", 0.61, "p061", "0.61 m (2 ft)"),
+                ("4ft", 1.22, "p122", "1.22 m (4 ft)"),
+                ("stap2050", 0.459, "p046_stap2050", "0.459 m (2025 NJ STAP 2050 central, 0.40 m above 2005, + 0.059 m "
+                 "NTDE -> STAP baseline; logs/slr_stap_2026-11-15/)"),
+                ("stap2100ssp245", 0.939, "p094_stap2100", "0.939 m (2025 NJ STAP 2100 central, SSP2-4.5, 0.88 m above "
+                 "2005, + 0.059 m)"),
+            )
+        },
+    }
+)
 
 
 def experiments(domain_name: str | None = None) -> dict[str, Experiment]:

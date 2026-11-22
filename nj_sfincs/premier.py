@@ -261,6 +261,14 @@ NJ2W_BED2012 = DomainFingerprint(5181372, 4367, "0f87265091209585")
 #: walled — the 2026 bed (63997883) cp -al'd into nj2w with sfincs.nc relinked to nj2w's template;
 #: 4,274,421 faces set from the mean ground. Same counts as nj2 — the sha is the only tell.
 NJ2W_BED2026 = DomainFingerprint(5181372, 4367, "f63e8ff0a984c598")
+#: nj2w_oldcut / nj2w_oldcut_bed2012 (2026-11-22, the harbour CSI-dip Experiment 1): nj2w's mesh with Model 1.1.0's
+#: ring and forced Narrows / KvK-east lines (Upper Bay, Hudson, East River inactive: 4,211,302 active faces). Both
+#: shas PREDICTED in memory, read-only, by logs/csi_dip_design_2026-11-22/probe_fingerprint.py (the staging mask step
+#: on data/frozen_mesh_nj2 + setup_face_z.py's arithmetic; the same probe reproduces NJ2W and NJ2W_BED2012 exactly,
+#: probe_nj2w_selfcheck.log). The job that STAGES them (exp1_oldcut.slurm) refuses unless they match. Same counts as
+#: nj2 — the sha is the only tell. A DIAGNOSTIC domain, never a candidate model.
+NJ2W_OLDCUT = DomainFingerprint(5181372, 4367, "8a3272c867dfe778")
+NJ2W_OLDCUT_BED2012 = DomainFingerprint(5181372, 4367, "40aa415fc26c5140")
 
 EXPECTED: dict[str, DomainFingerprint] = {
     "v1_monmouth": V1_MONMOUTH,
@@ -282,6 +290,8 @@ EXPECTED: dict[str, DomainFingerprint] = {
     "nj2w": NJ2W,
     "nj2w_bed2012": NJ2W_BED2012,
     "nj2w_bed2026": NJ2W_BED2026,
+    "nj2w_oldcut": NJ2W_OLDCUT,
+    "nj2w_oldcut_bed2012": NJ2W_OLDCUT_BED2012,
 }
 
 KNOWN = {
@@ -350,6 +360,14 @@ KNOWN = {
     NJ2W_BED2026: (
         "nj2w_bed2026 STAGED 2026-11-18 — Model 2.0.0, 2026 bed (estimated), walled: nj2w with "
         "face z from the 2026 bed (_subgrid_nj2_2026)"
+    ),
+    NJ2W_OLDCUT: (
+        "nj2w_oldcut (2026-11-22, DIAGNOSTIC) — nj2w's mesh with Model 1.1.0's ring and forced "
+        "Narrows / KvK-east lines; face z = the coarse 25 m bed"
+    ),
+    NJ2W_OLDCUT_BED2012: (
+        "nj2w_oldcut_bed2012 (2026-11-22, DIAGNOSTIC) — nj2w_oldcut with face z from the 2012 "
+        "bed (_subgrid_nj2_2012)"
     ),
     V4_HOT_PLUS: "v4_hot_plus RE-STAGED 2026-10-05, RETIRED 2026-10-15 (records in _retired/)"
     " (Maurice cut on the Union Lake dam crest)"

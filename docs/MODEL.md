@@ -197,6 +197,11 @@ Mark residuals here are model − observed, **median estimator, 50 m radius**; `
   buildings (NJ only) and no waves (SnapWave off over the Upper Bay / Hudson / East River, and Newark Bay as before).
   FEMA's MOTF layer is NJ-only, so the NY extent is judged by the 31 marks in `upper_bay_ny` / `upper_bay_islands` /
   `east_river` and `hudson_nj` alone. Out: the Hudson above 40.860 N, the East River above Hell Gate.
+- **The Hell Gate forcing is high at Sandy's peak (2.0.0).** NACCS at the East River cut peaks 3.60 m against 3.44 at the
+  Battery and 3.32 at mark 6386 just inside the cut (low by ~0.1 m before the storm). The East River marks follow it
+  (bias +0.106, rising toward the cut); a −0.25 m test arm takes that to +0.022 and moves the rest of the harbour and
+  Raritan Bay down ~3 cm, headline unchanged (FINDINGS part 4 (p)). Not corrected: an offset fitted to Sandy is
+  tuning. Read East River / upper harbour peaks as ~0.1–0.25 m high. Fix planned for 2.1.
 - **MOTF agreement a little below 1.1.0 (2.0.0).** CSI 0.795 vs 0.803 (rain on); like for like 0.797 vs 0.803, rain off
   0.813 vs 0.822; FAR flat, the loss is POD. ~60 % of the net new misses are the Hackensack Meadowlands and Newark Bay,
   where the bed and structures are unchanged and the peak is ~0.15 m lower (likely the computed harbour replacing

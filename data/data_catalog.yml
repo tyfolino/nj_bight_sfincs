@@ -2633,3 +2633,20 @@ manning_developed_2025_v4:
       classes 22-24 inside NJ (cb_2023 STATEFP 34) -> 0.04, NaN elsewhere; nlcd_2025_v4's grid. Paint with
       --manning-overlay manning_developed_2025_v4 --manning-overlay manning_water_v4 --manning-overlay
       manning_channel_v4e. logs/modern_round_c_2026-11-12/build_manning_2025.py. md5 7e242caa761feecaa2c04137f017304f
+seawall_notch_fix_2012:
+  data_type: RasterDataset
+  uri: elevation_nj2/v2/seawall/seawall_notch_fix_2012.vrt
+  driver:
+    name: rasterio
+    options: {}
+  metadata:
+    category: topography
+    crs: 32618
+    unit: m+NAVD88
+    source: >-
+      2.0 BED, 2012 VERSION (2.0.x candidate, user 2026-11-22). Seawall / dune NOTCHES where the USACE 2010 topobathy
+      tier dives to ~0 m at its NoData edge on the dune line, refilled RAISE-ONLY: in the ridge zone, where merged <
+      CUDEM - 0.5 m, value = min(CUDEM 1/9", the median 2012-bed crest of the intact transects within 300 m either side
+      = the 2010 tier's own pre-Sandy crest). 22 stretches (Edgewater Beach club frontage excluded: a real gap), 1.5 m
+      UTM18N tiles, NaN = no paint. Paint as a plain overlay LAST (every value is above the bed = raise-only).
+      logs/seawall_fix_2026-11-22/build_overlay.py + README.md. vrt md5 30f9394034b54ed274c744c379b2e50a

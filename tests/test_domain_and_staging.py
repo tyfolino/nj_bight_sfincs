@@ -543,6 +543,10 @@ class TestWaterlevelSupportOverride(_DomainEnv):
             # Model 2.0.0, 2026 bed (11-18): nj2w with face z from the 2026 bed — same
             # mask and line, so the same three.
             "nj2w_bed2026": 3,
+            # nj2w's mesh with 1.1.0's ring + forced Narrows / KvK-east lines (11-22, the
+            # harbour CSI-dip test): v4's lines, so v4's three. Its arm forces from NACCS 241.
+            "nj2w_oldcut": 3,
+            "nj2w_oldcut_bed2012": 3,
         }
         self.assertEqual(
             set(PINNED),
