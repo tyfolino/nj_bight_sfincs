@@ -457,9 +457,11 @@ KNOWN_LIMITS = {
         "The Delaware Bay and River: the storm's low water is too low upriver, the peak "
         "reads about 0.2 m low at the upriver gauges, and only a few high-water marks there "
         "can check it.",
-        "Several New Jersey back bays read low at the high-water marks (median, 50 m): "
-        "Barnegat Bay about 0.5 m (6 marks), Cape May's back bays about 0.2 m (4 marks); "
-        "the cause is being investigated.",
+        "The southern back bays read low at the high-water marks (median, 50 m): Cape "
+        "May's back bays and Great Egg Harbor about 0.25 m. The model also starts the "
+        "storm about 0.1-0.2 m low at most tide gauges, which may explain much of it; "
+        "the cause is being investigated. (Barnegat Bay's low score comes from Wreck Pond "
+        "and one wave run-up mark, not the bay itself.)",
         "Behind the levees (Elizabeth, Rahway and the Delaware Bayshore dikes) no observation "
         "checks the model: those areas stay dry because the levees are assumed to hold for "
         "the whole storm (no failures).",

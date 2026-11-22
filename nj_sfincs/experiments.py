@@ -1566,8 +1566,41 @@ EXPERIMENTS_BY_DOMAIN["nj2w_bed2012"]["p4-premier+rain-off+struct-cohansey-check
     "v4_refreeze_swz_v11/p4-premier+rain-off+weir-elizabeth-rahway (1.1.0's rain-off twin) on the 1.x mark file.",
     rain=False,
 )
-#: nj2w_bed2026 (registered 2026-11-18): Model 2.0.0's 2026-bed option. No arms yet (deliberately).
-EXPERIMENTS_BY_DOMAIN["nj2w_bed2026"] = {}
+#: The Hell Gate forcing test (2026-11-18; logs/runs_2_0_followup_2026-11-18/README.md): the 2.0 premier with the
+#: NACCS level forced at the `hell_gate` cut lowered by a CONSTANT 0.25 m over the whole series, nothing else.
+#: Motivation: East River marks rise toward the cut (+0.26 m at 0.5 km, ~0 in the Upper Bay) and the forced peak
+#: there (3.58 m) sits above the nearby observed 3.32 / the Battery's 3.44 (logs/audit_2_0_hwm_2026-11-18/README.md
+#: finding 2; the edges memo's "NACCS ~0.2 m high at Hell Gate" 2.1 note). Pair against the premier.
+_NJ2_PREMIER_DIKES = EXPERIMENTS_BY_DOMAIN["nj2w_bed2012"]["p4-premier+struct-cohansey-checkvalve+weir-dikes-levees"]
+EXPERIMENTS_BY_DOMAIN["nj2w_bed2012"]["p4-premier+struct-cohansey-checkvalve+tide-hellgate-m025+weir-dikes-levees"] = (
+    replace(
+        _NJ2_PREMIER_DIKES,
+        name="p4-premier+struct-cohansey-checkvalve+tide-hellgate-m025+weir-dikes-levees",
+        description="The Model 2.0 premier (nj2w_bed2012, dike set + Cohansey check valve) with the water level forced "
+        "at the `hell_gate` cut lowered by a constant 0.25 m (whole series; the support points the engine reads for "
+        "that arm's cells only, Experiment.boundary_arm_offsets), nothing else changed (2026-11-18). Tests the audit's "
+        "East River tilt (+0.26 m at the cut; logs/audit_2_0_hwm_2026-11-18/README.md finding 2). Pair: the premier "
+        "(paired_hwm_bootstrap --by-basin: east_river / hudson_nj / upper_bay).",
+        boundary_arm_offsets=(("hell_gate", -0.25),),
+    )
+)
+#: nj2w_bed2026 (registered 2026-11-18): Model 2.0.0's 2026-bed option. ONE arm: the 2.0 premier's recipe, same
+#: name (CLAUDE.md §6: from 2.0 a version names a mesh; "2.0.0, 2026 bed" = this domain + this arm). Only the bed
+#: changes: subgrid_from = _subgrid_nj2_2026 (the domain's face z is already its mean ground, and its template
+#: carries the NLCD 2025 curve numbers as `scs`, which cnb reads). Same weir file + Cohansey drn, and the 2012-bed
+#: wavemaker line (user 11-16: the 2026 bed SHARES it). Scores on this bed are informative only: Sandy happened on
+#: the 2012 bed.
+EXPERIMENTS_BY_DOMAIN["nj2w_bed2026"] = {
+    "p4-premier+struct-cohansey-checkvalve+weir-dikes-levees": replace(
+        _NJ2_PREMIER_DIKES,
+        description="MODEL 2.0.0, 2026 BED (estimated): the 2.0 premier's recipe (nj2w_bed2012 / p4-premier+struct-"
+        "cohansey-checkvalve+weir-dikes-levees: waves + the 2012-bed wavemaker line, NACCS-blend wind, rain + cnb 1.5, "
+        "61 rivers, dike set + Cohansey check valve) on the 2026 bed _subgrid_nj2_2026, with the template's NLCD 2025 "
+        "curve numbers. Sandy's forcing on today's ground: HWM / MOTF scores are informative only. Pair with the "
+        "2012-bed premier for 'Sandy today' minus 'Sandy then' (bed + land cover).",
+        subgrid_from="_subgrid_nj2_2026",
+    ),
+}
 
 
 def experiments(domain_name: str | None = None) -> dict[str, Experiment]:

@@ -1111,6 +1111,21 @@ cn_v4:
       90 tiles of 0.25 deg, 229,256 map-unit polygons), v4 bbox; water CN 100.
       scripts/build_cn_nj.py
 
+cn_2025_v4:
+  data_type: RasterDataset
+  uri: /scratch/tpj8/nj_bight_sfincs_data/modern_2026/derived/round_c/cn_2025_v4.nc
+  driver:
+    name: raster_xarray
+    options: {}
+  metadata:
+    category: infiltration
+    crs: 4326
+    source: >-
+      MODERN BED. NRCS CN from NLCD 2025 C1V2 (nlcd_2025_v4) x SSURGO HSG (SDA fetched 2026-11-12, 229,527 map-unit
+      polygons), v4 bbox, water CN 100; scripts/build_cn_nj.py unchanged via logs/modern_round_c_2026-11-12/build_cn_2025.py.
+      cn_v4's grid. ksat stays ksat_v4_refreeze (soil only). Into a template's sfincs.nc `scs` by
+      scripts/set_template_cn.py (nj2w_bed2026, 2026-11-18).
+
 usgs_sandy_discharge_v4:
   data_type: GeoDataset
   uri: discharge_v4/usgs_sandy_discharge_v4.nc

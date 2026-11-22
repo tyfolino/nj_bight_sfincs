@@ -3645,8 +3645,11 @@ NJ2W_BED2012 = replace(
 #: ground (63997883's build, cp -al into nj2w with sfincs.nc relinked to nj2w's template; then
 #: scripts/setup_face_z.py --from nj2w; logs/nj2_freeze_2026-11-14/j3_walls/setup_face_z_nj2w_bed2026.log).
 #: cn_dataset = the NLCD 2025 curve number (logs/modern_round_c_2026-11-12/). ⚠️ The CN a run uses is the
-#: ``scs`` variable INSIDE the template's sfincs.nc (written by create_cn at the nj2 template build, from
-#: cn_v4), which setup_face_z carries over: this field alone does not change a staged run's soil.
+#: ``scs`` variable INSIDE the template's sfincs.nc (create_cn at the nj2 template build, from cn_v4), which
+#: setup_face_z carries over: this field alone does not change a staged run's soil. DONE 2026-11-18:
+#: scripts/set_template_cn.py --check-from cn_v4 --cn cn_2025_v4 (job 64022176; cn_v4 reproduced the stored
+#: scs bit for bit; 134,817 of 4,300,646 active faces changed; template cn_rewrite.json). 🔴 RE-RUN it after
+#: any re-stage of this template (setup_face_z / setup_boundary_depth copy the 2012 scs back).
 NJ2W_BED2026 = replace(
     NJ2W,
     name="nj2w_bed2026",

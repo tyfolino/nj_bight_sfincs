@@ -328,6 +328,37 @@ class TestNJ2W(unittest.TestCase):
         ]
         self.assertEqual(_changed(b_off, b, ("name", "description")), {"rain"})
 
+    def test_followup_arms(self):
+        """11-18: the Hell Gate test = the premier + a −0.25 m offset on the hell_gate arm; the 2026-bed premier =
+        the same recipe, same name, on _subgrid_nj2_2026 (same weirs, drn and 2012-bed wavemaker line)."""
+        from nj_sfincs.experiments import EXPERIMENTS_BY_DOMAIN
+
+        name = "p4-premier+struct-cohansey-checkvalve+weir-dikes-levees"
+        prem = EXPERIMENTS_BY_DOMAIN["nj2w_bed2012"][name]
+        self.assertEqual(prem.boundary_arm_offsets, ())
+        hg = EXPERIMENTS_BY_DOMAIN["nj2w_bed2012"][
+            "p4-premier+struct-cohansey-checkvalve+tide-hellgate-m025+weir-dikes-levees"
+        ]
+        self.assertEqual(
+            _changed(hg, prem, ("name", "description")), {"boundary_arm_offsets"}
+        )
+        self.assertEqual(hg.boundary_arm_offsets, (("hell_gate", -0.25),))
+        self.assertIn(
+            "hell_gate",
+            {a.name for a in domain.DOMAINS["nj2w_bed2012"].boundary_arms},
+        )
+        parts = hg.name.split("+")
+        self.assertEqual(
+            parts[1:], sorted(parts[1:])
+        )  # §6: deltas in alphabetical order
+        self.assertEqual(set(EXPERIMENTS_BY_DOMAIN["nj2w_bed2026"]), {name})
+        b26 = EXPERIMENTS_BY_DOMAIN["nj2w_bed2026"][name]
+        self.assertEqual(_changed(b26, prem, ("name", "description")), {"subgrid_from"})
+        self.assertEqual(b26.subgrid_from, "_subgrid_nj2_2026")
+        self.assertEqual(
+            b26.waves, prem.waves
+        )  # the 2012-bed wavemaker line (user 11-16)
+
 
 if __name__ == "__main__":
     unittest.main()

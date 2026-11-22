@@ -822,11 +822,26 @@ HWM_MARK_NOTES: dict[str, tuple[str, str]] = {
 }
 
 
-def noted_keys(hwm, resid_s, head_s, wet) -> dict:
-    """The headline ``*_scored`` keys again WITHOUT the ``HWM_MARK_NOTES`` marks — beside
-    the headline, never instead of it (the lake flag's pattern)."""
+def mark_note_kinds(hwm) -> np.ndarray:
+    """Each mark's note kind ("" = none): ``HWM_MARK_NOTES`` first, then the mark file's own
+    ``note_kind`` column where it has one (the nj2 file carries 10 notes, 2 of them, 6415 and
+    6081, not in ``HWM_MARK_NOTES``; the 2.0 audit, 2026-11-18)."""
     ids = hwm["hwm_id"].astype(str).to_numpy()
-    noted = np.isin(ids, list(HWM_MARK_NOTES))
+    kind = np.array([HWM_MARK_NOTES.get(i, ("", ""))[0] for i in ids], dtype=object)
+    if "note_kind" in hwm.columns:
+        col = hwm["note_kind"].to_numpy()
+        for k, v in enumerate(col):
+            if not kind[k] and isinstance(v, str) and v.strip():
+                kind[k] = v.strip()
+    return kind.astype(str)
+
+
+def noted_keys(hwm, resid_s, head_s, wet) -> dict:
+    """The headline ``*_scored`` keys again WITHOUT the noted marks (``mark_note_kinds``:
+    ``HWM_MARK_NOTES`` + the mark file's ``note_kind``) — beside the headline, never instead
+    of it (the lake flag's pattern)."""
+    ids = hwm["hwm_id"].astype(str).to_numpy()
+    noted = mark_note_kinds(hwm) != ""
     keep = head_s & ~noted
     rk = resid_s[keep]
     return {

@@ -404,6 +404,15 @@ class Experiment:
     #: (``provenance.sea_level_offset_label``), never this number.
     sea_level_offset_m: float | None = None
 
+    #: ``tide-*`` ARMS (2026-11-18, the Hell Gate forcing test). ``((arm, metres), ...)``: a CONSTANT added to
+    #: the whole water-level series of the support points that force each named ``Domain.boundary_arms`` arm,
+    #: on the staged copy before ``sf.write()`` (``model.apply_boundary_arm_offsets``). The points are picked by
+    #: the ENGINE's rule (each ``mask==2`` cell reads its two nearest support points), and staging REFUSES when
+    #: a picked point also forces another arm's cells, so the offset stays on that arm. Unlike
+    #: ``sea_level_offset_m`` the start is NOT changed (the template's). Recorded in the staged
+    #: ``boundary_arm_offsets.json`` + ``provenance.txt``. ``()`` = the forcing file as built.
+    boundary_arm_offsets: tuple[tuple[str, float], ...] = ()
+
     #: ``src-*`` ARMS ONLY (2026-10-17). A GeoDataset NetCDF of EXTRA point sources
     #: (``discharge(time, index)`` m3/s; ``lon``/``lat`` or model-CRS ``x``/``y``; optional
     #: ``name``) APPENDED to the staged ``netsrcdisfile`` after the write

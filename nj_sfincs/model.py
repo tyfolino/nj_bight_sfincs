@@ -1304,6 +1304,144 @@ def check_waterlevel_support(sf: SfincsModel, expect: int | None = None) -> int:
     return got
 
 
+def boundary_arm_support_points(cell_x, cell_y, cell_arm, pt_x, pt_y, arm: str):
+    """Support points that force the ``mask==2`` cells of ONE boundary arm, by the ENGINE's rule.
+
+    SFINCS forces each water-level boundary cell from its TWO nearest support points
+    (``sfincs_boundaries.f90``: ``ind1/ind2_bnd_gbp``, plain Euclidean distance in the
+    model CRS), so "the arm's points" = every point that is first or second nearest to a
+    cell of that arm. Refuses (``SystemExit``) when the arm has no cells, or when one of
+    those points also forces a cell of another arm: an offset on it would leak into that
+    arm, and the experiment would no longer be the one its name says.
+
+    ``cell_arm`` holds each cell's arm name (``""`` for none). Returns sorted indices.
+    """
+    cell_x, cell_y = np.asarray(cell_x, float), np.asarray(cell_y, float)
+    cell_arm = np.asarray(cell_arm, object)
+    pt_x, pt_y = np.asarray(pt_x, float), np.asarray(pt_y, float)
+    if pt_x.size < 2:
+        raise SystemExit("boundary arm offset: needs >= 2 support points")
+    d = np.hypot(cell_x[:, None] - pt_x[None, :], cell_y[:, None] - pt_y[None, :])
+    two = np.argsort(d, axis=1, kind="stable")[:, :2]
+    on = cell_arm == arm
+    if not on.any():
+        raise SystemExit(f"boundary arm offset: arm '{arm}' has no water-level cells")
+    mine = np.unique(two[on])
+    others = np.unique(two[~on])
+    shared = np.intersect1d(mine, others)
+    if shared.size:
+        users = sorted(
+            {str(a) for a in cell_arm[~on][np.isin(two[~on], shared).any(1)]}
+        )
+        raise SystemExit(
+            f"boundary arm offset: support point(s) {shared.tolist()} force '{arm}' AND "
+            f"{users}: an offset would leak across arms"
+        )
+    return mine
+
+
+def apply_boundary_arm_offsets(sf: SfincsModel, offsets) -> list[dict]:
+    """``Experiment.boundary_arm_offsets``: add a constant (m, whole series) to the support
+    points that force each named arm, IN MEMORY on the staged copy (written by
+    ``finalize``'s ``sf.write()``). Points are chosen by the engine's two-nearest rule on
+    the arm's own ``mask==2`` cells (:func:`boundary_arm_support_points`). Returns one
+    record per arm for :func:`record_boundary_arm_offsets`."""
+    if not offsets:
+        return []
+    wl = sf.water_level.data
+    if wl is None or "bzs" not in wl:
+        raise SystemExit(
+            "boundary_arm_offsets set but the staged model carries no water level"
+        )
+    wl.load()
+    da = wl["bzs"]
+    pdim = [d for d in da.dims if d != "time"]
+    if len(pdim) != 1:
+        raise SystemExit(f"boundary_arm_offsets: unexpected bzs dims {da.dims}")
+    pdim = pdim[0]
+    if "geometry" in wl.coords:  # hydromt GeoDataset (the staged in-memory form)
+        crs = getattr(getattr(wl, "vector", None), "crs", None)
+        mcrs = getattr(sf, "crs", None)
+        if crs is not None and mcrs is not None and not crs.equals(mcrs):
+            raise SystemExit(
+                f"boundary_arm_offsets: support points in {crs}, model in {mcrs}"
+            )
+        geom = np.atleast_1d(wl["geometry"].values)
+        px, py = shapely.get_x(geom), shapely.get_y(geom)
+    elif "x" in wl.coords and "y" in wl.coords:
+        px, py = np.atleast_1d(wl["x"].values), np.atleast_1d(wl["y"].values)
+    else:
+        raise SystemExit(
+            f"boundary_arm_offsets: support points carry no geometry / x / y ({list(wl.coords)})"
+        )
+    arms = {
+        a.name: a for a in _domain.active().boundary_arms if a.btype == "waterlevel"
+    }
+    mask = np.asarray(sf.quadtree_grid.data["mask"].values)
+    fx, fy = _face_xy(sf)
+    b = np.flatnonzero(mask == 2)
+    cx, cy = fx[b], fy[b]
+    cell_arm = np.full(b.size, "", object)
+    for a in arms.values():
+        cell_arm[a.contains(cx, cy)] = a.name
+    names = [n for n, _ in offsets]
+    if len(set(names)) != len(names):
+        raise SystemExit(f"boundary_arm_offsets: an arm is named twice ({names})")
+    records = []
+    add = np.zeros(px.size)
+    for name, off in offsets:
+        if name not in arms:
+            raise SystemExit(
+                f"boundary_arm_offsets: '{name}' is not a water-level arm of domain "
+                f"'{_domain.active().name}' ({sorted(arms)})"
+            )
+        pts = boundary_arm_support_points(cx, cy, cell_arm, px, py, name)
+        add[pts] += float(off)
+        before = float(da.isel({pdim: pts}).mean())
+        records.append(
+            {
+                "arm": name,
+                "offset_m": float(off),
+                "cells": int((cell_arm == name).sum()),
+                "points": [int(p) for p in pts],
+                "points_xy": [
+                    [round(float(px[p]), 1), round(float(py[p]), 1)] for p in pts
+                ],
+                "mean_before_m": round(before, 4),
+            }
+        )
+    wl["bzs"] = da + xr.DataArray(add, dims=(pdim,), coords={pdim: da[pdim]})
+    for r in records:
+        r["mean_after_m"] = round(float(wl["bzs"].isel({pdim: r["points"]}).mean()), 4)
+        print(
+            f"[bnd] arm '{r['arm']}' {r['offset_m']:+.3f} m on support point(s) {r['points']} "
+            f"({r['cells']} cells; mean {r['mean_before_m']:+.3f} -> {r['mean_after_m']:+.3f})",
+            flush=True,
+        )
+    return records
+
+
+def record_boundary_arm_offsets(model_dir: Path, records: list[dict]) -> None:
+    """Sidecar ``boundary_arm_offsets.json`` + one ``provenance.txt`` line (after finalize)."""
+    if not records:
+        return
+    import json
+
+    model_dir = Path(model_dir)
+    (model_dir / "boundary_arm_offsets.json").write_text(
+        json.dumps(records, indent=1) + "\n"
+    )
+    line = "boundary_arm_offsets = " + "; ".join(
+        f"{r['arm']} {r['offset_m']:+.3f} m on pts {r['points']}" for r in records
+    )
+    prov = model_dir / "provenance.txt"
+    text = prov.read_text() if prov.exists() else ""
+    prov.unlink(missing_ok=True)
+    prov.write_text(
+        text + ("" if text.endswith("\n") or not text else "\n") + line + "\n"
+    )
+
+
 #: Restart-file cadence AND zsmax block length (s). One lattice: the stitch keeps whole
 #: zsmax blocks only, so ``dtmaxout`` must divide ``dtrstout`` (nj_sfincs/restart.py).
 #: 🔴 Set on EVERY staged arm by :func:`restore_diagnostics`, not only at template

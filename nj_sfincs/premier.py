@@ -88,6 +88,8 @@ PREMIER_ARMS = {
     "v4_refreeze_swz_v11": "p4-premier+weir-elizabeth-rahway",
     # MODEL 2.0.0, 2012 bed (2026-11-18): job 64003605; rain-off twin 64003606.
     "nj2w_bed2012": "p4-premier+struct-cohansey-checkvalve+weir-dikes-levees",
+    # MODEL 2.0.0, 2026 bed (estimated): the same recipe on the 2026 bed (registered 2026-11-18, not yet run).
+    "nj2w_bed2026": "p4-premier+struct-cohansey-checkvalve+weir-dikes-levees",
 }
 
 

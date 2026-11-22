@@ -264,6 +264,9 @@ def prepare_experiment(name: str, base: BaseConfig) -> Path:
         # symptom. An arm whose whole point IS a different node count declares it on the
         # Experiment; everything else still gets the domain invariant.
         model.check_waterlevel_support(sf, expect=exp.n_waterlevel_support)
+    # ``Experiment.boundary_arm_offsets`` (tide-* arms, 2026-11-18): a constant on the support points that force
+    # one named boundary arm, in memory, after any forcing swap and before finalize writes it.
+    bnd_offsets = model.apply_boundary_arm_offsets(sf, exp.boundary_arm_offsets)
     sw = model.add_waves(exp.waves, base, sf) if exp.waves.use_waves else None
     model.finalize(
         exp.waves,
@@ -284,6 +287,7 @@ def prepare_experiment(name: str, base: BaseConfig) -> Path:
     # flux cross-sections — which on a relocated-boundary domain are the headline result,
     # not a diagnostic.
     model.restore_diagnostics(exp_dir)
+    model.record_boundary_arm_offsets(exp_dir, bnd_offsets)
     # ``Experiment.drn_from`` (struct-* arms, 2026-11-12): drainage structures (culverts) on the written inp.
     if exp.drn_from is not None:
         model.apply_drainage(exp_dir, exp.drn_from)

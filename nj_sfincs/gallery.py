@@ -1439,9 +1439,9 @@ def fig_hwm(c: _Ctx) -> tuple[dict, dict]:
     )
     ids = hwm["hwm_id"].astype(str).values
     lake = np.isin(ids, list(lake_ids)) if lake_ids else np.zeros(n, bool)
-    from .validate.metrics import HWM_MARK_NOTES
+    from .validate.metrics import mark_note_kinds
 
-    kind = np.array([HWM_MARK_NOTES.get(i, ("", ""))[0] for i in ids])
+    kind = mark_note_kinds(hwm)
     qn, ru, lk = kind == "questioned", kind == "runup", kind == "leak"
     noted = qn | ru | lk
     keepn = ~noted
