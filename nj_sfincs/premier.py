@@ -734,6 +734,11 @@ def output_complete(model_dir: Path | str) -> tuple[bool | None, list[str]]:
     span = (datetime.strptime(t1, fmt) - datetime.strptime(t0, fmt)).total_seconds()
     if span <= 0:
         return None, []
+    # SFINCS writes output times in seconds since TREF, not since tstart. They agree only
+    # when tref == tstart; a spin-up arm (tstart > tref) ends at `tstop - tref`. A missing
+    # tref means tref = tstart.
+    tref = _inp(model_dir, "tref") or t0
+    end = (datetime.strptime(t1, fmt) - datetime.strptime(tref, fmt)).total_seconds()
 
     problems: list[str] = []
     seen = False
@@ -751,10 +756,10 @@ def output_complete(model_dir: Path | str) -> tuple[bool | None, list[str]]:
                 problems.append(f"{fn}: no time axis")
                 continue
             last = float(np.asarray(ds["time"].values).ravel()[-1])
-            if last < span - step / 2:
+            if last < end - step / 2:
                 problems.append(
-                    f"{fn}: ends at {last / 3600:.1f} h of {span / 3600:.1f} h "
-                    f"({100 * last / span:.0f}%)"
+                    f"{fn}: ends at {last / 3600:.1f} h of {end / 3600:.1f} h "
+                    f"since tref ({100 * last / end:.0f}%)"
                 )
             if fn == "sfincs_map.nc" and "zsmax" in ds.variables:
                 z = np.asarray(ds["zsmax"].values, dtype="float64")

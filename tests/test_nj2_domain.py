@@ -417,6 +417,27 @@ class TestNJ2W(unittest.TestCase):
             crest = [float(r[2]) for r in rows]
             self.assertTrue(3.0 < min(crest) and max(crest) < 9.0, (min(crest), max(crest)))
 
+    def test_seabright_weir_checks(self):
+        """11-24: the two adoption checks = the rain-on waves-off twin and the rain-on 2.0 premier, each + the SAME
+        seawall weir file as the rain-off arm, nothing else."""
+        from nj_sfincs.experiments import EXPERIMENTS_BY_DOMAIN
+
+        arms = EXPERIMENTS_BY_DOMAIN["nj2w_bed2012"]
+        ref = arms["p4-premier+rain-off+struct-cohansey-checkvalve+weir-dikes-levees+weir-seabright"]
+        for twin_name in (
+            "p4-nowaves+struct-cohansey-checkvalve+weir-dikes-levees",
+            "p4-premier+struct-cohansey-checkvalve+weir-dikes-levees",
+        ):
+            twin, arm = arms[twin_name], arms[twin_name + "+weir-seabright"]
+            self.assertEqual(_changed(arm, twin, ("name", "description")), {"weir_from"})
+            self.assertEqual(arm.weir_from, ref.weir_from)
+            self.assertEqual(arm.name, twin_name + "+weir-seabright")
+            parts = arm.name.split("+")
+            self.assertEqual(parts[1:], sorted(parts[1:]))
+            self.assertEqual(arm.rain, twin.rain)
+            self.assertTrue(arm.rain)
+        self.assertFalse(arms["p4-nowaves+struct-cohansey-checkvalve+weir-dikes-levees+weir-seabright"].waves.use_waves)
+
     def test_slr_arms_2026_bed(self):
         """11-22: 1.1.0's eight normal-weather SLR arms re-issued on nj2w_bed2026 (logs/slr_2_0_2026-11-22/). Each
         is the 2026-bed premier made calm with the normal-weather weir; the tide arms differ from the +0 ft arm ONLY
@@ -491,7 +512,8 @@ class TestNJ2W(unittest.TestCase):
         slr = arms["tide-0ft-msl2026+weir-normalweather"]
         a = arms["tide-0ft-msl2026-spring6d+weir-normalweather"]
         b = arms["tide-0ft-msl2026-noaacuts-spring6d+weir-normalweather"]
-        self.assertEqual({k for k in arms if "-spring6d" in k}, {a.name, b.name})
+        # the A/B pair only: the 11-23 Hackensack bed variants (bed-hack1915*) reuse A's window on purpose
+        self.assertEqual({k for k in arms if "-spring6d" in k and not k.startswith("bed-")}, {a.name, b.name})
         for e in (a, b):
             self.assertEqual(e.name.split("+"), sorted(e.name.split("+")))  # §6
             self.assertEqual(_changed(e, slr, ("name", "description")), {"calm"})

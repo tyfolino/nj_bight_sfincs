@@ -79,6 +79,9 @@ KEEP_FILES = {
     "extra_discharge.json",  # an arm's added point sources (model.append_extra_discharge)
     "sfincs.drn",  # drainage structures: culverts / check valves (an input, bytes)
     ".j3_staged",  # empty marker the J3 gate staging leaves (nj2_bed2012 slr-* arms, 11-16)
+    "boundary_arm_offsets.json",  # a tide-* arm's per-arm boundary offsets (record, bytes)
+    "cn_rewrite.json",  # a spin-lead arm's curve-number re-window record (bytes)
+    "cold_start.json",  # a spin-lead arm's cold-start record (bytes)
 }
 KEEP_GLOBS = (
     "provenance*.txt",

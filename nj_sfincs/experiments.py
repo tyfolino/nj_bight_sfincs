@@ -1629,6 +1629,22 @@ EXPERIMENTS_BY_DOMAIN["nj2w_bed2012"]["p4-premier+rain-off+struct-cohansey-check
         weir_from=_NJ2_WEIR_DIKES_SEABRIGHT,
     )
 )
+#: The two checks before adopting the seawall weir (user 2026-11-24, "two checks, then adopt"; club gap OPEN;
+#: logs/seabright_fable_2026-11-23/README.md "Checks (11-24)"): the same weir file on (1) the rain-on WAVES-OFF twin
+#: (well-conditioned, so a real wall effect separates from the waves-on noise) and (2) the rain-on 2.0 PREMIER (what
+#: would ship). Each differs from its pair in weir_from only.
+for _sb_twin in (
+    "p4-nowaves+struct-cohansey-checkvalve+weir-dikes-levees",
+    "p4-premier+struct-cohansey-checkvalve+weir-dikes-levees",
+):
+    EXPERIMENTS_BY_DOMAIN["nj2w_bed2012"][_sb_twin + "+weir-seabright"] = replace(
+        EXPERIMENTS_BY_DOMAIN["nj2w_bed2012"][_sb_twin],
+        name=_sb_twin + "+weir-seabright",
+        description=f"{_sb_twin} (nj2w_bed2012) + the Sea Bright - Monmouth Beach seawall as a weir line with 2012-bed "
+        f"crests, club gap open (2026-11-24 adoption check). Pair: {_sb_twin}.",
+        weir_from=_NJ2_WEIR_DIKES_SEABRIGHT,
+    )
+del _sb_twin
 #: nj2w_bed2026 (registered 2026-11-18): Model 2.0.0's 2026-bed option. ONE arm: the 2.0 premier's recipe, same
 #: name (CLAUDE.md §6: from 2.0 a version names a mesh; "2.0.0, 2026 bed" = this domain + this arm). Only the bed
 #: changes: subgrid_from = _subgrid_nj2_2026 (the domain's face z is already its mean ground, and its template
@@ -1857,5 +1873,33 @@ for _tag, _path, _what in (
         "(10-12 00:00 -> 10-18 12:00, read from 10-14 00:00), zs + zsmax hourly; boundary = "
         + _what,
         _nj2_noaacuts_ab(_path),
+    )
+    EXPERIMENTS_BY_DOMAIN["nj2w_bed2026"][_a.name] = _a
+
+
+# ── 2026-11-23 (user): the Hackensack 1915 channel fix — two bed variants on the 2026 bed, the TIDE chooses ─────────
+# Above lat 40.751 the Hackensack bed is chart soundings painted bank to bank (riverbed_hackensack_charted_v4); from
+# the Turnpike W spur to Route 3 it stands 1.2-1.5 m below MLLW and the model loses ~28 % of the tidal range there,
+# where NOAA's stations show it growing (logs/hackensack_fable_2026-11-23/README.md). The two subgrids below are
+# _subgrid_nj2_2026's own recipe + ONE lower-only overlay painted last (NOS H03725, 1915, lat 40.761-40.799):
+#   _subgrid_nj2_2026_hack1915     the survey's own sections (0.76 km2, median -2.9 m)
+#   _subgrid_nj2_2026_hack1915cap  the same, no deeper than -4.40 m NAVD88 (11 ft MLLW, the 1971 controlling depth)
+# (build: logs/hackensack_fable_2026-11-23/build/, job 64274998). Each arm is the NOAA-cuts A arm
+# (tide-0ft-msl2026-spring6d+weir-normalweather: EC2015 at all 244 points, 10-12 00:00 -> 10-18 12:00, zs + zsmax
+# hourly) with ONLY subgrid_from changed, so it pairs directly against that run. Read against NOAA's range ratios at
+# the Amtrak bridge, Carlstadt and Hackensack: logs/hackensack_fable_2026-11-23/tide/PREREG_tide.md.
+# ADDITIVE: no existing arm changes.
+_NJ2_HACK_A = EXPERIMENTS_BY_DOMAIN["nj2w_bed2026"]["tide-0ft-msl2026-spring6d+weir-normalweather"]
+for _tag, _what in (
+    ("hack1915", "NOS H03725 (1915) channel sections"),
+    ("hack1915cap", "NOS H03725 (1915) channel sections capped at -4.40 m NAVD88 (11 ft MLLW, 1971)"),
+):
+    _a = replace(
+        _NJ2_HACK_A,
+        name=f"bed-{_tag}+tide-0ft-msl2026-spring6d+weir-normalweather",
+        description=f"HACKENSACK CHANNEL TEST (2026-11-23): the NOAA-cuts A arm with subgrid_from = "
+        f"_subgrid_nj2_2026_{_tag} (the 2026 bed + {_what}, lower-only, lat 40.761-40.799). Everything else is "
+        "tide-0ft-msl2026-spring6d+weir-normalweather's; pair: that arm.",
+        subgrid_from=f"_subgrid_nj2_2026_{_tag}",
     )
     EXPERIMENTS_BY_DOMAIN["nj2w_bed2026"][_a.name] = _a

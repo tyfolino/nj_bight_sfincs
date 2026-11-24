@@ -14,6 +14,7 @@ means, above the **1995–2014 mean ("2005")**. Atlantic City is the representat
 | 2100 central, intermediate (SSP2-4.5) | 0.88 | 0.939 | **+0.939 m** | `p094_stap2100` |
 
 Uniform offset, like p061 / p122 (the other stations' central values differ by ≤ ~0.03 m; NTDE→STAP offsets 0.052–0.070 m).
+  ⚠️ **Corrected 11-24** (`logs/slr_spatial_2026-11-24/README.md`): STAP 2025 App. B shows the Battery and Philadelphia **0.06 m (2050) and 0.09 m (2100) below Atlantic City**, not ≤ 0.03; the open coast is within ~0.025 m. Uniform AC offsets put harbour / upper-Delaware assets ~6–10 yr early.
 Files: `make_tide_stap.py` → `/scratch/tpj8/nj_bight_sfincs_data/modern_2026/derived/tide/sfincs_netbndbzsbzifile_tide_ec2015_{p046_stap2050,p094_stap2100}.nc`
 (checked: zs − p000 = offset everywhere; grid and times identical).
 
