@@ -351,9 +351,15 @@ class TestNJ2W(unittest.TestCase):
         self.assertEqual(
             parts[1:], sorted(parts[1:])
         )  # §6: deltas in alphabetical order
-        # the 11-22 SLR map arms (calm) are tested in test_slr_arms_2026_bed
+        # the 11-22 SLR map arms (calm) are tested in test_slr_arms_2026_bed, the 11-23 spin-up arms (cold_start) in
+        # TestSpinupLead
         self.assertEqual(
-            {k for k, e in EXPERIMENTS_BY_DOMAIN["nj2w_bed2026"].items() if e.calm is None}, {name}
+            {
+                k
+                for k, e in EXPERIMENTS_BY_DOMAIN["nj2w_bed2026"].items()
+                if e.calm is None and e.cold_start is None
+            },
+            {name},
         )
         b26 =EXPERIMENTS_BY_DOMAIN["nj2w_bed2026"][name]
         self.assertEqual(_changed(b26, prem, ("name", "description")), {"subgrid_from"})
@@ -387,6 +393,30 @@ class TestNJ2W(unittest.TestCase):
         parts = sw.name.split("+")
         self.assertEqual(parts, sorted(parts))
 
+    def test_seabright_weir_arm(self):
+        """11-23: the Sea Bright seawall arm = the rain-off twin with the seawall polylines APPENDED to the dike set's
+        weir file, nothing else (logs/seabright_fable_2026-11-23/)."""
+        from nj_sfincs.experiments import EXPERIMENTS_BY_DOMAIN
+
+        arms = EXPERIMENTS_BY_DOMAIN["nj2w_bed2012"]
+        twin = arms["p4-premier+rain-off+struct-cohansey-checkvalve+weir-dikes-levees"]
+        sb = arms["p4-premier+rain-off+struct-cohansey-checkvalve+weir-dikes-levees+weir-seabright"]
+        self.assertEqual(_changed(sb, twin, ("name", "description")), {"weir_from"})
+        parts = sb.name.split("+")
+        self.assertEqual(parts, sorted(parts))
+        if sb.weir_from.is_file() and twin.weir_from.is_file():  # bulk data: absent on a bare checkout
+            base, new = twin.weir_from.read_text(), sb.weir_from.read_text()
+            self.assertTrue(new.startswith(base), "the dike set must be carried byte for byte")
+            extra = new[len(base) :].splitlines()
+            names = [ln for ln in extra if ln and not ln[0].isdigit() and not ln[0] == "-"]
+            self.assertEqual(
+                names, ["seabright_seawall_south_monmouth_beach", "seabright_seawall_north_sea_bright"]
+            )
+            rows = [ln.split() for ln in extra if len(ln.split()) == 4]
+            self.assertEqual(len(rows), 373)
+            crest = [float(r[2]) for r in rows]
+            self.assertTrue(3.0 < min(crest) and max(crest) < 9.0, (min(crest), max(crest)))
+
     def test_slr_arms_2026_bed(self):
         """11-22: 1.1.0's eight normal-weather SLR arms re-issued on nj2w_bed2026 (logs/slr_2_0_2026-11-22/). Each
         is the 2026-bed premier made calm with the normal-weather weir; the tide arms differ from the +0 ft arm ONLY
@@ -398,7 +428,8 @@ class TestNJ2W(unittest.TestCase):
         arms = EXPERIMENTS_BY_DOMAIN["nj2w_bed2026"]
         v11 = EXPERIMENTS_BY_DOMAIN["v4_refreeze_swz_v11"]
         prem = arms["p4-premier+struct-cohansey-checkvalve+weir-dikes-levees"]
-        calm = {k: e for k, e in arms.items() if e.calm is not None}
+        # the 11-23 NOAA-cuts A/B pair (short window) is tested in test_noaacuts_ab_arms
+        calm = {k: e for k, e in arms.items() if e.calm is not None and "-spring6d" not in k}
         # the same set as 1.1.0's normal-weather arms, `bed-modernb+` dropped (this domain IS the 2026 bed)
         want = {
             k.removeprefix("bed-modernb+")
@@ -447,6 +478,139 @@ class TestNJ2W(unittest.TestCase):
         s2, s4 = calm["still-2ft+weir-normalweather"], calm["still-4ft+weir-normalweather"]
         self.assertEqual(_changed(s4, s2, ("name", "description")), {"calm"})
         self.assertEqual(_changed(s4.calm, s2.calm), {"offset_m"})
+
+    def test_noaacuts_ab_arms(self):
+        """11-23: the NOAA-cuts A/B (logs/noaa_cuts_2026-11-23/): two calm arms = tide-0ft-msl2026 on a 6.5-day window
+        with hourly zs / zsmax, differing from each other ONLY in the boundary file; the A arm's file is the SLR
+        arm's own, the B arm's its NOAA-cuts twin."""
+        from pathlib import Path
+
+        from nj_sfincs.experiments import EXPERIMENTS_BY_DOMAIN, NOAACUTS_AB_WINDOW
+
+        arms = EXPERIMENTS_BY_DOMAIN["nj2w_bed2026"]
+        slr = arms["tide-0ft-msl2026+weir-normalweather"]
+        a = arms["tide-0ft-msl2026-spring6d+weir-normalweather"]
+        b = arms["tide-0ft-msl2026-noaacuts-spring6d+weir-normalweather"]
+        self.assertEqual({k for k in arms if "-spring6d" in k}, {a.name, b.name})
+        for e in (a, b):
+            self.assertEqual(e.name.split("+"), sorted(e.name.split("+")))  # §6
+            self.assertEqual(_changed(e, slr, ("name", "description")), {"calm"})
+            self.assertEqual(
+                dataclasses.replace(e.calm, boundary=slr.calm.boundary, tstop=slr.calm.tstop, dtmapout=slr.calm.dtmapout,
+                                    dtmaxout=slr.calm.dtmaxout),
+                slr.calm,
+            )
+            self.assertEqual((e.calm.tstart, e.calm.tstop), NOAACUTS_AB_WINDOW)
+            self.assertEqual((e.calm.dtmapout, e.calm.dtmaxout), (3600.0, 3600.0))
+            self.assertEqual(21600.0 % e.calm.dtmaxout, 0.0)  # dtmaxout must divide dtrstout (CLAUDE.md §4)
+        self.assertEqual(a.calm.boundary, slr.calm.boundary)
+        self.assertEqual(_changed(b, a, ("name", "description")), {"calm"})
+        self.assertEqual(_changed(b.calm, a.calm), {"boundary"})
+        self.assertEqual(Path(b.calm.boundary).parent.name, "nj2_noaacuts")
+        self.assertEqual(
+            Path(b.calm.boundary).name.replace("noaacuts", "ec2015"), Path(a.calm.boundary).name
+        )
+        if not Path(b.calm.boundary).is_file():
+            self.skipTest("scratch tide files not visible here")
+        import numpy as np
+        import xarray as xr
+
+        with xr.open_dataset(a.calm.boundary, decode_times=False) as fa, xr.open_dataset(
+            b.calm.boundary, decode_times=False
+        ) as fb:
+            for v in ("time", "x", "y", "stations"):
+                self.assertTrue(np.array_equal(fa[v].values, fb[v].values), v)
+            same = (fa.zs.values == fb.zs.values).all(axis=0)
+        self.assertEqual(int(same.sum()), 215)  # only the 29 cut points (16 hell_gate + 13 hudson) differ
+
+
+class TestSpinupLead(unittest.TestCase):
+    """11-23: the spin-up lead test (logs/spinup_test_2026-11-23/): five cold starts of the 2026-bed premier with
+    waves off, differing from each other ONLY in ``cold_start.tstart``; ``apply_cold_start`` moves tstart (and
+    dtmaxout) in the written inp and nothing else."""
+
+    INP = (
+        "tref                 = 20121028 000000\n"
+        "tstart               = 20121028 000000\n"
+        "tstop                = 20121031 000000\n"
+        "tspinup              = 3600.0\n"
+        "dtmaxout             = 21600.0\n"
+        "dtrstout             = 21600.0\n"
+        "zsini                = 0.0\n"
+        "inifile              = sfincs_ini_regional.bin\n"
+        "snapwave             = 0\n"
+    )
+
+    def test_arms(self):
+        from datetime import datetime, timedelta
+
+        from nj_sfincs.config import ColdStart
+        from nj_sfincs.experiments import EXPERIMENTS_BY_DOMAIN, SPINUP_LEADS
+
+        arms = EXPERIMENTS_BY_DOMAIN["nj2w_bed2026"]
+        prem = arms["p4-premier+struct-cohansey-checkvalve+weir-dikes-levees"]
+        spin = {k: e for k, e in arms.items() if e.cold_start is not None}
+        self.assertEqual(len(spin), 5)
+        self.assertEqual(sorted(SPINUP_LEADS), [6, 12, 24, 36, 49])
+        peak = datetime(2012, 10, 30, 1)
+        ref = arms["p4-nowaves+spin-lead49h+struct-cohansey-checkvalve+weir-dikes-levees"]
+        self.assertEqual(ref.cold_start, ColdStart("20121028 000000", 3600.0))  # the template's own tstart
+        for lead, t0 in SPINUP_LEADS.items():
+            k = f"p4-nowaves+spin-lead{lead:02d}h+struct-cohansey-checkvalve+weir-dikes-levees"
+            e = spin[k]
+            self.assertEqual(e.name, k)
+            parts = k.split("+")
+            self.assertEqual(parts, sorted(parts))  # §6
+            self.assertEqual(_changed(e, prem, ("name", "description")), {"waves", "cold_start"})
+            self.assertEqual(e.waves.use_waves, False)
+            self.assertTrue(e.rain and e.infiltration)
+            self.assertEqual(datetime.strptime(e.cold_start.tstart, "%Y%m%d %H%M%S"), peak - timedelta(hours=lead))
+            self.assertEqual(e.cold_start.dtmaxout, 3600.0)
+            if e is not ref:
+                self.assertEqual(_changed(e, ref, ("name", "description")), {"cold_start"})
+                self.assertEqual(_changed(e.cold_start, ref.cold_start), {"tstart"})
+        # no other arm carries a cold start, and the field stays out of every repr
+        for d, xs in EXPERIMENTS_BY_DOMAIN.items():
+            for k, e in xs.items():
+                self.assertNotIn("cold_start", repr(e))
+                if d != "nj2w_bed2026" or k not in spin:
+                    self.assertIsNone(e.cold_start, (d, k))
+
+    def test_apply_cold_start(self):
+        import json
+        import tempfile
+        from pathlib import Path
+
+        from nj_sfincs import model
+        from nj_sfincs.config import ColdStart
+
+        with tempfile.TemporaryDirectory() as td:
+            d = Path(td)
+            (d / "sfincs.inp").write_text(self.INP)
+            (d / "provenance.txt").write_text("staged\n")
+            rec = model.apply_cold_start(d, ColdStart("20121029 190000"))
+            before = {k.strip(): v.strip() for k, v in (ln.split("=", 1) for ln in self.INP.splitlines())}
+            after = model._inp_keys(d / "sfincs.inp")
+            self.assertEqual({k for k in after if after[k] != before.get(k)}, {"tstart", "dtmaxout"})
+            self.assertEqual((after["tstart"], after["dtmaxout"]), ("20121029 190000", "3600.0"))
+            self.assertEqual(json.loads((d / model.COLD_START_META).read_text()), rec)
+            self.assertEqual((rec["hours_after_tref"], rec["run_hours"]), (43.0, 29.0))
+            prov = (d / "provenance.txt").read_text()
+            self.assertTrue(prov.startswith("staged\n") and "cold_start = tstart 20121029 190000" in prov)
+            # the template's own tstart is a legal reference
+            (d / "sfincs.inp").write_text(self.INP)
+            model.apply_cold_start(d, ColdStart("20121028 000000"))
+            for bad in (
+                ColdStart("20121027 230000"),  # before tref: no forcing
+                ColdStart("20121031 000000"),  # at tstop
+                ColdStart("20121029 190000", 5000.0),  # does not divide the restart cadence
+            ):
+                (d / "sfincs.inp").write_text(self.INP)
+                with self.assertRaises(SystemExit, msg=repr(bad)):
+                    model.apply_cold_start(d, bad)
+            (d / "sfincs.inp").write_text(self.INP + "rstfile              = sfincs.20121029.000000.rst\n")
+            with self.assertRaises(SystemExit):
+                model.apply_cold_start(d, ColdStart("20121029 190000"))
 
 
 class TestNJ2WOldcut(unittest.TestCase):

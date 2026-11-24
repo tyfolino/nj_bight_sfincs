@@ -31,7 +31,7 @@ from __future__ import annotations
 from dataclasses import replace
 from pathlib import Path
 
-from .config import DATA, CalmForcing, Experiment, WaveConfig
+from .config import DATA, CalmForcing, ColdStart, Experiment, WaveConfig
 from .domain import active
 
 # ── v1_5_raritan ─────────────────────────────────────────────────────────────
@@ -1609,6 +1609,26 @@ EXPERIMENTS_BY_DOMAIN["nj2w_bed2012"]["bed-seawall+p4-premier+rain-off+struct-co
         subgrid_from="_subgrid_nj2_2012_seawall",
     )
 )
+#: The Sea Bright - Monmouth Beach SEAWALL as a weir line (2026-11-23, a 2.0.x structures candidate;
+#: logs/seabright_fable_2026-11-23/README.md): on 25 m faces the 5-8 m wide wall never sets a subgrid sill (uv_zmin =
+#: the higher of the two half-cells' LOWEST pixels), so the flow graph passes the ocean at ~3.3 m where the bed raster
+#: says ~4.4 m. The 2.0 rain-off twin with the dike set + two polylines (40.309-40.395 N, the Edgewater club frontage
+#: left open; crest = the 2012 bed's transect crest, neighbour cap on the 2010-tier notches; no Sandy observation).
+#: Same mesh, bed, subgrid and fingerprint. Pair: the rain-off twin.
+_NJ2_WEIR_DIKES_SEABRIGHT = (
+    DATA / "nj2_design" / "structures" / "sfincs_overpeck_open_elizabeth_rahway_dikes_levees_cohansey_seabright_nj2.weir"
+)
+EXPERIMENTS_BY_DOMAIN["nj2w_bed2012"]["p4-premier+rain-off+struct-cohansey-checkvalve+weir-dikes-levees+weir-seabright"] = (
+    replace(
+        EXPERIMENTS_BY_DOMAIN["nj2w_bed2012"]["p4-premier+rain-off+struct-cohansey-checkvalve+weir-dikes-levees"],
+        name="p4-premier+rain-off+struct-cohansey-checkvalve+weir-dikes-levees+weir-seabright",
+        description="The Model 2.0 rain-off twin (nj2w_bed2012, dike set + Cohansey check valve, waves on) + the Sea "
+        "Bright - Monmouth Beach seawall as a weir line with 2012-bed crests (the wall is narrower than a 25 m face's "
+        "half-cell, so the subgrid alone lets the ocean over it; 2026-11-23). Pair: "
+        "p4-premier+rain-off+struct-cohansey-checkvalve+weir-dikes-levees.",
+        weir_from=_NJ2_WEIR_DIKES_SEABRIGHT,
+    )
+)
 #: nj2w_bed2026 (registered 2026-11-18): Model 2.0.0's 2026-bed option. ONE arm: the 2.0 premier's recipe, same
 #: name (CLAUDE.md §6: from 2.0 a version names a mesh; "2.0.0, 2026 bed" = this domain + this arm). Only the bed
 #: changes: subgrid_from = _subgrid_nj2_2026 (the domain's face z is already its mean ground, and its template
@@ -1752,3 +1772,90 @@ def sweepable(domain_name: str | None = None) -> dict[str, Experiment]:
     only way to run one.
     """
     return {n: e for n, e in experiments(domain_name).items() if e.bracket is None}
+
+
+# ── 2026-11-23 (operational forecasting): the SPIN-UP LEAD TEST on Model 2.0.0's 2026 bed ────────────────────────────
+# How many hours before a storm's peak must an operational run start COLD for the peak to forget the start? Sandy,
+# waves OFF (a waves-off run is well-conditioned to mm, CLAUDE.md §5, so every Δ is the start), rain + cnb + 61 rivers
+# ON as in the premier (the empty curve-number soil is part of the spin-up). Each arm = the 2026-bed premier with
+# SnapWave off and Experiment.cold_start (nj_sfincs.config.ColdStart): tstart moved, zsmax hourly, NOTHING else — same
+# forcing files (tref 10-28 00:00), same start (zsini 0 + sfincs_ini_regional.bin's Overpeck pool, the boundary ramped
+# over tspinup 3600 s after the new tstart). Lead = hours before 2012-10-30 01:00 UTC (the NY bight peak: the Battery
+# 01:20, Sandy Hook 01:10, the Narrows 01:10 in the waves-off 2.0 twin). REFERENCE = lead 49 h, the template's own
+# start (10-28 00:00): every staged forcing file (NACCS boundary, NACCS-blend wind, ERA5, AORC rain, NWIS rivers) begins
+# there, so it is the longest cold start the forcing allows; it stands in for the 48 h arm, and a 36 h arm fills the gap
+# to 24 h. logs/spinup_test_2026-11-23/README.md. ADDITIVE: no existing arm changes (cold_start has repr=False).
+def _spin_arm(lead_h: int, tstart: str) -> Experiment:
+    name = f"p4-nowaves+spin-lead{lead_h:02d}h+struct-cohansey-checkvalve+weir-dikes-levees"
+    ref = " THE REFERENCE (the template's own start)." if lead_h == 49 else " Pair: the lead-49 h reference."
+    return replace(
+        _NJ2_PREM26,
+        name=name,
+        description=f"SPIN-UP LEAD TEST (2026-11-23): the 2.0.0 2026-bed premier with WAVES OFF (rain + cnb + rivers on) "
+        f"started COLD at {tstart} = {lead_h} h before the NY bight peak (2012-10-30 01:00 UTC); tref / tstop / forcing "
+        "the template's, start = zsini 0 + sfincs_ini_regional.bin, boundary ramp tspinup 3600 s, zsmax hourly." + ref,
+        waves=WaveConfig(use_waves=False),
+        cold_start=ColdStart(tstart),
+    )
+
+
+#: lead (h before 2012-10-30 01:00 UTC) -> cold-start tstart. 49 = the reference.
+SPINUP_LEADS = {
+    49: "20121028 000000",
+    36: "20121028 130000",
+    24: "20121029 010000",
+    12: "20121029 130000",
+    6: "20121029 190000",
+}
+for _h, _t in SPINUP_LEADS.items():
+    _a = _spin_arm(_h, _t)
+    EXPERIMENTS_BY_DOMAIN["nj2w_bed2026"][_a.name] = _a
+
+
+# ── 2026-11-23 (user): NOAA's own tide at Model 2.0's two New York forced cuts — the short A/B on nj2w_bed2026 ──────
+# The calm tide arms force all 244 points with EC2015; at the Hell Gate and Hudson cuts EC2015 is off (11-22,
+# logs/slr_2_0_2026-11-22/README.md "The new cuts"). logs/noaa_cuts_2026-11-23/make_tide_noaacuts.py rebuilt the six
+# files with the 16 hell_gate points = Horns Hook 8518668 (NOAA's official 6-min predictions - Sa - Ssa) and the 13
+# hudson points = Spuyten Duyvil 8518903 (its NOAA constants, no Sa / Ssa), placed exactly as EC2015 (+ VDatum
+# LMSL->NAVD88 per point + the offset); the other 215 columns are the EC2015 files' (array-equal). The pair below
+# differs ONLY in that file: msl2026 (+0.144 m mean), 10-12 00:00 -> 10-18 12:00 (the SLR arms' start; the
+# 10-15 new-moon spring tide; read from 10-14 00:00), zs AND zsmax hourly (the M2-band fit and the high water per
+# cycle at every face). Everything else = tide-0ft-msl2026+weir-normalweather. logs/noaa_cuts_2026-11-23/README.md.
+# ADDITIVE: no existing arm changes.
+_NJ2_NOAACUTS_TIDE_DIR = _TIDE_DIR / "nj2_noaacuts"
+#: The A/B window: the SLR arms' start (= the boundary files' time origin) to 6.5 d later.
+NOAACUTS_AB_WINDOW = ("20121012 000000", "20121018 120000")
+
+
+def _nj2_noaacuts_ab(path: Path) -> CalmForcing:
+    return replace(
+        _nj2_nw_tide(0.144, "p000_msl2026"),
+        boundary=str(path),
+        tstop=NOAACUTS_AB_WINDOW[1],
+        dtmapout=3600.0,
+        dtmaxout=3600.0,
+    )
+
+
+for _tag, _path, _what in (
+    (
+        "",
+        _NJ2_TIDE_DIR / "sfincs_netbndbzsbzifile_tide_ec2015_nj2_p000_msl2026.nc",
+        "EC2015 at all 244 points (the SLR arms' file). THE A ARM; pair: the noaacuts twin.",
+    ),
+    (
+        "-noaacuts",
+        _NJ2_NOAACUTS_TIDE_DIR
+        / "sfincs_netbndbzsbzifile_tide_noaacuts_nj2_p000_msl2026.nc",
+        "NOAA at the two NY cuts (Horns Hook 8518668 at Hell Gate, Spuyten Duyvil 8518903 at the Hudson), EC2015 at the "
+        "other 215 points. THE B ARM; pair: the EC2015 twin.",
+    ),
+):
+    _a = _nj2_nw_calm_arm(
+        f"tide-0ft-msl2026{_tag}-spring6d+weir-normalweather",
+        "NOAA-CUTS A/B (2026-11-23): tide-0ft-msl2026+weir-normalweather on a 6.5-day spring-tide window "
+        "(10-12 00:00 -> 10-18 12:00, read from 10-14 00:00), zs + zsmax hourly; boundary = "
+        + _what,
+        _nj2_noaacuts_ab(_path),
+    )
+    EXPERIMENTS_BY_DOMAIN["nj2w_bed2026"][_a.name] = _a

@@ -22,7 +22,7 @@ small. Superseded PNGs and arm pages are removed in the same pass. Every page is
     python scripts/publish_gallery.py                       # every domain with a gallery
     python scripts/publish_gallery.py --domains v4_refreeze,v3
     python scripts/publish_gallery.py --site /tmp/site_test
-    python scripts/publish_gallery.py --current   # the public site: Model 1.1.0 + its rain-off MOTF twin
+    python scripts/publish_gallery.py --current   # the public site: the premier, its rain-off MOTF twin + CURRENT_ALSO
 
 Light (no rasters): fine on a login node.
 """
@@ -282,6 +282,39 @@ EXTRA_FIGURES: dict = {}
 #: ``motf``. They are in git history (``git log -S fig4_power_2026bed``) to restore.)
 WEB_WIDTH = 2000
 
+#: Runs the public site carries with ``--current`` BESIDE the premier and its rain-off twin,
+#: keyed by domain → {arm: label}. 2.0.0 is ONE version with two grounds (user 2026-11-03),
+#: so its 2026-ground Sandy run gets a page and a front-page score block (user 2026-11-23).
+#: The label names the run on the front page, its run page and the runs table.
+CURRENT_ALSO = {
+    "nj2w_bed2026": {
+        "p4-premier+struct-cohansey-checkvalve+weir-dikes-levees": (
+            "Model 2.0.0 on today's (2026) ground"
+        ),
+    },
+}
+#: The front-page note under the 2026-ground tiles. ⚠️ Numbers: the paired 2026 − 2012 read,
+#: logs/runs_2_0_twin_2026-11-22/README.md "Read (2026-11-23)" (median, 50 m, n 163).
+CURRENT_ALSO_NOTE = (
+    "The same storm run again on an estimate of today's (2026) ground: channels dredged "
+    "since 2012, today's shoreline, levees and tide gates, with everything else unchanged. "
+    "Sandy happened on the 2012 ground, so these numbers are not a test of the model. They "
+    "show where today's ground would change a Sandy-like storm. The clearest change is "
+    "Barnegat Bay, about 0.1 m higher throughout, because today's deeper Barnegat Inlet "
+    "channel lets more of the storm in (the bay's own bottom is unchanged). Part of the "
+    "higher RMSE comes from four marks that move because the two grounds were built "
+    "differently, not because of the storm."
+)
+
+
+def site_label(domain_name: str, arm: str) -> str | None:
+    """The public label of a published run: FRONT["labels"] on the premier's domain,
+    CURRENT_ALSO elsewhere (the same arm name means a different run on each domain)."""
+    if domain_name == NEXT_PREMIER["domain"]:
+        return FRONT["labels"].get(arm)
+    return CURRENT_ALSO.get(domain_name, {}).get(arm)
+
+
 #: The front page, "Model <version> at a glance" (user 2026-11-13: every plot on the front
 #: page, no click). HWM tiles come from the premier (NEXT_PREMIER["arm"]); the FEMA (MOTF)
 #: tiles from ``motf_arm``, the premier's RAIN-OFF twin (FEMA mapped surge, not rain).
@@ -414,14 +447,13 @@ NEXT_PREMIER = {
 #: The plain-language "coming in the next version" list (home page + the premier's runs
 #: page). ⚠️ Edit it when the next version's contents change; empty ``items`` hides it.
 COMING = {
-    "version": "2.0.0 on today's (2026) ground",
-    "as_of": "2026-11-18",
-    "status": "In preparation. Preliminary: items may still change.",
+    "version": "2.1",
+    "as_of": "2026-11-23",
+    "status": "Planned. Preliminary: items may still change.",
     "items": (
-        "The same storm on an estimate of today's (2026) ground: channels dredged since "
-        "2012, today's shoreline, levees and tide gates. The ground is built; the run is "
-        "next. It answers which of today's power plants and substations a Sandy-like storm "
-        "would flood.",
+        "A better storm tide at the two short New York cuts across the Hudson and the East "
+        "River, so the East River and the upper harbour no longer read high at the storm's "
+        "peak.",
     ),
 }
 
@@ -429,7 +461,7 @@ COMING = {
 #: Plain-language known limitations of the published version (docs/MODEL.md §4 is the
 #: technical list). ⚠️ Keep in step with MODEL.md when the version changes.
 KNOWN_LIMITS = {
-    "as_of": "2026-11-18",
+    "as_of": "2026-11-23",
     "items": (
         "The ground does not move during the storm. In Sandy the dunes eroded and broke "
         "through in places (Mantoloking, Wreck Pond) and the sea washed over into Deal Lake; "
@@ -439,15 +471,27 @@ KNOWN_LIMITS = {
         "Water level, not wave splash: the model computes the water surface, including the "
         "rise that breaking waves cause, but not the splash and run-up of individual waves. "
         "High-water marks left by splash sit above what the model can reach.",
+        "Behind the Sea Bright - Monmouth Beach seawall the southern Shrewsbury River reads "
+        "about 0.2 m high at the high-water marks. The wall is narrower than the model's "
+        "25 m cells, so in the model water crosses the barrier at the height of the ground "
+        "beside the wall rather than the top of the wall, and too much ocean water pours "
+        "over (the water level on the beach side itself agrees with the USGS sensor there). "
+        "A fix that adds the wall as a structure line is planned.",
         "Agreement with FEMA's flood extent is slightly lower than version 1.1.0's (CSI 0.795 "
         "against 0.803 with rain on; 0.797 against 0.803 scored on exactly the same land). "
         "Most of the difference is in the Hackensack Meadowlands and around Newark Bay, "
-        "where 2.0.0 peaks about 15 cm lower and leaves some marsh dry that FEMA mapped as "
-        "flooded. The likely cause is that 2.0.0 computes New York Harbor itself instead of "
-        "taking its water levels from a regional model at the Narrows; this is not yet "
-        "tested directly. A smaller part is farmland and marsh that the new Delaware Bay "
-        "and Tuckahoe dikes keep dry. At the Newark Bay high-water marks 2.0.0 fits better "
-        "than 1.1.0.",
+        "where 2.0.0 peaks lower and leaves some marsh dry that FEMA mapped as flooded. A "
+        "test run (2026-11-23) found two causes. Computing New York Harbor, instead of "
+        "taking its water level from a regional model at the Narrows, lowers Newark Bay "
+        "and the Kills by 5-7 cm. The finer (25 m) cells on the Meadowlands lower the peak "
+        "a further 12-28 cm up the Hackensack and on the marsh. At the Newark Bay "
+        "high-water marks the finer cells fit better than 1.1.0. A smaller part of the "
+        "difference is farmland and marsh that the new Delaware Bay and Tuckahoe dikes "
+        "keep dry.",
+        "The storm tide applied at the East River cut (Hell Gate) peaks higher than the "
+        "gauges and marks around it, so East River and upper-harbour peaks read about "
+        "0.1-0.25 m high. It is not corrected by hand, because an offset fitted to Sandy "
+        "would be tuning; a fix is planned for version 2.1.",
         "Waves are not computed in the Upper Bay, the Hudson, the East River or Newark Bay: "
         "the wave-height map is blank there by design.",
         "The New York side runs on coarser cells away from its narrow channels, and "
@@ -666,6 +710,27 @@ def front_scores(domains: dict) -> str:
         print(
             f"[publish] ⚠️ {FRONT['motf_arm']} not published: no FEMA tiles (--current)"
         )
+    for d, also in CURRENT_ALSO.items():
+        for arm, label in also.items():
+            x = domains.get(d, {}).get(arm)
+            if not x:
+                continue
+            parts.append(
+                f"<h3>High-water marks: {esc(label)} "
+                f'<span class="note">(run <a href="{esc(d)}/{esc(x["slug"])}/'
+                f'index.html">{esc(arm)}</a>)</span></h3>'
+                '<div class="tiles">'
+                + _tiles(
+                    x["row"],
+                    (
+                        "hwm_n_scored",
+                        "hwm_rmse_scored_m",
+                        "hwm_bias_scored_m",
+                        "hwm_within0.5_scored",
+                    ),
+                )
+                + f'</div><p class="note">{esc(CURRENT_ALSO_NOTE)}</p>'
+            )
     if not parts:
         return ""
     return '<section id="scores"><h2>Scores</h2>' + "".join(parts) + "</section>"
@@ -1042,8 +1107,8 @@ def arm_page(domain_name: str, arm: str, e: dict, ref: str | None) -> str:
             f"<b>{esc(domain_name)}</b> · arm",
             arm,
             (
-                f"<b>{esc(FRONT['labels'][arm])}.</b> "
-                if domain_name == NEXT_PREMIER["domain"] and arm in FRONT["labels"]
+                f"<b>{esc(site_label(domain_name, arm))}.</b> "
+                if site_label(domain_name, arm)
                 else ""
             )
             + f"Run card, flags and the standard figure set. HWM numbers: estimator "
@@ -1106,9 +1171,7 @@ def domain_index(domain_name: str, arms: dict, ref: str) -> str:
                 "off" if swd == "off" else "on" if swd else "?"
             )  # no gallery: the row
         )
-        lbl = (
-            FRONT["labels"].get(arm) if domain_name == NEXT_PREMIER["domain"] else None
-        )
+        lbl = site_label(domain_name, arm)
         trs.append(
             f'<tr><td><a href="{esc(e["slug"])}/index.html">{esc(arm)}</a>'
             f"{' <span class=note>(reference)</span>' if arm == ref else ''}"
@@ -1253,7 +1316,7 @@ def site_index(domains: dict) -> str:
             "</li>"
         )
         for arm, x in arms.items():
-            lab = FRONT["labels"].get(arm)
+            lab = site_label(d, arm)
             links.append(
                 f'<li><a href="{esc(d)}/{esc(x["slug"])}/index.html">{esc(arm)}</a>'
                 + (f" — {esc(lab)}" if lab else "")
@@ -1328,14 +1391,20 @@ def main(argv=None) -> int:
     p.add_argument(
         "--current",
         action="store_true",
-        help="the current model only: --domains NEXT_PREMIER's domain, --arms the "
-        "FRONT['labels'] arms (the premier + its rain-off MOTF twin)",
+        help="the current model only: NEXT_PREMIER's domain with the FRONT['labels'] "
+        "arms (the premier + its rain-off MOTF twin), plus the CURRENT_ALSO runs",
     )
     p.add_argument("--exp-root", default=None, help=argparse.SUPPRESS)  # tests
     a = p.parse_args(argv)
+    want_by: dict[str, set] = {}  # --current: the arms to publish, per domain
     if a.current:
-        a.domains = a.domains or NEXT_PREMIER["domain"]
-        a.arms = a.arms or ",".join(FRONT["labels"])
+        if not a.domains and not a.arms:
+            want_by = {
+                NEXT_PREMIER["domain"]: set(FRONT["labels"]),
+                **{d: set(v) for d, v in CURRENT_ALSO.items()},
+            }
+        a.domains = a.domains or ",".join(want_by or [NEXT_PREMIER["domain"]])
+        a.arms = a.arms or ("" if want_by else ",".join(FRONT["labels"]))
     site = Path(a.site).expanduser()
     ensure_repo(site)
     from nj_sfincs.premier import premier_arm
@@ -1356,8 +1425,8 @@ def main(argv=None) -> int:
     domains = {}
     for d in names:
         arms = read_domain(d, exp)
-        if a.arms:
-            want = set(a.arms.split(","))
+        want = want_by.get(d) or (set(a.arms.split(",")) if a.arms else None)
+        if want:
             arms = {k: v for k, v in arms.items() if k in want}
         if not arms:
             continue

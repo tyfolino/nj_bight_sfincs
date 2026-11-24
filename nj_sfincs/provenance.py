@@ -82,7 +82,9 @@ _FORCING = [
     # v1.5 / v3 / v4) replaces the base default. Resolved at call time from the registry by
     # the run dir's name (`_waterlevel_key`); the label was the base default until 10-15.
     ("sfincs_netbndbzsbzifile.nc", "water-level boundary", "waterlevel"),
-    ("snapwave.bhs", "wave boundary (Hs)", "cora_waves_nj"),
+    # ⚠️ ARM-DEPENDENT: an arm with `waves.wave_grid_dataset` (GFS-Wave, 2026-11-23) is
+    # labelled with that file (`_wave_key`); every other waves-on arm is CORA.
+    ("snapwave.bhs", "wave boundary (Hs)", "waves"),
     ("sfincs_netamuv.nc", "wind field", "era5_nj"),
     ("sfincs_netamp.nc", "pressure field", "era5_nj"),
     ("sfincs_netampr.nc", "precipitation", "aorc_sandy_nj"),
@@ -112,13 +114,29 @@ def _waterlevel_key(model_dir: Path | None) -> str:
     return default
 
 
+def _wave_key(model_dir: Path | None) -> str:
+    """``cora_waves_nj``, or ``wave_grid:<file>`` for an arm staged from a regular wave
+    grid (``WaveConfig.wave_grid_dataset``). Never raises."""
+    if model_dir is not None:
+        try:
+            from .experiments import experiments
+
+            exp = experiments().get(Path(model_dir).name)
+            g = getattr(getattr(exp, "waves", None), "wave_grid_dataset", None)
+            if g:
+                return f"wave_grid:{Path(g).name}"
+        except Exception:  # noqa: BLE001
+            pass
+    return "cora_waves_nj"
+
+
 def _forcing_rows(model_dir: Path | None = None):
     """`_FORCING` with the domain- and arm-dependent catalog keys filled in."""
     from . import domain as _domain
 
     key = _domain.active().discharge_geodataset
     wl = _waterlevel_key(model_dir)
-    fill = {None: key, "waterlevel": wl}
+    fill = {None: key, "waterlevel": wl, "waves": _wave_key(model_dir)}
     return [(f, d, fill.get(k, k)) for f, d, k in _FORCING]
 
 

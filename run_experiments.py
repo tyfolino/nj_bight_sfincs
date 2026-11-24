@@ -301,8 +301,13 @@ def prepare_experiment(name: str, base: BaseConfig) -> Path:
         model.set_inp_keys(exp_dir / "sfincs.inp", {"rhoa": f"{exp.rhoa}"})
         print(f"[{name}] rhoa = {exp.rhoa} on the staged copy (null perturbation)")
     # ``Experiment.calm`` (still-* / tide-* arms): after every writer, for the same reason.
+    if exp.calm is not None and exp.cold_start is not None:
+        raise SystemExit(f"[{name}] cold_start and calm both set a window — pick one")
     if exp.calm is not None:
         calm.apply(exp_dir, exp.calm)
+    # ``Experiment.cold_start`` (spin-* arms, 2026-11-23): a later cold start on the template's forcing, last.
+    if exp.cold_start is not None:
+        model.apply_cold_start(exp_dir, exp.cold_start)
     del sf
     gc.collect()
     return exp_dir

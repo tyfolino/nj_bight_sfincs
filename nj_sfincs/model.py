@@ -1442,6 +1442,77 @@ def record_boundary_arm_offsets(model_dir: Path, records: list[dict]) -> None:
     )
 
 
+#: Sidecar ``apply_cold_start`` writes into the staged dir.
+COLD_START_META = "cold_start.json"
+
+
+def apply_cold_start(model_dir: Path, cs) -> dict:
+    """``Experiment.cold_start`` (``spin-*`` arms, 2026-11-23): start the staged run cold at ``cs.tstart``.
+
+    Rewrites ``tstart`` and ``dtmaxout`` in the WRITTEN ``sfincs.inp`` and nothing else: ``tref`` / ``tstop`` and every
+    forcing file stay, so the engine reads the same series from a later instant (as a restart resume does); the start
+    stays the template's (``zsini`` / ``inifile``; ``tspinup`` ramps the boundary from ``zsini`` after the NEW
+    ``tstart``). Refuses a ``tstart`` outside ``[tref, tstop)``, a ``dtmaxout`` that does not divide the restart
+    cadence (the stitch keeps whole zsmax blocks), an inp that resumes from a restart file, and an inp without
+    ``tspinup``. Writes ``cold_start.json`` + one ``provenance.txt`` line. Call after every other writer.
+    """
+    import json
+    from datetime import datetime
+
+    model_dir = Path(model_dir)
+    inp = model_dir / "sfincs.inp"
+    keys = _inp_keys(inp)
+    fmt = "%Y%m%d %H%M%S"
+
+    def _t(s: str) -> datetime:
+        return datetime.strptime(" ".join(s.split()), fmt)
+
+    for k in ("tref", "tstart", "tstop", "tspinup"):
+        if k not in keys:
+            raise SystemExit(f"cold_start: {inp} has no {k}")
+    if "rstfile" in keys:
+        raise SystemExit(f"cold_start: {inp} resumes from {keys['rstfile']} — not a cold start")
+    tref, t0_old, tstop, t0 = (
+        _t(keys["tref"]),
+        _t(keys["tstart"]),
+        _t(keys["tstop"]),
+        _t(cs.tstart),
+    )
+    if not (tref <= t0 < tstop):
+        raise SystemExit(f"cold_start: tstart {t0} outside [tref {tref}, tstop {tstop})")
+    if cs.dtmaxout <= 0 or RESTART_DT_S % cs.dtmaxout:
+        raise SystemExit(
+            f"cold_start: dtmaxout {cs.dtmaxout} must divide the restart cadence {RESTART_DT_S}"
+        )
+    set_inp_keys(
+        inp, {"tstart": t0.strftime(fmt), "dtmaxout": f"{float(cs.dtmaxout):.1f}"}
+    )
+    rec = {
+        "tref": tref.strftime(fmt),
+        "tstart_template": t0_old.strftime(fmt),
+        "tstart": t0.strftime(fmt),
+        "tstop": tstop.strftime(fmt),
+        "hours_after_tref": (t0 - tref).total_seconds() / 3600.0,
+        "run_hours": (tstop - t0).total_seconds() / 3600.0,
+        "dtmaxout": float(cs.dtmaxout),
+        "tspinup": keys["tspinup"],
+        "zsini": keys.get("zsini"),
+        "inifile": keys.get("inifile"),
+    }
+    (model_dir / COLD_START_META).write_text(json.dumps(rec, indent=1) + "\n")
+    line = (
+        f"cold_start = tstart {rec['tstart']} (template {rec['tstart_template']}; tref {rec['tref']}, "
+        f"tstop {rec['tstop']}), dtmaxout {rec['dtmaxout']:.0f} s, tspinup {rec['tspinup']}, "
+        f"inifile {rec['inifile']}, zsini {rec['zsini']}"
+    )
+    prov = model_dir / "provenance.txt"
+    text = prov.read_text() if prov.exists() else ""
+    prov.unlink(missing_ok=True)
+    prov.write_text(text + ("" if text.endswith("\n") or not text else "\n") + line + "\n")
+    print(f"[cold_start] {line}", flush=True)
+    return rec
+
+
 #: Restart-file cadence AND zsmax block length (s). One lattice: the stitch keeps whole
 #: zsmax blocks only, so ``dtmaxout`` must divide ``dtrstout`` (nj_sfincs/restart.py).
 #: 🔴 Set on EVERY staged arm by :func:`restore_diagnostics`, not only at template
@@ -1660,6 +1731,88 @@ def _point_wave_bnd(wcfg: WaveConfig, base: BaseConfig, sf: SfincsModel, pts):
     return t, hs, tp, wd, dspread
 
 
+def _grid_wave_bnd(wcfg: WaveConfig, base: BaseConfig, pts, *, ds=None):
+    """``_point_wave_bnd``'s twin for a REGULAR lon/lat grid (``wave_grid_dataset``).
+
+    Same return ``(t, hs, tp, wd, ds)``, same clock (seconds from ``base.tref``, samples
+    before tref dropped), same 30° spreading; the per-point values come from
+    ``wave_grid.interp_points`` (bilinear over wet corners, IDW fallback, raise past
+    30 km). ``ds`` lets a caller pass the canonical dataset instead of a path.
+    """
+    import pyproj
+
+    from . import wave_grid
+
+    if ds is None:
+        path = Path(wcfg.wave_grid_dataset)
+        if not path.is_absolute():
+            path = ROOT / path
+        if not path.exists():
+            raise FileNotFoundError(
+                f"wave_grid_dataset {path} not found — build it with "
+                "`python -m nj_sfincs.wave_grid`"
+            )
+        ds = xr.open_dataset(path)
+        name = path.name
+    else:
+        name = "<dataset>"
+    ds = wave_grid.canonical(ds)
+
+    tf = pyproj.Transformer.from_crs(_domain.active().epsg, 4326, always_xy=True)
+    plon, plat = tf.transform(pts[:, 0], pts[:, 1])
+
+    times = pd.to_datetime(ds["time"].values)
+    keep = np.asarray(times >= pd.Timestamp(base.tref))
+    if not keep.any():
+        raise RuntimeError(f"{name} has no samples at/after tref {base.tref}")
+    ds = ds.isel(time=np.flatnonzero(keep))
+    times = times[keep]
+    t = (times - pd.Timestamp(base.tref)).total_seconds().to_numpy(float)
+    # COVERAGE (audit 11-23): SFINCS only warns past the ends of a wave series and holds
+    # the first / last record, so a short forecast set or a missing forecast-hour file
+    # would run with frozen or bridged waves. Refuse instead.
+    if times[0] > pd.Timestamp(base.tref) or times[-1] < pd.Timestamp(base.tstop):
+        raise RuntimeError(
+            f"{name} covers {times[0]} .. {times[-1]}, not the run window "
+            f"{base.tref} .. {base.tstop}"
+        )
+    if len(t) > 2:
+        dt = np.diff(t)
+        if dt.max() > 1.5 * np.median(dt):
+            k = int(np.argmax(dt))
+            raise RuntimeError(
+                f"{name} has a {dt[k] / 3600:.1f} h gap after {times[k]} (median step "
+                f"{np.median(dt) / 3600:.1f} h): a forecast hour is missing"
+            )
+
+    out, wts = wave_grid.interp_points(ds, plon, plat)
+    counts = pd.Series([w.method for w in wts]).value_counts().to_dict()
+    print(
+        f"[waves] grid forcing from {name}: {ds.sizes['lat']} x {ds.sizes['lon']} "
+        f"cells, {len(wts)} support points {counts}; farthest cell used "
+        f"{max(w.dist_m for w in wts) / 1000:.1f} km"
+    )
+    for k, (lo, la, w) in enumerate(zip(plon, plat, wts)):
+        print(
+            f"[waves]   pt {k}: lon {lo:8.4f} lat {la:7.4f} -> {w.method:8s} "
+            f"{len(w.w)} cells, farthest {w.dist_m / 1000:5.2f} km"
+        )
+    for v in wave_grid.VARS:
+        if not np.isfinite(out[v]).all():
+            raise RuntimeError(f"non-finite {v} interpolated from {name}")
+    hs, tp, wd = out["hs"], out["tp"], out["wd"]
+    print(
+        f"[waves] window {times[0]} .. {times[-1]}  (t = {t[0]:.0f} .. {t[-1]:.0f} s "
+        f"from tref {base.tref})"
+    )
+    print(
+        "[waves] peak Hs per point: "
+        + ", ".join(f"{v:.2f}" for v in hs.max(axis=0))
+        + f"   alongshore spread {np.ptp(hs.max(axis=0)):.2f} m"
+    )
+    return t, hs, tp, wd, np.full_like(hs, 30.0)
+
+
 def add_waves(wcfg: WaveConfig, base: BaseConfig, sf: SfincsModel) -> dict:
     """The SnapWave block. Returns the ASCII boundary arrays.
 
@@ -1840,9 +1993,15 @@ def add_waves(wcfg: WaveConfig, base: BaseConfig, sf: SfincsModel) -> dict:
         )
     print(f"[waves] {len(snapwave_pts)} wave support points on the {_bnd_src} boundary")
 
+    if wcfg.wave_point_dataset is not None and wcfg.wave_grid_dataset is not None:
+        raise ValueError("set wave_point_dataset OR wave_grid_dataset, not both")
     if wcfg.wave_point_dataset is not None:
         snapwave_t, snapwave_hs, snapwave_tp, snapwave_wd, snapwave_ds = (
             _point_wave_bnd(wcfg, base, sf, snapwave_pts)
+        )
+    elif wcfg.wave_grid_dataset is not None:
+        snapwave_t, snapwave_hs, snapwave_tp, snapwave_wd, snapwave_ds = _grid_wave_bnd(
+            wcfg, base, snapwave_pts
         )
     else:
         # Uniform alongshore forcing from the nearest valid ERA5 wave node.

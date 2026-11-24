@@ -231,6 +231,12 @@ class WaveConfig:
     # Path rather than a catalog key on purpose: hydromt's RasterDataset/GeoDataset drivers
     # do not describe an unstructured ADCIRC/SWAN node set.
     wave_point_dataset: Path | None = None
+    #: The OPERATIONAL alternative (2026-11-23): a REGULAR lon/lat wave grid — a NetCDF
+    #: with hs / tp / wd on (time, lat, lon), e.g. GFS-Wave atlocn.0p16 written by
+    #: ``python -m nj_sfincs.wave_grid``. Each support point is interpolated bilinearly
+    #: over its WET corners, inverse-distance beyond the coast (nj_sfincs/wave_grid.py).
+    #: Mutually exclusive with ``wave_point_dataset``; both None = the ERA5 path.
+    wave_grid_dataset: Path | None = field(default=None, repr=False)
 
     # ── SnapWave / SFINCS boundary DECOUPLING ────────────────────────────────
     # Sharing the SFINCS mesh pins the wave boundary to the WATER-LEVEL boundary at
@@ -306,6 +312,23 @@ class CalmForcing:
     level_m: float | None = None
     dtmapout: float = 3600.0
     dtmaxout: float = 21600.0
+
+
+@dataclass(frozen=True)
+class ColdStart:
+    """A cold start LATER than the template's, on the template's own forcing (``spin-*`` arms, 2026-11-23).
+
+    The spin-up lead test (logs/spinup_test_2026-11-23/README.md): how long before a storm's peak must an
+    operational run start cold for the peak to forget the start? Only ``tstart`` moves (``tref``, ``tstop`` and every
+    forcing file stay the template's, so the engine reads the same series from a later instant), and the start is
+    the template's own: ``zsini`` / ``inifile`` as staged, the boundary ramped from ``zsini`` over ``tspinup`` after
+    the NEW ``tstart`` (sfincs_input.f90: ``tspinup = t0 + tspinup``), meteo not ramped (``spinup_meteo`` 0), the
+    curve-number soil empty. ``dtmaxout`` puts zsmax on an hourly lattice from each arm's own start, so arms starting
+    on different whole hours share block edges and their peaks compare over a common window. Times are sfincs.inp
+    strings (``YYYYMMDD HHMMSS``)."""
+
+    tstart: str
+    dtmaxout: float = 3600.0
 
 
 @dataclass(frozen=True)
@@ -463,6 +486,12 @@ class Experiment:
     #: no IG is injected. Refused on a waves-on arm: with a ``wfpfile`` the engine drives EVERY wavemaker line
     #: from the files, so it would also take the SnapWave-fed coastal wavemaker over. ``None`` = nothing added.
     wavemaker_setup_from: Path | None = None
+
+    #: ``spin-*`` ARMS ONLY (2026-11-23, the spin-up lead test). Applied LAST on the staged copy
+    #: (``model.apply_cold_start``): ``tstart`` (and ``dtmaxout``) rewritten, nothing else. ``None`` = the template's
+    #: window. ``repr=False`` keeps every pre-existing arm's repr byte-identical; the arm's name and the staged
+    #: ``cold_start.json`` / ``provenance.txt`` line carry it. Not combinable with ``calm`` (which sets its own window).
+    cold_start: ColdStart | None = field(default=None, repr=False)
 
 
 def with_window(base: BaseConfig, tstop: datetime) -> BaseConfig:
