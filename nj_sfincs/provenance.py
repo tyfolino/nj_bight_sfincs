@@ -137,7 +137,32 @@ def _forcing_rows(model_dir: Path | None = None):
     key = _domain.active().discharge_geodataset
     wl = _waterlevel_key(model_dir)
     fill = {None: key, "waterlevel": wl, "waves": _wave_key(model_dir)}
-    return [(f, d, fill.get(k, k)) for f, d, k in _FORCING]
+    rows = [(f, d, fill.get(k, k)) for f, d, k in _FORCING]
+    # ANOTHER STORM (storm.json, 2026-11-24): every forcing row names the storm's source, not the template's.
+    try:
+        from .storm import read_sidecar
+
+        rec = read_sidecar(model_dir) if model_dir is not None else None
+    except Exception:  # noqa: BLE001 — a manifest never fails
+        rec = None
+    if rec:
+        src = rec.get("sources", {})
+
+        def _lbl(s):
+            if isinstance(s, dict):
+                return s.get("catalog") or s.get("path", "?")
+            return str(s)
+
+        by_file = {
+            "sfincs_netbndbzsbzifile.nc": _lbl(src.get("waterlevel")),
+            "snapwave.bhs": _lbl(src.get("waves")),
+            "sfincs_netamuv.nc": _lbl(src.get("meteo")),
+            "sfincs_netamp.nc": _lbl(src.get("meteo")),
+            "sfincs_netampr.nc": _lbl(src.get("precip")),
+            "sfincs_netsrcdisfile.nc": _lbl(src.get("discharge")),
+        }
+        rows = [(f, d, f"{rec.get('storm')}: {by_file.get(f, k)}") for f, d, k in rows]
+    return rows
 
 
 def _meteo_source_key(path: Path, default: str) -> str:
@@ -464,6 +489,11 @@ def manifest(model_dir: Path | str, data_dir: Path = DATA) -> pd.DataFrame:
         add("domain", "fingerprint", f"unavailable ({e})", "")
 
     # ── time window ──────────────────────────────────────────────────────────
+    from nj_sfincs import storm as _storm
+
+    _sl = _storm.label(model_dir)
+    _src = "storm.json" if _sl != _storm.TEMPLATE_STORM else "the template's"
+    add("time", "storm", _sl, _src)
     for k, lbl in _TIME:
         if k in inp:
             add("time", lbl, inp[k], "sfincs.inp")
@@ -496,7 +526,11 @@ def manifest(model_dir: Path | str, data_dir: Path = DATA) -> pd.DataFrame:
     for fname, what, row_key in _forcing_rows(model_dir):
         p = model_dir / fname
         key = row_key
-        if p.exists() and fname in ("sfincs_netamuv.nc", "sfincs_netamp.nc"):
+        if (
+            p.exists()
+            and fname in ("sfincs_netamuv.nc", "sfincs_netamp.nc")
+            and row_key == "era5_nj"  # a storm row already names its own source
+        ):
             key = _meteo_source_key(p, row_key)
         if p.exists():
             add(

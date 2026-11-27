@@ -352,14 +352,14 @@ class TestNJ2W(unittest.TestCase):
             parts[1:], sorted(parts[1:])
         )  # §6: deltas in alphabetical order
         # the 11-22 SLR map arms (calm) are tested in test_slr_arms_2026_bed, the 11-23 spin-up arms (cold_start) in
-        # TestSpinupLead
+        # TestSpinupLead, the 11-24 North Wildwood bulkhead arms in test_nwbulkhead_weir_arms_2026_bed
         self.assertEqual(
             {
                 k
                 for k, e in EXPERIMENTS_BY_DOMAIN["nj2w_bed2026"].items()
                 if e.calm is None and e.cold_start is None
             },
-            {name},
+            {name, name + "+weir-nwbulkhead", name + "+weir-nwbulkhead+weir-seabright"},
         )
         b26 =EXPERIMENTS_BY_DOMAIN["nj2w_bed2026"][name]
         self.assertEqual(_changed(b26, prem, ("name", "description")), {"subgrid_from"})
@@ -438,6 +438,41 @@ class TestNJ2W(unittest.TestCase):
             self.assertTrue(arm.rain)
         self.assertFalse(arms["p4-nowaves+struct-cohansey-checkvalve+weir-dikes-levees+weir-seabright"].waves.use_waves)
 
+    def test_nwbulkhead_weir_arms_2026_bed(self):
+        """11-24: the North Wildwood bulkhead (2.0.1 candidate, 2026 bed ONLY) = the 2026-bed premier + one polyline
+        appended to its weir file (and, in the second arm, to the Sea Bright file), nothing else
+        (logs/nw_bulkhead_2026-11-24/)."""
+        from nj_sfincs.experiments import EXPERIMENTS_BY_DOMAIN
+
+        arms = EXPERIMENTS_BY_DOMAIN["nj2w_bed2026"]
+        twin_name = "p4-premier+struct-cohansey-checkvalve+weir-dikes-levees"
+        twin = arms[twin_name]
+        sb12 = EXPERIMENTS_BY_DOMAIN["nj2w_bed2012"][twin_name + "+weir-seabright"]
+        for suffix, base_from in (
+            ("+weir-nwbulkhead", twin.weir_from),
+            ("+weir-nwbulkhead+weir-seabright", sb12.weir_from),
+        ):
+            arm = arms[twin_name + suffix]
+            self.assertEqual(arm.name, twin_name + suffix)
+            self.assertEqual(_changed(arm, twin, ("name", "description")), {"weir_from"})
+            parts = arm.name.split("+")
+            self.assertEqual(parts[1:], sorted(parts[1:]))
+            self.assertTrue(arm.rain and arm.waves.use_waves)
+            self.assertEqual(arm.subgrid_from, "_subgrid_nj2_2026")
+            if arm.weir_from.is_file() and base_from.is_file():  # bulk data: absent on a bare checkout
+                base, new = base_from.read_text(), arm.weir_from.read_text()
+                self.assertTrue(new.startswith(base), "the base weir file must be carried byte for byte")
+                extra = new[len(base) :].splitlines()
+                self.assertEqual(extra[0], "north_wildwood_beachfront_bulkhead_2nd_16th_ave_2026bed")
+                self.assertEqual(extra[1], "18 4")
+                rows = [ln.split() for ln in extra[2:]]
+                self.assertEqual(len(rows), 18)
+                self.assertEqual({r[2] for r in rows}, {"3.660"})  # 12.0 ft NAVD88, city code ch. 178
+                xy = [(float(r[0]), float(r[1])) for r in rows]
+                self.assertTrue(all(517700 < x < 518500 and 4316150 < y < 4317000 for x, y in xy), xy)
+        # the 2012 bed never gets it: the bulkhead postdates Sandy
+        self.assertFalse([k for k in EXPERIMENTS_BY_DOMAIN["nj2w_bed2012"] if "nwbulkhead" in k])
+
     def test_slr_arms_2026_bed(self):
         """11-22: 1.1.0's eight normal-weather SLR arms re-issued on nj2w_bed2026 (logs/slr_2_0_2026-11-22/). Each
         is the 2026-bed premier made calm with the normal-weather weir; the tide arms differ from the +0 ft arm ONLY
@@ -450,7 +485,12 @@ class TestNJ2W(unittest.TestCase):
         v11 = EXPERIMENTS_BY_DOMAIN["v4_refreeze_swz_v11"]
         prem = arms["p4-premier+struct-cohansey-checkvalve+weir-dikes-levees"]
         # the 11-23 NOAA-cuts A/B pair (short window) is tested in test_noaacuts_ab_arms
-        calm = {k: e for k, e in arms.items() if e.calm is not None and "-spring6d" not in k}
+        # ... and the 11-24 per-gauge SLR variants in test_boundary_point_offsets
+        calm = {
+            k: e
+            for k, e in arms.items()
+            if e.calm is not None and "-spring6d" not in k and e.boundary_point_offsets is None
+        }
         # the same set as 1.1.0's normal-weather arms, `bed-modernb+` dropped (this domain IS the 2026 bed)
         want = {
             k.removeprefix("bed-modernb+")

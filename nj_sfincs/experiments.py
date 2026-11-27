@@ -31,7 +31,14 @@ from __future__ import annotations
 from dataclasses import replace
 from pathlib import Path
 
-from .config import DATA, CalmForcing, ColdStart, Experiment, WaveConfig
+from .config import (
+    DATA,
+    BoundaryPointOffsets,
+    CalmForcing,
+    ColdStart,
+    Experiment,
+    WaveConfig,
+)
 from .domain import active
 
 # ── v1_5_raritan ─────────────────────────────────────────────────────────────
@@ -1770,6 +1777,26 @@ EXPERIMENTS_BY_DOMAIN["nj2w_bed2026"].update(
 )
 
 
+# ── 2026-11-24: the 2.0 STAP SLR tide arms with PER-GAUGE SLR (Experiment.boundary_point_offsets) ──────────────────
+# The uniform arms add Atlantic City's STAP value (0.459 / 0.939 m) at all 244 points. These add, on top, each point's
+# STAP 2025 App. B gauge difference vs Atlantic City (the Battery / Philadelphia −0.06 m 2050, −0.09 m 2100; Lewes /
+# Reedy Point derived), linearly interpolated along the gauge chain (logs/slr_spatial_2026-11-24/README.md,
+# build_tables.py): 0 to −0.06 m (2050), 0 to −0.09 m (2100). Points matched by coordinate (lon / lat). The start
+# stays the uniform arm's (level_m); nothing else changes. Pair: the uniform arm. ADDITIVE: no existing arm changes.
+SLR_POINT_TABLE_NJ2 = DATA / "nj2_design" / "boundary_offsets" / "support_point_slr_stap2025_nj2.csv"
+for _tag, _col in (("stap2050", "delta_2050_m"), ("stap2100ssp245", "delta_2100_ssp245_m")):
+    _u = EXPERIMENTS_BY_DOMAIN["nj2w_bed2026"][f"tide-{_tag}+weir-normalweather"]
+    _a = replace(
+        _u,
+        name=f"tide-{_tag}-pergauge+weir-normalweather",
+        description=f"tide-{_tag}+weir-normalweather with PER-GAUGE SLR: + the STAP 2025 gauge difference vs "
+        f"Atlantic City at each support point ({SLR_POINT_TABLE_NJ2.name}:{_col}, Experiment.boundary_point_offsets; "
+        "logs/slr_spatial_2026-11-24/README.md), nothing else. Pair: the uniform arm. " + _u.description,
+        boundary_point_offsets=BoundaryPointOffsets(str(SLR_POINT_TABLE_NJ2), _col),
+    )
+    EXPERIMENTS_BY_DOMAIN["nj2w_bed2026"][_a.name] = _a
+
+
 def experiments(domain_name: str | None = None) -> dict[str, Experiment]:
     """The arms defined for a domain (the ACTIVE one by default).
 
@@ -1903,3 +1930,75 @@ for _tag, _what in (
         subgrid_from=f"_subgrid_nj2_2026_{_tag}",
     )
     EXPERIMENTS_BY_DOMAIN["nj2w_bed2026"][_a.name] = _a
+
+
+# ── 2026-11-24 (user): Model 2.0.1 structures candidate, 2026 BED ONLY: the North Wildwood beachfront bulkhead ──────
+#: One weir polyline, crest 3.66 m NAVD88 (12.0 ft, North Wildwood city code ch. 178 + the city's NJDEP EA request),
+#: 2nd Ave (the point, where the Hereford Inlet seawall starts) -> 16th Ave (the beach-patrol building), drawn as 18
+#: named vertices (logs/nw_bulkhead_2026-11-24/nw_bulkhead_vertices.csv): OSM's mapped walls / revetment from 2nd to
+#: the 12th-13th midpoint (8th -> 12.5th is a ridge the Nov-2022 lidar sees and 2017 / 2019 do not), the 2026 piece
+#: (city: "midpoint between 12th and 13th Aves to 15th Ave", ~752 ft) on the same alignment, and the earlier emergency
+#: bulkhead around the beach-patrol building returned into the dune. All of it postdates 2012, so the 2012 bed keeps
+#: its weir file. Like Sea Bright, the wall is narrower than a 25 m face's half-cell and so is not in the subgrid's
+#: flow graph; the weir line puts it there. APPENDED to the premier's file (the dike set byte for byte); the second arm
+#: appends it to the Sea Bright file (that adoption is pending its 11-24 checks). Same mesh, bed, subgrid,
+#: fingerprint. Pair: the 2026-bed premier. Engine u/v: logs/nw_bulkhead_2026-11-24/README.md.
+_NJ2_WEIR_DIKES_NWB26 = (
+    DATA / "nj2_design" / "structures" / "sfincs_overpeck_open_elizabeth_rahway_dikes_levees_cohansey_nwbulkhead_nj2_bed2026.weir"
+)
+_NJ2_WEIR_DIKES_NWB26_SB = (
+    DATA
+    / "nj2_design"
+    / "structures"
+    / "sfincs_overpeck_open_elizabeth_rahway_dikes_levees_cohansey_nwbulkhead_seabright_nj2_bed2026.weir"
+)
+for _suffix, _wf, _what in (
+    ("+weir-nwbulkhead", _NJ2_WEIR_DIKES_NWB26, ""),
+    ("+weir-nwbulkhead+weir-seabright", _NJ2_WEIR_DIKES_NWB26_SB,
+     " + the Sea Bright - Monmouth Beach seawall (the 2012-bed arm's polylines and crests, club gap open)"),
+):
+    _a = replace(
+        _NJ2_PREM26,
+        name="p4-premier+struct-cohansey-checkvalve+weir-dikes-levees" + _suffix,
+        description="2.0.1 STRUCTURES CANDIDATE (2026 bed only, 2026-11-24): the 2.0.0 2026-bed premier + the North "
+        f"Wildwood beachfront bulkhead (2nd -> 16th Ave, crest 3.66 m NAVD88){_what} as weir lines appended to the "
+        "dike set (logs/nw_bulkhead_2026-11-24/). Pair: p4-premier+struct-cohansey-checkvalve+weir-dikes-levees.",
+        weir_from=_wf,
+    )
+    EXPERIMENTS_BY_DOMAIN["nj2w_bed2026"][_a.name] = _a
+del _suffix, _wf, _what, _a
+
+
+# ── 2026-11-24 (user 11-24): HURRICANE IRENE (Aug 2011) on Model 2.0.0, 2012 bed ─────────────────────────────────────
+# Validation storms = Sandy + Irene + Nor'Ida on the 2012 bed. Each arm = the 2.0 premier (nj2w_bed2012 / p4-premier+
+# struct-cohansey-checkvalve+weir-dikes-levees: mesh, 2012 bed, dike set + Cohansey check valve, wavemaker, SnapWave 5 deg
+# / dtwave 3600 / IG on, rain + cnb 1.5, the engine) with Experiment.storm = storm.IRENE_2011: the window (tref = tstart
+# 2011-08-25 21:00 -> 08-29 12:00, 87 h, >= 49 h before the first boundary peak) and EVERY forcing file replaced (NACCS
+# Val TH 002 at 240 of the 244 support points, the NACCS-ERA5 blend wind + ERA5 pressure as the premier's, CORA v1.1.1
+# waves, AORC rain, USGS daily rivers 58 of 61). Sandy's own water-level / meteo fields are cleared (storm.conflicts);
+# the arm DECLARES the 240. Scored against Irene's gauges (15 CO-OPS incl. Tacony, 28 USGS tidal, 15 STN storm-tide
+# sensors) and 4 HWMs; no extent. logs/irene_prep_2026-11-24/README.md (inputs), logs/irene_run_2026-11-24/README.md
+# (run). ADDITIVE: no existing arm changes (Experiment.storm has repr=False).
+from .storm import IRENE_2011  # noqa: E402
+
+for _base, _what in (
+    (_NJ2_PREMIER_DIKES, "the 2.0 premier"),
+    (
+        EXPERIMENTS_BY_DOMAIN["nj2w_bed2012"]["p4-nowaves+struct-cohansey-checkvalve+weir-dikes-levees"],
+        "the 2.0 premier's WAVES-OFF twin (rain on)",
+    ),
+):
+    _a = replace(
+        _base,
+        name=_base.name.replace("+struct-", f"+storm-{IRENE_2011.name}+struct-", 1),
+        description=f"HURRICANE IRENE 2011 (user 11-24) on {_what}: Experiment.storm = storm.IRENE_2011 — window "
+        "2011-08-25 21:00 -> 08-29 12:00 (tref = tstart), NACCS TH 002 boundary at 240 support points, NACCS-ERA5 "
+        "blend wind + ERA5 pressure, CORA 2011 waves, AORC 2011 rain, USGS 2011 daily rivers (58 of 61); mesh, bed, "
+        "weirs, drn, cnb 1.5 and cold start = the premier's. Scored on Irene's gauges + STN sensors + 4 HWMs, no "
+        "extent. Pairs: the waves-on / waves-off Irene twin (the wave effect in Irene).",
+        storm=IRENE_2011,
+        waterlevel_geodataset=None,
+        meteo_from=None,
+        n_waterlevel_support=240,
+    )
+    EXPERIMENTS_BY_DOMAIN["nj2w_bed2012"][_a.name] = _a

@@ -28,6 +28,8 @@ TWO INVARIANTS THIS FILE ENFORCES BY CONSTRUCTION
 from __future__ import annotations
 
 import os
+from contextlib import contextmanager
+from contextvars import ContextVar
 from dataclasses import dataclass, field, replace
 from functools import lru_cache
 from pathlib import Path
@@ -93,6 +95,32 @@ class ObsGauge:
     series_source: str = "his"
 
     note: str = ""
+
+    @property
+    def is_stormtide_sensor(self) -> bool:
+        """A USGS storm-tide (SSS) sensor: its observed series is ``stormtide_m``, a 30-minute
+        centred mean of 30-s data (``scripts/download_sandy_storm_tide_sensors.py``). The
+        MODEL series is given the same mean before it is compared (``validate.metrics``).
+        NOAA CO-OPS 6-min and USGS tidal 6/15-min gauges are instantaneous samples: not
+        averaged."""
+        return self.obs_var == "stormtide_m"
+
+    @property
+    def creek_unresolved(self) -> bool:
+        """Listed in ``CREEK_NOT_RESOLVED_GAUGES``: kept, plotted, labelled, but left out of
+        the gauge summary statistics."""
+        return self.name in CREEK_NOT_RESOLVED_GAUGES
+
+
+#: Gauges whose creek channel is NOT in the bed, so the model cannot reproduce the record
+#: (FINDINGS part 4 (g): range ratio 0.48 / 0.40, 12 h lag at Frederica). User 2026-11-24:
+#: flag + keep listed and plotted, but EXCLUDE from the gauge summary statistics. An
+#: explicit list on purpose, not an auto-rule; extend it by hand.
+CREEK_NOT_RESOLVED_GAUGES: tuple[str, ...] = (
+    "usgs_tidal_murderkill_frederica",  # 01484080 Murderkill River at Frederica DE
+    "usgs_tidal_sluice_creek",  # 01411435 Sluice Creek at South Dennis NJ
+)
+CREEK_NOT_RESOLVED_LABEL = "creek channel not resolved"
 
 
 @dataclass(frozen=True)
@@ -3933,4 +3961,30 @@ def active() -> Domain:
         raise KeyError(
             f"NJ_DOMAIN={name!r} is not a known domain. Known: {sorted(DOMAINS)}"
         )
+    view = _SCORING_VIEW.get()
+    if view is not None and view.name == name:
+        return view
     return DOMAINS[name]
+
+
+#: ``scoring_view``'s domain, or None. A ContextVar so the view ends with its ``with`` block (and per thread).
+_SCORING_VIEW: "ContextVar[Domain | None]" = ContextVar("nj_scoring_view", default=None)
+
+
+@contextmanager
+def scoring_view(view: Domain):
+    """Inside the block, :func:`active` returns ``view`` — the active domain with SCORING fields replaced.
+
+    For a run of ANOTHER STORM on this domain (``nj_sfincs/storm.py``, 2026-11-24): ``obs_gauges``, ``hwm_geojson``
+    are Sandy facts, so the scorer reads the storm's own through this view while every geographic field (mesh,
+    region, boxes, fingerprint name) stays the domain's. Refuses a view of another domain: a view never changes
+    WHICH domain is active, only what it is scored against.
+    """
+    cur = active()
+    if view.name != cur.name:
+        raise ValueError(f"scoring_view: {view.name!r} is not the active domain {cur.name!r}")
+    tok = _SCORING_VIEW.set(view)
+    try:
+        yield view
+    finally:
+        _SCORING_VIEW.reset(tok)

@@ -332,6 +332,76 @@ class ColdStart:
 
 
 @dataclass(frozen=True)
+class BoundaryPointOffsets:
+    """A per-SUPPORT-POINT offset table for the forced water level (``nj_sfincs/boundary_points.py``, 2026-11-24).
+
+    ``table`` = a CSV, one row per support point, matched by COORDINATE (``lon``/``lat`` or model-CRS ``x``/``y``)
+    within ``tol_m``; ``column`` = the metres column to add (constant over the whole series). A table with more rows
+    than the line has points refuses unless ``extra_rows_ok`` (a deliberate superset: every point must still match).
+    """
+
+    table: str
+    column: str
+    tol_m: float = 5.0
+    extra_rows_ok: bool = False
+
+
+@dataclass(frozen=True)
+class StormValidation:
+    """What a storm is scored against (``nj_sfincs/storm.py``: ``scoring_domain``).
+
+    The domain's gauges are SANDY gauges: their ``obs_file`` names Sandy records, and ``record_ends`` /
+    ``obs_offset_m`` / ``published_peak`` / ``survives_crest`` are facts about those records. For another storm
+    every gauge keeps its position and name (the his point is the same) but those facts are CLEARED, and its
+    ``obs_file`` is re-pointed by ``obs_files`` (template file -> storm file, both relative to ``data/``; a file
+    not in the map leaves the gauge model-only). ``extra_gauges`` are new his points (the storm's own STN
+    sensors, extra stations) appended to the staged ``sfincs.obs`` and scored like any gauge; any per-gauge
+    handling the scorer applies by ``obs_var`` (e.g. a storm-tide sensor's still-water mean) applies to them too.
+    ``hwm_geojson`` ``None`` = no HWM scoring. ``extent`` = a MOTF-like extent exists for this storm (none do
+    yet; ``False`` skips the MOTF + FA keys). ``peak_floor`` (``YYYY-MM-DD HH:MM`` UTC) replaces the Sandy
+    ``PEAK_FLOOR`` for gauge peaks: samples before it are spin-up, never the storm.
+    """
+
+    peak_floor: str
+    obs_files: tuple[tuple[str, str], ...] = ()
+    extra_gauges: tuple = ()
+    hwm_geojson: Path | None = None
+    extent: bool = False
+
+
+@dataclass(frozen=True)
+class StormForcing:
+    """Another storm on the same domain (``nj_sfincs/storm.py``; first use Irene 2011, 2026-11-24).
+
+    Applied on the STAGED copy: the window (``tref`` = ``tstart``) and every time-varying forcing are replaced —
+    the water-level boundary (``waterlevel_geodataset``, re-run on the template's boundary cells; the arm still
+    declares ``n_waterlevel_support``), wind + pressure (``meteo_from``: an engine-ready pair, corner-convention
+    marked, like ``Experiment.meteo_from``), rain (``precip_dataset``; ``None`` = this storm has none, so the arm
+    must be rain-off), rivers (``discharge_geodataset``; its points must be the template's inflow points or a
+    subset — the inflow WALLS are the mask and stay), SnapWave boundary (``wave_point_dataset``, the same
+    support-point rule as the premier's CORA file; ``None`` = waves-off arms only). Everything else — mesh, bed,
+    weirs, drainage, curve numbers, the template's cold start (``zsini`` + the Overpeck regional ``inifile``,
+    ``tspinup``) — is the template's / the arm's, so the domain fingerprint does not move. Times are sfincs.inp
+    strings (``YYYYMMDD HHMMSS``).
+    """
+
+    name: str
+    tstart: str
+    tstop: str
+    waterlevel_geodataset: str
+    meteo_from: Path
+    discharge_geodataset: str
+    validation: StormValidation
+    precip_dataset: str | None = None
+    wave_point_dataset: Path | None = None
+    #: Catalog key of the boundary whose support points this storm's must be a SUBSET of: the Sandy twin's
+    #: ``waterlevel_geodataset`` (the template's own boundary may be another product: nj2w_bed2012's template
+    #: carries the 3-gauge ``noaa_sandy_nj`` and the premier swaps in NACCS at 244). ``None`` = the template's.
+    support_reference: str | None = None
+    note: str = ""
+
+
+@dataclass(frozen=True)
 class Experiment:
     """A named experiment = a label + the knobs to apply to a staged template.
 
@@ -492,6 +562,24 @@ class Experiment:
     #: window. ``repr=False`` keeps every pre-existing arm's repr byte-identical; the arm's name and the staged
     #: ``cold_start.json`` / ``provenance.txt`` line carry it. Not combinable with ``calm`` (which sets its own window).
     cold_start: ColdStart | None = field(default=None, repr=False)
+
+    #: Per-SUPPORT-POINT boundary offsets (2026-11-24; ``nj_sfincs/boundary_points.py``). A CSV keyed by point
+    #: coordinate whose named column (m) is added to each support point's whole water-level series, on the WRITTEN
+    #: ``sfincs_netbndbzsbzifile.nc`` after every other boundary writer (finalize, ``calm``, ``cold_start``), so it
+    #: stacks on ``boundary_arm_offsets`` and on a calm arm's tide file. Unlike ``boundary_arm_offsets`` a point may
+    #: force several arms' cells: which arms read each point is RECORDED in ``boundary_point_offsets.json`` (+ one
+    #: ``provenance.txt`` line), not refused. The start is not changed. ``repr=False`` keeps every pre-existing arm's
+    #: repr byte-identical. ``None`` = the boundary as built.
+    boundary_point_offsets: BoundaryPointOffsets | None = field(default=None, repr=False)
+    #: ``storm-*`` ARMS ONLY (2026-11-24, Irene on Model 2.0.0). Another storm's window and forcing on the
+    #: template's domain (``nj_sfincs/storm.py``): every forcing file is REPLACED on the staged copy and checked
+    #: (``storm.verify_staged``: window, coverage, no template forcing file survives), the storm's validation
+    #: replaces Sandy's at scoring (``storm.json`` in the run dir). ``None`` = Sandy, the template's storm.
+    #: Not combinable with ``calm`` / ``cold_start`` / ``meteo_from`` / ``waterlevel_geodataset`` /
+    #: ``sea_level_offset_m`` / ``extra_discharge`` / ``boundary_arm_offsets`` /
+    #: ``boundary_point_offsets`` (each would mix two storms).
+    #: ``repr=False`` keeps every pre-existing arm's repr byte-identical.
+    storm: StormForcing | None = field(default=None, repr=False)
 
 
 def with_window(base: BaseConfig, tstop: datetime) -> BaseConfig:

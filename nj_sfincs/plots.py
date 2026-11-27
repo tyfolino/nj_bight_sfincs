@@ -802,6 +802,8 @@ def plot_gauge_verification(runs, root=None, data_dir=DATA, ncol=2, names=None):
                 fontsize=7, va="top", ha="left", color="0.4",
             )
         crest = "crest OK" if g.survives_crest else "no crest"
+        if g.creek_unresolved:
+            crest += "; creek channel not resolved"
         ax.set_title(
             f"{g.name}  ({g.kind}, {g.series_source}, {crest})", fontsize=9
         )

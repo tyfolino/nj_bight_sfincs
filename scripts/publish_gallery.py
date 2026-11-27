@@ -375,7 +375,10 @@ FRONT = {
             "Water level through the storm at the tide gauges",
             "Measured (dark) against modelled (blue) water level at every tide gauge the "
             "model can be checked against. Where a gauge failed in the storm (dashed orange), "
-            "the trace to its right is the model's alone.",
+            "the trace to its right is the model's alone. The USGS storm-tide sensors report "
+            "30-minute averages, so the model line at those is averaged the same way. "
+            "Murderkill River at Frederica and Sluice Creek are shown but marked 'creek "
+            "channel not resolved' and left out of the summary statistics.",
         ),
         (
             "gauge_peaks",

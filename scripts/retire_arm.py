@@ -80,6 +80,7 @@ KEEP_FILES = {
     "sfincs.drn",  # drainage structures: culverts / check valves (an input, bytes)
     ".j3_staged",  # empty marker the J3 gate staging leaves (nj2_bed2012 slr-* arms, 11-16)
     "boundary_arm_offsets.json",  # a tide-* arm's per-arm boundary offsets (record, bytes)
+    "boundary_point_offsets.json",  # an arm's per-support-point boundary offsets (record, KB)
     "cn_rewrite.json",  # a spin-lead arm's curve-number re-window record (bytes)
     "cold_start.json",  # a spin-lead arm's cold-start record (bytes)
 }

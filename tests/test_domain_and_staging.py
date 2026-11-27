@@ -582,8 +582,9 @@ class TestWaterlevelSupportOverride(_DomainEnv):
             for name, exp in arms.items():
                 if exp.n_waterlevel_support is None:
                     continue
-                self.assertIsNotNone(
-                    exp.waterlevel_geodataset,
+                # a storm-* arm's boundary is the storm's (Experiment.storm, 2026-11-24)
+                self.assertTrue(
+                    exp.waterlevel_geodataset is not None or exp.storm is not None,
                     f"{dname}/{name} overrides the support count but does not override "
                     "the forcing — that cannot be intentional",
                 )

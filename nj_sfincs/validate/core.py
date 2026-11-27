@@ -248,11 +248,13 @@ def xcorr_lag_minutes(
     return lag_samples * dt_s / 60.0
 
 
-def peak_after_floor(times, values):
-    """(peak value, peak time) over samples at/after PEAK_FLOOR; (nan, None) if none."""
+def peak_after_floor(times, values, floor=None):
+    """(peak value, peak time) over samples at/after ``floor`` (default PEAK_FLOOR, Sandy's); (nan, None) if none.
+
+    Another storm passes its own floor (``storm.peak_floor``): every Irene sample is before Sandy's."""
     t = np.asarray(times)
     v = np.asarray(values, float).ravel()
-    ok = np.isfinite(v) & (t >= PEAK_FLOOR)
+    ok = np.isfinite(v) & (t >= (PEAK_FLOOR if floor is None else np.datetime64(floor)))
     if not ok.any():
         return float("nan"), None
     i = int(np.nanargmax(v[ok]))

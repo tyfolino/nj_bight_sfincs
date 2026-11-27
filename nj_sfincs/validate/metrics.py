@@ -35,6 +35,7 @@ import xarray as xr
 
 from .. import domain as _domain
 from ..config import DATA
+from ..domain import CREEK_NOT_RESOLVED_LABEL
 from .core import (
     DEPTH_MIN,
     his_bed,
@@ -69,13 +70,46 @@ def _obs_series(g, data_dir: Path = DATA):
     return o["time"].values, np.asarray(o.values, float).ravel() + g.obs_offset_m
 
 
+STORMTIDE_WINDOW_MIN = 30
+
+
+def centred_mean(t, v, minutes: int = STORMTIDE_WINDOW_MIN):
+    """``v`` smoothed by a CENTRED ``minutes``-minute mean, on the original times: pandas'
+    time-based ``rolling("30min", center=True)`` over the series' own samples (the 10-min
+    his series gives a 3-sample mean). NaN where fewer than a full window of samples is
+    available (series edges). The USGS storm-tide sensor series is this mean of 30-s data
+    (``scripts/download_sandy_storm_tide_sensors.py``), so the model gets it before a peak
+    or an error is read (Sea Bright, 2.0 premier: raw 3.65 m, 30-min mean 3.43 m, measured
+    3.47 m)."""
+    t = np.asarray(t)
+    v = np.asarray(v, float).ravel()
+    if t.size < 3:
+        return t, v.copy()
+    dt_s = float(np.median(np.diff(t)) / np.timedelta64(1, "s"))
+    need = max(int(round(minutes * 60.0 / dt_s)), 1)
+    sm = pd.Series(v, index=pd.DatetimeIndex(t)).rolling(
+        f"{minutes}min", center=True, min_periods=need
+    )
+    return t, sm.mean().to_numpy()
+
+
+def _match_obs_averaging(g, t, v):
+    """The model series put on the observed product's averaging: a storm-tide sensor gets
+    the 30-min centred mean; every other gauge is returned untouched."""
+    if g.is_stormtide_sensor:
+        return centred_mean(t, v)
+    return t, v
+
+
 def _model_series(mod, model_dir: Path, g, dom):
-    """(times, values) for a gauge's MODELLED series, per ``ObsGauge.series_source``."""
+    """(times, values) for a gauge's MODELLED series, per ``ObsGauge.series_source``
+    (storm-tide sensors: 30-min centred mean, as their observations are)."""
     if g.series_source == "his":
         # `mod` is optional here, so open the run when the caller only had a path.
         from .core import open_run
 
-        return his_series(mod if mod is not None else open_run(model_dir), g.name)
+        r = his_series(mod if mod is not None else open_run(model_dir), g.name)
+        return None if r is None else _match_obs_averaging(g, *r)
     cells = wet_channel_cells(model_dir, g.lon, g.lat, dom.epsg)
     if cells is None:
         return None
@@ -92,8 +126,29 @@ def _model_series(mod, model_dir: Path, g, dom):
 # ── peaks ────────────────────────────────────────────────────────────────────
 
 
-def gauge_peak_metrics(mod, model_dir: Path, data_dir: Path = DATA) -> dict:
+def _gap_near_h(ot, ov, t_mid, half_h: float) -> float:
+    """Longest stretch (h) without a finite observation in ``[t_mid - half_h, t_mid + half_h]``, edges included."""
+    ot = np.asarray(ot)
+    t_mid = np.datetime64(t_mid)
+    h = np.timedelta64(int(half_h * 3600), "s")
+    lo, hi = t_mid - h, t_mid + h
+    ts = np.sort(
+        ot[np.isfinite(np.asarray(ov, float).ravel()) & (ot >= lo) & (ot <= hi)]
+    )
+    edges = np.concatenate([[lo], ts, [hi]]).astype("datetime64[s]")
+    return float(np.diff(edges).astype(float).max() / 3600.0)
+
+
+def gauge_peak_metrics(
+    mod, model_dir: Path, data_dir: Path = DATA, peak_floor=None
+) -> dict:
     """Modelled vs observed peak level and timing at every scoreable gauge.
+
+    ``peak_floor``: peaks are taken at/after it (default ``core.PEAK_FLOOR``, Sandy's). A storm run passes its
+    own (``storm.peak_floor``), and its rows add ``peak_obs_gap_{n}_h``: the longest hole in the OBSERVED record
+    within ±3 h of the MODEL's crest (the sampling step when continuous). The Sandy facts (``record_ends``, ``published_peak``) that
+    handle a dead gauge are cleared for another storm, and a gauge that missed the crest reads low, so its error
+    reads high; a flag, never a filter.
 
     Replaces the per-place ``gauge_peak_error`` / ``shrewsbury_gauge_peak`` /
     ``interior_gauge_metrics`` peak block.
@@ -127,13 +182,22 @@ def gauge_peak_metrics(mod, model_dir: Path, data_dir: Path = DATA) -> dict:
 
         n = g.name
         out[f"peak_zb_{n}_m"] = his_bed(mod, g.name)
+        if g.is_stormtide_sensor:
+            # the observation is a 30-min centred mean: give the model the same mean, and
+            # keep the raw model peak beside it (flag, never delete a computed number)
+            out[f"peak_mod_raw_{n}_m"] = peak_after_floor(mt, mv)[0]
+            mt, mv = _match_obs_averaging(g, mt, mv)
+        if g.creek_unresolved:
+            out[f"gauge_flag_{n}"] = CREEK_NOT_RESOLVED_LABEL
 
         # ⚠️ NOTHING HERE IS ROUNDED, deliberately. Rounding inside a metric is a silent
         # lossy step that makes a CSV non-reproducible — the port gate caught exactly that
         # (a `round(..., 6)` here differed from the archive at 1e-7 and read as a port
         # bug). Round for display, in the report, not in the emitter.
-        o_peak, o_time = peak_after_floor(ot, ov)
-        m_full, m_full_t = peak_after_floor(mt, mv)
+        o_peak, o_time = peak_after_floor(ot, ov, peak_floor)
+        m_full, m_full_t = peak_after_floor(mt, mv, peak_floor)
+        if peak_floor is not None and m_full_t is not None:
+            out[f"peak_obs_gap_{n}_h"] = _gap_near_h(ot, ov, m_full_t, 3.0)
         out[f"peak_obs_{n}_m"] = o_peak
         out[f"peak_obs_time_{n}"] = str(o_time)[:16] if o_time is not None else ""
         out[f"peak_mod_full_{n}_m"] = m_full
@@ -176,7 +240,34 @@ def gauge_peak_metrics(mod, model_dir: Path, data_dir: Path = DATA) -> dict:
                 out[f"peak_lag_{n}_min"] = float(
                     (m_full_t - o_time) / np.timedelta64(1, "m")
                 )
+    out.update(gauge_peak_summary(out, dom))
     return out
+
+
+def gauge_peak_summary(row: dict, dom) -> dict:
+    """Summary of the per-gauge peak errors in ``row`` (``peak_err_<n>_m``, whole-record
+    gauges only), EXCLUDING ``CREEK_NOT_RESOLVED_GAUGES`` (user 2026-11-24). Those gauges keep
+    their own ``peak_err_*`` row and plot; ``gauge_peak_n_excluded`` says how many were
+    left out of the statistics."""
+    errs, excluded = [], 0
+    for g in dom.obs_gauges:
+        e = row.get(f"peak_err_{g.name}_m")
+        if e is None or not np.isfinite(e):
+            continue
+        if g.creek_unresolved:
+            excluded += 1
+        else:
+            errs.append(float(e))
+    a = np.asarray(errs, float)
+    nan = float("nan")
+    return {
+        "gauge_peak_n": int(a.size),
+        "gauge_peak_n_excluded": excluded,
+        "gauge_peak_err_mean_m": float(a.mean()) if a.size else nan,
+        "gauge_peak_err_median_m": float(np.median(a)) if a.size else nan,
+        "gauge_peak_err_mae_m": float(np.abs(a).mean()) if a.size else nan,
+        "gauge_peak_err_rmse_m": float(np.sqrt((a**2).mean())) if a.size else nan,
+    }
 
 
 # ── pre-storm tide: range and phase ──────────────────────────────────────────
@@ -420,8 +511,14 @@ def _hwm_path(data_dir):
 
     from .. import domain as _domain  # noqa: PLC0415
 
-    rel = _domain.active().hwm_geojson
-    return Path(data_dir) / rel.parent.name / rel.name
+    rel = Path(_domain.active().hwm_geojson)
+    # A file deeper under data/ (a storm's, data/irene_2011/validation/…) keeps its whole relative path; the
+    # domains' own files are one level down, where both spellings agree.
+    try:
+        sub = rel.relative_to(DATA)
+    except ValueError:
+        sub = Path(rel.parent.name) / rel.name
+    return Path(data_dir) / sub
 
 
 def motf_path(data_dir):
@@ -1094,28 +1191,48 @@ def evaluate(
             BIGTIFF="YES",
         )
 
+    from contextlib import nullcontext
+
+    from .. import storm as _storm
     from .fa_decomp import fa_decomposition
 
-    for fn, args in [
-        (gauge_peak_metrics, (mod, model_dir, data_dir)),
+    # ANOTHER STORM (a storm-* arm's storm.json, 2026-11-24): the domain's gauges, marks and MOTF are Sandy's.
+    # Score through the storm's view instead — its records, its marks, its peak floor — and skip what it has no
+    # reference for (no MOTF-like extent exists for any other storm yet).
+    st = _storm.storm_of(model_dir)
+    view = (
+        _domain.scoring_view(_storm.scoring_domain(st))
+        if st is not None
+        else nullcontext()
+    )
+    floor = _storm.peak_floor(st) if st is not None else None
+    hwm_args = (
+        da_hmax,
+        da_dep,
+        data_dir,
+        hwm_ids,
+        hwm_estimator,
+        HWM_RADIUS_M,
+        model_dir,
+    )
+    steps = [
+        (gauge_peak_metrics, (mod, model_dir, data_dir, floor)),
         (tide_metrics, (mod, model_dir, data_dir)),
-        (
-            hwm_metrics,
-            (
-                da_hmax,
-                da_dep,
-                data_dir,
-                hwm_ids,
-                hwm_estimator,
-                HWM_RADIUS_M,
-                model_dir,
-            ),
-        ),
-        (motf_metrics, (da_hmax, da_dep, model_dir, data_dir)),
-        (fa_decomposition, (da_hmax, da_dep, model_dir, data_dir)),
-    ]:
-        try:
-            row.update(fn(*args))
-        except Exception as e:  # noqa: BLE001 — keep the row, note the failure
-            row[f"{fn.__name__}_error"] = str(e)
+    ]
+    if st is None or st.validation.hwm_geojson is not None:
+        steps.append((hwm_metrics, hwm_args))
+    if st is None or st.validation.extent:
+        steps += [
+            (motf_metrics, (da_hmax, da_dep, model_dir, data_dir)),
+            (fa_decomposition, (da_hmax, da_dep, model_dir, data_dir)),
+        ]
+    if st is not None:
+        row["extent_scored"] = bool(st.validation.extent)
+        row["peak_floor"] = st.validation.peak_floor
+    with view:
+        for fn, args in steps:
+            try:
+                row.update(fn(*args))
+            except Exception as e:  # noqa: BLE001 — keep the row, note the failure
+                row[f"{fn.__name__}_error"] = str(e)
     return row

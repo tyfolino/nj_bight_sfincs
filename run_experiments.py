@@ -46,7 +46,18 @@ from hydromt_sfincs import SfincsModel
 
 # Import the package first — its __init__ primes PROJ before hydromt_sfincs loads and
 # asserts NJ_ROOT is this package's own repo. Keep this ahead of the hydromt_sfincs import.
-from nj_sfincs import calm, domain, model, premier, provenance, report, run, validate
+from nj_sfincs import (
+    boundary_points,
+    calm,
+    domain,
+    model,
+    premier,
+    provenance,
+    report,
+    run,
+    storm,
+    validate,
+)
 from nj_sfincs.config import BaseConfig, WaveConfig, exp_root, with_window
 from nj_sfincs.experiments import experiments
 
@@ -233,6 +244,12 @@ def prepare_experiment(name: str, base: BaseConfig) -> Path:
     exp_dir = EXP_ROOT / name
     # Domain check FIRST — nothing below this line is reversible.
     check_template_domain(name)
+    if exp.boundary_arm_offsets and exp.calm is not None:
+        # calm.apply REPLACES the boundary file after finalize: the in-memory arm offsets would be silently lost.
+        raise SystemExit(
+            f"[{name}] boundary_arm_offsets on a calm arm would be overwritten by its boundary — "
+            "use boundary_point_offsets (applied to the written file)"
+        )
     print(f"[{name}] preparing ({exp.description})")
     if exp_dir.exists():
         shutil.rmtree(exp_dir)
@@ -248,6 +265,14 @@ def prepare_experiment(name: str, base: BaseConfig) -> Path:
 
     sf = SfincsModel(str(exp_dir), data_libs=base.data_libs, mode="r+")
     sf.read()
+    # ``Experiment.storm`` (storm-* arms, 2026-11-24): ANOTHER STORM's window + boundary + rivers + rain, in
+    # memory, before anything writes; waves and meteo follow below on the storm's clock. ``base`` becomes the
+    # storm's window for THIS arm only (the template check above used the template's).
+    waves = exp.waves
+    if exp.storm is not None:
+        storm.apply_in_memory(sf, base, exp, exp_dir)
+        base = storm.storm_base(base, exp.storm)
+        waves = storm.storm_waves(exp.waves, exp.storm)
     # Optional per-experiment water-level forcing swap (a forcing A/B). Re-runs
     # water_level.create on the boundary cells the template already carved; merge=False
     # REPLACES the template's forcing (merge=True would append and leave the stale bnd in
@@ -267,9 +292,9 @@ def prepare_experiment(name: str, base: BaseConfig) -> Path:
     # ``Experiment.boundary_arm_offsets`` (tide-* arms, 2026-11-18): a constant on the support points that force
     # one named boundary arm, in memory, after any forcing swap and before finalize writes it.
     bnd_offsets = model.apply_boundary_arm_offsets(sf, exp.boundary_arm_offsets)
-    sw = model.add_waves(exp.waves, base, sf) if exp.waves.use_waves else None
+    sw = model.add_waves(waves, base, sf) if waves.use_waves else None
     model.finalize(
-        exp.waves,
+        waves,
         base,
         sf,
         exp_dir,
@@ -277,7 +302,8 @@ def prepare_experiment(name: str, base: BaseConfig) -> Path:
         rain=exp.rain,
         wind_scale=exp.wind_scale,
         sea_level_offset_m=exp.sea_level_offset_m,
-        meteo_from=exp.meteo_from,
+        # a storm's meteo pair (storm.conflicts refuses a storm arm with its own meteo_from)
+        meteo_from=exp.meteo_from if exp.storm is None else exp.storm.meteo_from,
         infiltration=exp.infiltration,
         cnb_effective=exp.cnb_effective,
         extra_discharge=exp.extra_discharge,
@@ -308,6 +334,14 @@ def prepare_experiment(name: str, base: BaseConfig) -> Path:
     # ``Experiment.cold_start`` (spin-* arms, 2026-11-23): a later cold start on the template's forcing, last.
     if exp.cold_start is not None:
         model.apply_cold_start(exp_dir, exp.cold_start)
+    # ``Experiment.boundary_point_offsets`` (2026-11-24): per-support-point constants on the WRITTEN boundary file,
+    # after every writer that can replace it (finalize, calm.apply), so a calm arm's tide file carries them too.
+    if exp.boundary_point_offsets is not None:
+        boundary_points.apply(exp_dir, exp.boundary_point_offsets)
+    # ``Experiment.storm``: LAST — refuse a staged dir that is not entirely the storm (window, coverage, no
+    # template forcing file left), then add the storm's own gauges to sfincs.obs and seal storm.json.
+    if exp.storm is not None:
+        storm.verify_staged(exp_dir, exp.storm, template_dir=TEMPLATE)
     del sf
     gc.collect()
     return exp_dir
@@ -336,6 +370,9 @@ def collect_metrics(names: list[str]) -> pd.DataFrame:
         # table it solved on. Strings; the report's best-value mask skips them.
         rows[name]["engine"] = provenance.engine_label(exp_dir)
         rows[name]["snapwave_direction"] = provenance.snapwave_direction(exp_dir)
+        # Which STORM the row measures (2026-11-24): "sandy2012" = the template's; a storm-* arm's storm.json
+        # names its own, and its gauges / marks were that storm's (validate.evaluate). Never rank across it.
+        rows[name]["storm"] = storm.label(exp_dir)
         try:
             rows[name]["subgrid"] = provenance.subgrid_label(exp_dir)
             rows[name]["wind_scale"] = provenance.wind_scale_label(exp_dir)
@@ -559,6 +596,19 @@ def main(argv=None) -> int:
                     )
                 elif sub and (gap := missing_merged_dep(EXP_ROOT / sub)):
                     verdict = f"OK but staging would refuse: {gap}"
+                st = EXPERIMENTS[name].storm
+                if st is not None:
+                    gaps = storm.check_inputs(EXPERIMENTS[name])
+                    t0, t1 = storm.window(st)
+                    verdict += (
+                        f"; storm {st.name} {t0:%Y-%m-%d %H:%M} -> {t1:%Y-%m-%d %H:%M}"
+                        + (
+                            " — staging would refuse: " + "; ".join(gaps)
+                            if gaps
+                            else ", every storm input + validation file present"
+                        )
+                    )
+                    bad += bool(gaps)
             except Exception as e:  # noqa: BLE001 — report every arm, don't stop at one
                 verdict, bad = f"REFUSED — {type(e).__name__}: {e}", bad + 1
             print(f"[check] {name}: {verdict}")
@@ -706,8 +756,17 @@ def hwm_count_mismatches(
     if pd.isna(n_ref):
         return []
     out = []
+
+    # another storm scores another mark file: its count is its own (storm.json, 2026-11-24). A row from before
+    # the column existed is the template's storm.
+    def _storm_of(arm):
+        v = df.at[arm, "storm"] if "storm" in df.columns else None
+        return storm.TEMPLATE_STORM if v is None or pd.isna(v) else str(v)
+
     for name, n in df[col].items():
         if name == ref or pd.isna(n) or int(n) == int(n_ref):
+            continue
+        if _storm_of(name) != _storm_of(ref):
             continue
         out.append(
             f"🔴 {name}: hwm_n_scored={int(n)} but {ref} scores {int(n_ref)} — the "
@@ -730,6 +789,7 @@ def _split_brackets(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
 
 #: metrics.csv label columns checked on read-back (``_write_outputs_locked``).
 _ROUNDTRIP_LABELS = (
+    "storm",
     "engine",
     "snapwave_direction",
     "engine_seed",

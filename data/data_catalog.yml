@@ -2650,3 +2650,52 @@ seawall_notch_fix_2012:
       = the 2010 tier's own pre-Sandy crest). 22 stretches (Edgewater Beach club frontage excluded: a real gap), 1.5 m
       UTM18N tiles, NaN = no paint. Paint as a plain overlay LAST (every value is above the bed = raise-only).
       logs/seawall_fix_2026-11-22/build_overlay.py + README.md. vrt md5 30f9394034b54ed274c744c379b2e50a
+
+# ── HURRICANE IRENE 2011 on Model 2.0.0 (nj_sfincs/storm.py IRENE_2011; added 2026-11-24) ──────────────────────
+# Built by logs/irene_prep_2026-11-24/ (md5 of every product: products.md5); data/irene_2011 -> scratch.
+# Wind + pressure are a meteo_from DIR (data/irene_2011/meteo_blend/irene_naccs_blend_p_era5), the waves a point file
+# (data/irene_2011/waves/cora_waves_irene_v4.nc): neither is a catalog entry, as for Sandy.
+naccs_irene_nj2:
+  data_type: GeoDataset
+  uri: irene_2011/naccs/naccs_irene_nj2.nc
+  driver:
+    name: geodataset_xarray
+    options: {}
+  metadata:
+    category: ocean
+    crs: 4326
+    unit: m+NAVD88
+    source: >-
+      NACCS/CHS ADCIRC Val SimB1HT storm 002 (Irene 2011), 240 of the 244 nj2 support points (sha 98312c46abe92dce;
+      the builder's rule drops a point that goes dry at any step: 3 Rockaway, 1 Hell Gate), MSL(1992)->NAVD88 via
+      VDatum grids; steric +0.111 already in the series. 2011-08-24 00:00 -> 08-30 00:00, 15 min.
+      logs/irene_prep_2026-11-24/boundary/
+
+aorc_irene_nj2:
+  data_type: RasterDataset
+  uri: irene_2011/precip/aorc_irene_nj2.nc
+  driver:
+    name: raster_xarray
+    options: {}
+  metadata:
+    category: meteo
+    crs: 4326
+    unit: mm
+    source: >-
+      NOAA AORC v1.1 APCP_surface 2011.zarr, 2011-08-24 00:00 -> 08-30 23:00 hourly accumulations, on
+      aorc_sandy_v4's lattice (284 x 273). logs/irene_prep_2026-11-24/rain/
+
+usgs_irene_discharge_nj2:
+  data_type: GeoDataset
+  uri: irene_2011/discharge/usgs_irene_discharge_nj2.nc
+  driver:
+    name: geodataset_xarray
+    options: {}
+  metadata:
+    category: hydro
+    crs: 4326
+    unit: m3/s
+    source: >-
+      USGS daily mean 00060/00003, 2011-08-23 -> 08-31, at the 2.0 premier's inflow points
+      (usgs_sandy_discharge_v4_refreeze's lon/lat after every relocation) x area_scale; 58 of 61 (01483170,
+      01483165, 01409095 have no record: dropped, the Sandy rule). logs/irene_prep_2026-11-24/rivers/

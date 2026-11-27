@@ -55,6 +55,7 @@ import numpy as np
 
 from . import domain as _domain
 from .config import DATA, ROOT, exp_root
+from .domain import CREEK_NOT_RESOLVED_LABEL
 
 GALLERY = "gallery"
 MANIFEST = "manifest.json"
@@ -1943,6 +1944,8 @@ def fig_gauges(c: _Ctx) -> tuple[dict, dict]:
         if _finite(ep):
             bits.append(f"pre-fail {float(ep):+.2f} m")
         ax.set_title(n.replace("_", " "), fontsize=7.5, loc="left", color=INK)
+        if g.creek_unresolved:
+            bits.append(f"{CREEK_NOT_RESOLVED_LABEL}; not in the summary")
         ax.text(
             0.02,
             0.97,
@@ -2001,7 +2004,15 @@ def fig_gauges(c: _Ctx) -> tuple[dict, dict]:
         if _finite(lag):
             a2.plot([0, float(lag)], [y, y], color=HAIR, lw=0.8, zorder=1)
             a2.scatter([float(lag)], [y], s=26, color=MOTF_COLORS[0], zorder=3)
-    a1.set_yticks(yy, [r[0].replace("_", " ") for r in rows], fontsize=7)
+    flagged = {g.name for g in gauges if g.creek_unresolved}
+    a1.set_yticks(
+        yy,
+        [
+            r[0].replace("_", " ") + (" [creek not resolved]" if r[0] in flagged else "")
+            for r in rows
+        ],
+        fontsize=7,
+    )
     a1.axvline(0, color=INK2, lw=0.7)
     a2.axvline(0, color=INK2, lw=0.7)
     a1.set_xlim(-1.5, 1.5)
@@ -2011,12 +2022,22 @@ def fig_gauges(c: _Ctx) -> tuple[dict, dict]:
     for a in (a1, a2):
         a.grid(True, axis="x")
     _save(fig, c.out / "gauge_peaks.png")
+    n_sum = row.get("gauge_peak_n")
+    summ = (
+        f" Summary over {int(n_sum)} gauges (mean {float(row['gauge_peak_err_mean_m']):+.2f}"
+        f" m, RMSE {float(row['gauge_peak_err_rmse_m']):.2f} m), leaving out the "
+        f"{int(row.get('gauge_peak_n_excluded', 0))} flagged '{CREEK_NOT_RESOLVED_LABEL}'."
+        if _finite(n_sum) and _finite(row.get("gauge_peak_err_mean_m"))
+        else ""
+    )
     cap2 = {
         "caption": (
             "Peak error and timing per gauge, read from metrics.csv (validate."
             "gauge_peak_metrics; peaks after 2012-10-29). Hollow = gauge died mid-storm: "
             "the PRE-FAILURE comparison, never ranked across a timing-shifted arm. "
-            "Fixed axes ±1.5 m and ±240 min (off-scale values sit at the edge)."
+            "Fixed axes ±1.5 m and ±240 min (off-scale values sit at the edge). USGS "
+            "storm-tide sensors are 30-min means, so their model series is the same 30-min "
+            "centred mean." + summ
         )
     }
     return cap1, cap2
